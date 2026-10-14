@@ -52,6 +52,7 @@ SLOT_MARGIN = 0.75                            # tail-to-slot clearance each side
 # The south-west corner belongs to the radio antenna, so the west pair sits at
 # the panel's corners instead of the board's.
 HOLES = [(3.2, 3.2), (44.8, 3.2), (3.2, 59.3), (44.8, H - 3.2)]
+HOLE_RING = 2.6      # no parts within this of a hole centre: an M2 head is ~3.8 mm across
 ANT_KEEPOUT = (0.0, SLOT_Y1, 3.7, H)          # E73 antenna end up to its first pad row, all layers
 
 # Tail length budget (Newhaven rev 4 drawing: TFT tail 30.00 and touch tail 55.85
@@ -71,6 +72,7 @@ CTP_END_Y = SLOT_C - (CTP_LEN - (SLOT_C - PANEL_S) - CTP_DROP)
 TFT_ROW, CTP_ROW = 1.35, 1.05                 # connector origin to its contact row (north of origin)
 TFT_SLACK = 2.5      # mm of TFT tail left as a gentle bow, buying a 4.6 mm routing channel south of the MCU (checkFpc allows 3)
 GAP = 0.5            # free board kept between courtyards: a via, or two 0.15 mm tracks
+OPT_RADIUS = 7.0     # how far the ratsnest pass may move a part from its seed (mm)
 # Footprint keep-outs on the back face (KiCad rule areas: DRC flags any part moved
 # into one, and legalize() never puts a part there). What lies over each:
 #   display tails  the two flex tails run flat over the back face from slot to connector
@@ -79,6 +81,10 @@ GAP = 0.5            # free board kept between courtyards: a via, or two 0.15 mm
 #   holes          screw heads / bosses, 3 mm round each mounting hole
 CAMERA_HEAD = (4.0, 4.5, 12.5, 13.0)
 UV_PANEL = (34.0, 4.5, 46.0, 13.5)
+# Room kept for printed labels that name a part (the UV art restyles them in
+# place): the placer and the ratsnest pass treat these as occupied. Not KiCad
+# rule areas; they only stop the generator from filling the spot.
+LABEL_SLOTS = {"SECURE ELEMENT": (1.2, 36.3, 12.2, 37.7)}
 
 
 def footprint_keepouts(board):
@@ -228,10 +234,11 @@ place("SW_AIR", 1.75, 51.0, 90)
 place("R_AIRPU", 6.0, 48.6, 90)
 place("R_AIRSER", 6.0, 51.4, 90)
 place("R_AIRS", 7.6, 48.6, 90)
-# The radio's light sits by the radio: under the south-west hole, just above
-# the module (copper stays east of the antenna keep-out).
-place("D_RADIO", 6.2, 64.6, 0)
-place("R_RLED", 9.2, 64.6, 0)
+# The radio's light sits by the radio, directly under the south-west hole: in
+# the 1.6 mm strip between the screw-head ring and the antenna keep-out, so the
+# west bridge into the chin (x 6.5 to the slot) stays open for routing.
+place("D_RADIO", 2.15, 62.7, 0)
+place("R_RLED", 5.0, 62.7, 0)
 place("SW_PWR", 46.0, 40.0, -90)
 # East strip, between the touch connector (to y 22.75) and the button: the soft
 # latch. Below the button: its sense FET, then the battery gauge.
@@ -335,7 +342,8 @@ def legalize(board):
         forbidden.append((x0 - 0.3, SLOT_Y0 - 0.3, x1 + 0.3, SLOT_Y1 + 0.3))
     forbidden += [(x - 2.2, y - 2.2, x + 2.2, y + 2.2) for x, y in HOLES]
     # Back-face-only keep-outs (the front face carries only the programming pads).
-    back_only = [box for _, box in footprint_keepouts(board)] + [(x - 3.0, y - 3.0, x + 3.0, y + 3.0) for x, y in HOLES]
+    back_only = [box for _, box in footprint_keepouts(board)] + list(LABEL_SLOTS.values()) + \
+        [(x - HOLE_RING, y - HOLE_RING, x + HOLE_RING, y + HOLE_RING) for x, y in HOLES]
     # Anchored parts first, wherever they appear in PLACE: a passive must never
     # be put where a connector lands later.
     placed = [(_side(fps[r]), _box(fps[r])) for r in PLACE if r in ANCHORED and r in fps]
@@ -501,7 +509,8 @@ def keepouts(board):
     for name, box in footprint_keepouts(board):
         rule_area(board, f"no parts: {name}", rect(*box), [pcbnew.B_Cu], footprints=True)
     for i, (x, y) in enumerate(HOLES):
-        ring = [(x + 3.0 * math.cos(math.radians(a)), y + 3.0 * math.sin(math.radians(a))) for a in range(0, 360, 30)]
+        ring = [(x + HOLE_RING * math.cos(math.radians(a)), y + HOLE_RING * math.sin(math.radians(a)))
+                for a in range(0, 360, 30)]
         rule_area(board, f"no parts: hole H{i + 1}", ring, [pcbnew.B_Cu], footprints=True)
     u11 = board.FindFootprintByReference("U11")
     xs = [pcbnew.ToMM(p.GetPosition().x) for p in u11.Pads()]
@@ -553,8 +562,9 @@ def artwork(board):
     # Which lever end is AIRGAP is a bring-up check (docs/design.md), so the
     # legend names the switch, not a position.
     text(board, "AIRGAP", 5.2, 51.0, pcbnew.B_SilkS, 0.8, 0.12, 90)
-    text(board, "RADIO", 5.2, 62.7, pcbnew.B_SilkS, 0.8, 0.12)
-    text(board, "SECURE ELEMENT", SX, SY + 6.6, pcbnew.B_SilkS, 0.8, 0.12)
+    text(board, "RADIO", 2.6, 64.4, pcbnew.B_SilkS, 0.8, 0.12)
+    lx0, ly0, lx1, ly1 = LABEL_SLOTS["SECURE ELEMENT"]
+    text(board, "SECURE ELEMENT", (lx0 + lx1) / 2, (ly0 + ly1) / 2, pcbnew.B_SilkS, 0.8, 0.12)
     drawing(board, SX - 2.0, SY - 2.0, SX + 2.0, SY + 2.0, pcbnew.B_SilkS, 0.15)
     # Brand: placeholder for the full-colour UV-printed Ambire artwork.
     drawing(board, 34.0, 4.5, 46.0, 13.5, pcbnew.Dwgs_User)
@@ -645,6 +655,11 @@ def main():
                 t.SetVisible(False)
 
     legalize(board)
+    if "--no-optimize" not in sys.argv:
+        # Ratsnest pass: rotate / nudge / swap parts to cut crossings and airwire
+        # length, inside the same legality rules (scripts/optimizePlacement.py).
+        import optimizePlacement
+        optimizePlacement.optimize(board, radius=OPT_RADIUS, passes=10)
     mounting_holes(board)
     for layer in (pcbnew.F_Cu, pcbnew.In1_Cu, pcbnew.In2_Cu, pcbnew.B_Cu):
         gnd_pour(board, layer)

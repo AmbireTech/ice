@@ -53,7 +53,8 @@ def exti(port):
 
 def main():
     apply = "--apply" in sys.argv
-    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    out_board = sys.argv[sys.argv.index("--out") + 1] if "--out" in sys.argv else None
+    args = [a for a in sys.argv[1:] if not a.startswith("--") and a != out_board]
     board = pcbnew.LoadBoard(args[0] if args else str(op.nb.syncBoard.BOARD))
     pins = st_pins()
     assign = json.load(open(ASSIGN), object_pairs_hook=collections.OrderedDict)
@@ -147,6 +148,9 @@ def main():
         print(f"pass {it + 1}: {improved} reassignments -> airwire {l1:.0f} mm, {x1} crossings")
         if not improved:
             break
+    if out_board:
+        pcbnew.SaveBoard(out_board, board)
+        print(f"wrote {out_board} (pads re-netted for a trial route; the netlist is unchanged)")
     if apply and changes:
         out = collections.OrderedDict()
         if comment:

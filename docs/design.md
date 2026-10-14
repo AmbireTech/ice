@@ -144,6 +144,17 @@ touch flex is merged into the TFT flex.
   or two 0.15 mm tracks). `newBoard.py` places that way and
   `scripts/checkDensity.py` fails the board below 0.4 mm. The first placement
   had 182 pairs under that; KiCad's DRC passed it anyway.
+- **Then a ratsnest pass** (`scripts/optimizePlacement.py`, run by `newBoard.py`):
+  rotate / nudge (up to 7 mm from the seed) / swap same-footprint parts while
+  that lowers airwire length plus crossings, inside the same legality rules.
+  Crossings 460 → 286, airwire 1871 → 1714 mm.
+- **Judged by a trial route, not the proxy:** `scripts/trialRoute.sh` autoroutes
+  every net but GND on a copy with KiCadRoutingTools' router. Seed: 3 nets
+  failed, 209 vias. Current board: **0 failed, 207 vias**. A 4 mm radius did no
+  better than the seed, and MCU pin swaps (`scripts/optimizePins.py`) cut vias
+  but dropped USB/power nets, so they are not applied.
+- Small parts may sit under the display flex tails; `checkFpc.py` fails any tall
+  part there.
 - MCU pins are chosen so each bus leaves the package facing its destination
   (flipped and turned 180°: pins 1–25 east, 26–50 south, 51–75 west, 76–100
   north): display SPI south to its connector, touch and gauge I2C east, camera
@@ -157,6 +168,9 @@ touch flex is merged into the TFT flex.
   would save a few mA at full speed, small next to the ~115 mA backlight, but
   its inductor and input cap had to sit in that lane. The 33 Ω SPI series
   resistors are gone for the same reason.
+- The RADIO light sits directly under the south-west hole, next to the radio
+  module, in the strip between the screw head and the antenna keep-out, so the
+  west bridge into the chin stays open.
 - **The radio gate** (NOR, load switch, two UART buffers and their passives)
   sits in its own north-west quadrant next to the MCU's USART1. RADIO_3V3 and
   the two radio-side UART lines run down the west edge to the module.
@@ -166,7 +180,7 @@ touch flex is merged into the TFT flex.
   west (≈ 6 mm usable beside the hole), middle (2.6 mm) and east (3.7 mm).
 - **Keep-outs are KiCad rule areas** (DRC flags any part moved into them): both
   display-tail corridors, the camera head and its flex run, the UV-artwork
-  panel, a 3 mm ring around each mounting hole (all back-face, no parts), the
+  panel, a 2.6 mm ring around each mounting hole (all back-face, no parts), the
   antenna end (no copper on any layer) and the area under the radio module (no
   tracks or vias on the back copper, GND fill only).
 
@@ -221,6 +235,7 @@ $KICAD_PY scripts/syncBoard.py          # dry run; --apply writes (close KiCad f
 $KICAD_PY scripts/checkPinNets.py       # IC pads vs datasheet pin tables, on the board copper
 $KICAD_PY scripts/checkFpc.py           # connector / lever / antenna orientation, tail lengths
 $KICAD_PY scripts/checkDensity.py       # 0.4 mm routing gap between every pair of parts
+scripts/trialRoute.sh                   # autoroute a copy: failed nets / vias (placement arbiter)
 $KICAD_PY scripts/checkParts.py board/wallet.kicad_pcb   # each land vs the land JLC places that part on
 python3 scripts/jlcStock.py             # live JLC stock for every part number
 ```

@@ -33,6 +33,9 @@ sys.path.insert(0, str(Path(__file__).parent))
 import newBoard as nb  # noqa: E402
 
 CROSSING_MM = 6.0                    # one crossing costs as much as 6 mm of airwire
+# Placed for a reason the ratsnest cannot see: the radio light sits under the
+# south-west hole by the owner's call, its resistor beside it.
+PINNED = {"D_RADIO", "R_RLED"}
 NO_AIRWIRE = {"GND", "V3V3"}         # poured / plane nets
 LOW_WEIGHT = {"SYS": 0.4, "BAT": 0.4, "VBUS": 0.6}   # wide power runs, routed once
 STEP = 0.5
@@ -135,8 +138,8 @@ class Model:
                        (b.CTP_TAIL[0] - b.SLOT_MARGIN, b.CTP_TAIL[0] + b.CTP_TAIL[1] + b.SLOT_MARGIN)):
             self.forbidden.append((x0 - 0.3, b.SLOT_Y0 - 0.3, x1 + 0.3, b.SLOT_Y1 + 0.3))
         self.forbidden += [(x - 2.2, y - 2.2, x + 2.2, y + 2.2) for x, y in b.HOLES]
-        self.back_only = [box for _, box in b.footprint_keepouts(self.board)] + \
-                         [(x - 3.0, y - 3.0, x + 3.0, y + 3.0) for x, y in b.HOLES]
+        self.back_only = [box for _, box in b.footprint_keepouts(self.board)] + list(b.LABEL_SLOTS.values()) + \
+                         [(x - b.HOLE_RING, y - b.HOLE_RING, x + b.HOLE_RING, y + b.HOLE_RING) for x, y in b.HOLES]
 
     def legal(self, part):
         box = nb._box(part.fp, nb.GAP)
@@ -211,7 +214,7 @@ def optimize(board, radius=4.0, passes=8, seed=1, log=print):
     random.seed(seed)
     m = Model(board)
     movable = [r for r, p in m.parts.items()
-               if r not in nb.ANCHORED and p.side == nb.BOT and r in m.part_nets]
+               if r not in nb.ANCHORED and r not in PINNED and p.side == nb.BOT and r in m.part_nets]
     length, x = m.total()
     log(f"start: airwire {length:.0f} mm, {x} crossings, {len(movable)} movable parts")
     by_fp = {}

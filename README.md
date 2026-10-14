@@ -30,6 +30,7 @@ $KICAD_PY scripts/syncBoard.py           # dry run; --apply writes (close KiCad 
 $KICAD_PY scripts/checkPinNets.py        # IC pads vs datasheet pin tables, on the copper
 $KICAD_PY scripts/checkFpc.py            # connector/lever/antenna orientation, tail lengths
 $KICAD_PY scripts/checkDensity.py        # every pair of parts keeps a routing gap
+scripts/trialRoute.sh                    # autoroute a copy with KiCadRoutingTools: failed nets / vias
 $KICAD_PY scripts/checkParts.py board/wallet.kicad_pcb   # lands vs JLC's land per part
 ```
 
@@ -42,6 +43,7 @@ $KICAD_PY scripts/checkParts.py board/wallet.kicad_pcb   # lands vs JLC's land p
   `scripts/genStm32Pins.py`; the MCU's signal pins are assigned in
   `src/parts/mcuAssign.json`.
 - `scripts/newBoard.py --force` regenerates the board from scratch (outline,
-  slots, stack-up, pours, keep-out, placement) and **destroys hand work**.
+  slots, stack-up, pours, keep-outs, placement, then the ratsnest pass of
+  `scripts/optimizePlacement.py`) and **destroys hand work**.
 - A part is assembled by JLC exactly when it carries a JLC part number. The
   display panel, camera module and cell are fitted by hand.
