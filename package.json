@@ -1,0 +1,22 @@
+{
+  "name": "ambire-wallet",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Ambire hardware signer — netlist (tscircuit) for the KiCad board",
+  "scripts": {
+    "dev": "tsci dev",
+    "start": "tsci dev",
+    "build": "tsci build",
+    "check": "tsci check netlist",
+    "check:connectivity": "node scripts/checkConnectivity.mjs",
+    "export:3d": "./node_modules/.bin/bun ./node_modules/@tscircuit/cli/dist/cli/main.js export index.circuit.tsx -f glb -o dist/preview/board.glb",
+    "export:kicad": "./node_modules/.bin/bun ./node_modules/@tscircuit/cli/dist/cli/main.js export index.circuit.tsx -f kicad_zip -o dist/preview/kicad.zip && rm -rf dist/preview/kicad && mkdir -p dist/preview/kicad && unzip -o dist/preview/kicad.zip -d dist/preview/kicad && npm run kicad:prepare",
+    "kicad:prepare": "node scripts/prepareKicadPreview.mjs"
+  },
+  "dependencies": {
+    "tscircuit": "^0.0.2142"
+  },
+  "devDependencies": {
+    "bun": "^1.3.14"
+  }
+}

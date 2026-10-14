@@ -1,0 +1,21 @@
+node_modules/
+dist/
+.DS_Store
+*.circuit.json.bak
+# tsci writes this beside the source when -o has no leading directory
+index.circuit.circuit.json
+
+# board/: generated or per-user files
+board/netlist.circuit.json
+board/drc.json
+board/*.kicad_prl
+board/*-backups/
+board/.history/
+board/~*.lck
+board/fp-info-cache
+scripts/__pycache__/
+.cand/
+
+# art/out/: print files rebuilt by art/build_uv.py from the board (~14 MB each)
+art/out/
+art/.venv/

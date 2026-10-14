@@ -1,0 +1,47 @@
+# Ambire hardware signer — proto 0
+
+A Safe-owner signing device: STM32U585 + NXP SE050 secure element (keys
+generated inside, no seed phrase), BLE behind a hardware airgap switch, QR
+camera, 2.4" capacitive touch display, clear case. Lives here temporarily, next
+to the GridCore hardware it borrows from, until it moves to its own repo.
+
+- [docs/research.md](docs/research.md) — threat landscape 2024–2026, how the
+  incumbents are built, why this architecture
+- [docs/design.md](docs/design.md) — the board, block by block, and the
+  bring-up checks that need parts in hand
+
+![Back face, as the clear case shows it](docs/back-face-render.png)
+
+## Board flow
+
+Same as the GridCore Nano: `index.circuit.tsx` and `src/blocks/` are the
+**netlist** (no placement); `board/wallet.kicad_pcb` is the board, placed by
+script once, routed by hand in KiCad.
+
+```sh
+cd hardware/ambire-wallet
+npm install
+KICAD_PY=/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3
+npx tsci export index.circuit.tsx -f circuit-json -o board/netlist.circuit.json
+python3 scripts/checkNets.py             # every named net reaches two pads
+python3 scripts/checkMcuAf.py            # MCU signals vs ST's pin database
+python3 scripts/jlcStock.py              # live JLC stock per part number
+$KICAD_PY scripts/syncBoard.py           # dry run; --apply writes (close KiCad first)
+$KICAD_PY scripts/checkPinNets.py        # IC pads vs datasheet pin tables, on the copper
+$KICAD_PY scripts/checkFpc.py            # connector/lever/antenna orientation, tail lengths
+$KICAD_PY scripts/checkDensity.py        # every pair of parts keeps a routing gap
+$KICAD_PY scripts/checkParts.py board/wallet.kicad_pcb   # lands vs JLC's land per part
+```
+
+- `board/footprints.json` picks each part's footprint, with pad maps where the
+  netlist and the land disagree (USB-C, switches, FPC tabs).
+- `board/wallet.pretty/` holds the lands KiCad does not ship: the SE050's NXP
+  SOT1969-1 land, the E73 module, the hole-clear ALPS SKRT button, and the
+  Nano's BQ25185 / TPS63802 / Molex 54132 / touch-FPC lands.
+- `src/parts/stm32u585Pins.ts` is **generated** from ST's pin database by
+  `scripts/genStm32Pins.py`; the MCU's signal pins are assigned in
+  `src/parts/mcuAssign.json`.
+- `scripts/newBoard.py --force` regenerates the board from scratch (outline,
+  slots, stack-up, pours, keep-out, placement) and **destroys hand work**.
+- A part is assembled by JLC exactly when it carries a JLC part number. The
+  display panel, camera module and cell are fitted by hand.

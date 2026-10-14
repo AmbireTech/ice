@@ -1,0 +1,309 @@
+{
+ "_comment": "Footprint per reference; 'wallet:' = board/wallet.pretty, anything else is KiCad's stock library. An entry with 'pads' maps netlist pad names to footprint pad names (one to many). Passives follow their netlist size. J_CAM pad = Ai-Thinker ESP32-CAM pin; if the module in hand is numbered from the other end, change this map to pad = 25 - pin (docs/design.md).",
+ "C_3V3": "Capacitor_SMD:C_0805_2012Metric",
+ "C_AVIN": "Capacitor_SMD:C_0402_1005Metric",
+ "C_AVOUT": "Capacitor_SMD:C_0402_1005Metric",
+ "C_BAT": "Capacitor_SMD:C_0805_2012Metric",
+ "C_BLF1": "Capacitor_SMD:C_0402_1005Metric",
+ "C_BLF2": "Capacitor_SMD:C_0402_1005Metric",
+ "C_BLIN": "Capacitor_SMD:C_0603_1608Metric",
+ "C_BLOUT": "Capacitor_SMD:C_0603_1608Metric",
+ "C_DOVDD": "Capacitor_SMD:C_0402_1005Metric",
+ "C_DVIN": "Capacitor_SMD:C_0402_1005Metric",
+ "C_DVOUT": "Capacitor_SMD:C_0402_1005Metric",
+ "C_GAUGE": "Capacitor_SMD:C_0402_1005Metric",
+ "C_IN_BUCK": "Capacitor_SMD:C_0805_2012Metric",
+ "C_LSE1": "Capacitor_SMD:C_0402_1005Metric",
+ "C_LSE2": "Capacitor_SMD:C_0402_1005Metric",
+ "C_NOR": "Capacitor_SMD:C_0402_1005Metric",
+ "C_NRST": "Capacitor_SMD:C_0402_1005Metric",
+ "C_RADIO1": "Capacitor_SMD:C_0603_1608Metric",
+ "C_RADIO2": "Capacitor_SMD:C_0402_1005Metric",
+ "C_RIN": "Capacitor_SMD:C_0402_1005Metric",
+ "C_RTC": "Capacitor_SMD:C_0402_1005Metric",
+ "C_RTCIN": "Capacitor_SMD:C_0402_1005Metric",
+ "C_SEIN": "Capacitor_SMD:C_0402_1005Metric",
+ "C_SEVCC": "Capacitor_SMD:C_0402_1005Metric",
+ "C_SYS": "Capacitor_SMD:C_0805_2012Metric",
+ "C_TFT1": "Capacitor_SMD:C_0402_1005Metric",
+ "C_TFT2": "Capacitor_SMD:C_0402_1005Metric",
+ "C_U10A": "Capacitor_SMD:C_0402_1005Metric",
+ "C_U10B": "Capacitor_SMD:C_0402_1005Metric",
+ "C_U9A": "Capacitor_SMD:C_0402_1005Metric",
+ "C_U9B": "Capacitor_SMD:C_0402_1005Metric",
+ "C_USBSW": "Capacitor_SMD:C_0402_1005Metric",
+ "C_VBAT": "Capacitor_SMD:C_0402_1005Metric",
+ "C_VBUS": "Capacitor_SMD:C_0603_1608Metric",
+ "C_VDD1": "Capacitor_SMD:C_0402_1005Metric",
+ "C_VDD11A": "Capacitor_SMD:C_0402_1005Metric",
+ "C_VDD11B": "Capacitor_SMD:C_0402_1005Metric",
+ "C_VDD11C": "Capacitor_SMD:C_0402_1005Metric",
+ "C_VDD11D": "Capacitor_SMD:C_0402_1005Metric",
+ "C_VDD2": "Capacitor_SMD:C_0402_1005Metric",
+ "C_VDD3": "Capacitor_SMD:C_0402_1005Metric",
+ "C_VDD4": "Capacitor_SMD:C_0402_1005Metric",
+ "C_VDD5": "Capacitor_SMD:C_0402_1005Metric",
+ "C_VDDA1": "Capacitor_SMD:C_0402_1005Metric",
+ "C_VDDA2": "Capacitor_SMD:C_0402_1005Metric",
+ "C_VDDB": "Capacitor_SMD:C_0603_1608Metric",
+ "C_VREF1": "Capacitor_SMD:C_0402_1005Metric",
+ "C_VREF2": "Capacitor_SMD:C_0402_1005Metric",
+ "C_VUSB": "Capacitor_SMD:C_0402_1005Metric",
+ "D_ESD": "Package_TO_SOT_SMD:SOT-23-6",
+ "D_OR": "Package_TO_SOT_SMD:SOT-23",
+ "D_RADIO": "LED_SMD:LED_0603_1608Metric",
+ "J1": {
+  "fp": "Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12",
+  "pads": {
+   "1": [
+    "A4",
+    "B9"
+   ],
+   "2": [
+    "B4",
+    "A9"
+   ],
+   "3": [
+    "A1",
+    "B12"
+   ],
+   "4": [
+    "B1",
+    "A12"
+   ],
+   "5": [
+    "A5"
+   ],
+   "6": [
+    "B5"
+   ],
+   "7": [
+    "A6"
+   ],
+   "8": [
+    "A7"
+   ],
+   "9": [
+    "B6"
+   ],
+   "10": [
+    "B7"
+   ],
+   "11": [
+    "A8"
+   ],
+   "12": [
+    "B8"
+   ],
+   "13": [
+    "SH"
+   ]
+  }
+ },
+ "J_BAT": {
+  "fp": "Connector_JST:JST_PH_S2B-PH-SM4-TB_1x02-1MP_P2.00mm_Horizontal",
+  "pads": {
+   "1": [
+    "1"
+   ],
+   "2": [
+    "2"
+   ],
+   "3": [
+    "MP"
+   ],
+   "4": [
+    "MP"
+   ]
+  }
+ },
+ "J_CAM": {
+  "fp": "Connector_FFC-FPC:Jushuo_AFC07-S24FCA-00_1x24-1MP_P0.50_Horizontal",
+  "pads": {
+   "1": [
+    "1"
+   ],
+   "2": [
+    "2"
+   ],
+   "3": [
+    "3"
+   ],
+   "4": [
+    "4"
+   ],
+   "5": [
+    "5"
+   ],
+   "6": [
+    "6"
+   ],
+   "7": [
+    "7"
+   ],
+   "8": [
+    "8"
+   ],
+   "9": [
+    "9"
+   ],
+   "10": [
+    "10"
+   ],
+   "11": [
+    "11"
+   ],
+   "12": [
+    "12"
+   ],
+   "13": [
+    "13"
+   ],
+   "14": [
+    "14"
+   ],
+   "15": [
+    "15"
+   ],
+   "16": [
+    "16"
+   ],
+   "17": [
+    "17"
+   ],
+   "18": [
+    "18"
+   ],
+   "19": [
+    "19"
+   ],
+   "20": [
+    "20"
+   ],
+   "21": [
+    "21"
+   ],
+   "22": [
+    "22"
+   ],
+   "23": [
+    "23"
+   ],
+   "24": [
+    "24"
+   ],
+   "25": [
+    "MP"
+   ],
+   "26": [
+    "MP"
+   ]
+  }
+ },
+ "J_CTP": "wallet:FPC_HC-FPC-1.0-6P-CSH25",
+ "J_TFT": "wallet:Molex_54132-4062",
+ "L_BUCK": "Inductor_SMD:L_Murata_DFE201610P",
+ "Q_BTN": "Package_TO_SOT_SMD:SOT-23",
+ "R_AIRPU": "Resistor_SMD:R_0402_1005Metric",
+ "R_AIRS": "Resistor_SMD:R_0402_1005Metric",
+ "R_ALRT": "Resistor_SMD:R_0402_1005Metric",
+ "R_BLEN": "Resistor_SMD:R_0402_1005Metric",
+ "R_BLPD": "Resistor_SMD:R_0402_1005Metric",
+ "R_BLSET": "Resistor_SMD:R_0402_1005Metric",
+ "R_BOOT0": "Resistor_SMD:R_0402_1005Metric",
+ "R_BTN": "Resistor_SMD:R_0402_1005Metric",
+ "R_BTNN": "Resistor_SMD:R_0402_1005Metric",
+ "R_CAMEN": "Resistor_SMD:R_0402_1005Metric",
+ "R_CC1": "Resistor_SMD:R_0402_1005Metric",
+ "R_CC2": "Resistor_SMD:R_0402_1005Metric",
+ "R_CE": "Resistor_SMD:R_0402_1005Metric",
+ "R_CRST": "Resistor_SMD:R_0402_1005Metric",
+ "R_CSCL": "Resistor_SMD:R_0402_1005Metric",
+ "R_CSDA": "Resistor_SMD:R_0402_1005Metric",
+ "R_DV1": "Resistor_SMD:R_0402_1005Metric",
+ "R_DV2": "Resistor_SMD:R_0402_1005Metric",
+ "R_EN": "Resistor_SMD:R_0402_1005Metric",
+ "R_FB1": "Resistor_SMD:R_0402_1005Metric",
+ "R_FB2": "Resistor_SMD:R_0402_1005Metric",
+ "R_HOLD": "Resistor_SMD:R_0402_1005Metric",
+ "R_ILIM": "Resistor_SMD:R_0402_1005Metric",
+ "R_ISET": "Resistor_SMD:R_0402_1005Metric",
+ "R_PWDN": "Resistor_SMD:R_0402_1005Metric",
+ "R_RLED": "Resistor_SMD:R_0402_1005Metric",
+ "R_ROFF": "Resistor_SMD:R_0402_1005Metric",
+ "R_RRXPU": "Resistor_SMD:R_0402_1005Metric",
+ "R_RTXPU": "Resistor_SMD:R_0402_1005Metric",
+ "R_SCL": "Resistor_SMD:R_0402_1005Metric",
+ "R_SDA": "Resistor_SMD:R_0402_1005Metric",
+ "R_SEENA": "Resistor_SMD:R_0402_1005Metric",
+ "R_SESCL": "Resistor_SMD:R_0402_1005Metric",
+ "R_SESDA": "Resistor_SMD:R_0402_1005Metric",
+ "R_STAT1": "Resistor_SMD:R_0402_1005Metric",
+ "R_STAT2": "Resistor_SMD:R_0402_1005Metric",
+ "R_TS": "Resistor_SMD:R_0402_1005Metric",
+ "R_VB1": "Resistor_SMD:R_0402_1005Metric",
+ "R_VB2": "Resistor_SMD:R_0402_1005Metric",
+ "SW_AIR": {
+  "fp": "Button_Switch_SMD:SW_SPDT_Shouhan_MSK12C02",
+  "pads": {
+   "1": [
+    "1"
+   ],
+   "2": [
+    "2"
+   ],
+   "3": [
+    "3"
+   ],
+   "4": [
+    "SH"
+   ]
+  }
+ },
+ "SW_PWR": {
+  "fp": "wallet:SW_Alps_SKRTLAE010_HoleClear",
+  "pads": {
+   "1": [
+    "1"
+   ],
+   "2": [
+    "2"
+   ],
+   "3": [
+    "MP"
+   ]
+  }
+ },
+ "TP_3V3": "TestPoint:TestPoint_Pad_D1.0mm",
+ "TP_BOOT0": "TestPoint:TestPoint_Pad_D1.0mm",
+ "TP_GND": "TestPoint:TestPoint_Pad_D1.0mm",
+ "TP_NRST": "TestPoint:TestPoint_Pad_D1.0mm",
+ "TP_R3V3": "TestPoint:TestPoint_Pad_D1.0mm",
+ "TP_RRESET": "TestPoint:TestPoint_Pad_D1.0mm",
+ "TP_RSWCLK": "TestPoint:TestPoint_Pad_D1.0mm",
+ "TP_RSWDIO": "TestPoint:TestPoint_Pad_D1.0mm",
+ "TP_SWCLK": "TestPoint:TestPoint_Pad_D1.0mm",
+ "TP_SWDIO": "TestPoint:TestPoint_Pad_D1.0mm",
+ "TP_SWO": "TestPoint:TestPoint_Pad_D1.0mm",
+ "U1": "wallet:Texas_DLH0010A_WSON-10_2.2x2mm_P0.4mm",
+ "U10": "Package_TO_SOT_SMD:SOT-23-6",
+ "U11": "wallet:Ebyte_E73-2G4M08S1C",
+ "U12": "Package_TO_SOT_SMD:SOT-23-5",
+ "U13": "Package_DFN_QFN:VQFN-16-1EP_3x3mm_P0.5mm_EP1.45x1.45mm",
+ "U14": "Package_TO_SOT_SMD:SOT-23-5",
+ "U15": "Package_DFN_QFN:TDFN-8-1EP_2x2mm_P0.5mm_EP0.8x1.2mm",
+ "U2": "wallet:Texas_DLA0010A_VSON-HR-10",
+ "U3": "Package_TO_SOT_SMD:SOT-23",
+ "U4": "Package_QFP:LQFP-100_14x14mm_P0.5mm",
+ "U5": "wallet:NXP_SOT1969-1_HX2QFN-20_3x3mm_P0.4mm",
+ "U6": "Package_DFN_QFN:Texas_UQFN-10_1.5x2mm_P0.5mm",
+ "U7": "Package_TO_SOT_SMD:SOT-23-5",
+ "U8": "Package_TO_SOT_SMD:SOT-23-6",
+ "U9": "Package_TO_SOT_SMD:SOT-23-6",
+ "Y1": "Crystal:Crystal_SMD_3215-2Pin_3.2x1.5mm",
+ "R_AIRSER": "Resistor_SMD:R_0402_1005Metric",
+ "C_EN": "Capacitor_SMD:C_0402_1005Metric",
+ "C_RCT": "Capacitor_SMD:C_0402_1005Metric",
+ "R_RMTX": "Resistor_SMD:R_0402_1005Metric",
+ "R_CTPRST": "Resistor_SMD:R_0402_1005Metric"
+}

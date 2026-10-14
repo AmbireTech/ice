@@ -1,0 +1,203 @@
+{
+  "_comment": "STM32U585VIT6Q signal pins: pin label -> [net, the ST signal the firmware muxes onto it, or GPIO/ANALOG]. Chosen so each bus leaves the package on the side facing its destination (MCU flipped + 180 deg on the back face: pins 1-25 east, 26-50 south, 51-75 west, 76-100 north): display SPI south toward J_TFT, touch/gauge I2C3 + touch INT/RST east toward J_CTP and the gauge, camera DCMI/SCCB (I2C2) north/west toward J_CAM, secure element I2C4 west, radio USART1 west, toward the radio gate in the north-west quadrant; VBUS sensed on a plain GPIO (the USB stack's hardware VBUS sensing is off), charger/button east. Mcu.tsx draws the traces from this table and scripts/checkMcuAf.py fails unless every signal is listed for that pin in ST's own pin database.",
+  "PE9": [
+    "TFT_BL",
+    "TIM1_CH1"
+  ],
+  "PE10": [
+    "TFT_TE",
+    "GPIO"
+  ],
+  "PE11": [
+    "TFT_RST",
+    "GPIO"
+  ],
+  "PE12": [
+    "TFT_DC",
+    "GPIO"
+  ],
+  "PE13": [
+    "TFT_SCK",
+    "SPI1_SCK"
+  ],
+  "PE14": [
+    "TFT_CS",
+    "GPIO"
+  ],
+  "PE15": [
+    "TFT_MOSI",
+    "SPI1_MOSI"
+  ],
+  "PB13": [
+    "CAM_SCL",
+    "I2C2_SCL"
+  ],
+  "PB14": [
+    "CAM_SDA",
+    "I2C2_SDA"
+  ],
+  "PD12": [
+    "SE_SCL",
+    "I2C4_SCL"
+  ],
+  "PD13": [
+    "SE_SDA",
+    "I2C4_SDA"
+  ],
+  "PD11": [
+    "SE_ENA",
+    "GPIO"
+  ],
+  "PC6": [
+    "CAM_D0",
+    "DCMI_D0"
+  ],
+  "PC7": [
+    "CAM_D1",
+    "DCMI_D1"
+  ],
+  "PC8": [
+    "CAM_D2",
+    "DCMI_D2"
+  ],
+  "PC9": [
+    "CAM_D3",
+    "DCMI_D3"
+  ],
+  "PC11": [
+    "CAM_D4",
+    "DCMI_D4"
+  ],
+  "PD3": [
+    "CAM_D5",
+    "DCMI_D5"
+  ],
+  "PB8": [
+    "CAM_D6",
+    "DCMI_D6"
+  ],
+  "PB9": [
+    "CAM_D7",
+    "DCMI_D7"
+  ],
+  "PD9": [
+    "CAM_PCLK",
+    "DCMI_PIXCLK"
+  ],
+  "PD8": [
+    "CAM_HREF",
+    "DCMI_HSYNC"
+  ],
+  "PB7": [
+    "CAM_VSYNC",
+    "DCMI_VSYNC"
+  ],
+  "PA8": [
+    "CAM_XCLK",
+    "RCC_MCO"
+  ],
+  "PC0": [
+    "I2C_SCL",
+    "I2C3_SCL"
+  ],
+  "PC1": [
+    "I2C_SDA",
+    "I2C3_SDA"
+  ],
+  "PD15": [
+    "CAM_PWDN",
+    "GPIO"
+  ],
+  "PD7": [
+    "CAM_RST",
+    "GPIO"
+  ],
+  "PC12": [
+    "CAM_EN",
+    "GPIO"
+  ],
+  "PA11": [
+    "USB_DN_MCU",
+    "USB_OTG_FS_DM"
+  ],
+  "PA12": [
+    "USB_DP_MCU",
+    "USB_OTG_FS_DP"
+  ],
+  "PE7": [
+    "AIRGAP_SENSE",
+    "GPIO"
+  ],
+  "PA0": [
+    "BTN_N",
+    "PWR_WKUP1"
+  ],
+  "PA1": [
+    "CHG_STAT1",
+    "GPIO"
+  ],
+  "PA3": [
+    "CHG_STAT2",
+    "GPIO"
+  ],
+  "PA2": [
+    "CHG_CE",
+    "GPIO"
+  ],
+  "PA13": [
+    "SWDIO",
+    "DEBUG_JTMS-SWDIO"
+  ],
+  "PA14": [
+    "SWCLK",
+    "DEBUG_JTCK-SWCLK"
+  ],
+  "PB3": [
+    "SWO",
+    "DEBUG_JTDO-SWO"
+  ],
+  "PC14": [
+    "LSE_IN",
+    "RCC_OSC32_IN"
+  ],
+  "PC15": [
+    "LSE_OUT",
+    "RCC_OSC32_OUT"
+  ],
+  "PH3": [
+    "BOOT0",
+    "GPIO"
+  ],
+  "PE2": [
+    "CTP_INT",
+    "GPIO"
+  ],
+  "PE3": [
+    "CTP_RST",
+    "GPIO"
+  ],
+  "PE4": [
+    "GAUGE_ALRT",
+    "GPIO"
+  ],
+  "PE5": [
+    "PWR_HOLD",
+    "GPIO"
+  ],
+  "PA9": [
+    "RADIO_TXD_MCU",
+    "USART1_TX"
+  ],
+  "PA10": [
+    "RADIO_RXD_MCU",
+    "USART1_RX"
+  ],
+  "PD14": [
+    "RADIO_OFF",
+    "GPIO"
+  ],
+  "PD10": [
+    "VBUS_SENSE",
+    "GPIO"
+  ]
+}

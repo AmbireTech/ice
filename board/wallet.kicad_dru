@@ -1,0 +1,14 @@
+(version 1)
+
+# In1 (L2) is solid GND: the reference plane under the back face, where every
+# part sits. Nothing but GND routes on it.
+(rule "In1: GND only"
+  (condition "A.Type == 'Track' && A.NetName != 'GND'")
+  (layer "In1.Cu")
+  (constraint disallow track))
+
+# Fine-pitch lands from the vendors' own drawings: the SE050's 0.4 mm HX2QFN and
+# the BQ25185's DLH0010A put pads closer than the board default.
+(rule "Fine-pitch lands"
+  (condition "A.Type == 'Pad' && B.Type == 'Pad' && (A.memberOfFootprint('U5') || A.memberOfFootprint('U1'))")
+  (constraint clearance (min 0.09mm)))

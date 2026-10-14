@@ -1,0 +1,3031 @@
+{
+ "C106255": {
+  "describe": "10V 470nF X5R \u00b110% 0402 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+  "land": null,
+  "model": "CC0402KRX5R6BB474",
+  "package": "0402",
+  "stock": 636853
+ },
+ "C107369": {
+  "describe": "10V 2.2uF X5R \u00b110% 0402 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+  "land": null,
+  "model": "CL05A225KP5NSNC",
+  "package": "0402",
+  "stock": 796829
+ },
+ "C110293": {
+  "describe": "-40\u2103~+90\u2103 1.63N 100,000 cycles 12V 3.3mm 3.4mm 4.5mm 50mA Round Button SMD(SMT) Tab SPST-NO Surface Mount, Right Angle SMD,4.5x3.4mm Tactile Switches ROHS",
+  "land": {
+   "pads": 7,
+   "pitch": 1.08,
+   "sizes": [
+    [
+     0.6,
+     1.8
+    ],
+    [
+     0.75,
+     1.8
+    ],
+    [
+     0.75,
+     1.8
+    ],
+    [
+     0.9,
+     0.9
+    ],
+    [
+     0.9,
+     0.9
+    ],
+    [
+     0.9,
+     1.3
+    ],
+    [
+     0.9,
+     1.3
+    ]
+   ],
+   "span": [
+    1.95,
+    4.25
+   ]
+  },
+  "model": "SKRTLAE010",
+  "package": "SMD,4.5x3.4mm",
+  "stock": 50176
+ },
+ "C11702": {
+  "describe": "-55\u2103~+155\u2103 1k\u03a9 50V 62.5mW Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+  "land": null,
+  "model": "0402WGF1001TCE",
+  "package": "0402",
+  "stock": 7687513
+ },
+ "C123819": {
+  "describe": "-65\u2103~+150\u2103 15.5A@10/1000us 1uA 24V 29.5V 38.9V 600W@10/1000us TVS Unidirectional DO-214AA(SMB) ESD and Surge Protection (TVS/ESD) ROHS",
+  "land": {
+   "pads": 2,
+   "pitch": 4.72,
+   "sizes": [
+    [
+     2.05,
+     2.19
+    ],
+    [
+     2.05,
+     2.19
+    ]
+   ],
+   "span": [
+    0.0,
+    4.72
+   ]
+  },
+  "model": "SMBJ24A",
+  "package": "DO-214AA(SMB)",
+  "stock": 61394
+ },
+ "C12530": {
+  "describe": "2.2uF 6.3V X5R \u00b120% 0402 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+  "land": null,
+  "model": "CL05A225MQ5NSNC",
+  "package": "0402",
+  "stock": 4576250
+ },
+ "C12624": {
+  "describe": "-40\u2103~+85\u2103 1.6mm x 0.8mm square LED 100mW 120\u00b0 3.1V 430mcd 513nm~528nm 525nm 5mA Discrete Diode Emerald Green Water Clear 0603 LED Indication - Discrete ROHS",
+  "land": null,
+  "model": "KT-0603G",
+  "package": "0603",
+  "stock": 527787
+ },
+ "C128396": {
+  "describe": "-40\u2103~+85\u2103 12ns 2.3V~3.6V 250ps 2:1 30ns 6pF 6\u03a9 900MHz USB UQFN-10(1.5x2) Analog Switches - Special Purpose ROHS",
+  "land": {
+   "pads": 10,
+   "pitch": 0.5,
+   "sizes": [
+    [
+     0.25,
+     0.53
+    ],
+    [
+     0.25,
+     0.53
+    ],
+    [
+     0.25,
+     0.53
+    ],
+    [
+     0.25,
+     0.53
+    ],
+    [
+     0.25,
+     0.53
+    ],
+    [
+     0.25,
+     0.53
+    ],
+    [
+     0.25,
+     0.53
+    ],
+    [
+     0.25,
+     0.53
+    ],
+    [
+     0.3,
+     0.58
+    ],
+    [
+     0.3,
+     0.58
+    ]
+   ],
+   "span": [
+    1.36,
+    1.72
+   ]
+  },
+  "model": "TS3USB221ARSER",
+  "package": "UQFN-10(1.5x2)",
+  "stock": 86368
+ },
+ "C132170": {
+  "describe": "4.7uF 50V X7R \u00b110% 1206 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+  "land": null,
+  "model": "CC1206KKX7R9BB475",
+  "package": "1206",
+  "stock": 147404
+ },
+ "C132339": {
+  "describe": "-55\u2103~+155\u2103 50V 560k\u03a9 62.5mW Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+  "land": null,
+  "model": "0402WGF5603TCE",
+  "package": "0402",
+  "stock": 14805
+ },
+ "C137976": {
+  "describe": "-55\u2103~+155\u2103 470k\u03a9 50V 62.5mW Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+  "land": null,
+  "model": "RC0402FR-07470KL",
+  "package": "0402",
+  "stock": 932018
+ },
+ "C14442": {
+  "describe": "1nF 50V X7R \u00b110% 0402 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+  "land": null,
+  "model": "CL05B102KB5NNNC",
+  "package": "0402",
+  "stock": 1837810
+ },
+ "C15127": {
+  "describe": "1 P-Channel 14nC@10V 30V 47m\u03a9@10V\u300160m\u03a9@4.5V\u300185m\u03a9@2.5V 4A 55pF 645pF 80pF 900mV SOT-23 MOSFETs ROHS",
+  "land": {
+   "pads": 3,
+   "pitch": 1.9,
+   "sizes": [
+    [
+     0.8,
+     1.0
+    ],
+    [
+     0.8,
+     1.0
+    ],
+    [
+     0.8,
+     1.0
+    ]
+   ],
+   "span": [
+    1.9,
+    2.3
+   ]
+  },
+  "model": "AO3401A",
+  "package": "SOT-23",
+  "stock": 762618
+ },
+ "C15195": {
+  "describe": "10nF 50V X7R \u00b110% 0402 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+  "land": null,
+  "model": "CL05B103KB5NNNC",
+  "package": "0402",
+  "stock": 4023593
+ },
+ "C1525": {
+  "describe": "100nF 16V X7R \u00b110% 0402 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+  "land": null,
+  "model": "CL05B104KO5NNNC",
+  "package": "0402",
+  "stock": 21590493
+ },
+ "C1562": {
+  "describe": "33pF 50V C0G \u00b15% 0402 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+  "land": null,
+  "model": "0402CG330J500NT",
+  "package": "0402",
+  "stock": 1317489
+ },
+ "C1578": {
+  "describe": "50V 8pF C0G 0402 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+  "land": null,
+  "model": "0402CG8R0C500NT",
+  "package": "0402",
+  "stock": 33498
+ },
+ "C15849": {
+  "describe": "1uF 50V X5R \u00b110% 0603 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+  "land": null,
+  "model": "CL10A105KB8NNNC",
+  "package": "0603",
+  "stock": 6214791
+ },
+ "C15850": {
+  "describe": "10uF 25V X5R \u00b110% 0805 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+  "land": null,
+  "model": "CL21A106KAYNNNE",
+  "package": "0805",
+  "stock": 4922791
+ },
+ "C16015": {
+  "describe": "-55\u2103~+125\u2103 3A 500uA@60V 60V 700mV@3A Independent SMA(DO-214AC) Schottky Diodes ROHS",
+  "land": {
+   "pads": 2,
+   "pitch": 4.4,
+   "sizes": [
+    [
+     2.0,
+     2.0
+    ],
+    [
+     2.0,
+     2.0
+    ]
+   ],
+   "span": [
+    0.0,
+    4.4
+   ]
+  },
+  "model": "SS36",
+  "package": "SMA(DO-214AC)",
+  "stock": 438894
+ },
+ "C161082": {
+  "describe": "1uH 2.7A 3.6A 57m\u03a9 \u00b120% 0806 Inductors (SMD) ROHS",
+  "land": null,
+  "model": "DFE201610E-1R0M=P2",
+  "package": "0806",
+  "stock": 30849
+ },
+ "C163456": {
+  "describe": "-55\u2103~+155\u2103 50V 62.5mW 680k\u03a9 Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+  "land": null,
+  "model": "RC0402FR-07680KL",
+  "package": "0402",
+  "stock": 658300
+ },
+ "C1657": {
+  "describe": "270pF 50V C0G \u00b15% 0603 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+  "land": null,
+  "model": "CL10C271JB8NNNC",
+  "package": "0603",
+  "stock": 31837
+ },
+ "C165948": {
+  "describe": "-30\u2103~+80\u2103 1 10,000 cycles 16P 20V 5A 7.35mm Female Surface Mount, Right Angle Type-C SMD USB Connectors ROHS",
+  "land": {
+   "pads": 18,
+   "pitch": 0.5,
+   "sizes": [
+    [
+     0.01,
+     0.01
+    ],
+    [
+     0.01,
+     0.01
+    ],
+    [
+     0.01,
+     0.01
+    ],
+    [
+     0.01,
+     0.01
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.6,
+     0.6
+    ],
+    [
+     0.6,
+     0.6
+    ],
+    [
+     1.2,
+     1.8
+    ],
+    [
+     1.2,
+     1.8
+    ],
+    [
+     1.2,
+     2.0
+    ],
+    [
+     1.2,
+     2.0
+    ]
+   ],
+   "span": [
+    4.94,
+    8.66
+   ]
+  },
+  "model": "TYPE-C-31-M-12",
+  "package": "SMD",
+  "stock": 424577
+ },
+ "C167874": {
+  "describe": "2.3A 3.2A 4.7uH 78m\u03a9 Magnetic Shielded Inductor \u00b120% SMD,4x4mm Power Inductors ROHS",
+  "land": {
+   "pads": 2,
+   "pitch": 3.0,
+   "sizes": [
+    [
+     1.6,
+     3.9
+    ],
+    [
+     1.6,
+     3.9
+    ]
+   ],
+   "span": [
+    0.0,
+    3.0
+   ]
+  },
+  "model": "FNR4030S4R7MT",
+  "package": "SMD,4x4mm",
+  "stock": 101833
+ },
+ "C17168": {
+  "describe": "-55\u2103~+155\u2103 0\u03a9 50V 62.5mW Thick Film Resistor \u00b11% \u00b1800ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+  "land": null,
+  "model": "0402WGF0000TCE",
+  "package": "0402",
+  "stock": 9205578
+ },
+ "C1848364": {
+  "describe": "-40\u2103~+85\u2103 1MHz 2.7V~6.5V 25mA 4\u2030 5 Built-in Charge Pump DC-DC Over Current Protection\u3001Over-Temperature Protection (OTP) PWM VQFN-16-EP(3x3) LED Drivers ROHS",
+  "land": {
+   "pads": 17,
+   "pitch": 0.5,
+   "sizes": [
+    [
+     0.27,
+     0.8
+    ],
+    [
+     0.27,
+     0.8
+    ],
+    [
+     0.27,
+     0.8
+    ],
+    [
+     0.27,
+     0.8
+    ],
+    [
+     0.27,
+     0.8
+    ],
+    [
+     0.27,
+     0.8
+    ],
+    [
+     0.27,
+     0.8
+    ],
+    [
+     0.27,
+     0.8
+    ],
+    [
+     0.28,
+     0.85
+    ],
+    [
+     0.28,
+     0.85
+    ],
+    [
+     0.28,
+     0.85
+    ],
+    [
+     0.28,
+     0.85
+    ],
+    [
+     0.28,
+     0.85
+    ],
+    [
+     0.28,
+     0.85
+    ],
+    [
+     0.28,
+     0.85
+    ],
+    [
+     0.28,
+     0.85
+    ],
+    [
+     1.5,
+     1.5
+    ]
+   ],
+   "span": [
+    3.0,
+    3.0
+   ]
+  },
+  "model": "TPS60230RGTR",
+  "package": "VQFN-16-EP(3x3)",
+  "stock": 2571
+ },
+ "C189619": {
+  "describe": "-55\u2103~+105\u2103 100uF 15m\u03a9@100kHz 2000hrs@105\u2103 4.3mm 5.1A@100kHz 6.3V 7.3mm Polarized Polymer \u00b120% SMD,7.3x4.3mm Polymer Aluminum Capacitors ROHS",
+  "land": {
+   "pads": 2,
+   "pitch": 7.02,
+   "sizes": [
+    [
+     2.21,
+     2.59
+    ],
+    [
+     2.21,
+     2.59
+    ]
+   ],
+   "span": [
+    0.0,
+    7.02
+   ]
+  },
+  "model": "EEFCX0J101R",
+  "package": "SMD,7.3x4.3mm",
+  "stock": 4973
+ },
+ "C19666": {
+  "describe": "16V 4.7uF X5R \u00b110% 0603 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+  "land": null,
+  "model": "CL10A475KO8NNNC",
+  "package": "0603",
+  "stock": 3034424
+ },
+ "C19702": {
+  "describe": "10V 10uF X5R \u00b110% 0603 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+  "land": null,
+  "model": "CL10A106KP8NNNC",
+  "package": "0603",
+  "stock": 9415757
+ },
+ "C19725033": {
+  "describe": "-40\u2103~+125\u2103 1 1A 2.2V 3V~18V 4.4V 4uA Charging IC Lithium Battery\u3001LiFePO4 Battery Support WSON-10-EP(2.2x2) Battery Management ROHS",
+  "land": {
+   "pads": 11,
+   "pitch": 0.4,
+   "sizes": [
+    [
+     0.2,
+     0.5
+    ],
+    [
+     0.2,
+     0.5
+    ],
+    [
+     0.2,
+     0.5
+    ],
+    [
+     0.2,
+     0.5
+    ],
+    [
+     0.2,
+     0.5
+    ],
+    [
+     0.2,
+     0.5
+    ],
+    [
+     0.2,
+     0.5
+    ],
+    [
+     0.2,
+     0.5
+    ],
+    [
+     0.2,
+     0.5
+    ],
+    [
+     0.2,
+     0.5
+    ],
+    [
+     0.9,
+     1.5
+    ]
+   ],
+   "span": [
+    1.6,
+    2.1
+   ]
+  },
+  "model": "BQ25185DLHR",
+  "package": "WSON-10-EP(2.2x2)",
+  "stock": 5783
+ },
+ "C20526": {
+  "describe": "-55\u2103~+150\u2103 1 NPN 100 100nA 200mA 200mW 300MHz 300mV 40V 6V NPN SOT-23 Bipolar (BJT) ROHS",
+  "land": {
+   "pads": 3,
+   "pitch": 1.9,
+   "sizes": [
+    [
+     0.65,
+     1.0
+    ],
+    [
+     0.65,
+     1.0
+    ],
+    [
+     0.65,
+     1.0
+    ]
+   ],
+   "span": [
+    1.9,
+    2.0
+   ]
+  },
+  "model": "MMBT3904(RANGE:100-300)",
+  "package": "SOT-23",
+  "stock": 241023
+ },
+ "C22399657": {
+  "describe": "47uF 6.3V X5R \u00b120% 1206 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+  "land": null,
+  "model": "CGA1206X5R476M6R3NT",
+  "package": "1206",
+  "stock": 8765
+ },
+ "C227183": {
+  "describe": "-55\u2103~+155\u2103 50V 62.5mW 665k\u03a9 Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+  "land": null,
+  "model": "AC0402FR-07665KL",
+  "package": "0402",
+  "stock": 8180
+ },
+ "C23197": {
+  "describe": "-55\u2103~+155\u2103 100mW 51\u03a9 75V Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0603 Chip Resistor - Surface Mount ROHS",
+  "land": null,
+  "model": "0603WAF510JT5E",
+  "package": "0603",
+  "stock": 2899914
+ },
+ "C25092": {
+  "describe": "-55\u2103~+155\u2103 22\u03a9 50V 62.5mW Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+  "land": null,
+  "model": "0402WGF220JTCE",
+  "package": "0402",
+  "stock": 4606979
+ },
+ "C25105": {
+  "describe": "-55\u2103~+155\u2103 33\u03a9 50V 62.5mW Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+  "land": null,
+  "model": "0402WGF330JTCE",
+  "package": "0402",
+  "stock": 1814653
+ },
+ "C25117": {
+  "describe": "-55\u2103~+155\u2103 470\u03a9 50V 62.5mW Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+  "land": null,
+  "model": "0402WGF4700TCE",
+  "package": "0402",
+  "stock": 837806
+ },
+ "C25741": {
+  "describe": "-55\u2103~+155\u2103 100k\u03a9 50V 62.5mW Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+  "land": null,
+  "model": "0402WGF1003TCE",
+  "package": "0402",
+  "stock": 8222896
+ },
+ "C25744": {
+  "describe": "-55\u2103~+155\u2103 10k\u03a9 50V 62.5mW Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+  "land": null,
+  "model": "0402WGF1002TCE",
+  "package": "0402",
+  "stock": 21694190
+ },
+ "C25750": {
+  "describe": "-55\u2103~+155\u2103 120k\u03a9 50V 62.5mW Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+  "land": null,
+  "model": "0402WGF1203TCE",
+  "package": "0402",
+  "stock": 530216
+ },
+ "C25752": {
+  "describe": "-55\u2103~+155\u2103 12k\u03a9 50V 62.5mW Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+  "land": null,
+  "model": "0402WGF1202TCE",
+  "package": "0402",
+  "stock": 918678
+ },
+ "C25754": {
+  "describe": "-55\u2103~+155\u2103 13k\u03a9 50V 62.5mW Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+  "land": null,
+  "model": "0402WGF1302TCE",
+  "package": "0402",
+  "stock": 248104
+ },
+ "C25768": {
+  "describe": "-55\u2103~+155\u2103 22k\u03a9 50V 62.5mW Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+  "land": null,
+  "model": "0402WGF2202TCE",
+  "package": "0402",
+  "stock": 814574
+ },
+ "C25790": {
+  "describe": "-55\u2103~+155\u2103 470k\u03a9 50V 62.5mW Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+  "land": null,
+  "model": "0402WGF4703TCE",
+  "package": "0402",
+  "stock": 270561
+ },
+ "C25792": {
+  "describe": "-55\u2103~+155\u2103 47k\u03a9 50V 62.5mW Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+  "land": null,
+  "model": "0402WGF4702TCE",
+  "package": "0402",
+  "stock": 5547645
+ },
+ "C25819": {
+  "describe": "-55\u2103~+155\u2103 100mW 47k\u03a9 75V Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0603 Chip Resistor - Surface Mount ROHS",
+  "land": null,
+  "model": "0603WAF4702T5E",
+  "package": "0603",
+  "stock": 3943348
+ },
+ "C25862": {
+  "describe": "-55\u2103~+155\u2103 1.2k\u03a9 50V 62.5mW Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+  "land": null,
+  "model": "0402WGF1201TCE",
+  "package": "0402",
+  "stock": 166357
+ },
+ "C25900": {
+  "describe": "-55\u2103~+155\u2103 4.7k\u03a9 50V 62.5mW Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+  "land": null,
+  "model": "0402WGF4701TCE",
+  "package": "0402",
+  "stock": 15440530
+ },
+ "C25905": {
+  "describe": "-55\u2103~+155\u2103 5.1k\u03a9 50V 62.5mW Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+  "land": null,
+  "model": "0402WGF5101TCE",
+  "package": "0402",
+  "stock": 5960634
+ },
+ "C25916": {
+  "describe": "-55\u2103~+155\u2103 50V 6.49k\u03a9 62.5mW Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+  "land": null,
+  "model": "0402WGF6491TCE",
+  "package": "0402",
+  "stock": 16178
+ },
+ "C25917": {
+  "describe": "-55\u2103~+155\u2103 50V 6.8k\u03a9 62.5mW Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+  "land": null,
+  "model": "0402WGF6801TCE",
+  "package": "0402",
+  "stock": 155225
+ },
+ "C26083": {
+  "describe": "-55\u2103~+155\u2103 1M\u03a9 50V 62.5mW Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+  "land": null,
+  "model": "0402WGF1004TCE",
+  "package": "0402",
+  "stock": 2109673
+ },
+ "C262567": {
+  "describe": "0.3mm 0.5mm 24P 2mm Bottom Contact Copper alloy Slide Lock Surface Mount, Right Angle Tin SMD,P=0.5mm,\u5367\u8d34 FFC, FPC (Flat Flexible) Connector Assemblies ROHS",
+  "land": {
+   "pads": 26,
+   "pitch": 0.5,
+   "sizes": [
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     2.0,
+     3.0
+    ],
+    [
+     2.0,
+     3.0
+    ]
+   ],
+   "span": [
+    1.9,
+    14.8
+   ]
+  },
+  "model": "AFC07-S24FCA-00",
+  "package": "SMD,P=0.5mm,Surface Mount\uff0cRight Angle",
+  "stock": 48935
+ },
+ "C2650415": {
+  "describe": "-25\u2103~+85\u2103 1.62V~3.6V 500uA ECC\u30013DES\u3001RSA\u3001SHA-256\u3001AES-128\u3001SHA-1\u3001AES-256\u3001SHA-384\u3001SHA-512 I2C WQFN-20-EP(3x3) Security Verification / Encryption ICs ROHS",
+  "land": {
+   "pads": 21,
+   "pitch": 0.4,
+   "sizes": [
+    [
+     0.2,
+     0.8
+    ],
+    [
+     0.2,
+     0.8
+    ],
+    [
+     0.2,
+     0.8
+    ],
+    [
+     0.2,
+     0.8
+    ],
+    [
+     0.2,
+     0.8
+    ],
+    [
+     0.2,
+     0.8
+    ],
+    [
+     0.2,
+     0.8
+    ],
+    [
+     0.2,
+     0.8
+    ],
+    [
+     0.2,
+     0.8
+    ],
+    [
+     0.2,
+     0.8
+    ],
+    [
+     0.2,
+     0.8
+    ],
+    [
+     0.2,
+     0.8
+    ],
+    [
+     0.2,
+     0.8
+    ],
+    [
+     0.2,
+     0.8
+    ],
+    [
+     0.2,
+     0.8
+    ],
+    [
+     0.2,
+     0.8
+    ],
+    [
+     0.2,
+     0.8
+    ],
+    [
+     0.2,
+     0.8
+    ],
+    [
+     0.2,
+     0.8
+    ],
+    [
+     0.2,
+     0.8
+    ],
+    [
+     1.7,
+     1.7
+    ]
+   ],
+   "span": [
+    3.0,
+    3.0
+   ]
+  },
+  "model": "SE050C1HQ1/Z01SCZ",
+  "package": "WQFN-20-EP(3x3)",
+  "stock": 3065
+ },
+ "C265121": {
+  "describe": "-25\u2103~+85\u2103 1 100V 19.9mm 1x8P 2A 2mm 5.5mm 8 8.6mm 8P Auxiliary Solder Pin Beige Copper alloy PA PH Surface Mount, Right Angle Tin UL94V-0 SMD,P=2mm,\u5367\u8d34 Wire To Board Connector ROHS",
+  "land": {
+   "pads": 10,
+   "pitch": 2.0,
+   "sizes": [
+    [
+     1.0,
+     3.5
+    ],
+    [
+     1.0,
+     3.5
+    ],
+    [
+     1.0,
+     3.5
+    ],
+    [
+     1.0,
+     3.5
+    ],
+    [
+     1.0,
+     3.5
+    ],
+    [
+     1.0,
+     3.5
+    ],
+    [
+     1.0,
+     3.5
+    ],
+    [
+     1.0,
+     3.5
+    ],
+    [
+     1.5,
+     3.4
+    ],
+    [
+     1.5,
+     3.4
+    ]
+   ],
+   "span": [
+    5.64,
+    19.7
+   ]
+  },
+  "model": "S8B-PH-SM4-TB(LF)(SN)",
+  "package": "SMD,P=2mm,Surface Mount\uff0cRight Angle",
+  "stock": 5351
+ },
+ "C2681320": {
+  "describe": "-40\u2103~+125\u2103 0V~5.5V 1 2A 80m\u03a9 Active High Load Switch SOT-23-6 Power Distribution Switches ROHS",
+  "land": {
+   "pads": 6,
+   "pitch": 0.95,
+   "sizes": [
+    [
+     0.6,
+     1.1
+    ],
+    [
+     0.6,
+     1.1
+    ],
+    [
+     0.6,
+     1.1
+    ],
+    [
+     0.6,
+     1.1
+    ],
+    [
+     0.6,
+     1.1
+    ],
+    [
+     0.6,
+     1.1
+    ]
+   ],
+   "span": [
+    1.9,
+    2.7
+   ]
+  },
+  "model": "TPS22917DBVR",
+  "package": "SOT-23-6",
+  "stock": 19534
+ },
+ "C2682616": {
+  "describe": "-40\u2103~+85\u2103 1 2.5V~4.5V 3uA I2C Lithium Battery Not supported Not supported DFN-8-EP(2x2) Battery Management ROHS",
+  "land": {
+   "pads": 9,
+   "pitch": 0.5,
+   "sizes": [
+    [
+     0.28,
+     0.42
+    ],
+    [
+     0.28,
+     0.42
+    ],
+    [
+     0.28,
+     0.42
+    ],
+    [
+     0.28,
+     0.42
+    ],
+    [
+     0.28,
+     0.42
+    ],
+    [
+     0.28,
+     0.42
+    ],
+    [
+     0.28,
+     0.42
+    ],
+    [
+     0.28,
+     0.42
+    ],
+    [
+     0.8,
+     1.2
+    ]
+   ],
+   "span": [
+    1.5,
+    1.88
+   ]
+  },
+  "model": "MAX17048G+T10",
+  "package": "DFN-8-EP(2x2)",
+  "stock": 24260
+ },
+ "C2765186": {
+  "describe": "-25\u2103~+85\u2103 1 16P 3A 5,000 times 5V Black Female Surface Mount, Right Angle Type-C SMD USB Connectors ROHS",
+  "land": {
+   "pads": 18,
+   "pitch": 0.5,
+   "sizes": [
+    [
+     0.3,
+     1.1
+    ],
+    [
+     0.3,
+     1.1
+    ],
+    [
+     0.3,
+     1.1
+    ],
+    [
+     0.3,
+     1.1
+    ],
+    [
+     0.3,
+     1.1
+    ],
+    [
+     0.3,
+     1.1
+    ],
+    [
+     0.3,
+     1.1
+    ],
+    [
+     0.3,
+     1.1
+    ],
+    [
+     0.55,
+     1.1
+    ],
+    [
+     0.55,
+     1.1
+    ],
+    [
+     0.55,
+     1.1
+    ],
+    [
+     0.55,
+     1.1
+    ],
+    [
+     0.7,
+     0.7
+    ],
+    [
+     0.7,
+     0.7
+    ],
+    [
+     1.1,
+     2.0
+    ],
+    [
+     1.1,
+     2.0
+    ],
+    [
+     1.2,
+     1.8
+    ],
+    [
+     1.2,
+     1.8
+    ]
+   ],
+   "span": [
+    4.76,
+    8.64
+   ]
+  },
+  "model": "TYPE-C 16PIN 2MD(073)",
+  "package": "SMD",
+  "stock": 1142563
+ },
+ "C2836813": {
+  "describe": "-40\u2103~+85\u2103 1.71V~3.6V 16bit 2KB 3.5uA Accelerometer Gyroscope SPI\u3001I2C X,Y,Z X,Y,Z \u00b116g \u00b12000dps LGA-14(2.5x3) Accelerometers ROHS",
+  "land": null,
+  "model": "BMI270",
+  "package": "LGA-14(2.5x3)",
+  "stock": 2119
+ },
+ "C2845237": {
+  "describe": "-40\u2103~+125\u2103@(TJ) 1 1.3V~5.5V 1.4MHz\u30011.6MHz\u30012.1MHz 1.8V~5.2V 11uA 2A Adjustable Buck-Boost Buck-Boost Built-in Yes VSON-10(2x3) DC-DC Converters ROHS",
+  "land": {
+   "pads": 10,
+   "pitch": 0.5,
+   "sizes": [
+    [
+     0.3,
+     0.6
+    ],
+    [
+     0.3,
+     0.6
+    ],
+    [
+     0.3,
+     0.6
+    ],
+    [
+     0.3,
+     0.6
+    ],
+    [
+     0.3,
+     0.6
+    ],
+    [
+     0.3,
+     0.9
+    ],
+    [
+     0.3,
+     0.9
+    ],
+    [
+     0.3,
+     0.9
+    ],
+    [
+     0.3,
+     0.9
+    ],
+    [
+     0.3,
+     1.3
+    ]
+   ],
+   "span": [
+    1.65,
+    2.0
+   ]
+  },
+  "model": "TPS63802DLAR",
+  "package": "VSON-10(2x3)",
+  "stock": 41549
+ },
+ "C2877852": {
+  "describe": "-40\u2103~+125\u2103@(Tj) 1 130mV@(500mA) 25uA 30uVrms 500mA 50dB@(1kHz) 550mV~5.5V 6V Adjustable Positive Under Voltage Lockout\u3001Over Current Protection\u3001Thermal Shutdown SOT-23-5 Voltage Regulators - Linear, Low Drop Out (LDO) Regulators ROHS",
+  "land": {
+   "pads": 5,
+   "pitch": 0.95,
+   "sizes": [
+    [
+     0.6,
+     1.1
+    ],
+    [
+     0.6,
+     1.1
+    ],
+    [
+     0.6,
+     1.1
+    ],
+    [
+     0.6,
+     1.1
+    ],
+    [
+     0.6,
+     1.1
+    ]
+   ],
+   "span": [
+    1.9,
+    2.6
+   ]
+  },
+  "model": "TLV75801PDBVR",
+  "package": "SOT-23-5",
+  "stock": 160407
+ },
+ "C2913201": {
+  "describe": "-104.5dBm -40\u2103~+65\u2103 2.4GHz 20.5dBm 330mA 3V~3.6V 97mA Bluetooth5.0 ESP32-S3R8 On-board PCB Antenna UART\u3001SPI\u3001I2C\u3001GPIO\u3001I2S\u3001USB SMD,25.5x18mm WiFi Modules ROHS",
+  "land": null,
+  "model": "ESP32-S3-WROOM-1-N8R8",
+  "package": "SMD,25.5x18mm",
+  "stock": 3982
+ },
+ "C295747": {
+  "describe": "-25\u2103~+85\u2103 1 100V 1x2P 2 2A 2P 2mm 5.5mm 7.9mm 8.6mm Auxiliary Solder Pin Beige Copper alloy PA PH Surface Mount, Right Angle Tin UL94V-0 SMD,P=2mm,\u5367\u8d34 Wire To Board Connector ROHS",
+  "land": {
+   "pads": 4,
+   "pitch": 2.0,
+   "sizes": [
+    [
+     1.0,
+     3.8
+    ],
+    [
+     1.0,
+     3.8
+    ],
+    [
+     1.5,
+     3.4
+    ],
+    [
+     1.5,
+     3.4
+    ]
+   ],
+   "span": [
+    5.86,
+    6.7
+   ]
+  },
+  "model": "S2B-PH-SM4-TB(LF)(SN)",
+  "package": "SMD,P=2mm,Surface Mount\uff0cRight Angle",
+  "stock": 18265
+ },
+ "C32298": {
+  "describe": "-55\u2103~+155\u2103 137k\u03a9 50V 62.5mW Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+  "land": null,
+  "model": "0402WGF1373TCE",
+  "package": "0402",
+  "stock": 17110
+ },
+ "C32346": {
+  "describe": "-40\u2103~+85\u2103 12.5pF 32.768kHz 70k\u03a9 Crystal Oscillator \u00b120ppm SMD3215-2P Crystals ROHS",
+  "land": {
+   "pads": 2,
+   "pitch": 2.5,
+   "sizes": [
+    [
+     1.0,
+     1.8
+    ],
+    [
+     1.0,
+     1.8
+    ]
+   ],
+   "span": [
+    0.0,
+    2.5
+   ]
+  },
+  "model": "Q13FC13500004",
+  "package": "SMD3215-2P",
+  "stock": 387571
+ },
+ "C326578": {
+  "describe": "22uF 6.3V X5R \u00b110% 0805 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+  "land": null,
+  "model": "CC0805KKX5R5BB226",
+  "package": "0805",
+  "stock": 62455
+ },
+ "C32949": {
+  "describe": "10pF 50V C0G \u00b15% 0402 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+  "land": null,
+  "model": "CL05C100JB5NNNC",
+  "package": "0402",
+  "stock": 1183837
+ },
+ "C356849": {
+  "describe": "-103dBm\u3001-95dBm -40\u2103~+85\u2103 120m 17.05mA 3.3V 8.27mA 8dBm Bluetooth 5.0\u3001Bluetooth 4.2 PWM\u3001SPI\u3001ADC\u3001USB\u3001I2C\u3001ISP\u3001JTAG\u3001DMA nRF52840 Chip SMD,18x13mm Bluetooth Modules ROHS",
+  "land": {
+   "pads": 43,
+   "pitch": 1.24,
+   "sizes": [
+    [
+     0.9,
+     0.9
+    ],
+    [
+     0.9,
+     0.9
+    ],
+    [
+     0.9,
+     0.9
+    ],
+    [
+     0.9,
+     0.9
+    ],
+    [
+     0.9,
+     0.9
+    ],
+    [
+     0.9,
+     0.9
+    ],
+    [
+     0.9,
+     0.9
+    ],
+    [
+     0.9,
+     0.9
+    ],
+    [
+     0.9,
+     0.9
+    ],
+    [
+     0.9,
+     0.9
+    ],
+    [
+     0.9,
+     0.9
+    ],
+    [
+     0.9,
+     0.9
+    ],
+    [
+     0.9,
+     0.9
+    ],
+    [
+     0.9,
+     0.9
+    ],
+    [
+     0.9,
+     0.9
+    ],
+    [
+     0.9,
+     2.0
+    ],
+    [
+     0.9,
+     2.0
+    ],
+    [
+     0.9,
+     2.0
+    ],
+    [
+     0.9,
+     2.0
+    ],
+    [
+     0.9,
+     2.0
+    ],
+    [
+     0.9,
+     2.0
+    ],
+    [
+     0.9,
+     2.0
+    ],
+    [
+     0.9,
+     2.0
+    ],
+    [
+     0.9,
+     2.0
+    ],
+    [
+     0.9,
+     2.0
+    ],
+    [
+     0.9,
+     2.0
+    ],
+    [
+     0.9,
+     2.0
+    ],
+    [
+     0.9,
+     2.0
+    ],
+    [
+     0.9,
+     2.0
+    ],
+    [
+     0.9,
+     2.0
+    ],
+    [
+     0.9,
+     2.0
+    ],
+    [
+     0.9,
+     2.0
+    ],
+    [
+     0.9,
+     2.0
+    ],
+    [
+     0.9,
+     2.0
+    ],
+    [
+     0.9,
+     2.0
+    ],
+    [
+     0.9,
+     2.0
+    ],
+    [
+     0.9,
+     2.0
+    ],
+    [
+     0.9,
+     2.0
+    ],
+    [
+     0.9,
+     2.0
+    ],
+    [
+     0.9,
+     2.0
+    ],
+    [
+     0.9,
+     2.0
+    ],
+    [
+     0.9,
+     2.0
+    ],
+    [
+     0.9,
+     2.0
+    ]
+   ],
+   "span": [
+    13.0,
+    14.02
+   ]
+  },
+  "model": "E73-2G4M08S1C",
+  "package": "SMD,18x13mm",
+  "stock": 1257
+ },
+ "C37704": {
+  "describe": "1 Pair Common Cathode 200mA 2uA@25V 30V 600mA 800mV@100mA SOT-23 Schottky Diodes ROHS",
+  "land": {
+   "pads": 3,
+   "pitch": 1.9,
+   "sizes": [
+    [
+     0.6,
+     1.07
+    ],
+    [
+     0.6,
+     1.07
+    ],
+    [
+     0.6,
+     1.07
+    ]
+   ],
+   "span": [
+    1.9,
+    2.48
+   ]
+  },
+  "model": "BAT54C,215",
+  "package": "SOT-23",
+  "stock": 285659
+ },
+ "C4153167": {
+  "describe": "LCC-18(9.7x10.1) GNSS Modules ROHS",
+  "land": null,
+  "model": "MAX-M10S-00B",
+  "package": "LCC-18(9.7x10.1)",
+  "stock": 641
+ },
+ "C431540": {
+  "describe": "-20\u2103~+70\u2103 1.4mm 10000 times 12V 2.8mm 50mA 8mm SMD(SMT) Tab SPDT Surface Mount, Right Angle SMD,8x2.8mm Slide Switches ROHS",
+  "land": {
+   "pads": 9,
+   "pitch": 1.5,
+   "sizes": [
+    [
+     0.6,
+     1.52
+    ],
+    [
+     0.6,
+     1.52
+    ],
+    [
+     0.6,
+     1.52
+    ],
+    [
+     0.7,
+     1.2
+    ],
+    [
+     0.7,
+     1.2
+    ],
+    [
+     0.7,
+     1.2
+    ],
+    [
+     0.7,
+     1.2
+    ],
+    [
+     0.9,
+     0.9
+    ],
+    [
+     0.9,
+     0.9
+    ]
+   ],
+   "span": [
+    3.4,
+    7.2
+   ]
+  },
+  "model": "MSK12C02",
+  "package": "SMD,8x2.8mm",
+  "stock": 183505
+ },
+ "C45783": {
+  "describe": "22uF 25V X5R \u00b120% 0805 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+  "land": null,
+  "model": "CL21A226MAQNNNE",
+  "package": "0805",
+  "stock": 3977848
+ },
+ "C485916": {
+  "describe": "-40\u2103~+125\u2103 2.8V~22V 200uA 56m\u03a9 VQFN-HR-12(2x2.5) ORing Controllers ROHS",
+  "land": null,
+  "model": "TPS2121RUXR",
+  "package": "VQFN-HR-12(2x2.5)",
+  "stock": 32234
+ },
+ "C49166860": {
+  "describe": "-25\u2103~+85\u2103 0.3mm 1mm 2.5mm 50V 6P Copper No polarity Slide Lock Surface Mount, Right Angle Tin Top Contact Without buckle SMD,P=1mm,Surface Mount\uff0cRight Angle FFC, FPC (Flat Flexible) Connector Assemblies ROHS",
+  "land": {
+   "pads": 8,
+   "pitch": 1.0,
+   "sizes": [
+    [
+     0.6,
+     2.5
+    ],
+    [
+     0.6,
+     2.5
+    ],
+    [
+     0.6,
+     2.5
+    ],
+    [
+     0.6,
+     2.5
+    ],
+    [
+     0.6,
+     2.5
+    ],
+    [
+     0.6,
+     2.5
+    ],
+    [
+     3.0,
+     3.4
+    ],
+    [
+     3.0,
+     3.4
+    ]
+   ],
+   "span": [
+    2.1,
+    10.6
+   ]
+  },
+  "model": "HC-FPC-1.0-6P-CSH25",
+  "package": "SMD,P=1mm,Surface Mount\uff0cRight Angle",
+  "stock": 850
+ },
+ "C505102": {
+  "describe": "-20\u2103~+85\u2103 0.3mm 0.5mm 2mm 40P 500mA 50V Bottom Contact Gold Phosphor bronze Slide Lock Surface Mount, Right Angle SMD,P=0.5mm,Surface Mount\uff0cRight Angle FFC, FPC (Flat Flexible) Connector Assemblies ROHS",
+  "land": {
+   "pads": 42,
+   "pitch": 0.5,
+   "sizes": [
+    [
+     0.01,
+     0.01
+    ],
+    [
+     0.01,
+     0.01
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ],
+    [
+     0.3,
+     1.2
+    ]
+   ],
+   "span": [
+    2.7,
+    23.7
+   ]
+  },
+  "model": "541324062",
+  "package": "SMD,P=0.5mm,Surface Mount\uff0cRight Angle",
+  "stock": 4497
+ },
+ "C5173252": {
+  "describe": "-55\u2103~+125\u2103 1 100nA 12V 360W@8/20us 5V 60pF 7.2V ESD IEC 61000-4-2\u3001IEC 61000-4-5\u3001IEC 61000-4-4 DFN1006-2 ESD and Surge Protection (TVS/ESD) ROHS",
+  "land": {
+   "pads": 2,
+   "pitch": 0.64,
+   "sizes": [
+    [
+     0.35,
+     0.55
+    ],
+    [
+     0.35,
+     0.55
+    ]
+   ],
+   "span": [
+    0.0,
+    0.64
+   ]
+  },
+  "model": "ESDBW5V0A1",
+  "package": "DFN1006-2",
+  "stock": 22225
+ },
+ "C5190917": {
+  "describe": "QFN-20(3x3) Security Verification / Encryption ICs ROHS",
+  "land": {
+   "pads": 21,
+   "pitch": 0.4,
+   "sizes": [
+    [
+     0.2,
+     0.7
+    ],
+    [
+     0.2,
+     0.7
+    ],
+    [
+     0.2,
+     0.7
+    ],
+    [
+     0.2,
+     0.7
+    ],
+    [
+     0.2,
+     0.7
+    ],
+    [
+     0.2,
+     0.7
+    ],
+    [
+     0.2,
+     0.7
+    ],
+    [
+     0.2,
+     0.7
+    ],
+    [
+     0.2,
+     0.7
+    ],
+    [
+     0.2,
+     0.7
+    ],
+    [
+     0.2,
+     0.7
+    ],
+    [
+     0.2,
+     0.7
+    ],
+    [
+     0.2,
+     0.7
+    ],
+    [
+     0.2,
+     0.7
+    ],
+    [
+     0.2,
+     0.7
+    ],
+    [
+     0.2,
+     0.7
+    ],
+    [
+     0.2,
+     0.7
+    ],
+    [
+     0.2,
+     0.7
+    ],
+    [
+     0.2,
+     0.7
+    ],
+    [
+     0.2,
+     0.7
+    ],
+    [
+     1.9,
+     1.9
+    ]
+   ],
+   "span": [
+    3.1,
+    3.1
+   ]
+  },
+  "model": "SE050E2HQ1/Z01Z3Z",
+  "package": "QFN-20(3x3)",
+  "stock": 594
+ },
+ "C5270986": {
+  "describe": "-40\u2103~+85\u2103 1.71V~3.6V 160MHz 2MB 32 Bit 784KB 79 ARM Cortex-M33 Built-in+External FLASH LQFP-100(14x14) Microcontrollers (MCU/MPU/SOC) ROHS",
+  "land": {
+   "pads": 100,
+   "pitch": 0.5,
+   "sizes": [
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ],
+    [
+     0.3,
+     1.6
+    ]
+   ],
+   "span": [
+    15.1,
+    15.1
+   ]
+  },
+  "model": "STM32U585VIT6Q",
+  "package": "LQFP-100(14x14)",
+  "stock": 54
+ },
+ "C52917434": {
+  "describe": "-40\u2103~+85\u2103 0.84mm 120us 160mcd 1uA 200mcd 2kHz 2mm 2mm 3.3V~5.3V 300ns 465nm~470nm 515nm~520nm 520mcd 620nm~625nm 800Kbit/s Built-in power-on reset circuit\u3001Built-in power-on reset circuit\u3001Integrated intelligent reverse connection protection function SMD2020-4P RGB LEDs(Built-in IC) ROHS",
+  "land": {
+   "pads": 4,
+   "pitch": 1.1,
+   "sizes": [
+    [
+     0.8,
+     0.8
+    ],
+    [
+     0.8,
+     0.8
+    ],
+    [
+     0.8,
+     0.8
+    ],
+    [
+     0.8,
+     0.8
+    ]
+   ],
+   "span": [
+    1.1,
+    1.73
+   ]
+  },
+  "model": "WS2812B-2020-V6",
+  "package": "SMD2020-4P",
+  "stock": 732659
+ },
+ "C52923": {
+  "describe": "1uF 25V X5R \u00b110% 0402 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+  "land": null,
+  "model": "CL05A105KA5NQNC",
+  "package": "0402",
+  "stock": 14455908
+ },
+ "C53099": {
+  "describe": "-40\u2103~+85\u2103@(Ta) 1 2.8V 220mV@(200mA) 450mA 50uVrms 55uA 6V 70dB@(1kHz) Enable Fixed Positive SOT-23-5 Voltage Regulators - Linear, Low Drop Out (LDO) Regulators ROHS",
+  "land": {
+   "pads": 5,
+   "pitch": 0.95,
+   "sizes": [
+    [
+     0.6,
+     1.1
+    ],
+    [
+     0.6,
+     1.1
+    ],
+    [
+     0.6,
+     1.1
+    ],
+    [
+     0.6,
+     1.1
+    ],
+    [
+     0.6,
+     1.1
+    ]
+   ],
+   "span": [
+    1.9,
+    2.6
+   ]
+  },
+  "model": "ME6211C28M5G-N",
+  "package": "SOT-23-5",
+  "stock": 26017
+ },
+ "C5383002": {
+  "describe": "-40\u2103~+150\u2103@(TJ) 1 1.1MHz 2A 4.5V~36V 600mV~34.2V 65uA Adjustable Buck Buck Built-in Yes SOT-23-6 DC-DC Converters ROHS",
+  "land": null,
+  "model": "LMR51420YDDCR",
+  "package": "SOT-23-6",
+  "stock": 12837
+ },
+ "C5446": {
+  "describe": "-40\u2103~+85\u2103@(Ta) 1 1uA 200mA 3.3V 6V Fixed Over Current Protection Positive SOT-23-3L Voltage Regulators - Linear, Low Drop Out (LDO) Regulators ROHS",
+  "land": {
+   "pads": 3,
+   "pitch": 1.9,
+   "sizes": [
+    [
+     0.6,
+     1.07
+    ],
+    [
+     0.6,
+     1.07
+    ],
+    [
+     0.6,
+     1.07
+    ]
+   ],
+   "span": [
+    1.9,
+    2.48
+   ]
+  },
+  "model": "XC6206P332MR-G",
+  "package": "SOT-23-3L",
+  "stock": 408546
+ },
+ "C544741": {
+  "describe": "-40\u2103~+125\u2103 1Mbps 3V~3.6V 55mA CAN Transceiver SOT-23-8 CAN Transceivers ROHS",
+  "land": null,
+  "model": "TCAN332DCNR",
+  "package": "SOT-23-8",
+  "stock": 239
+ },
+ "C6296715": {
+  "describe": "-20\u2103~+85\u2103 1.42mm 125V Connector and Ejector Hinged Lid Nano-SIM Card SMD SIM Card Connectors ROHS",
+  "land": {
+   "pads": 10,
+   "pitch": 1.26,
+   "sizes": [
+    [
+     0.9,
+     1.2
+    ],
+    [
+     0.9,
+     1.2
+    ],
+    [
+     0.9,
+     1.2
+    ],
+    [
+     0.9,
+     1.2
+    ],
+    [
+     0.9,
+     1.2
+    ],
+    [
+     0.9,
+     1.2
+    ],
+    [
+     1.3,
+     1.8
+    ],
+    [
+     1.3,
+     1.8
+    ],
+    [
+     1.3,
+     1.8
+    ],
+    [
+     1.3,
+     1.8
+    ]
+   ],
+   "span": [
+    12.3,
+    12.9
+   ]
+  },
+  "model": "SIM8060-6-0-14-00-A",
+  "package": "SMD",
+  "stock": 3755
+ },
+ "C668312": {
+  "describe": "26m\u03a9 4.5A 470nH 5.5A \u00b120% 0806 Power Inductors ROHS",
+  "land": null,
+  "model": "DFE201612E-R47M=P2",
+  "package": "0806",
+  "stock": 7897
+ },
+ "C708601": {
+  "describe": "-40\u2103~+70\u2103 1 Gold Non-LED Non-PoE Phosphor bronze RJ45 Jack Right Angle Shielded \u5f2f\u63d2 Ethernet Connectors / Modular Connectors (RJ45 RJ11) ROHS",
+  "land": {
+   "pads": 12,
+   "pitch": 2.53,
+   "sizes": [
+    [
+     1.52,
+     1.52
+    ],
+    [
+     1.52,
+     1.52
+    ],
+    [
+     1.52,
+     1.52
+    ],
+    [
+     1.52,
+     1.52
+    ],
+    [
+     1.52,
+     1.52
+    ],
+    [
+     1.52,
+     1.52
+    ],
+    [
+     1.52,
+     1.52
+    ],
+    [
+     1.52,
+     1.52
+    ],
+    [
+     2.5,
+     2.5
+    ],
+    [
+     2.5,
+     2.5
+    ],
+    [
+     3.25,
+     3.25
+    ],
+    [
+     3.25,
+     3.25
+    ]
+   ],
+   "span": [
+    8.89,
+    15.7
+   ]
+  },
+  "model": "RC00234",
+  "package": "Push-Pull",
+  "stock": 2770
+ },
+ "C720505": {
+  "describe": "-25\u2103~+85\u2103 1.8mm Connector and Ejector MicroSD Card (TF Card) Push-Push SMD SD Card / Memory Card Connector ROHS",
+  "land": {
+   "pads": 15,
+   "pitch": 1.1,
+   "sizes": [
+    [
+     0.7,
+     1.6
+    ],
+    [
+     0.7,
+     1.6
+    ],
+    [
+     0.7,
+     1.6
+    ],
+    [
+     0.7,
+     1.6
+    ],
+    [
+     0.7,
+     1.6
+    ],
+    [
+     0.7,
+     1.6
+    ],
+    [
+     0.7,
+     1.6
+    ],
+    [
+     0.7,
+     1.6
+    ],
+    [
+     0.7,
+     1.6
+    ],
+    [
+     1.0,
+     1.0
+    ],
+    [
+     1.0,
+     1.0
+    ],
+    [
+     1.2,
+     1.5
+    ],
+    [
+     1.2,
+     2.2
+    ],
+    [
+     1.2,
+     2.2
+    ],
+    [
+     1.5,
+     1.6
+    ]
+   ],
+   "span": [
+    11.0,
+    15.5
+   ]
+  },
+  "model": "TF-115-BCP9",
+  "package": "SMD",
+  "stock": 60608
+ },
+ "C7394016": {
+  "describe": "-40\u2103~+85\u2103 1 1.65V~5.5V 10uA 2 24mA 24mA 4.4ns@5V,15pF 74LVC NOR Gate Overvoltage-tolerant input SOT23-5 Logic Gates ROHS",
+  "land": {
+   "pads": 5,
+   "pitch": 0.95,
+   "sizes": [
+    [
+     0.6,
+     1.0
+    ],
+    [
+     0.6,
+     1.0
+    ],
+    [
+     0.6,
+     1.0
+    ],
+    [
+     0.6,
+     1.0
+    ],
+    [
+     0.6,
+     1.0
+    ]
+   ],
+   "span": [
+    1.9,
+    2.2
+   ]
+  },
+  "model": "SN74LVC1G02DBVR(UMW)",
+  "package": "SOT23-5",
+  "stock": 58777
+ },
+ "C7435296": {
+  "describe": "3.4V~4.2V GPRS\u3001GSM\u3001LTE\u3001EDGE I2C\u3001USB\u3001UART\u3001GPIO\u3001ADC\u3001SIM card SMD,24x24mm 2G/3G/4G/5G Modules ROHS",
+  "land": null,
+  "model": "A7670E-FASE",
+  "package": "SMD,24x24mm",
+  "stock": 146
+ },
+ "C7519": {
+  "describe": "-40\u2103~+125\u2103 150nA 17V 2 3.5pF 5.25V 5A 6V ESD IEC 61000-4-2 Unidirectional SOT-23-6L ESD and Surge Protection (TVS/ESD) ROHS",
+  "land": {
+   "pads": 6,
+   "pitch": 0.95,
+   "sizes": [
+    [
+     0.53,
+     1.07
+    ],
+    [
+     0.53,
+     1.07
+    ],
+    [
+     0.53,
+     1.07
+    ],
+    [
+     0.53,
+     1.07
+    ],
+    [
+     0.53,
+     1.07
+    ],
+    [
+     0.53,
+     1.07
+    ]
+   ],
+   "span": [
+    1.9,
+    2.3
+   ]
+  },
+  "model": "USBLC6-2SC6",
+  "package": "SOT-23-6L",
+  "stock": 47753
+ },
+ "C77009": {
+  "describe": "1uF 25V X5R \u00b110% 0402 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+  "land": null,
+  "model": "GRM155R61E105KA12D",
+  "package": "0402",
+  "stock": 88984
+ },
+ "C77020": {
+  "describe": "100nF 50V X7R \u00b110% 0402 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+  "land": null,
+  "model": "GRM155R71H104KE14D",
+  "package": "0402",
+  "stock": 2302560
+ },
+ "C7843": {
+  "describe": "-40\u2103~+85\u2103 1 1 1.65V~5.5V 1.65V~5.5V 420Mbps Bidirectional Tri-State SOT-23-6 Translators, Level Shifters ROHS",
+  "land": {
+   "pads": 6,
+   "pitch": 0.95,
+   "sizes": [
+    [
+     0.6,
+     1.1
+    ],
+    [
+     0.6,
+     1.1
+    ],
+    [
+     0.6,
+     1.1
+    ],
+    [
+     0.6,
+     1.1
+    ],
+    [
+     0.6,
+     1.1
+    ],
+    [
+     0.6,
+     1.1
+    ]
+   ],
+   "span": [
+    1.9,
+    2.7
+   ]
+  },
+  "model": "SN74LVC1T45DBVR",
+  "package": "SOT-23-6",
+  "stock": 356524
+ },
+ "C79317": {
+  "describe": "1.5A 144m\u03a9 2.1A 2.2uH \u00b120% 0806 Power Inductors ROHS",
+  "land": null,
+  "model": "DFE201612P-2R2M=P2",
+  "package": "0806",
+  "stock": 7816
+ },
+ "C8369": {
+  "describe": "-55\u2103~+155\u2103 50V 604\u03a9 62.5mW Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+  "land": null,
+  "model": "0402WGF6040TCE",
+  "package": "0402",
+  "stock": 21671
+ },
+ "C8545": {
+  "describe": "1 N-channel 115mA 2.5V 225mW 25pF 50pF 5pF 5\u03a9@10V 60V N-Channel \u00b120V SOT-23 MOSFETs ROHS",
+  "land": {
+   "pads": 3,
+   "pitch": 1.9,
+   "sizes": [
+    [
+     0.65,
+     1.0
+    ],
+    [
+     0.65,
+     1.0
+    ],
+    [
+     0.65,
+     1.0
+    ]
+   ],
+   "span": [
+    1.9,
+    2.0
+   ]
+  },
+  "model": "2N7002",
+  "package": "SOT-23",
+  "stock": 1859984
+ },
+ "C88374": {
+  "describe": "-40\u2103~+90\u2103 1 1.25mm 2mm 50\u03a9 6GHz Board Side IPEX Male Pin SMD Coaxial Connectors (RF) ROHS",
+  "land": {
+   "pads": 3,
+   "pitch": 2.11,
+   "sizes": [
+    [
+     1.0,
+     1.05
+    ],
+    [
+     1.05,
+     2.2
+    ],
+    [
+     1.05,
+     2.2
+    ]
+   ],
+   "span": [
+    1.52,
+    2.94
+   ]
+  },
+  "model": "U.FL-R-SMT-1(80)",
+  "package": "SMD",
+  "stock": 82711
+ },
+ "C95361": {
+  "describe": "-40\u2103~+85\u2103 32.768kHz 6pF 70k\u03a9 Crystal Oscillator \u00b120ppm SMD3215-2P Crystals ROHS",
+  "land": {
+   "pads": 2,
+   "pitch": 2.54,
+   "sizes": [
+    [
+     1.05,
+     1.7
+    ],
+    [
+     1.05,
+     1.7
+    ]
+   ],
+   "span": [
+    0.0,
+    2.54
+   ]
+  },
+  "model": "Q13FC13500049",
+  "package": "SMD3215-2P",
+  "stock": 111866
+ }
+}
