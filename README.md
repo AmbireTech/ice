@@ -9,6 +9,9 @@ to the GridCore hardware it borrows from, until it moves to its own repo.
   incumbents are built, why this architecture
 - [docs/design.md](docs/design.md) — the board, block by block, and the
   bring-up checks that need parts in hand
+- [docs/ambire-signer.html](docs/ambire-signer.html) — the short concept page
+  shared with the team (renders, clear-signing screens, stack, architecture);
+  live copy: https://claude.ai/artifact/LLUtmWoVMm4PUxiSL7d5Ad
 
 ![Back face, as the clear case shows it](docs/back-face-render.png)
 
