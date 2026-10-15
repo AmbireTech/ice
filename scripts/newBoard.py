@@ -108,10 +108,11 @@ def place(ref, x, y, rot=0, side=BOT):
     PLACE[ref] = (x, y, rot, side)
 
 
-# Placement for ROUTING, not just for legality: every part keeps GAP of free
-# board between its courtyard and its neighbours' (legalize() enforces it and
-# scripts/checkDensity.py gates it), so a via or two tracks fit between any two
-# parts. The front copper carries no parts at all and is the free routing layer.
+# Seed placement only: legalize() keeps GAP between courtyards so the first
+# trial route has room. The owner's hand placement packs related parts with
+# courtyards touching, and that is the reference now; routability is judged by
+# a trial route, never by spacing. The front copper carries no parts at all and
+# is the free routing layer.
 
 # ── MCU, centre of the back face ────────────────────────────────────────────
 # KiCad flips a footprint to the back by mirroring it top-to-bottom (y), then

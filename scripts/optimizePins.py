@@ -2,7 +2,12 @@
 """MCU pin-assignment optimizer: re-pick which STM32 pin carries each signal so
 the ratsnest out of the package crosses itself less.
 
-    $KICAD_PY scripts/optimizePins.py [board.kicad_pcb] [--apply]
+    $KICAD_PY scripts/optimizePins.py [board.kicad_pcb] [--apply] [--out trial.kicad_pcb]
+                                      [--keep-routed] [--only NET,NET,...]
+
+--keep-routed leaves every signal that already has copper on its pin; --only
+limits the moves to the listed nets (swaps with other nets still need both sides
+movable).
 
 Reads src/parts/mcuAssign.json and the placed board, then greedily moves each
 signal to another pin, or swaps it with the signal on that pin, whenever that
@@ -54,7 +59,8 @@ def exti(port):
 def main():
     apply = "--apply" in sys.argv
     out_board = sys.argv[sys.argv.index("--out") + 1] if "--out" in sys.argv else None
-    args = [a for a in sys.argv[1:] if not a.startswith("--") and a != out_board]
+    only_arg = sys.argv[sys.argv.index("--only") + 1] if "--only" in sys.argv else None
+    args = [a for a in sys.argv[1:] if not a.startswith("--") and a not in (out_board, only_arg)]
     board = pcbnew.LoadBoard(args[0] if args else str(op.nb.syncBoard.BOARD))
     pins = st_pins()
     assign = json.load(open(ASSIGN), object_pairs_hook=collections.OrderedDict)
@@ -63,8 +69,12 @@ def main():
     u4 = board.FindFootprintByReference("U4")
     pad_of = {port: u4.FindPadByNumber(pins[port][0]) for port in pins}
 
+    # a signal already carried by copper keeps its pin: hand routing is never disturbed
+    routed = {t.GetNetname() for t in board.GetTracks()} if "--keep-routed" in sys.argv else set()
+    only = set(sys.argv[sys.argv.index("--only") + 1].split(",")) if "--only" in sys.argv else None
+
     def allowed(port, net, signal):
-        if port in FIXED:
+        if port in FIXED or net in routed or (only is not None and net not in only):
             return {port}
         if signal in ("GPIO", "ANALOG"):
             return {p for p in pins if p not in NEVER_GPIO}

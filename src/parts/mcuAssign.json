@@ -1,5 +1,5 @@
 {
-  "_comment": "STM32U585VIT6Q signal pins: pin label -> [net, the ST signal the firmware muxes onto it, or GPIO/ANALOG]. Chosen so each bus leaves the package on the side facing its destination (MCU flipped + 180 deg on the back face: pins 1-25 east, 26-50 south, 51-75 west, 76-100 north): display SPI south toward J_TFT, touch/gauge I2C3 + touch INT/RST east toward J_CTP and the gauge, camera DCMI/SCCB (I2C2) north/west toward J_CAM, secure element I2C4 west, radio USART1 west, toward the radio gate in the north-west quadrant; VBUS sensed on a plain GPIO (the USB stack's hardware VBUS sensing is off), charger/button east. Mcu.tsx draws the traces from this table and scripts/checkMcuAf.py fails unless every signal is listed for that pin in ST's own pin database.",
+  "_comment": "STM32U585VIT6Q signal pins: pin label -> [net, the ST signal the firmware muxes onto it, or GPIO/ANALOG]. Chosen so each bus leaves the package on the side facing its destination (MCU flipped + 180 deg on the back face: pins 1-25 east, 26-50 south, 51-75 west, 76-100 north): display SPI south toward J_TFT, touch/gauge I2C3 + touch INT/RST east toward J_CTP and the gauge, camera DCMI/SCCB (I2C2) north/west toward J_CAM, secure element I2C4 west, radio USART3 (PB10/PB11) and RADIO_OFF at the south-west corner, around the corner from the radio gate west of the package (USART1 on PA9/PA10 trial-routed worse: two more west-side pins in the camera bus's escape); VBUS sensed on a plain GPIO (the USB stack's hardware VBUS sensing is off), charger/button east. Mcu.tsx draws the traces from this table and scripts/checkMcuAf.py fails unless every signal is listed for that pin in ST's own pin database.",
   "PE9": [
     "TFT_BL",
     "TIM1_CH1"
@@ -184,19 +184,19 @@
     "PWR_HOLD",
     "GPIO"
   ],
-  "PA9": [
+  "PB10": [
     "RADIO_TXD_MCU",
-    "USART1_TX"
+    "USART3_TX"
   ],
-  "PA10": [
+  "PB11": [
     "RADIO_RXD_MCU",
-    "USART1_RX"
+    "USART3_RX"
   ],
-  "PD14": [
+  "PB2": [
     "RADIO_OFF",
     "GPIO"
   ],
-  "PD10": [
+  "PA9": [
     "VBUS_SENSE",
     "GPIO"
   ]

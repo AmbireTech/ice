@@ -140,26 +140,46 @@ touch flex is merged into the TFT flex.
 
 ## Placement for routing
 
-- **Every part keeps 0.5 mm of free board to its neighbours' courtyards** (a via,
-  or two 0.15 mm tracks). `newBoard.py` places that way and
-  `scripts/checkDensity.py` fails the board below 0.4 mm. The first placement
-  had 182 pairs under that; KiCad's DRC passed it anyway.
-- **Then a ratsnest pass** (`scripts/optimizePlacement.py`, run by `newBoard.py`):
-  rotate / nudge (up to 7 mm from the seed) / swap same-footprint parts while
-  that lowers airwire length plus crossings, inside the same legality rules.
-  Crossings 460 → 286, airwire 1871 → 1714 mm.
-- **Judged by a trial route, not the proxy:** `scripts/trialRoute.sh` autoroutes
-  every net but GND on a copy with KiCadRoutingTools' router. Seed: 3 nets
-  failed, 209 vias. Current board: **0 failed, 207 vias**. A 4 mm radius did no
-  better than the seed, and MCU pin swaps (`scripts/optimizePins.py`) cut vias
-  but dropped USB/power nets, so they are not applied.
+- **The placement is the owner's, by hand** (2026-10-15, 43 parts moved from the
+  scripted seed). Related parts sit with courtyards touching and decoupling caps
+  against their pins; there is no spacing rule. The scripted seed
+  (`newBoard.py` + the ratsnest pass of `scripts/optimizePlacement.py`) only
+  exists to start from.
+- **Routability is judged by routing, never by a proxy.** `scripts/trialRoute.sh`
+  autoroutes every net but GND on a copy (KiCadRoutingTools). On the hand-worked
+  board, `scripts/placeLoop.py` runs optimize → partial route → judge with every
+  hand-placed or copper-touched part locked. A crossing-count quench of the
+  remaining parts made it **worse** in every setting tried (2 → 3–6 failed nets
+  in the remainder): the proxy ignores existing copper, and the moves close the
+  channels the hand routing leaves. Placement changes on a hand-worked board are
+  targeted fixes, not a global pass.
+- **Block wiring is pre-routed; bundles are the human's.** `scripts/partialRoute.py`
+  routes only the wiring inside each functional block (an IC and the passives
+  most tied to it) plus GND fanout vias, with every existing track and via fixed
+  (never ripped). Wiring between blocks is left on the ratsnest. Results on the
+  2026-10-15 handoff board:
+  - the USB pair from the MCU to the USB switch is routed **first**, as a pair,
+    before the block wiring takes the room at the MCU's west pins (otherwise it
+    is the one bus that does not get through);
+  - the camera bus (all CAM_* nets, including its pull resistors) and VDD11's
+    link across the package are left to the human, so nothing of the pre-route
+    runs diagonally under the MCU where the camera bus crosses;
+  - what is left, autorouted as a judge: 2 nets fail (in the camera knot below),
+    against 5 failed (both USB lines, V3V3, VBAT_RTC, VBUS_SENSE) on the
+    hand-routed board without the pre-route.
+- **The camera knot.** The DCMI data pins on the MCU's west side (D0–D3, XCLK,
+  PWDN on pins 62–67) reach J_CAM in a different order than the connector's, and
+  DCMI is fixed to those pins (the pin optimizer finds no better order). Both
+  routers leave 2 of these 6 unrouted; they need a layer swap by hand.
 - Small parts may sit under the display flex tails; `checkFpc.py` fails any tall
   part there.
 - MCU pins are chosen so each bus leaves the package facing its destination
   (flipped and turned 180°: pins 1–25 east, 26–50 south, 51–75 west, 76–100
   north): display SPI south to its connector, touch and gauge I2C east, camera
-  and its SCCB north and west, secure element west, radio USART1 west to the
-  radio gate, charger and button east.
+  and its SCCB north and west, secure element west, radio UART (USART3) at the
+  south-west corner, charger and button east. Moving the radio UART to the west
+  side (USART1) was trial-routed and came out worse: the two extra pins land in
+  the camera bus's escape.
 - **The channel between the MCU's south pins and the TFT connector is a routing
   lane** (4.6 mm, by leaving 2.5 mm of the TFT tail as a gentle bow): only
   decoupling at its two ends, x 16–27 empty for the SPI, reset and TE drops.
@@ -172,7 +192,7 @@ touch flex is merged into the TFT flex.
   module, in the strip between the screw head and the antenna keep-out, so the
   west bridge into the chin stays open.
 - **The radio gate** (NOR, load switch, two UART buffers and their passives)
-  sits in its own north-west quadrant next to the MCU's USART1. RADIO_3V3 and
+  sits in its own west quadrant, around the corner from the MCU's radio UART. RADIO_3V3 and
   the two radio-side UART lines run down the west edge to the module.
 - The front copper has no parts at all: use it as the free routing layer (drop
   a via at the pin). In1 is GND only; In2 carries power.
@@ -234,8 +254,9 @@ python3 scripts/checkMcuAf.py           # every MCU signal is an alternate funct
 $KICAD_PY scripts/syncBoard.py          # dry run; --apply writes (close KiCad first)
 $KICAD_PY scripts/checkPinNets.py       # IC pads vs datasheet pin tables, on the board copper
 $KICAD_PY scripts/checkFpc.py           # connector / lever / antenna orientation, tail lengths
-$KICAD_PY scripts/checkDensity.py       # 0.4 mm routing gap between every pair of parts
 scripts/trialRoute.sh                   # autoroute a copy: failed nets / vias (placement arbiter)
+$KICAD_PY scripts/partialRoute.py --out DIR [--first-nets ..] [--skip-nets ..]   # block wiring only, on a copy
+$KICAD_PY scripts/placeLoop.py --base COMMIT   # optimize unlocked parts -> partial route -> judge, logged
 $KICAD_PY scripts/checkParts.py board/wallet.kicad_pcb   # each land vs the land JLC places that part on
 python3 scripts/jlcStock.py             # live JLC stock for every part number
 ```
