@@ -17,6 +17,14 @@ to the GridCore hardware it borrows from, until it moves to its own repo.
 
 *The back face as the clear case shows it, with the UV-printed artwork (rebuilt from the current placement by `art/build_uv.py`). Display flex tails in orange; camera module drawn on.*
 
+> **Routed with [humanizedKicadAutoRouter](https://github.com/Ivshti/humanizedKicadAutoRouter)**:
+> a headless KiCad autorouter that routes the way a person does. It lays each
+> functional block first, then power sized for its current, then the buses
+> between blocks in planned corridors, and it counts a board as done only when
+> KiCad's own DRC agrees. Here it pre-routes the wiring inside each block on
+> top of the hand-routed copper (`scripts/partialRoute.py`) and serves as the
+> gauge of how routable a placement is.
+
 ## Board flow
 
 Same as the GridCore Nano: `index.circuit.tsx` and `src/blocks/` are the
