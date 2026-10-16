@@ -93,7 +93,9 @@ def route_blocks(src, out, blocks=None, minutes=6.0, knobs=(), log=print, skip_n
             # block wiring takes the room around its pins
             early.append(c)
             continue
-        if c.deferred:
+        if c.deferred and c.net == "GND":
+            # only GND has a pour on the outer layers to take a pad without its own
+            # via; a 3.3 V pull-up or connector pin needs its via to the In1 plane
             skipped["GND pad left to the pour"] += 1
             continue
         if c.bundle:
