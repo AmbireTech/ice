@@ -99,6 +99,18 @@ for ref, end_y, row in (("J_TFT", nb.TFT_END_Y, nb.TFT_ROW), ("J_CTP", nb.CTP_EN
     else:
         print(f"{ref}: tail end within {abs(slack):.1f} mm of the contact row")
 
+# Camera: the tail runs east from the head's edge into J_CAM; a stock module must
+# neither be stretched short of the contacts nor bow more than CAM_MAX_BOW.
+avail = pcbnew.ToMM(fp["J_CAM"].GetPosition().x) + nb.CAM_END_DX - nb.CAMERA_HEAD[2]
+for tail in nb.CAM_TAIL:
+    slack = tail - avail
+    if slack < -0.3:
+        errors.append(f"J_CAM: a {tail:.1f} mm camera tail ends {-slack:.1f} mm short of the contacts; move J_CAM west")
+    elif slack > nb.CAM_MAX_BOW:
+        errors.append(f"J_CAM: a {tail:.1f} mm camera tail bows {slack:.1f} mm; move J_CAM east")
+    else:
+        print(f"J_CAM: a {tail:.1f} mm camera tail lands with {slack:.1f} mm of bow")
+
 # Under the flex tails only low parts: the tail lies flat on them. Anything
 # whose land is not a chip passive or a small SMD IC package fails.
 LOW = ("Capacitor_SMD:", "Resistor_SMD:", "Inductor_SMD:", "LED_SMD:", "Package_TO_SOT_SMD:",

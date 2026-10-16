@@ -80,6 +80,21 @@ OPT_RADIUS = 7.0     # how far the ratsnest pass may move a part from its seed (
 #   UV artwork     the full-colour brand panel
 #   holes          screw heads / bosses, 3 mm round each mounting hole
 CAMERA_HEAD = (4.0, 4.5, 12.5, 13.0)
+# The camera tail runs from the head's east edge into J_CAM. Stock OV2640 modules
+# are 20.5-21 mm overall with an 8.5 mm head (Union ZY-XSF3M2640B drawing, Arducam
+# M0031), so 12.0-12.5 mm of flex; J_CAM takes ~7.8, so a stock module bows ~4.5 mm
+# (a ~16.5 mm module, a custom FPC length, lies flat). J_CAM is NOT moved east to
+# take a stock tail flat: its 18.7 mm body would then sit over the MCU's north pin
+# row, and the camera pins there (XCLK, VSYNC, D6, D7, RST) that now run straight
+# north into the fan-in would each need a via. CAM_END_DX: how far east of J_CAM's
+# origin the inserted flex end lands, an estimate from the AFC07 fab outline (check
+# it with the module in hand). scripts/checkFpc.py holds J_CAM to this budget.
+CAM_TAIL = (12.0, 12.5)
+CAM_MAX_BOW = 5.0
+CAM_END_DX = 0.65
+# Bare board kept east of J_CAM's contacts so all 24 lines can fan in (a via
+# column or two and the tracks between them): no parts there.
+CAM_FANIN = 3.1
 UV_PANEL = (34.0, 4.5, 46.0, 13.5)
 # Room kept for printed labels that name a part (the UV art restyles them in
 # place): the placer and the ratsnest pass treat these as occupied. Not KiCad
@@ -92,11 +107,20 @@ def footprint_keepouts(board):
     so a connector never sits in its own tail's keep-out."""
     fp = board.FindFootprintByReference
     tft, ctp, cam = (_box(fp(r)) for r in ("J_TFT", "J_CTP", "J_CAM"))
+    # The camera / SE pins on the MCU's west side (51-67) leave west and drop to the
+    # front copper right outside their pads: that strip holds their escape vias, so
+    # no parts (the VDD decaps sit just outside it, at pins 51 and 73/75).
+    u4 = fp("U4")
+    west = [p for p in u4.Pads() if p.GetNumber().isdigit() and 52 <= int(p.GetNumber()) <= 67]
+    edge = _box(u4)[0]          # the MCU courtyard's west edge, just outside the pad tips
+    wy = [pcbnew.ToMM(p.GetPosition().y) for p in west]
     # The display tails are NOT keep-outs: low parts (passives, SOT/QFN ICs) may
     # sit under the flex; scripts/checkFpc.py fails a tall part in a corridor.
     return [
         ("Camera module", CAMERA_HEAD),
         ("Camera flex", (CAMERA_HEAD[2], 2.2, cam[0] - 0.1, 15.3)),
+        ("Camera fan-in", (cam[2], 0.3, cam[2] + CAM_FANIN, 15.5)),
+        ("MCU west escape", (edge - 2.4, min(wy) - 0.3, edge, max(wy) + 0.1)),
         ("UV artwork", UV_PANEL),
     ]
 
@@ -569,7 +593,7 @@ def artwork(board):
     drawing(board, SX - 2.0, SY - 2.0, SX + 2.0, SY + 2.0, pcbnew.B_SilkS, 0.15)
     # Brand: placeholder for the full-colour UV-printed Ambire artwork.
     drawing(board, 34.0, 4.5, 46.0, 13.5, pcbnew.Dwgs_User)
-    text(board, "UV ARTWORK", 40.0, 12.6, pcbnew.Dwgs_User, 0.6, 0.08)
+    text(board, "UV ARTWORK", (UV_PANEL[0] + UV_PANEL[2]) / 2, 12.6, pcbnew.Dwgs_User, 0.6, 0.08)
     text(board, "AMBIRE", 40.0, 9.0, pcbnew.B_SilkS, 2.0, 0.3)
     text(board, "Ambire signer · proto 0", 13.0, H - 1.6, pcbnew.B_SilkS, 0.7, 0.12)
 
