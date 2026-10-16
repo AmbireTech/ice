@@ -13,7 +13,9 @@ to the GridCore hardware it borrows from, until it moves to its own repo.
   shared with the team (renders, clear-signing screens, stack, architecture);
   live copy: https://claude.ai/artifact/LLUtmWoVMm4PUxiSL7d5Ad
 
-![Back face, as the clear case shows it](docs/back-face-render.png)
+<img src="docs/back-face-uv.jpg" width="420" alt="Back face through the clear case, with the UV-printed Ambire artwork">
+
+*The back face as the clear case shows it, with the UV-printed artwork (rebuilt from the current placement by `art/build_uv.py`). Display flex tails in orange; camera module drawn on.*
 
 ## Board flow
 

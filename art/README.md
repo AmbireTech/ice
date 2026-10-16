@@ -59,7 +59,7 @@ JLC calls this service "EasyEDA multi-color silkscreen". Sources:
 
 ## Files
 
-- `out/uv_back_seen_from_behind.png`: **the print file**. RGBA, 1200 DPI, 2268×3874 px = 48.00×82.00 mm. It shows the back as a person sees it. Transparent pixels mean no ink.
+- `out/uv_back_seen_from_behind.png`: **the print file**. RGBA, 1200 DPI, 2268×4016 px = 48.00×85.00 mm. It shows the back as a person sees it. Transparent pixels mean no ink.
 - `out/uv_back_kicad_front_view.png`: the same image mirrored, in KiCad's front-looking coordinates (the frame bottom-layer Gerbers use).
 - `out/check_no_ink.png`: the art over white mask, with every pad, opening, drill and the camera window in red. Red must never touch colour; the build also checks this itself.
 - `preview_back.png`: the art on a fresh 3D render of the back.
