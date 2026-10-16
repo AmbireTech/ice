@@ -1,759 +1,719 @@
 {
- "_comment": "Vendor pin tables, transcribed from the datasheets named in 'source' (pad: [official name, rule]). Rule: a net name, 're:<regex>', 'nc' (no net or an NC_* net) or 'any'. scripts/checkPinNets.py compares them with the BOARD's copper, so a wrong pinLabels map, a wrong pad map in footprints.json or a wrong land all fail here. The STM32 is checked from ST's pin database separately (power pins below).",
- "U1": {
-  "part": "BQ25185DLHR",
-  "source": "TI SLUSF65B Pin Functions (nano-verified)",
-  "pins": {
-   "1": [
-    "SYS",
-    "SYS"
-   ],
-   "2": [
-    "BAT",
-    "BAT"
-   ],
-   "3": [
-    "STAT2",
-    "CHG_STAT2"
-   ],
-   "4": [
-    "/CE",
-    "CHG_CE"
-   ],
-   "5": [
-    "GND",
-    "GND"
-   ],
-   "6": [
-    "TS/MR",
-    "CHG_TS"
-   ],
-   "7": [
-    "ILIM/VSET",
-    "CHG_ILIM"
-   ],
-   "8": [
-    "ISET",
-    "CHG_ISET"
-   ],
-   "9": [
-    "STAT1",
-    "CHG_STAT1"
-   ],
-   "10": [
-    "IN",
-    "VBUS"
-   ],
-   "11": [
-    "EP",
-    "GND"
-   ]
+  "_comment": "Vendor pin tables, transcribed from the datasheets named in 'source' (pad: [official name, rule]). Rule: a net name, 're:<regex>', 'nc' (no net or an NC_* net) or 'any'. scripts/checkPinNets.py compares them with the BOARD's copper, so a wrong pinLabels map, a wrong pad map in footprints.json or a wrong land all fail here. The STM32 is checked from ST's pin database separately (power pins below).",
+  "U1": {
+    "part": "BQ25185DLHR",
+    "source": "TI SLUSF65B Pin Functions (nano-verified)",
+    "pins": {
+      "1": [
+        "SYS",
+        "SYS"
+      ],
+      "2": [
+        "BAT",
+        "BAT"
+      ],
+      "3": [
+        "STAT2",
+        "CHG_STAT2"
+      ],
+      "4": [
+        "/CE",
+        "CHG_CE"
+      ],
+      "5": [
+        "GND",
+        "GND"
+      ],
+      "6": [
+        "TS/MR",
+        "CHG_TS"
+      ],
+      "7": [
+        "ILIM/VSET",
+        "CHG_ILIM"
+      ],
+      "8": [
+        "ISET",
+        "CHG_ISET"
+      ],
+      "9": [
+        "STAT1",
+        "CHG_STAT1"
+      ],
+      "10": [
+        "IN",
+        "VBUS"
+      ],
+      "11": [
+        "EP",
+        "GND"
+      ]
+    }
+  },
+  "U2": {
+    "part": "TPS63802DLAR",
+    "source": "TI SLVSFO1 Table 7-1 (nano-verified)",
+    "pins": {
+      "1": [
+        "EN",
+        "PWR_EN"
+      ],
+      "2": [
+        "MODE",
+        "GND"
+      ],
+      "3": [
+        "AGND",
+        "GND"
+      ],
+      "4": [
+        "FB",
+        "FB_3V3"
+      ],
+      "5": [
+        "PG",
+        "nc"
+      ],
+      "6": [
+        "VOUT",
+        "V3V3"
+      ],
+      "7": [
+        "L2",
+        "L2_3V3"
+      ],
+      "8": [
+        "GND",
+        "GND"
+      ],
+      "9": [
+        "L1",
+        "L1_3V3"
+      ],
+      "10": [
+        "VIN",
+        "SYS"
+      ]
+    }
+  },
+  "U5": {
+    "part": "SE050E2HQ1/Z01Z3Z",
+    "source": "NXP SE050 data sheet Rev 3.8, Table 5",
+    "pins": {
+      "1": [
+        "ISO14443 LB",
+        "GND"
+      ],
+      "2": [
+        "n.c.",
+        "nc"
+      ],
+      "3": [
+        "ISO7816 IO1",
+        "nc"
+      ],
+      "4": [
+        "n.c.",
+        "nc"
+      ],
+      "5": [
+        "n.c.",
+        "nc"
+      ],
+      "6": [
+        "n.c.",
+        "nc"
+      ],
+      "7": [
+        "n.c.",
+        "nc"
+      ],
+      "8": [
+        "n.c.",
+        "nc"
+      ],
+      "9": [
+        "I2C_SDA",
+        "SE_SDA"
+      ],
+      "10": [
+        "I2C_SCL",
+        "SE_SCL"
+      ],
+      "11": [
+        "ENA",
+        "SE_ENA"
+      ],
+      "12": [
+        "VIN",
+        "V3V3"
+      ],
+      "13": [
+        "ISO7816 CLK",
+        "nc"
+      ],
+      "14": [
+        "ISO7816 RST_N",
+        "GND"
+      ],
+      "15": [
+        "VOUT",
+        "SE_VCC"
+      ],
+      "16": [
+        "ISO7816 IO2",
+        "nc"
+      ],
+      "17": [
+        "ISO14443 LA",
+        "GND"
+      ],
+      "18": [
+        "VCC",
+        "SE_VCC"
+      ],
+      "19": [
+        "VSS",
+        "GND"
+      ],
+      "20": [
+        "n.c.",
+        "nc"
+      ],
+      "21": [
+        "centre pad",
+        "GND"
+      ]
+    }
+  },
+  "U6": {
+    "part": "TS3USB221ARSER",
+    "source": "TI SCDS277C Table 4-1",
+    "pins": {
+      "1": [
+        "1D+",
+        "USB_DP_MCU"
+      ],
+      "2": [
+        "1D-",
+        "USB_DN_MCU"
+      ],
+      "3": [
+        "2D+",
+        "nc"
+      ],
+      "4": [
+        "2D-",
+        "nc"
+      ],
+      "5": [
+        "GND",
+        "GND"
+      ],
+      "6": [
+        "/OE",
+        "AIRGAP"
+      ],
+      "7": [
+        "D-",
+        "USB_DN"
+      ],
+      "8": [
+        "D+",
+        "USB_DP"
+      ],
+      "9": [
+        "S",
+        "GND"
+      ],
+      "10": [
+        "VCC",
+        "V3V3"
+      ]
+    }
+  },
+  "U7": {
+    "part": "SN74LVC1G02DBVR (UMW)",
+    "source": "UMW SN74LVC1G02 datasheet (Jan 2025): 1 INB, 2 INA, 3 GND, 4 Y, 5 VCC",
+    "pins": {
+      "1": [
+        "B",
+        "RADIO_OFF"
+      ],
+      "2": [
+        "A",
+        "AIRGAP"
+      ],
+      "3": [
+        "GND",
+        "GND"
+      ],
+      "4": [
+        "Y",
+        "RADIO_EN"
+      ],
+      "5": [
+        "VCC",
+        "V3V3"
+      ]
+    }
+  },
+  "U8": {
+    "part": "TPS22917DBVR",
+    "source": "TI SLVSDW8B Table 6-1",
+    "pins": {
+      "1": [
+        "VIN",
+        "V3V3"
+      ],
+      "2": [
+        "GND",
+        "GND"
+      ],
+      "3": [
+        "ON",
+        "RADIO_EN"
+      ],
+      "4": [
+        "CT",
+        "RADIO_CT"
+      ],
+      "5": [
+        "QOD",
+        "RADIO_3V3"
+      ],
+      "6": [
+        "VOUT",
+        "RADIO_3V3"
+      ]
+    }
+  },
+  "U9": {
+    "part": "TXU0202DCUR",
+    "source": "TI SCES942A Table 6-1 (DCU VSSOP-8)",
+    "pins": {
+      "1": [
+        "B2",
+        "RADIO_TX"
+      ],
+      "2": [
+        "GND",
+        "GND"
+      ],
+      "3": [
+        "VCCA",
+        "V3V3"
+      ],
+      "4": [
+        "A2Y",
+        "RADIO_RXD_MCU"
+      ],
+      "5": [
+        "A1",
+        "RADIO_TXD_MCU"
+      ],
+      "6": [
+        "OE",
+        "RADIO_3V3"
+      ],
+      "7": [
+        "VCCB",
+        "RADIO_3V3"
+      ],
+      "8": [
+        "B1Y",
+        "RADIO_RX"
+      ]
+    }
+  },
+  "U11": {
+    "part": "E73-2G4M08S1C",
+    "source": "Ebyte E73-2G4M08S1C user manual v1.9 section 3",
+    "pins": {
+      "5": [
+        "GND",
+        "GND"
+      ],
+      "19": [
+        "VDD",
+        "RADIO_3V3"
+      ],
+      "21": [
+        "GND",
+        "GND"
+      ],
+      "23": [
+        "VDDH",
+        "RADIO_3V3"
+      ],
+      "24": [
+        "GND",
+        "GND"
+      ],
+      "25": [
+        "DCCH",
+        "nc"
+      ],
+      "26": [
+        "P0.18/RESET",
+        "nc"
+      ],
+      "27": [
+        "VBUS",
+        "nc"
+      ],
+      "29": [
+        "USB D-",
+        "nc"
+      ],
+      "31": [
+        "USB D+",
+        "nc"
+      ],
+      "37": [
+        "SWDIO",
+        "RADIO_SWDIO"
+      ],
+      "39": [
+        "SWDCLK",
+        "RADIO_SWCLK"
+      ],
+      "33": [
+        "P0.13",
+        "RADIO_TX"
+      ],
+      "35": [
+        "P0.24",
+        "RADIO_RX"
+      ]
+    }
+  },
+  "U12": {
+    "part": "ME6211C28M5G-N",
+    "source": "Microne ME6211 Ver07 p.2",
+    "pins": {
+      "1": [
+        "VIN",
+        "V3V3"
+      ],
+      "2": [
+        "VSS",
+        "GND"
+      ],
+      "3": [
+        "CE",
+        "CAM_EN"
+      ],
+      "4": [
+        "NC",
+        "nc"
+      ],
+      "5": [
+        "VOUT",
+        "CAM_AVDD"
+      ]
+    }
+  },
+  "U13": {
+    "part": "TPS60230RGTR",
+    "source": "TI SLVS516A Terminal Functions (nano-verified)",
+    "pins": {
+      "1": [
+        "ISET",
+        "BL_ISET"
+      ],
+      "2": [
+        "D5",
+        "BL_K"
+      ],
+      "3": [
+        "D4",
+        "BL_K"
+      ],
+      "4": [
+        "D3",
+        "BL_K"
+      ],
+      "5": [
+        "D2",
+        "BL_K"
+      ],
+      "6": [
+        "D1",
+        "BL_K"
+      ],
+      "7": [
+        "PGND",
+        "GND"
+      ],
+      "8": [
+        "VOUT",
+        "BL_A"
+      ],
+      "9": [
+        "C2+",
+        "BL_C2P"
+      ],
+      "10": [
+        "C1+",
+        "BL_C1P"
+      ],
+      "11": [
+        "C1-",
+        "BL_C1N"
+      ],
+      "12": [
+        "C2-",
+        "BL_C2N"
+      ],
+      "13": [
+        "VIN",
+        "SYS"
+      ],
+      "14": [
+        "GND",
+        "GND"
+      ],
+      "15": [
+        "EN1",
+        "BL_EN"
+      ],
+      "16": [
+        "EN2",
+        "BL_EN"
+      ],
+      "17": [
+        "pad",
+        "GND"
+      ]
+    }
+  },
+  "U14": {
+    "part": "TLV70313DBVR",
+    "source": "TI SBVS148 Pin Functions (DBV)",
+    "pins": {
+      "1": [
+        "IN",
+        "V3V3"
+      ],
+      "2": [
+        "GND",
+        "GND"
+      ],
+      "3": [
+        "EN",
+        "CAM_EN"
+      ],
+      "4": [
+        "NC",
+        "GND"
+      ],
+      "5": [
+        "OUT",
+        "CAM_DVDD"
+      ]
+    }
+  },
+  "U15": {
+    "part": "MAX17048G+T10",
+    "source": "Maxim 19-6171 Rev 7 Pin Description",
+    "pins": {
+      "1": [
+        "CTG",
+        "GND"
+      ],
+      "2": [
+        "CELL",
+        "BAT"
+      ],
+      "3": [
+        "VDD",
+        "BAT"
+      ],
+      "4": [
+        "GND",
+        "GND"
+      ],
+      "5": [
+        "ALRT",
+        "nc"
+      ],
+      "6": [
+        "QSTRT",
+        "GND"
+      ],
+      "7": [
+        "SCL",
+        "I2C_SCL"
+      ],
+      "8": [
+        "SDA",
+        "I2C_SDA"
+      ],
+      "9": [
+        "EP",
+        "GND"
+      ]
+    }
+  },
+  "D_ESD": {
+    "part": "USBLC6-2SC6",
+    "source": "ST USBLC6-2 pinout (nano-verified)",
+    "pins": {
+      "1": [
+        "I/O1",
+        "USB_DP"
+      ],
+      "2": [
+        "GND",
+        "GND"
+      ],
+      "3": [
+        "I/O2",
+        "USB_DN"
+      ],
+      "4": [
+        "I/O2",
+        "USB_DN"
+      ],
+      "5": [
+        "VBUS",
+        "VBUS"
+      ],
+      "6": [
+        "I/O1",
+        "USB_DP"
+      ]
+    }
+  },
+  "D_OR": {
+    "part": "BAT54C,215",
+    "source": "Nexperia BAT54 series: SOT23 BAT54C 1 anode a1, 2 anode a2, 3 common cathode",
+    "pins": {
+      "1": [
+        "A1",
+        "BTN"
+      ],
+      "2": [
+        "A2",
+        "PWR_HOLD"
+      ],
+      "3": [
+        "K",
+        "PWR_EN"
+      ]
+    }
+  },
+  "Q_BTN": {
+    "part": "2N7002",
+    "source": "SOT-23 1 G, 2 S, 3 D",
+    "pins": {
+      "1": [
+        "G",
+        "BTN"
+      ],
+      "2": [
+        "S",
+        "GND"
+      ],
+      "3": [
+        "D",
+        "BTN_N"
+      ]
+    }
+  },
+  "U4": {
+    "part": "STM32U585VIT6Q",
+    "source": "ST DS13086 Rev 8 Table 27 / Fig. 14 (LQFP100 SMPS); ST open pin data",
+    "pins": {
+      "6": [
+        "VBAT",
+        "V3V3"
+      ],
+      "10": [
+        "VSS",
+        "GND"
+      ],
+      "11": [
+        "VDD",
+        "V3V3"
+      ],
+      "14": [
+        "NRST",
+        "NRST"
+      ],
+      "19": [
+        "VSSA",
+        "GND"
+      ],
+      "20": [
+        "VREF+",
+        "V3V3"
+      ],
+      "21": [
+        "VDDA",
+        "V3V3"
+      ],
+      "26": [
+        "VSS",
+        "GND"
+      ],
+      "27": [
+        "VDD",
+        "V3V3"
+      ],
+      "46": [
+        "VLXSMPS (SMPS unused: GND per DS13086 3.9.1)",
+        "GND"
+      ],
+      "47": [
+        "VDDSMPS (SMPS unused: GND per DS13086 3.9.1)",
+        "GND"
+      ],
+      "48": [
+        "VSSSMPS",
+        "GND"
+      ],
+      "49": [
+        "VDD11",
+        "VDD11"
+      ],
+      "50": [
+        "VSS",
+        "GND"
+      ],
+      "51": [
+        "VDD",
+        "V3V3"
+      ],
+      "73": [
+        "VDDUSB",
+        "V3V3"
+      ],
+      "74": [
+        "VSS",
+        "GND"
+      ],
+      "75": [
+        "VDD",
+        "V3V3"
+      ],
+      "94": [
+        "PH3-BOOT0",
+        "BOOT0"
+      ],
+      "98": [
+        "VDD11",
+        "VDD11"
+      ],
+      "99": [
+        "VSS",
+        "GND"
+      ],
+      "100": [
+        "VDD",
+        "V3V3"
+      ]
+    }
   }
- },
- "U2": {
-  "part": "TPS63802DLAR",
-  "source": "TI SLVSFO1 Table 7-1 (nano-verified)",
-  "pins": {
-   "1": [
-    "EN",
-    "PWR_EN"
-   ],
-   "2": [
-    "MODE",
-    "GND"
-   ],
-   "3": [
-    "AGND",
-    "GND"
-   ],
-   "4": [
-    "FB",
-    "FB_3V3"
-   ],
-   "5": [
-    "PG",
-    "nc"
-   ],
-   "6": [
-    "VOUT",
-    "V3V3"
-   ],
-   "7": [
-    "L2",
-    "L2_3V3"
-   ],
-   "8": [
-    "GND",
-    "GND"
-   ],
-   "9": [
-    "L1",
-    "L1_3V3"
-   ],
-   "10": [
-    "VIN",
-    "SYS"
-   ]
-  }
- },
- "U3": {
-  "part": "XC6206P332MR-G",
-  "source": "Torex XC6206 SOT-23 pin table (nano-verified)",
-  "pins": {
-   "1": [
-    "VSS",
-    "GND"
-   ],
-   "2": [
-    "VOUT",
-    "VBAT_RTC"
-   ],
-   "3": [
-    "VIN",
-    "BAT"
-   ]
-  }
- },
- "U5": {
-  "part": "SE050E2HQ1/Z01Z3Z",
-  "source": "NXP SE050 data sheet Rev 3.8, Table 5",
-  "pins": {
-   "1": [
-    "ISO14443 LB",
-    "GND"
-   ],
-   "2": [
-    "n.c.",
-    "nc"
-   ],
-   "3": [
-    "ISO7816 IO1",
-    "nc"
-   ],
-   "4": [
-    "n.c.",
-    "nc"
-   ],
-   "5": [
-    "n.c.",
-    "nc"
-   ],
-   "6": [
-    "n.c.",
-    "nc"
-   ],
-   "7": [
-    "n.c.",
-    "nc"
-   ],
-   "8": [
-    "n.c.",
-    "nc"
-   ],
-   "9": [
-    "I2C_SDA",
-    "SE_SDA"
-   ],
-   "10": [
-    "I2C_SCL",
-    "SE_SCL"
-   ],
-   "11": [
-    "ENA",
-    "SE_ENA"
-   ],
-   "12": [
-    "VIN",
-    "V3V3"
-   ],
-   "13": [
-    "ISO7816 CLK",
-    "nc"
-   ],
-   "14": [
-    "ISO7816 RST_N",
-    "GND"
-   ],
-   "15": [
-    "VOUT",
-    "SE_VCC"
-   ],
-   "16": [
-    "ISO7816 IO2",
-    "nc"
-   ],
-   "17": [
-    "ISO14443 LA",
-    "GND"
-   ],
-   "18": [
-    "VCC",
-    "SE_VCC"
-   ],
-   "19": [
-    "VSS",
-    "GND"
-   ],
-   "20": [
-    "n.c.",
-    "nc"
-   ],
-   "21": [
-    "centre pad",
-    "GND"
-   ]
-  }
- },
- "U6": {
-  "part": "TS3USB221ARSER",
-  "source": "TI SCDS277C Table 4-1",
-  "pins": {
-   "1": [
-    "1D+",
-    "USB_DP_MCU"
-   ],
-   "2": [
-    "1D-",
-    "USB_DN_MCU"
-   ],
-   "3": [
-    "2D+",
-    "nc"
-   ],
-   "4": [
-    "2D-",
-    "nc"
-   ],
-   "5": [
-    "GND",
-    "GND"
-   ],
-   "6": [
-    "/OE",
-    "AIRGAP"
-   ],
-   "7": [
-    "D-",
-    "USB_DN"
-   ],
-   "8": [
-    "D+",
-    "USB_DP"
-   ],
-   "9": [
-    "S",
-    "GND"
-   ],
-   "10": [
-    "VCC",
-    "V3V3"
-   ]
-  }
- },
- "U7": {
-  "part": "SN74LVC1G02DBVR (UMW)",
-  "source": "UMW SN74LVC1G02 datasheet (Jan 2025): 1 INB, 2 INA, 3 GND, 4 Y, 5 VCC",
-  "pins": {
-   "1": [
-    "B",
-    "RADIO_OFF"
-   ],
-   "2": [
-    "A",
-    "AIRGAP"
-   ],
-   "3": [
-    "GND",
-    "GND"
-   ],
-   "4": [
-    "Y",
-    "RADIO_EN"
-   ],
-   "5": [
-    "VCC",
-    "V3V3"
-   ]
-  }
- },
- "U8": {
-  "part": "TPS22917DBVR",
-  "source": "TI SLVSDW8B Table 6-1",
-  "pins": {
-   "1": [
-    "VIN",
-    "V3V3"
-   ],
-   "2": [
-    "GND",
-    "GND"
-   ],
-   "3": [
-    "ON",
-    "RADIO_EN"
-   ],
-   "4": [
-    "CT",
-    "RADIO_CT"
-   ],
-   "5": [
-    "QOD",
-    "RADIO_3V3"
-   ],
-   "6": [
-    "VOUT",
-    "RADIO_3V3"
-   ]
-  }
- },
- "U9": {
-  "part": "SN74LVC1T45DBVR",
-  "source": "TI SCES515N Table 4-1",
-  "pins": {
-   "1": [
-    "VCCA",
-    "V3V3"
-   ],
-   "2": [
-    "GND",
-    "GND"
-   ],
-   "3": [
-    "A",
-    "RADIO_TXD_MCU"
-   ],
-   "4": [
-    "B",
-    "RADIO_RX"
-   ],
-   "5": [
-    "DIR",
-    "V3V3"
-   ],
-   "6": [
-    "VCCB",
-    "RADIO_3V3"
-   ]
-  }
- },
- "U10": {
-  "part": "SN74LVC1T45DBVR",
-  "source": "TI SCES515N Table 4-1",
-  "pins": {
-   "1": [
-    "VCCA",
-    "V3V3"
-   ],
-   "2": [
-    "GND",
-    "GND"
-   ],
-   "3": [
-    "A",
-    "RADIO_RXD_MCU"
-   ],
-   "4": [
-    "B",
-    "RADIO_TX"
-   ],
-   "5": [
-    "DIR",
-    "GND"
-   ],
-   "6": [
-    "VCCB",
-    "RADIO_3V3"
-   ]
-  }
- },
- "U11": {
-  "part": "E73-2G4M08S1C",
-  "source": "Ebyte E73-2G4M08S1C user manual v1.9 section 3",
-  "pins": {
-   "5": [
-    "GND",
-    "GND"
-   ],
-   "19": [
-    "VDD",
-    "RADIO_3V3"
-   ],
-   "21": [
-    "GND",
-    "GND"
-   ],
-   "23": [
-    "VDDH",
-    "RADIO_3V3"
-   ],
-   "24": [
-    "GND",
-    "GND"
-   ],
-   "25": [
-    "DCCH",
-    "nc"
-   ],
-   "26": [
-    "P0.18/RESET",
-    "RADIO_RESET"
-   ],
-   "27": [
-    "VBUS",
-    "nc"
-   ],
-   "29": [
-    "USB D-",
-    "nc"
-   ],
-   "31": [
-    "USB D+",
-    "nc"
-   ],
-   "37": [
-    "SWDIO",
-    "RADIO_SWDIO"
-   ],
-   "39": [
-    "SWDCLK",
-    "RADIO_SWCLK"
-   ],
-   "33": [
-    "P0.13",
-    "RADIO_TX"
-   ],
-   "35": [
-    "P0.24",
-    "RADIO_RX"
-   ]
-  }
- },
- "U12": {
-  "part": "ME6211C28M5G-N",
-  "source": "Microne ME6211 Ver07 p.2",
-  "pins": {
-   "1": [
-    "VIN",
-    "V3V3"
-   ],
-   "2": [
-    "VSS",
-    "GND"
-   ],
-   "3": [
-    "CE",
-    "CAM_EN"
-   ],
-   "4": [
-    "NC",
-    "nc"
-   ],
-   "5": [
-    "VOUT",
-    "CAM_AVDD"
-   ]
-  }
- },
- "U13": {
-  "part": "TPS60230RGTR",
-  "source": "TI SLVS516A Terminal Functions (nano-verified)",
-  "pins": {
-   "1": [
-    "ISET",
-    "BL_ISET"
-   ],
-   "2": [
-    "D5",
-    "BL_K"
-   ],
-   "3": [
-    "D4",
-    "BL_K"
-   ],
-   "4": [
-    "D3",
-    "BL_K"
-   ],
-   "5": [
-    "D2",
-    "BL_K"
-   ],
-   "6": [
-    "D1",
-    "BL_K"
-   ],
-   "7": [
-    "PGND",
-    "GND"
-   ],
-   "8": [
-    "VOUT",
-    "BL_A"
-   ],
-   "9": [
-    "C2+",
-    "BL_C2P"
-   ],
-   "10": [
-    "C1+",
-    "BL_C1P"
-   ],
-   "11": [
-    "C1-",
-    "BL_C1N"
-   ],
-   "12": [
-    "C2-",
-    "BL_C2N"
-   ],
-   "13": [
-    "VIN",
-    "SYS"
-   ],
-   "14": [
-    "GND",
-    "GND"
-   ],
-   "15": [
-    "EN1",
-    "BL_EN"
-   ],
-   "16": [
-    "EN2",
-    "BL_EN"
-   ],
-   "17": [
-    "pad",
-    "GND"
-   ]
-  }
- },
- "U14": {
-  "part": "TLV75801PDBVR",
-  "source": "TI SBVS351D Figure 4-2 (DBV)",
-  "pins": {
-   "1": [
-    "IN",
-    "V3V3"
-   ],
-   "2": [
-    "GND",
-    "GND"
-   ],
-   "3": [
-    "EN",
-    "CAM_EN"
-   ],
-   "4": [
-    "FB",
-    "CAM_DVFB"
-   ],
-   "5": [
-    "OUT",
-    "CAM_DVDD"
-   ]
-  }
- },
- "U15": {
-  "part": "MAX17048G+T10",
-  "source": "Maxim 19-6171 Rev 7 Pin Description",
-  "pins": {
-   "1": [
-    "CTG",
-    "GND"
-   ],
-   "2": [
-    "CELL",
-    "BAT"
-   ],
-   "3": [
-    "VDD",
-    "BAT"
-   ],
-   "4": [
-    "GND",
-    "GND"
-   ],
-   "5": [
-    "ALRT",
-    "GAUGE_ALRT"
-   ],
-   "6": [
-    "QSTRT",
-    "GND"
-   ],
-   "7": [
-    "SCL",
-    "I2C_SCL"
-   ],
-   "8": [
-    "SDA",
-    "I2C_SDA"
-   ],
-   "9": [
-    "EP",
-    "GND"
-   ]
-  }
- },
- "D_ESD": {
-  "part": "USBLC6-2SC6",
-  "source": "ST USBLC6-2 pinout (nano-verified)",
-  "pins": {
-   "1": [
-    "I/O1",
-    "USB_DP"
-   ],
-   "2": [
-    "GND",
-    "GND"
-   ],
-   "3": [
-    "I/O2",
-    "USB_DN"
-   ],
-   "4": [
-    "I/O2",
-    "USB_DN"
-   ],
-   "5": [
-    "VBUS",
-    "VBUS"
-   ],
-   "6": [
-    "I/O1",
-    "USB_DP"
-   ]
-  }
- },
- "D_OR": {
-  "part": "BAT54C,215",
-  "source": "Nexperia BAT54 series: SOT23 BAT54C 1 anode a1, 2 anode a2, 3 common cathode",
-  "pins": {
-   "1": [
-    "A1",
-    "BTN"
-   ],
-   "2": [
-    "A2",
-    "PWR_HOLD"
-   ],
-   "3": [
-    "K",
-    "PWR_EN"
-   ]
-  }
- },
- "Q_BTN": {
-  "part": "2N7002",
-  "source": "SOT-23 1 G, 2 S, 3 D",
-  "pins": {
-   "1": [
-    "G",
-    "BTN"
-   ],
-   "2": [
-    "S",
-    "GND"
-   ],
-   "3": [
-    "D",
-    "BTN_N"
-   ]
-  }
- },
- "U4": {
-  "part": "STM32U585VIT6Q",
-  "source": "ST DS13086 Rev 8 Table 27 / Fig. 14 (LQFP100 SMPS); ST open pin data",
-  "pins": {
-   "6": [
-    "VBAT",
-    "VBAT_RTC"
-   ],
-   "10": [
-    "VSS",
-    "GND"
-   ],
-   "11": [
-    "VDD",
-    "V3V3"
-   ],
-   "14": [
-    "NRST",
-    "NRST"
-   ],
-   "19": [
-    "VSSA",
-    "GND"
-   ],
-   "20": [
-    "VREF+",
-    "V3V3"
-   ],
-   "21": [
-    "VDDA",
-    "V3V3"
-   ],
-   "26": [
-    "VSS",
-    "GND"
-   ],
-   "27": [
-    "VDD",
-    "V3V3"
-   ],
-   "46": [
-    "VLXSMPS (SMPS unused: GND per DS13086 3.9.1)",
-    "GND"
-   ],
-   "47": [
-    "VDDSMPS (SMPS unused: GND per DS13086 3.9.1)",
-    "GND"
-   ],
-   "48": [
-    "VSSSMPS",
-    "GND"
-   ],
-   "49": [
-    "VDD11",
-    "VDD11"
-   ],
-   "50": [
-    "VSS",
-    "GND"
-   ],
-   "51": [
-    "VDD",
-    "V3V3"
-   ],
-   "73": [
-    "VDDUSB",
-    "V3V3"
-   ],
-   "74": [
-    "VSS",
-    "GND"
-   ],
-   "75": [
-    "VDD",
-    "V3V3"
-   ],
-   "94": [
-    "PH3-BOOT0",
-    "BOOT0"
-   ],
-   "98": [
-    "VDD11",
-    "VDD11"
-   ],
-   "99": [
-    "VSS",
-    "GND"
-   ],
-   "100": [
-    "VDD",
-    "V3V3"
-   ]
-  }
- }
 }

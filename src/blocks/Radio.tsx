@@ -13,15 +13,15 @@ const S = "Radio"
  *          --> 74LVC1G02 NOR ---> TPS22917 ON --> RADIO_3V3 (the whole BLE module)
  *   RADIO_OFF (MCU) --^              NOR: the MCU can turn the radio OFF, never ON
  *
- *   MCU USART2 <-> SN74LVC1T45 x2 (B side on RADIO_3V3) <-> module UART
+ *   MCU USART3 <-> TXU0202 (B side and OE on RADIO_3V3) <-> module UART
  *
  * Why each piece is there:
  *  - The MCU only senses AIRGAP through 1M (AIRGAP_SENSE). Against the 100k
  *    fail-safe pull-up (switch between detents) a GPIO driven low still leaves
  *    the net at 3.0 V, a solid high; in the AIR detent the switch holds it through
  *    1k. A 10k here let firmware pull a floating switch to 0.3 V (review M1).
- *  - With RADIO_3V3 at 0 V the LVC1T45s are high-impedance on both ports
- *    (TI SCES515N 7.3.6, VCC isolation), so firmware driving the UART pins cannot
+ *  - With RADIO_3V3 at 0 V the TXU0202 is high-impedance on both ports (TI
+ *    SCES942A 9.3.4, VCC isolation), so firmware driving the UART pins cannot
  *    back-power the module through its I/O clamps.
  *  - The pull-up on AIRGAP makes "airgapped" the state of a switch that is
  *    between detents or broken.
@@ -134,47 +134,38 @@ export const RadioBlock = () => (
     <trace from=".D_RADIO > .A" to="net.RADIO_LED_A" />
     <trace from=".D_RADIO > .K" to="net.GND" />
 
-    {/* ---------------- UART isolation buffers ---------------- */}
-    {/* SN74LVC1T45 DBV (SCES515N Table 4-1): 1 VCCA, 2 GND, 3 A, 4 B, 5 DIR, 6 VCCB.
-        DIR high = A->B. A = MCU side (V3V3), B = radio side (RADIO_3V3). */}
-    <chip name="U9" footprint="pinrow6"
-      manufacturerPartNumber="SN74LVC1T45DBVR" supplierPartNumbers={{ jlcpcb: ["C7843"] }}
-      pinLabels={{ pin1: "VCCA", pin2: "GND", pin3: "A", pin4: "B", pin5: "DIR", pin6: "VCCB" }}
+    {/* ---------------- UART isolation ---------------- */}
+    {/* TXU0202 DCU (SCES942A Table 6-1): 1 B2, 2 GND, 3 VCCA, 4 A2Y, 5 A1, 6 OE, 7 VCCB, 8 B1Y.
+        Fixed directions, one bit each way: A1 -> B1Y (MCU TX to module RX), B2 -> A2Y
+        (module TX to MCU RX). A = MCU side (V3V3), B = radio side (RADIO_3V3).
+        - Outputs go high-impedance when either supply is below 100 mV or floating
+          (9.3.4, VCC isolation), and Ioff holds every pin at <= 2.5 uA (7.5): with
+          RADIO_3V3 at 0 V (QOD) nothing the MCU drives reaches or back-powers the module.
+        - OE on the radio's own rail: enabled only while the radio has power, so even the
+          OE path needs no second net from the gate.
+        - Inputs carry 5 Mohm pull-downs (9.3.1.1), so the MCU's unconfigured TX and the
+          module's TX while it boots never float; both lines idle low until driven (one
+          framing error to discard at start-up). The MCU's RX floats while the radio is
+          off: firmware keeps the USART RX pin's internal pull-up on. */}
+    <chip name="U9" footprint="pinrow8"
+      manufacturerPartNumber="TXU0202DCUR" supplierPartNumbers={{ jlcpcb: ["C5186957"] }}
+      pinLabels={{ pin1: "B2", pin2: "GND", pin3: "VCCA", pin4: "A2Y", pin5: "A1", pin6: "OE", pin7: "VCCB", pin8: "B1Y" }}
       schX={-6} schY={-26} schSectionName={S} />
     <trace from=".U9 > .VCCA" to="net.V3V3" />
     <trace from=".U9 > .GND" to="net.GND" />
-    <trace from=".U9 > .A" to="net.RADIO_TXD_MCU" />
-    <trace from=".U9 > .B" to="net.RADIO_RX" />
-    <trace from=".U9 > .DIR" to="net.V3V3" />
+    <trace from=".U9 > .A1" to="net.RADIO_TXD_MCU" />
+    <trace from=".U9 > .B1Y" to="net.RADIO_RX" />
+    <trace from=".U9 > .B2" to="net.RADIO_TX" />
+    <trace from=".U9 > .A2Y" to="net.RADIO_RXD_MCU" />
+    <trace from=".U9 > .OE" to="net.RADIO_3V3" />
     <trace from=".U9 > .VCCB" to="net.RADIO_3V3" />
-    <chip name="U10" footprint="pinrow6"
-      manufacturerPartNumber="SN74LVC1T45DBVR" supplierPartNumbers={{ jlcpcb: ["C7843"] }}
-      pinLabels={{ pin1: "VCCA", pin2: "GND", pin3: "A", pin4: "B", pin5: "DIR", pin6: "VCCB" }}
-      schX={-2} schY={-26} schSectionName={S} />
-    <trace from=".U10 > .VCCA" to="net.V3V3" />
-    <trace from=".U10 > .GND" to="net.GND" />
-    <trace from=".U10 > .A" to="net.RADIO_RXD_MCU" />
-    <trace from=".U10 > .B" to="net.RADIO_TX" />
-    <trace from=".U10 > .DIR" to="net.GND" />
-    <trace from=".U10 > .VCCB" to="net.RADIO_3V3" />
-    {[["C_U9A", "V3V3"], ["C_U9B", "RADIO_3V3"], ["C_U10A", "V3V3"], ["C_U10B", "RADIO_3V3"]].map(([c, net], i) => (
+    {/* 0.1 uF per supply pin (SCES942A 12.1). */}
+    {[["C_U9A", "V3V3"], ["C_U9B", "RADIO_3V3"]].map(([c, net], i) => (
       <group key={c}>
         <capacitor name={c} capacitance="100nF" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C1525"] }}
           schX={-6 + i} schY={-29} schRotation="90deg" schSectionName={S} />
         <trace from={`.${c} > .pin1`} to={`net.${net}`} />
         <trace from={`.${c} > .pin2`} to="net.GND" />
-      </group>
-    ))}
-    {/* No floating buffer inputs (SCES515N 8.2): the MCU's TX before the UART is
-        configured, and the MCU's RX while the buffer is isolated. */}
-    {/* The module's TX also floats while the radio boots (nRF reset state is
-        "input disconnected"): that pull-up stays in the radio's own domain. */}
-    {[["R_RTXPU", "RADIO_TXD_MCU", "V3V3"], ["R_RRXPU", "RADIO_RXD_MCU", "V3V3"], ["R_RMTX", "RADIO_TX", "RADIO_3V3"]].map(([r, net, to]) => (
-      <group key={r}>
-        <resistor name={r} resistance="100k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C25741"] }}
-          schX={-4} schY={-31} schRotation="90deg" schSectionName={S} />
-        <trace from={`.${r} > .pin1`} to={`net.${net}`} />
-        <trace from={`.${r} > .pin2`} to={`net.${to}`} />
       </group>
     ))}
 
@@ -203,7 +194,6 @@ export const RadioBlock = () => (
     <trace from=".U11 > .P0_24" to="net.RADIO_RX" />
     <trace from=".U11 > .SWDIO" to="net.RADIO_SWDIO" />
     <trace from=".U11 > .SWDCLK" to="net.RADIO_SWCLK" />
-    <trace from=".U11 > .RESET" to="net.RADIO_RESET" />
     {[["C_RADIO1", "10uF", "0603", "C19702"], ["C_RADIO2", "100nF", "0402", "C1525"]].map(([c, v, fp, jlc], i) => (
       <group key={c}>
         <capacitor name={c} capacitance={v} footprint={fp} supplierPartNumbers={{ jlcpcb: [jlc] }}
@@ -212,8 +202,9 @@ export const RadioBlock = () => (
         <trace from={`.${c} > .pin2`} to="net.GND" />
       </group>
     ))}
-    {/* Factory programming of the radio (it is updated over UART afterwards). */}
-    {[["TP_RSWDIO", "RADIO_SWDIO"], ["TP_RSWCLK", "RADIO_SWCLK"], ["TP_RRESET", "RADIO_RESET"], ["TP_R3V3", "RADIO_3V3"]].map(([tp, net], i) => (
+    {/* Factory programming of the radio (it is updated over UART afterwards). SWD
+        needs no reset line on the nRF52840, so its RESET pad stays unconnected. */}
+    {[["TP_RSWDIO", "RADIO_SWDIO"], ["TP_RSWCLK", "RADIO_SWCLK"], ["TP_R3V3", "RADIO_3V3"]].map(([tp, net], i) => (
       <group key={tp}>
         <chip name={tp} footprint="pinrow1" pinLabels={{ pin1: "P" }} schX={12} schY={-28 + i} schSectionName={S} />
         <trace from={`.${tp} > .P`} to={`net.${net}`} />

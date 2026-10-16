@@ -74,11 +74,6 @@ export const DisplayBlock = () => (
     <trace from=".J_CTP > .SDA" to="net.I2C_SDA" />
     <trace from=".J_CTP > .INT" to="net.CTP_INT" />
     <trace from=".J_CTP > .RST" to="net.CTP_RST" />
-    {/* /RESET held released while the MCU is in reset or its pin is unconfigured. */}
-    <resistor name="R_CTPRST" resistance="10k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C25744"] }}
-      schX={6} schY={-14} schRotation="90deg" schSectionName={S} />
-    <trace from=".R_CTPRST > .pin1" to="net.CTP_RST" />
-    <trace from=".R_CTPRST > .pin2" to="net.V3V3" />
     <trace from=".J_CTP > .MP1" to="net.GND" />
     <trace from=".J_CTP > .MP2" to="net.GND" />
 

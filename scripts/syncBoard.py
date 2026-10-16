@@ -105,12 +105,13 @@ def sync(board, parts, fpmap, prune=False, park_x=None):
         elif fp.GetFPIDAsString() != spec:
             new = load_footprint(spec)
             new.SetReference(ref)
+            # add before flipping: Flip() on a footprint that has no board segfaults pcbnew
+            board.Add(new)
+            new.SetPosition(fp.GetPosition())
             if fp.IsFlipped():
                 new.Flip(new.GetPosition(), pcbnew.FLIP_DIRECTION_TOP_BOTTOM)
-            new.SetPosition(fp.GetPosition())
             new.SetOrientation(fp.GetOrientation())
             board.Remove(fp)
-            board.Add(new)
             changes.append(f"{ref}: footprint {fp.GetFPIDAsString()} -> {spec} (position kept)")
             fp = new
 

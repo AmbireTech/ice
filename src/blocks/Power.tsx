@@ -9,8 +9,7 @@ const S = "Power"
  *   USB-C VBUS -> BQ25185 IN -> SYS ---------------> TPS63802 VIN, EN = soft latch -> V3V3
  *                       |        \--> TPS60230 backlight pump (EN from the MCU)
  *                       \-- BAT <- JST-PH <- protected 1S LiPo pouch
- *                            |--> MAX17048 battery gauge (I2C)
- *                            \--> XC6206 -> VBAT_RTC (STM32 VBAT: RTC, backup registers)
+ *                            \--> MAX17048 battery gauge (I2C)
  *
  * Soft latch: the power button pulls TPS63802 EN to SYS through one diode of a
  * BAT54C; the MCU holds it on through the other (PWR_HOLD) and lets go to power
@@ -188,10 +187,9 @@ export const PowerBlock = () => (
     <trace from=".Q_BTN > .G" to="net.BTN" />
     <trace from=".Q_BTN > .S" to="net.GND" />
     <trace from=".Q_BTN > .D" to="net.BTN_N" />
-    <resistor name="R_BTNN" resistance="100k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C25741"] }}
-      schX={4} schY={17} schRotation="90deg" schSectionName={S} />
-    <trace from=".R_BTNN > .pin1" to="net.BTN_N" />
-    <trace from=".R_BTNN > .pin2" to="net.V3V3" />
+    {/* BTN_N's pull-up is PA0's own (PUPDR, kept through Standby/Shutdown with
+        PWR_PUCRA + APC): an external one only mattered while the MCU is unpowered,
+        and then nothing reads the pin. */}
     {/* PWR_HOLD low until firmware drives it: the board stays off unless the MCU asks. */}
     <resistor name="R_HOLD" resistance="100k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C25741"] }}
       schX={4} schY={12} schRotation="90deg" schSectionName={S} />
@@ -255,34 +253,14 @@ export const PowerBlock = () => (
     <trace from=".U15 > .GND" to="net.GND" />
     <trace from=".U15 > .QSTRT" to="net.GND" />
     <trace from=".U15 > .EP" to="net.GND" />
-    <trace from=".U15 > .ALRT" to="net.GAUGE_ALRT" />
+    {/* ALRT unused: firmware polls the gauge (it is read with every redraw anyway). */}
+    <trace from=".U15 > .ALRT" to="net.NC_GAUGE_ALRT" />
     <trace from=".U15 > .SCL" to="net.I2C_SCL" />
     <trace from=".U15 > .SDA" to="net.I2C_SDA" />
     <capacitor name="C_GAUGE" capacitance="100nF" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C1525"] }}
       schX={-12} schY={-2} schRotation="90deg" schSectionName={S} />
     <trace from=".C_GAUGE > .pin1" to="net.BAT" />
     <trace from=".C_GAUGE > .pin2" to="net.GND" />
-    <resistor name="R_ALRT" resistance="100k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C25741"] }}
-      schX={-10} schY={-2} schRotation="90deg" schSectionName={S} />
-    <trace from=".R_ALRT > .pin1" to="net.GAUGE_ALRT" />
-    <trace from=".R_ALRT > .pin2" to="net.V3V3" />
 
-    {/* ---------------- Always-on 3.3 V for the STM32 VBAT domain ---------------- */}
-    {/* RTC + backup registers survive power-off; ~1 uA from the cell. */}
-    <chip name="U3" footprint="sot23"
-      manufacturerPartNumber="XC6206P332MR-G" supplierPartNumbers={{ jlcpcb: ["C5446"] }}
-      pinLabels={{ pin1: "GND", pin2: "VOUT", pin3: "VIN" }}
-      schX={-2} schY={4} schSectionName={S} />
-    <trace from=".U3 > .VIN" to="net.BAT" width={W_PWR_LITE} />
-    <trace from=".U3 > .GND" to="net.GND" />
-    <trace from=".U3 > .VOUT" to="net.VBAT_RTC" width={W_PWR_LITE} />
-    <capacitor name="C_RTCIN" capacitance="1uF" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C52923"] }}
-      schX={-4} schY={2} schRotation="90deg" schSectionName={S} />
-    <trace from=".C_RTCIN > .pin1" to="net.BAT" />
-    <trace from=".C_RTCIN > .pin2" to="net.GND" />
-    <capacitor name="C_RTC" capacitance="1uF" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C52923"] }}
-      schX={0} schY={2} schRotation="90deg" schSectionName={S} />
-    <trace from=".C_RTC > .pin1" to="net.VBAT_RTC" />
-    <trace from=".C_RTC > .pin2" to="net.GND" />
   </group>
 )

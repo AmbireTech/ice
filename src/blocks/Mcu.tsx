@@ -43,7 +43,10 @@ export const McuBlock = () => (
     <trace from=".U4 > .VDDA" to="net.V3V3" />
     <trace from=".U4 > .VREFP" to="net.V3V3" />
     <trace from=".U4 > .VDDUSB" to="net.V3V3" />
-    <trace from=".U4 > .VBAT" to="net.VBAT_RTC" />
+    {/* No backup domain across power-off (DS13086 3.9.1: VBAT only matters "when VDD
+        is not present"): a Safe transaction carries no timestamp and the PIN retry
+        counter lives in the SE050, so VBAT simply rides on VDD. */}
+    <trace from=".U4 > .VBAT" to="net.V3V3" />
 
     {/* Core supply from the internal LDO. DS13086 3.9.1: "When the SMPS is not
         used, it is recommended to connect both VDDSMPS and VLXSMPS to GND." The
@@ -58,39 +61,25 @@ export const McuBlock = () => (
     <trace from=".U4 > .VDD11_49" to="net.VDD11" width={W_PWR_LITE} />
     <trace from=".U4 > .VDD11_98" to="net.VDD11" width={W_PWR_LITE} />
 
-    {/* Decoupling per DS13086 Rev 8 Figure 25 (STM32U585xQ, SMPS): VDD n x 100 nF
-        + 10 uF; VDDA and VREF+ 100 nF + 1 uF each; VDDUSB 100 nF;
-        VDD11 2 x 2.2 uF (4.7 uF total typ., section 3.9.1) + the optional 100 nF
-        per VDD11 pin. VBAT needs none; 100 nF anyway, it sits at the end of a
-        long always-on run. */}
+    {/* Decoupling per DS13086 Rev 8 Figure 25 (STM32U585xQ): VDD n x 100 nF + 10 uF;
+        VDDA 100 nF + 1 uF, shared with VREF+ (pins 20/21 are neighbours on one net; the
+        ADC is unused); VDDUSB 100 nF; VDD11 2 x 2.2 uF (4.7 uF total typ., 3.9.1), one at
+        each VDD11 pin, without the optional 100 nF. VBAT on VDD keeps its 100 nF. */}
     {VDD.map((p, i) => cap(`C_VDD${i + 1}`, "100nF", "V3V3", "C1525", "0402", -4 + i, 6))}
     {cap("C_VDDB", "10uF", "V3V3", "C19702", "0603", 2, 6)}
     {cap("C_VDDA1", "1uF", "V3V3", "C52923", "0402", 3, 6)}
     {cap("C_VDDA2", "100nF", "V3V3", "C1525", "0402", 4, 6)}
-    {cap("C_VREF1", "1uF", "V3V3", "C52923", "0402", 5, 6)}
-    {cap("C_VREF2", "100nF", "V3V3", "C1525", "0402", 5, 4)}
     {cap("C_VUSB", "100nF", "V3V3", "C1525", "0402", 6, 6)}
-    {cap("C_VBAT", "100nF", "VBAT_RTC", "C1525", "0402", 7, 6)}
+    {cap("C_VBAT", "100nF", "V3V3", "C1525", "0402", 7, 6)}
     {/* COUT rated >= 10 V (DS13086 5.1.6): 2.2 uF X5R 10 V. */}
     {cap("C_VDD11A", "2.2uF", "VDD11", "C107369", "0402", 9, 6)}
     {cap("C_VDD11B", "2.2uF", "VDD11", "C107369", "0402", 10, 6)}
-    {cap("C_VDD11C", "100nF", "VDD11", "C1525", "0402", 9, 4)}
-    {cap("C_VDD11D", "100nF", "VDD11", "C1525", "0402", 10, 4)}
 
-    {/* 32.768 kHz LSE: RTC and the TAMP timestamp. A 6 pF crystal, as ST asks of
-        the LSE's low-drive oscillator (AN2867); load caps 2 x (CL - ~2 pF stray)
-        = 8 pF. (The first pick was the 12.5 pF FC-135 on 10 pF caps: ~7 pF of
-        load, pulled tens of ppm fast.) */}
-    <chip name="Y1" footprint="pinrow2"
-      manufacturerPartNumber="Q13FC13500049" supplierPartNumbers={{ jlcpcb: ["C95361"] }}
-      pinLabels={{ pin1: "pin1", pin2: "pin2" }}
-      schX={-6} schY={12} schSectionName={S} />
-    <trace from=".Y1 > .pin1" to="net.LSE_IN" />
-    <trace from=".Y1 > .pin2" to="net.LSE_OUT" />
-    {cap("C_LSE1", "8pF", "LSE_IN", "C1578", "0402", -8, 12)}
-    {cap("C_LSE2", "8pF", "LSE_OUT", "C1578", "0402", -7, 12)}
+    {/* No LSE crystal: USB runs on HSI48 trimmed by the CRS from SOF (DS13086 3.12),
+        timeouts and the auto-lock on the LSI. */}
 
-    {/* NRST: 100 nF (ST AN5373); BOOT0 pulled low, pad for the ROM bootloader. */}
+    {/* NRST: 100 nF (ST AN5373); BOOT0 pulled low (the ROM bootloader is reached
+        through the option bytes over SWD, no pad). */}
     <trace from=".U4 > .NRST" to="net.NRST" />
     {cap("C_NRST", "100nF", "NRST", "C1525", "0402", -6, 8)}
     <resistor name="R_BOOT0" resistance="10k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C25744"] }}
@@ -99,8 +88,8 @@ export const McuBlock = () => (
     <trace from=".R_BOOT0 > .pin2" to="net.GND" />
 
     {/* SWD pogo pads (TC2030-NL pattern would cost three NPTH holes; plain pads do). */}
-    {[["TP_3V3", "V3V3"], ["TP_SWDIO", "SWDIO"], ["TP_SWCLK", "SWCLK"], ["TP_NRST", "NRST"], ["TP_GND", "GND"],
-      ["TP_SWO", "SWO"], ["TP_BOOT0", "BOOT0"]].map(([tp, net], i) => (
+    {[["TP_3V3", "V3V3"], ["TP_SWDIO", "SWDIO"], ["TP_SWCLK", "SWCLK"], ["TP_NRST", "NRST"],
+      ["TP_GND", "GND"]].map(([tp, net], i) => (
       <group key={tp}>
         <chip name={tp} footprint="pinrow1" pinLabels={{ pin1: "P" }} schX={-10} schY={4 + i} schSectionName={S} />
         <trace from={`.${tp} > .P`} to={`net.${net}`} />

@@ -13,8 +13,7 @@ Reads src/parts/mcuAssign.json and the placed board, then greedily moves each
 signal to another pin, or swaps it with the signal on that pin, whenever that
 lowers optimizePlacement's cost (airwire length + crossings). A signal may only
 go to a pin ST lists for its peripheral function (scripts/ref/STM32U585VITxQ.xml),
-and a plain GPIO to any free I/O pin. Fixed: USB, SWD/SWO, the 32 kHz crystal,
-BOOT0, the wake-up button (PA0 = WKUP1). Interrupt inputs keep distinct EXTI
+and a plain GPIO to any free I/O pin. Fixed: USB, SWD, BOOT0, the wake-up button (PA0 = WKUP1). Interrupt inputs keep distinct EXTI
 line numbers (EXTIn is shared by every port's pin n).
 
 Without --apply it only reports. With --apply it rewrites mcuAssign.json; then
@@ -23,6 +22,7 @@ re-export the netlist and regenerate the board (README, "Board flow").
 import collections
 import json
 import random
+import re
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -35,8 +35,11 @@ import optimizePlacement as op  # noqa: E402
 
 ASSIGN = HERE.parent / "src/parts/mcuAssign.json"
 XML = HERE / "ref/STM32U585VITxQ.xml"
-FIXED = {"PA11", "PA12", "PA13", "PA14", "PB3", "PC14", "PC15", "PH3", "PA0"}
-NEVER_GPIO = FIXED | {"PH0", "PH1", "PC13"}       # HSE pins kept free; PC13 is current-limited
+FIXED = {"PA11", "PA12", "PA13", "PA14", "PH3", "PA0"}
+# HSE pins kept free; PC13-PC15 sit in the backup domain (3 mA, 2 MHz: no bus signals)
+NEVER_GPIO = FIXED | {"PH0", "PH1", "PC13", "PC14", "PC15"}
+# nets whose signal is a clock any timer channel can produce, not only the listed AF
+TIMER_CLOCKS = {"CAM_XCLK"}
 INTERRUPTS = {"CTP_INT", "GAUGE_ALRT", "BTN_N", "TFT_TE", "AIRGAP_SENSE", "CHG_STAT1"}
 
 
@@ -78,6 +81,10 @@ def main():
             return {port}
         if signal in ("GPIO", "ANALOG"):
             return {p for p in pins if p not in NEVER_GPIO}
+        if net in TIMER_CLOCKS:
+            # a clock a timer can make (PWM at f_TIM / n): any pin with a TIMx_CHy output
+            return {p for p, (_, sig) in pins.items() if p not in FIXED
+                    and any(re.fullmatch(r"TIM\d+_CH\d", x) for x in sig)}
         return {p for p, (_, sig) in pins.items() if signal in sig and p not in FIXED}
 
     def set_net(port, net):
@@ -166,7 +173,10 @@ def main():
         if comment:
             out["_comment"] = comment
         for port in sorted(assign, key=lambda p: (p[1], exti(p))):
-            out[port] = list(assign[port])
+            net, signal = assign[port]
+            if net in TIMER_CLOCKS and signal not in pins[port][1]:
+                signal = sorted(x for x in pins[port][1] if re.fullmatch(r"TIM\d+_CH\d", x))[0]
+            out[port] = [net, signal]
         ASSIGN.write_text(json.dumps(out, indent=2) + "\n")
         print(f"wrote {ASSIGN} ({changes} reassignments)")
     elif changes:

@@ -154,7 +154,24 @@ class Joined:
         return self.find(("p", pad.pid)) in self.via_roots
 
 
-def route_blocks(src, out, blocks=None, minutes=6.0, knobs=(), log=print, skip_nets=(), first_nets=(), max_mm=None, leave_under=()):
+VIA_GAP = 0.25      # mm of bare board between a fanout via's ring and any pad
+
+
+def fanout_wanted(pad, model):
+    """GND pads that get their own via: capacitors (the via is part of the decoupling
+    loop) and multi-pin parts. A resistor's or connector's GND pad takes the pour."""
+    if pad.ref.startswith("C"):
+        return True
+    return sum(1 for q in model.pads if q.ref == pad.ref) > 3
+
+
+def route_blocks(src, out, blocks=None, minutes=6.0, knobs=(), log=print, skip_nets=(), first_nets=(), max_mm=None,
+                 leave_under=(), block_layers=(B,), highway_mm=7.0):
+    """Layer plan: block signals on the back copper (the parts' side), power on the back
+    or In2 (the power layer), the front only for links that start on a front pad (test
+    pads); the front is otherwise kept for the highways between blocks.
+    highway_mm: a block signal link longer than this (a pull-up at the far end of a bus)
+    is routed with that bus by the human."""
     t0 = time.perf_counter()
     os.makedirs(out, exist_ok=True)
     name = Path(src).stem
@@ -176,10 +193,24 @@ def route_blocks(src, out, blocks=None, minutes=6.0, knobs=(), log=print, skip_n
     model = loadModel(work, str(Path(src).with_suffix(".kicad_pro")))
     model.planes = innerPlaneFills(work, zones, model.outline) if zones else {"GND": None}
     k = Knobs()
+    k.neckMm = 0.0      # a power track keeps its width up to the pad; no necking on approach
     for kv in knobs:
         key, value = kv.split("=", 1)
         setattr(k, key, type(getattr(k, key))(value))
     router = Router(model, k, lambda m: None)
+    if "GND" in router.netId:
+        # a fanout via keeps VIA_GAP of bare board to every pad, its own included (the
+        # router's planeCells only exists for a plane that does not cover the board)
+        import numpy as np
+        from shapely.ops import unary_union
+        cells = router.planeCells.get("GND")
+        if cells is None:
+            cells = np.ones((router.sp.H, router.sp.W), bool)
+        via_r = router.rules["GND"].viaDia / 2
+        win, mask = router.sp.rasterMask(unary_union([pd.poly for pd in model.pads]), grow=via_r + VIA_GAP)
+        i0, j0, i1, j1 = win
+        cells[i0:i1, j0:j1] &= ~mask
+        router.planeCells["GND"] = cells
     nfix = load_fixed(router, tracks, vias)
     conns, block, bundles = plan(model, router, lambda m: None, [])
     have = Joined(model, tracks, vias)
@@ -213,6 +244,10 @@ def route_blocks(src, out, blocks=None, minutes=6.0, knobs=(), log=print, skip_n
                 and any(LineString([c.a.center, c.b.center]).intersects(b) for b in bodies):
             skipped["crosses under " + "/".join(leave_under)] += 1
             continue
+        if highway_mm and c.kind == "sig" and c.b is not None and not any(B not in pd.layers for pd in (c.a, c.b)) \
+                and math.dist(c.a.center, c.b.center) > highway_mm:
+            skipped["highway member (long link)"] += 1
+            continue
         if max_mm and c.b is not None and math.dist(c.a.center, c.b.center) > max_mm:
             # a long link inside a block is a bus run in all but name: it crosses
             # the channels the between-block wiring needs, so the human lays it
@@ -222,6 +257,9 @@ def route_blocks(src, out, blocks=None, minutes=6.0, knobs=(), log=print, skip_n
             if have.reaches_via(c.a):
                 skipped["already done"] += 1
                 continue
+            if not fanout_wanted(c.a, model):
+                skipped["GND pad left to the pour"] += 1
+                continue
         elif c.b is not None and have.joined(c.a, c.b):
             skipped["already done"] += 1
             continue
@@ -230,8 +268,20 @@ def route_blocks(src, out, blocks=None, minutes=6.0, knobs=(), log=print, skip_n
     log(f"connections: {len(conns)}; routing {len(early)} first ({', '.join(sorted(set(first_nets)))}), "
         f"{len(todo)} inside blocks; skipped {dict(skipped)}")
     failed = []
+    import run as hr_run
+    early_ids = {id(c) for c in early}
+
+    def layers_for(c):
+        if c.kind == "gnd" or id(c) in early_ids:
+            return layersFor(c)
+        if any(pd is not None and B not in pd.layers for pd in (c.a, c.b)):
+            return [F, B]
+        if c.kind == "pwr":
+            return list(block_layers) + [IN2]
+        return list(block_layers)
+    hr_run.layersFor = layers_for    # negotiate() asks the same question
     for c in followLeaders(early) + phaseOrder(todo):
-        st, _ = router.route(c, layersFor(c), winPadsFor(c), viaMm=viaMmFor(c, k))
+        st, _ = router.route(c, layers_for(c), winPadsFor(c), viaMm=viaMmFor(c, k))
         if st != "ok":
             failed.append(c)
     nfail1 = len(failed)

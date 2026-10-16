@@ -23,8 +23,7 @@ const S = "Camera"
  * Supplies: AVDD 2.8 V, DOVDD 3.3 V (the MCU's I/O level, no shifting), DVDD
  * 1.3 V: the OV2640 data sheet v2.2 puts the core at 1.24-1.36 V (typ 1.3), so
  * the Ai-Thinker boards' 1.2 V is under its minimum. AVDD and DVDD are switched
- * by CAM_EN; DVDD is an adjustable LDO, so another sensor's core voltage is a
- * resistor change (1.5 V: R_DV1 = 174k).
+ * by CAM_EN; DVDD is a fixed 1.3 V LDO.
  */
 const CAM_PINS = {
   pin1: "Y0", pin2: "Y1", pin3: "Y4", pin4: "Y3", pin5: "Y5", pin6: "Y2", pin7: "Y6", pin8: "PCLK",
@@ -48,7 +47,8 @@ export const CameraBlock = () => (
     <trace from=".J_CAM > .XCLK" to="net.CAM_XCLK" />
     <trace from=".J_CAM > .HREF" to="net.CAM_HREF" />
     <trace from=".J_CAM > .VSYNC" to="net.CAM_VSYNC" />
-    <trace from=".J_CAM > .PWDN" to="net.CAM_PWDN" />
+    {/* PWDN tied low: the sensor is only ever powered up and down whole, by CAM_EN. */}
+    <trace from=".J_CAM > .PWDN" to="net.GND" />
     <trace from=".J_CAM > .RESET" to="net.CAM_RST" />
     <trace from=".J_CAM > .SIOC" to="net.CAM_SCL" />
     <trace from=".J_CAM > .SIOD" to="net.CAM_SDA" />
@@ -70,29 +70,23 @@ export const CameraBlock = () => (
     <trace from=".U12 > .VSS" to="net.GND" />
     <trace from=".U12 > .CE" to="net.CAM_EN" />
     <trace from=".U12 > .VOUT" to="net.CAM_AVDD" />
-    {/* DVDD: TLV75801P DBV (SBVS351D Fig. 4-2: 1 IN, 2 GND, 3 EN, 4 FB, 5 OUT).
-        Vout = 0.55 V * (1 + R_DV1 / R_DV2) = 0.55 * (1 + 137k/100k) = 1.30 V. */}
+    {/* DVDD 1.3 V: TLV70313 DBV (SBVS148 Pin Functions: 1 IN, 2 GND, 3 EN, 4 NC, 5 OUT),
+        fixed output, 1 uF in and out. Another sensor's core voltage is another TLV703xx
+        on the same land. */}
     <chip name="U14" footprint="pinrow5"
-      manufacturerPartNumber="TLV75801PDBVR" supplierPartNumbers={{ jlcpcb: ["C2877852"] }}
-      pinLabels={{ pin1: "IN", pin2: "GND", pin3: "EN", pin4: "FB", pin5: "OUT" }}
+      manufacturerPartNumber="TLV70313DBVR" supplierPartNumbers={{ jlcpcb: ["C2868385"] }}
+      pinLabels={{ pin1: "IN", pin2: "GND", pin3: "EN", pin4: "NC", pin5: "OUT" }}
       schX={6} schY={-38} schSectionName={S} />
     <trace from=".U14 > .IN" to="net.V3V3" />
     <trace from=".U14 > .GND" to="net.GND" />
     <trace from=".U14 > .EN" to="net.CAM_EN" />
-    <trace from=".U14 > .FB" to="net.CAM_DVFB" />
+    <trace from=".U14 > .NC" to="net.GND" />
     <trace from=".U14 > .OUT" to="net.CAM_DVDD" />
-    <resistor name="R_DV1" resistance="137k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C32298"] }}
-      schX={9} schY={-38} schRotation="90deg" schSectionName={S} />
-    <resistor name="R_DV2" resistance="100k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C25741"] }}
-      schX={10} schY={-38} schRotation="90deg" schSectionName={S} />
-    <trace from=".R_DV1 > .pin1" to="net.CAM_DVDD" />
-    <trace from=".R_DV1 > .pin2" to="net.CAM_DVFB" />
-    <trace from=".R_DV2 > .pin1" to="net.CAM_DVFB" />
-    <trace from=".R_DV2 > .pin2" to="net.GND" />
-    {/* LDO in/out caps: 1 uF each (ME6211 typical circuit; TLV758P CIN >= 1 uF,
-        COUT >= 0.47 uF effective), plus 100 nF on the sensor's I/O rail. */}
+    {/* 1 uF in (shared by the two LDOs, which sit side by side), 1 uF on each output
+        (ME6211 typical circuit; TLV703 COUT >= 0.1 uF effective), plus 100 nF on the
+        sensor's I/O rail. */}
     {[["C_AVIN", "V3V3", "1uF", "C52923"], ["C_AVOUT", "CAM_AVDD", "1uF", "C52923"],
-      ["C_DVIN", "V3V3", "1uF", "C52923"], ["C_DVOUT", "CAM_DVDD", "1uF", "C52923"],
+      ["C_DVOUT", "CAM_DVDD", "1uF", "C52923"],
       ["C_DOVDD", "V3V3", "100nF", "C1525"]].map(([c, net, v, jlc], i) => (
       <group key={c}>
         <capacitor name={c} capacitance={v} footprint="0402" supplierPartNumbers={{ jlcpcb: [jlc] }}
@@ -101,9 +95,10 @@ export const CameraBlock = () => (
         <trace from={`.${c} > .pin2`} to="net.GND" />
       </group>
     ))}
-    {/* CAM_EN low (LDOs off) and PWDN high (sensor powered down) until firmware
-        drives them; RESET released high; SCCB pull-ups on its own bus (I2C3). */}
-    {[["R_CAMEN", "CAM_EN", "GND"], ["R_PWDN", "CAM_PWDN", "V3V3"], ["R_CRST", "CAM_RST", "V3V3"]].map(([r, net, to]) => (
+    {/* CAM_EN low (LDOs off) until firmware drives it. RESETB needs no pull-up: the
+        sensor's own keeps it released, and it is unpowered whenever the MCU is not
+        driving it. SCCB pull-ups on its own bus. */}
+    {[["R_CAMEN", "CAM_EN", "GND"]].map(([r, net, to]) => (
       <group key={r}>
         <resistor name={r} resistance="100k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C25741"] }}
           schX={-4} schY={-36} schRotation="90deg" schSectionName={S} />
