@@ -78,14 +78,13 @@ export const McuBlock = () => (
     {/* No LSE crystal: USB runs on HSI48 trimmed by the CRS from SOF (DS13086 3.12),
         timeouts and the auto-lock on the LSI. */}
 
-    {/* NRST: 100 nF (ST AN5373); BOOT0 pulled low (the ROM bootloader is reached
-        through the option bytes over SWD, no pad). */}
+    {/* NRST: 100 nF (ST AN5373). BOOT0 (PH3) tied straight to GND: the ROM bootloader
+        is reached through the option bytes (nSWBOOT0) over SWD, so the pin only ever
+        needs to sit low, and a pull-down resistor's link would cross the camera pins
+        on either side of pin 94. */}
     <trace from=".U4 > .NRST" to="net.NRST" />
     {cap("C_NRST", "100nF", "NRST", "C1525", "0402", -6, 8)}
-    <resistor name="R_BOOT0" resistance="10k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C25744"] }}
-      schX={-5} schY={8} schRotation="90deg" schSectionName={S} />
-    <trace from=".R_BOOT0 > .pin1" to="net.BOOT0" />
-    <trace from=".R_BOOT0 > .pin2" to="net.GND" />
+    <trace from=".U4 > .PH3" to="net.GND" />
 
     {/* SWD pogo pads (TC2030-NL pattern would cost three NPTH holes; plain pads do). */}
     {[["TP_3V3", "V3V3"], ["TP_SWDIO", "SWDIO"], ["TP_SWCLK", "SWCLK"], ["TP_NRST", "NRST"],

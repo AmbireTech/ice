@@ -466,12 +466,12 @@ def text(board, t, x, y, layer, size=1.0, thick=0.15, rot=0):
     board.Add(p)
 
 
-def gnd_pour(board, layer):
+def gnd_pour(board, layer, net="GND"):
     z = pcbnew.ZONE(board)
     ls = pcbnew.LSET()
     ls.AddLayer(layer)
     z.SetLayerSet(ls)     # ZONE.SetLayer() silently leaves the zone on F.Cu
-    z.SetNet(board.FindNet("GND"))
+    z.SetNet(board.FindNet(net))
     poly = z.Outline()
     poly.NewOutline()
     for x, y in ((0, 0), (W, 0), (W, H), (0, H)):
@@ -686,8 +686,13 @@ def main():
         import optimizePlacement
         optimizePlacement.optimize(board, radius=OPT_RADIUS, passes=10)
     mounting_holes(board)
-    for layer in (pcbnew.F_Cu, pcbnew.In1_Cu, pcbnew.In2_Cu, pcbnew.B_Cu):
+    # Stack-up roles: every part sits on B.Cu, whose return currents run in the plane
+    # next to it, In2 -- so In2 is the solid GND. In1 is the 3.3 V plane (every V3V3
+    # pin and decap drops a via to it); the front copper, the free routing layer for
+    # the highways between blocks, references it. Outer layers are GND-poured.
+    for layer in (pcbnew.F_Cu, pcbnew.In2_Cu, pcbnew.B_Cu):
         gnd_pour(board, layer)
+    gnd_pour(board, pcbnew.In1_Cu, "V3V3")
     keepout(board, *ANT_KEEPOUT, "E73 antenna")
     keepouts(board)
     artwork(board)

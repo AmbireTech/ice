@@ -53,8 +53,8 @@ import netlist  # noqa: E402
 exported = netlist.read(HERE.parent / "board/netlist.circuit.json")["U4"].pads
 want = {position[port]: net for port, (net, _) in assign.items() if port in position}
 signal_nets = set(want.values())
-# supplies and the dedicated pins (NRST, BOOT0) are drawn by Mcu.tsx, not by the table
-DEDICATED = {"GND", "V3V3", "VDD11", "NRST", "BOOT0"}
+# supplies, NRST and BOOT0 (tied to GND) are drawn by Mcu.tsx, not by the table
+DEDICATED = {"GND", "V3V3", "VDD11", "NRST"}
 stray = {k for k, n in exported.items() if n and n not in DEDICATED and not n.startswith("NC")}
 for pad in sorted(set(want) | {k for k, n in exported.items() if n in signal_nets} | stray, key=int):
     if want.get(pad) != exported.get(pad):

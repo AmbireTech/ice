@@ -1,9 +1,16 @@
 (version 1)
 
-# In1 (L2) is solid GND: the reference plane under the back face, where every
-# part sits. Nothing but GND routes on it.
-(rule "In1: GND only"
+# Stack-up: F.Cu / In1 / In2 / B.Cu. Every part sits on B.Cu, whose return
+# currents run in In2 -- so In2 is solid GND and nothing else routes on it.
+(rule "In2: GND only"
   (condition "A.Type == 'Track' && A.NetName != 'GND'")
+  (layer "In2.Cu")
+  (constraint disallow track))
+
+# In1 is the 3.3 V plane. The only track allowed on it is the MCU's 1.1 V core
+# link (VDD11, pin 49 to pin 98), which would otherwise cut the camera highway.
+(rule "In1: V3V3 plane"
+  (condition "A.Type == 'Track' && A.NetName != 'V3V3' && A.NetName != 'VDD11'")
   (layer "In1.Cu")
   (constraint disallow track))
 

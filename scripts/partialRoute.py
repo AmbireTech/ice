@@ -2,21 +2,26 @@
 """Partial autoroute: route the wiring INSIDE functional blocks and leave the rest,
 and every track already on the board, to the person routing it.
 
-    $KICAD_PY scripts/partialRoute.py [board.kicad_pcb] --out DIR [--blocks U4,U5 ...] [--minutes 6]
+    $KICAD_PY scripts/partialRoute.py [board.kicad_pcb] --out DIR [--blocks U4,U5 ...]
+              [--first-nets A,B] [--skip-nets A,B] [--minutes 6] [--knob NAME=VALUE ...]
 
 Drives humanizedKicadAutoRouter (tools/humanRouter in the malaka-chrono repo, or
-HUMAN_ROUTER=/path) without its rip-everything start:
-  - its block plan: every multi-pin part anchors a block, each passive joins the
-    block it is most tied to; a connection inside one block is block wiring, one
-    between blocks belongs to a bundle (left to the human);
-  - every existing track and via is loaded as FIXED copper: nothing may cross
-    it and negotiation can never rip it; same-net copper stays joinable;
-  - a connection the existing copper already makes is skipped (own union-find
-    over tracks, vias and pads), so only what is missing gets routed;
-  - GND pads in the routed blocks get their fanout via to the plane, unless they
-    already reach a GND via.
-Writes DIR/wallet.kicad_pcb = the input board + the new copper, zones refilled,
-then KiCad's DRC. The input board is never modified.
+HUMAN_ROUTER=/path) on top of the existing copper:
+  - every existing track and via is fixed copper (router.loadExisting): nothing may
+    cross it, it is never ripped, and the router knows which pads it already joins;
+  - the router's block plan: every multi-pin part anchors a block, each passive joins
+    the block it is most tied to; a connection inside one block is block wiring, one
+    between blocks belongs to a bus (a "highway"), left to the human;
+  - layer plan: block wiring on the back copper, where the parts are; the front is
+    kept for the highways. Power has no tracks of its own on the planes: V3V3 pins
+    and decaps drop a via to the In1 plane, GND pads of caps and ICs a via to In2
+    (other GND pads take the pour). INNER_POWER names the one exception;
+  - a block link longer than HIGHWAY_MM (a pull-up at the far end of a bus, a test pad
+    across the board), or a power link longer than POWER_HIGHWAY_MM, is routed with
+    its bus by the human.
+Writes DIR/<name>.kicad_pcb = the input board + the new copper, zones refilled, then
+KiCad's DRC; removes any stub of new copper DRC calls dangling. The input board is
+never modified.
 """
 import argparse
 import json
@@ -33,145 +38,23 @@ HR = Path(os.environ.get("HUMAN_ROUTER", HERE.parent.parent / "tools/humanRouter
 sys.path.insert(0, str(HR))
 
 import pcbnew  # noqa: E402
-from shapely.geometry import LineString, Point, box  # noqa: E402
-from shapely.strtree import STRtree  # noqa: E402
 
-from boardModel import B, F, IN1, IN2, boardPlanes, innerPlaneFills, loadModel, ripCopper  # noqa: E402
+import run as hr_run  # noqa: E402
+from boardModel import B, F, IN1, boardPlanes, existingCopper, innerPlaneFills, loadModel, ripCopper  # noqa: E402
 from emit import runDrc, writeItem  # noqa: E402
 from router import Knobs, Router  # noqa: E402
-from run import layersFor, negotiate, viaMmFor, winPadsFor  # noqa: E402
+from run import negotiate, viaMmFor, winPadsFor  # noqa: E402
 from strategy import followLeaders, phaseOrder, plan  # noqa: E402
 
-NM = 1e6
-LAYER_OF = {"F.Cu": F, "In1.Cu": IN1, "In2.Cu": IN2, "B.Cu": B}
+HIGHWAY_MM = 7.0
+POWER_HIGHWAY_MM = 10.0     # a power link this long (SYS across the board) is a highway too
+# The MCU's 1.1 V core rail joins pin 49 to pin 98 across the package: on In1 (the
+# 3.3 V plane, which board/wallet.kicad_dru lets it cross) it never meets a highway.
+INNER_POWER = {"VDD11": [B, IN1]}
 
 
-def existing_copper(board):
-    tracks, vias = [], []
-    for t in board.GetTracks():
-        net = t.GetNetname()
-        if t.GetClass() == "PCB_VIA":
-            p = t.GetPosition()
-            vias.append((net, (p.x / NM, p.y / NM), t.GetWidth(pcbnew.F_Cu) / NM, t.GetDrill() / NM))
-        elif t.GetClass() in ("PCB_TRACK", "PCB_ARC"):
-            a, b = t.GetStart(), t.GetEnd()
-            tracks.append((net, LAYER_OF[t.GetLayerName()], (a.x / NM, a.y / NM), (b.x / NM, b.y / NM),
-                           t.GetWidth() / NM))
-    return tracks, vias
-
-
-def load_fixed(router, tracks, vias):
-    """Existing copper into the router's space as fixed (never rippable) copper."""
-    sp = router.sp
-    n = 0
-    for net, layer, p1, p2, w in tracks:
-        it = router.trackItem(net, layer, p1, p2, w, router.rules[net].clearance, 0)
-        it.tag = "existing"
-        _fix(sp, sp.add(it))
-        router.netItems.setdefault(it.net, set()).add(it.iid)
-        n += 1
-    for net, p, dia, drill in vias:
-        rule = router.rules[net]
-        it = router.viaItem(net, p, rule, 0)
-        it.width, it.drill = dia, drill
-        it.tag = "existing"
-        _fix(sp, sp.add(it))
-        router.netItems.setdefault(it.net, set()).add(it.iid)
-        n += 1
-    return n
-
-
-def _fix(sp, item):
-    for l, (i0, j0, i1, j1), mask in item.stamped:
-        sub = sp.fixed[l, i0:i1, j0:j1]
-        sub[mask & (sub == 0)] = item.net
-
-
-class Joined:
-    """Which pads the existing copper already joins (and which reach a via)."""
-
-    def __init__(self, model, tracks, vias):
-        self.parent = {}
-        pads = model.pads
-        self.pad_tree = {l: [] for l in (F, IN1, IN2, B)}
-        for p in pads:
-            for l in p.layers:
-                self.pad_tree[l].append(p)
-        trees = {l: (STRtree([p.polys.get(l, p.poly) for p in ps]), ps) for l, ps in self.pad_tree.items() if ps}
-        ends = []          # (key, layer, point)
-        for i, (net, layer, a, b, w) in enumerate(tracks):
-            self.union(("t", i), ("t", i))
-            ends += [(("t", i), layer, a), (("t", i), layer, b)]
-        for i, (net, p, dia, drill) in enumerate(vias):
-            self.via_nodes = None
-            ends += [(("v", i), l, p) for l in (F, IN1, IN2, B)]
-        self.has_via = set()
-        # endpoints that meet
-        grid = {}
-        for key, layer, p in ends:
-            grid.setdefault((layer, round(p[0], 2), round(p[1], 2)), []).append(key)
-        for keys in grid.values():
-            for k in keys[1:]:
-                self.union(keys[0], k)
-        # track ends / vias inside pads
-        for key, layer, p in ends:
-            if layer not in trees:
-                continue
-            tree, ps = trees[layer]
-            for idx in tree.query(Point(p).buffer(0.02)):
-                pad = ps[int(idx)]
-                if pad.polys.get(layer, pad.poly).distance(Point(p)) < 0.02:
-                    self.union(("p", pad.pid), key)
-        # mid-track junctions (a via or track end landing on a track's middle)
-        for i, (net, layer, a, b, w) in enumerate(tracks):
-            seg = None
-            for key, l2, p in ends:
-                if l2 != layer or key == ("t", i):
-                    continue
-                if seg is None:
-                    seg = LineString([a, b])
-                if seg.distance(Point(p)) < w / 2:
-                    self.union(("t", i), key)
-        roots_with_via = {self.find(("v", i)) for i in range(len(vias))}
-        self.via_roots = roots_with_via
-
-    def find(self, x):
-        self.parent.setdefault(x, x)
-        while self.parent[x] != x:
-            self.parent[x] = self.parent[self.parent[x]]
-            x = self.parent[x]
-        return x
-
-    def union(self, a, b):
-        ra, rb = self.find(a), self.find(b)
-        if ra != rb:
-            self.parent[ra] = rb
-
-    def joined(self, pa, pb):
-        return self.find(("p", pa.pid)) == self.find(("p", pb.pid))
-
-    def reaches_via(self, pad):
-        return self.find(("p", pad.pid)) in self.via_roots
-
-
-VIA_GAP = 0.25      # mm of bare board between a fanout via's ring and any pad
-
-
-def fanout_wanted(pad, model):
-    """GND pads that get their own via: capacitors (the via is part of the decoupling
-    loop) and multi-pin parts. A resistor's or connector's GND pad takes the pour."""
-    if pad.ref.startswith("C"):
-        return True
-    return sum(1 for q in model.pads if q.ref == pad.ref) > 3
-
-
-def route_blocks(src, out, blocks=None, minutes=6.0, knobs=(), log=print, skip_nets=(), first_nets=(), max_mm=None,
-                 leave_under=(), block_layers=(B,), highway_mm=7.0):
-    """Layer plan: block signals on the back copper (the parts' side), power on the back
-    or In2 (the power layer), the front only for links that start on a front pad (test
-    pads); the front is otherwise kept for the highways between blocks.
-    highway_mm: a block signal link longer than this (a pull-up at the far end of a bus)
-    is routed with that bus by the human."""
+def route_blocks(src, out, blocks=None, minutes=6.0, knobs=(), log=print, skip_nets=(), first_nets=(),
+                 highway_mm=HIGHWAY_MM):
     t0 = time.perf_counter()
     os.makedirs(out, exist_ok=True)
     name = Path(src).stem
@@ -185,51 +68,33 @@ def route_blocks(src, out, blocks=None, minutes=6.0, knobs=(), log=print, skip_n
         (Path(out) / "fp-lib-table").write_text(lib.read_text().replace("${KIPRJMOD}", "${KIPRJMOD}/" + rel))
 
     board = pcbnew.LoadBoard(str(src))          # gets the new copper on top of what is there
-    tracks, vias = existing_copper(board)
-    old_ids = {t.m_Uuid.AsString() for t in board.GetTracks()}
+    tracks, vias, old_ids = existingCopper(board)
     work = pcbnew.LoadBoard(str(src))           # the model: pads, rules, planes only
     zones = boardPlanes(work)
     ripCopper(work, keep=zones)
     model = loadModel(work, str(Path(src).with_suffix(".kicad_pro")))
     model.planes = innerPlaneFills(work, zones, model.outline) if zones else {"GND": None}
     k = Knobs()
-    k.neckMm = 0.0      # a power track keeps its width up to the pad; no necking on approach
     for kv in knobs:
         key, value = kv.split("=", 1)
         setattr(k, key, type(getattr(k, key))(value))
     router = Router(model, k, lambda m: None)
-    if "GND" in router.netId:
-        # a fanout via keeps VIA_GAP of bare board to every pad, its own included (the
-        # router's planeCells only exists for a plane that does not cover the board)
-        import numpy as np
-        from shapely.ops import unary_union
-        cells = router.planeCells.get("GND")
-        if cells is None:
-            cells = np.ones((router.sp.H, router.sp.W), bool)
-        via_r = router.rules["GND"].viaDia / 2
-        win, mask = router.sp.rasterMask(unary_union([pd.poly for pd in model.pads]), grow=via_r + VIA_GAP)
-        i0, j0, i1, j1 = win
-        cells[i0:i1, j0:j1] &= ~mask
-        router.planeCells["GND"] = cells
-    nfix = load_fixed(router, tracks, vias)
+    router.loadExisting(tracks, vias)
     conns, block, bundles = plan(model, router, lambda m: None, [])
-    have = Joined(model, tracks, vias)
     want_blocks = set(blocks) if blocks else None
-    # inside the pad ring of a large part (the free copper under its body), where
-    # the bus that crosses the part runs: a block link straight across it is
-    # left to the human, who lays it with that bus
-    bodies = []
-    for ref in leave_under:
-        pts = [p.center for p in model.pads if p.ref == ref]
-        xs, ys = [x for x, _ in pts], [y for _, y in pts]
-        bodies.append(box(min(xs) + 1.0, min(ys) + 1.0, max(xs) - 1.0, max(ys) - 1.0))
+    on_back = lambda c: all(pd is None or B in pd.layers for pd in (c.a, c.b))
     todo, early, skipped = [], [], Counter()
     for c in conns:
+        if router.connected(c):
+            skipped["already done"] += 1
+            continue
         if c.net in first_nets and c.kind != "gnd":
-            # a critical net between blocks (e.g. a USB pair) goes down before the block
-            # wiring takes the room around its pins
-            if c.b is None or not have.joined(c.a, c.b):
-                early.append(c)
+            # a critical net between blocks (e.g. a USB pair) goes down before the
+            # block wiring takes the room around its pins
+            early.append(c)
+            continue
+        if c.deferred:
+            skipped["GND pad left to the pour"] += 1
             continue
         if c.bundle:
             skipped["between blocks"] += 1
@@ -240,46 +105,24 @@ def route_blocks(src, out, blocks=None, minutes=6.0, knobs=(), log=print, skip_n
         if c.net in skip_nets:
             skipped["net left to the human"] += 1
             continue
-        if bodies and c.b is not None and c.kind != "gnd" and c.a.ref != c.b.ref \
-                and any(LineString([c.a.center, c.b.center]).intersects(b) for b in bodies):
-            skipped["crosses under " + "/".join(leave_under)] += 1
-            continue
-        if highway_mm and c.kind == "sig" and c.b is not None and not any(B not in pd.layers for pd in (c.a, c.b)) \
-                and math.dist(c.a.center, c.b.center) > highway_mm:
+        if c.kind in ("sig", "pwr") and c.b is not None and c.net not in INNER_POWER \
+                and math.dist(c.a.center, c.b.center) > (highway_mm if c.kind == "sig" else POWER_HIGHWAY_MM):
             skipped["highway member (long link)"] += 1
             continue
-        if max_mm and c.b is not None and math.dist(c.a.center, c.b.center) > max_mm:
-            # a long link inside a block is a bus run in all but name: it crosses
-            # the channels the between-block wiring needs, so the human lays it
-            skipped["longer than max_mm"] += 1
-            continue
-        if c.kind == "gnd":
-            if have.reaches_via(c.a):
-                skipped["already done"] += 1
-                continue
-            if not fanout_wanted(c.a, model):
-                skipped["GND pad left to the pour"] += 1
-                continue
-        elif c.b is not None and have.joined(c.a, c.b):
-            skipped["already done"] += 1
-            continue
         todo.append(c)
-    log(f"existing copper: {len(tracks)} tracks, {len(vias)} vias ({nfix} fixed items)")
-    log(f"connections: {len(conns)}; routing {len(early)} first ({', '.join(sorted(set(first_nets)))}), "
-        f"{len(todo)} inside blocks; skipped {dict(skipped)}")
-    failed = []
-    import run as hr_run
     early_ids = {id(c) for c in early}
 
     def layers_for(c):
         if c.kind == "gnd" or id(c) in early_ids:
-            return layersFor(c)
-        if any(pd is not None and B not in pd.layers for pd in (c.a, c.b)):
-            return [F, B]
-        if c.kind == "pwr":
-            return list(block_layers) + [IN2]
-        return list(block_layers)
-    hr_run.layersFor = layers_for    # negotiate() asks the same question
+            return [c.a.side] if c.kind == "gnd" else [F, B]
+        if c.net in INNER_POWER:
+            return INNER_POWER[c.net]
+        return [B] if on_back(c) else [F, B]    # a front test pad needs the front
+    hr_run.layersFor = layers_for                # negotiate() asks the same question
+    log(f"existing copper: {len(tracks)} tracks, {len(vias)} vias")
+    log(f"connections: {len(conns)}; routing {len(early)} first ({', '.join(sorted(set(first_nets)))}), "
+        f"{len(todo)} inside blocks; skipped {dict(skipped)}")
+    failed = []
     for c in followLeaders(early) + phaseOrder(todo):
         st, _ = router.route(c, layers_for(c), winPadsFor(c), viaMm=viaMmFor(c, k))
         if st != "ok":
@@ -290,21 +133,40 @@ def route_blocks(src, out, blocks=None, minutes=6.0, knobs=(), log=print, skip_n
                   deadline=t0 + minutes * 60)
     todo = early + todo
     unrouted = [c for c in todo if not router.connected(c) and c.kind != "gnd"]
-    gnd_left = [c for c in todo if c.kind == "gnd" and not router.connected(c)]
+    fanout_left = [c for c in todo if c.kind == "gnd" and not router.connected(c)]
     nets = board.GetNetsByName()
-    count = Counter()
-    for r in router.routes.values():
-        for iid in r.items:
-            it = router.sp.items[iid]
-            if writeItem(board, nets[r.conn.net], it) is not None:
-                count[it.kind] += 1
-    pcbnew.ZONE_FILLER(board).Fill(board.Zones())
+    count, written = Counter(), set()
     outBoard = str(Path(out) / (name + ".kicad_pcb"))
-    board.Save(outBoard)
-    drc = runDrc(outBoard, str(Path(out) / "drc.json"))
-    # a stub of new copper that ends in nothing (a fanout whose via was refused) is
-    # removed; a dangling track that was already on the board is the human's
-    stubs = {it["uuid"] for v in drc["violations"] if v["type"] == "track_dangling" for it in v["items"]} - old_ids
+
+    def write_and_check():
+        for rid, r in router.routes.items():
+            if rid in written:
+                continue
+            written.add(rid)
+            for iid in r.items:
+                it = router.sp.items[iid]
+                if writeItem(board, nets[r.conn.net], it) is not None:
+                    count[it.kind] += 1
+        pcbnew.ZONE_FILLER(board).Fill(board.Zones())
+        board.Save(outBoard)
+        return runDrc(outBoard, str(Path(out) / "drc.json"))
+    drc = write_and_check()
+    # a GND pad left to the pour that the pour starves (thermal spokes cut by wiring)
+    # gets its own fanout after all
+    starved = {(it["description"].split(" of ")[1].split()[0], it["description"].split()[1])
+               for v in drc["violations"] if v["type"] == "starved_thermal" for it in v["items"]
+               if it["description"].startswith("Pad ")}
+    repair = [c for c in conns if c.kind == "gnd" and c.deferred and (c.a.ref, c.a.num) in starved]
+    if repair:
+        for c in repair:
+            router.route(c, layers_for(c), winPadsFor(c), viaMm=viaMmFor(c, k))
+        fixed = sum(1 for c in repair if router.connected(c))
+        drc = write_and_check()
+        log(f"starved GND pads: {fixed}/{len(repair)} given their own via")
+    # a stub of new copper that ends in nothing is removed; a dangling track that was
+    # already on the board is the human's
+    stubs = {it["uuid"] for v in drc["violations"] if v["type"] in ("track_dangling", "via_dangling")
+             for it in v["items"]} - old_ids
     if stubs:
         for t in list(board.GetTracks()):
             if t.m_Uuid.AsString() in stubs:
@@ -314,16 +176,16 @@ def route_blocks(src, out, blocks=None, minutes=6.0, knobs=(), log=print, skip_n
         drc = runDrc(outBoard, str(Path(out) / "drc.json"))
         log(f"removed {len(stubs)} dangling stub(s) of new copper")
     viol = Counter(v["type"] for v in drc["violations"])
-    res = dict(routed=len(todo) - len(unrouted) - len(gnd_left), todo=len(todo), first_pass_failed=nfail1,
-               unrouted=[f"{c.net}:{c.a.ref}.{c.a.num}->{c.b.ref}.{c.b.num}" for c in unrouted],
-               gnd_fanouts_missing=len(gnd_left), new_tracks=count["track"], new_vias=count["via"],
-               drc=dict(viol), drc_unconnected=len(drc["unconnected_items"]),
-               seconds=round(time.perf_counter() - t0, 1))
+    fmt = lambda c: f"{c.net}:{c.a.ref}.{c.a.num}->{(c.b.ref + '.' + c.b.num) if c.b else 'plane'}"
+    res = dict(routed=len(todo) - len(unrouted) - len(fanout_left), todo=len(todo), first_pass_failed=nfail1,
+               unrouted=[fmt(c) for c in unrouted], fanouts_missing=[fmt(c) for c in fanout_left],
+               new_tracks=count["track"], new_vias=count["via"], drc=dict(viol),
+               drc_unconnected=len(drc["unconnected_items"]), seconds=round(time.perf_counter() - t0, 1))
     json.dump(res, open(Path(out) / "partial.json", "w"), indent=1)
     log(f"routed {res['routed']}/{len(todo)} block connections (+{count['track']} tracks, "
-        f"{count['via']} vias), {len(unrouted)} unrouted, {len(gnd_left)} GND fanouts missing; "
+        f"{count['via']} vias), {len(unrouted)} unrouted, {len(fanout_left)} plane fanouts missing; "
         f"DRC {sum(viol.values())} {dict(viol)}, {res['drc_unconnected']} unconnected (incl. the "
-        f"between-block wiring left to the human) in {res['seconds']} s")
+        f"highways left to the human) in {res['seconds']} s")
     return res
 
 
@@ -336,15 +198,12 @@ def main():
     ap.add_argument("--knob", action="append", default=[])
     ap.add_argument("--first-nets", default="", help="comma-separated nets routed before everything else, "
                     "even between blocks (critical pairs)")
-    ap.add_argument("--leave-under", default="", help="comma-separated refs: block links straight across "
-                    "under their body are left to the human")
-    ap.add_argument("--max-mm", type=float, help="leave block connections longer than this (pad to pad)")
     ap.add_argument("--skip-nets", default="", help="comma-separated nets left to the human")
+    ap.add_argument("--highway-mm", type=float, default=HIGHWAY_MM)
     a = ap.parse_args()
     split = lambda v: tuple(n for n in v.split(",") if n)
-    route_blocks(a.board, a.out, a.blocks.split(",") if a.blocks else None, a.minutes, a.knob,
-                 skip_nets=split(a.skip_nets), first_nets=split(a.first_nets), max_mm=a.max_mm,
-                 leave_under=split(a.leave_under))
+    route_blocks(a.board, a.out, split(a.blocks or "") or None, a.minutes, a.knob,
+                 skip_nets=split(a.skip_nets), first_nets=split(a.first_nets), highway_mm=a.highway_mm)
 
 
 if __name__ == "__main__":

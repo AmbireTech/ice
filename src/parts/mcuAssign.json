@@ -140,10 +140,6 @@
     "SWCLK",
     "DEBUG_JTCK-SWCLK"
   ],
-  "PH3": [
-    "BOOT0",
-    "GPIO"
-  ],
   "PE2": [
     "CTP_INT",
     "GPIO"
