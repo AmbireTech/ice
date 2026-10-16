@@ -388,10 +388,18 @@
       ],
       "9": [
         "P0.31",
-        "RADIO_TX"
+        "nc"
       ],
       "10": [
         "P0.30",
+        "nc"
+      ],
+      "17": [
+        "P1.09",
+        "RADIO_TX"
+      ],
+      "15": [
+        "P0.05",
         "RADIO_RX"
       ]
     }
@@ -498,7 +506,7 @@
   },
   "U14": {
     "part": "TLV70313DBVR",
-    "source": "TI SBVS148 Pin Functions (DBV)",
+    "source": "TI SBVS305 Pin Functions (DBV)",
     "pins": {
       "1": [
         "IN",

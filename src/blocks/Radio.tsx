@@ -171,12 +171,13 @@ export const RadioBlock = () => (
 
     {/* ---------------- BLE module: Ebyte E73-2G4M08S1C (nRF52840) ---------------- */}
     {/* Pads per the E73-2G4M08S1C user manual v1.9 section 3. Only edge (castellated)
-        pads are used for signals. UART on P0.31 (pad 9, module TX) and P0.30 (pad 10,
-        module RX), a firmware choice (the nRF52840 maps its UARTE to any GPIO): the two
-        pads on the module's north edge, right under the TXU0202, so the radio-side
-        lines never cross under the module. Not P1.10/P1.11, which the manual marks as
-        low-frequency I/O. VDD and VDDH tied: normal-voltage supply mode at 3.3 V. DCCH,
-        VBUS, USB, crystal and NFC pads unused. */}
+        pads are used for signals. UART on P1.09 (pad 17, module TX) and P0.05 (pad 15,
+        module RX), a firmware choice (the nRF52840 maps its UARTE to any GPIO): the
+        nearest edge pads to the TXU0202 that are full-speed I/O. Every GPIO on the
+        module's north edge (P0.02/03/28/29/30/31, P1.10/11/13) is "standard drive, low
+        frequency I/O only" (nRF52840 PS pin assignments: up to 10 kHz), kept away from
+        anything that switches next to the radio. VDD and VDDH tied: normal-voltage
+        supply mode at 3.3 V. DCCH, VBUS, USB, crystal and NFC pads unused. */}
     <chip name="U11" footprint="pinrow43"
       manufacturerPartNumber="E73-2G4M08S1C" supplierPartNumbers={{ jlcpcb: ["C356849"] }}
       pinLabels={{ pin1: "P1_11", pin2: "P1_10", pin3: "P0_03", pin4: "P0_28", pin5: "GND5", pin6: "P1_13",
@@ -192,8 +193,8 @@ export const RadioBlock = () => (
     <trace from=".U11 > .GND5" to="net.GND" />
     <trace from=".U11 > .GND21" to="net.GND" />
     <trace from=".U11 > .GND24" to="net.GND" />
-    <trace from=".U11 > .P0_31" to="net.RADIO_TX" />
-    <trace from=".U11 > .P0_30" to="net.RADIO_RX" />
+    <trace from=".U11 > .P1_09" to="net.RADIO_TX" />
+    <trace from=".U11 > .P0_05" to="net.RADIO_RX" />
     <trace from=".U11 > .SWDIO" to="net.RADIO_SWDIO" />
     <trace from=".U11 > .SWDCLK" to="net.RADIO_SWCLK" />
     {[["C_RADIO1", "10uF", "0603", "C19702"], ["C_RADIO2", "100nF", "0402", "C1525"]].map(([c, v, fp, jlc], i) => (

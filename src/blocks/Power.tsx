@@ -3,7 +3,7 @@ import { W_PWR, W_PWR_LITE } from "../widths"
 const S = "Power"
 
 /**
- * Power tree. The charger, the 3.3 V buck-boost and the always-on LDO are the
+ * Power tree. The charger and the 3.3 V buck-boost are the
  * GridCore Nano's parts and values, already proven on that board.
  *
  *   USB-C VBUS -> BQ25185 IN -> SYS ---------------> TPS63802 VIN, EN = soft latch -> V3V3

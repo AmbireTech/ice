@@ -7,10 +7,9 @@
   (layer "In2.Cu")
   (constraint disallow track))
 
-# In1 is the 3.3 V plane. The only track allowed on it is the MCU's 1.1 V core
-# link (VDD11, pin 49 to pin 98), which would otherwise cut the camera highway.
+# In1 is the 3.3 V plane, unbroken: the buses on the front copper return in it.
 (rule "In1: V3V3 plane"
-  (condition "A.Type == 'Track' && A.NetName != 'V3V3' && A.NetName != 'VDD11'")
+  (condition "A.Type == 'Track' && A.NetName != 'V3V3'")
   (layer "In1.Cu")
   (constraint disallow track))
 

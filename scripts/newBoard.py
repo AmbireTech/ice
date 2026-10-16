@@ -149,20 +149,13 @@ MX, MY = 22.0, 28.0
 place("U4", MX, MY, 180)
 # East: two columns of 0402s (x 32.0 / 34.4) between the package and the touch
 # corridor, each part opposite its pin (pin k at y = MY - 6 + 0.5 (k - 1)).
-place("Y1", 32.4, 25.75, 90)                   # pins 8/9
-place("C_LSE1", 34.4, 24.2, 90)
-place("C_LSE2", 34.4, 27.3, 90)
 place("C_VBAT", 32.0, 21.9, 90)                # pin 6
 place("C_VDD1", 34.4, 29.8, 90)                # pin 11
 place("C_NRST", 32.0, 29.2, 90)                # pin 14
 place("C_VDDA1", 32.0, 31.7, 90)               # pin 21
-place("C_VREF1", 32.0, 34.2, 90)               # pin 20
 place("C_VDDA2", 34.4, 32.3, 90)
-place("C_VREF2", 34.4, 34.8, 90)
 place("C_VDDB", 34.6, 37.6, 90)
 # North: pins 94 (BOOT0), 98 (VDD11), 100 (VDD) between the package and J_CAM.
-place("R_BOOT0", 23.4, 17.0, 90)
-place("C_VDD11D", 25.6, 18.0, 0)
 place("C_VDD5", 28.2, 18.0, 0)
 # West: VDD 51/75, VDDUSB 73.
 place("C_VDD4", 12.0, 21.4, 90)
@@ -174,14 +167,13 @@ place("C_VDD3", 12.0, 34.6, 90)
 # drop straight through it to the connector.
 place("C_VDD11A", 12.9, 38.8, 90)
 place("C_VDD11B", 14.4, 38.8, 90)
-place("C_VDD11C", 15.9, 38.8, 90)
 place("C_VDD2", 28.3, 38.8, 90)                # pin 27
 place("C_TFT1", 29.8, 39.3, 90)
 place("C_TFT2", 31.3, 39.3, 90)
 # Programming pads go on the FRONT face: reachable by pogo pins before the cell
 # and panel go on, then buried under them for good. Nothing to probe on the face
 # people see. MCU SWD in a row west of the MCU, radio SWD over the module.
-for i, tp in enumerate(["TP_3V3", "TP_SWDIO", "TP_SWCLK", "TP_SWO", "TP_NRST", "TP_BOOT0", "TP_GND"]):
+for i, tp in enumerate(["TP_3V3", "TP_SWDIO", "TP_SWCLK", "TP_NRST", "TP_GND"]):
     place(tp, 4.0, 15.0 + i * 2.54, 0, TOP)
 
 # ── Secure element, west of the MCU at its I2C4 pins (58-60) ───────────────
@@ -206,14 +198,8 @@ place("C_RCT", 3.0, 19.1, 90)
 place("C_NOR", 6.3, 19.1, 90)
 place("R_ROFF", 7.8, 19.1, 90)
 place("U9", 3.1, 22.6, 0)                      # TX buffer
-place("U10", 7.8, 22.6, 0)                     # RX buffer
 place("C_U9A", 1.5, 26.0, 90)
 place("C_U9B", 3.0, 26.0, 90)
-place("R_RTXPU", 4.5, 26.0, 90)
-place("R_RMTX", 6.0, 26.0, 90)
-place("C_U10A", 7.5, 26.0, 90)
-place("C_U10B", 9.0, 26.0, 90)
-place("R_RRXPU", 10.5, 26.0, 90)
 
 # ── Camera, north-west: module glued lens-out, tail east into J_CAM ─────────
 place("J_CAM", 19.6, 9.0, 90)
@@ -221,22 +207,16 @@ place("U12", 25.6, 4.2, 90)
 place("U14", 25.6, 10.4, 90)
 place("C_AVIN", 28.8, 2.6, 90)
 place("C_AVOUT", 28.8, 5.6, 90)
-place("C_DVIN", 28.8, 8.8, 90)
 place("C_DVOUT", 28.8, 11.8, 90)
-place("R_DV1", 30.8, 8.8, 90)
-place("R_DV2", 30.8, 11.8, 90)
 place("R_CAMEN", 30.8, 2.6, 90)
 place("R_CSCL", 32.8, 5.6, 90)
 place("R_CSDA", 32.8, 8.8, 90)
 place("C_DOVDD", 24.6, 14.8, 0)
-place("R_PWDN", 27.4, 14.8, 0)
-place("R_CRST", 30.2, 14.8, 0)
 
 # ── Display: TFT connector north of the slot, touch connector at the far end
 #    of its 56 mm tail, backlight pump west of the TFT connector ─────────────
 place("J_TFT", TFT_TAIL[0] + TFT_TAIL[1] / 2, TFT_END_Y + TFT_ROW + TFT_SLACK, 180)
 place("J_CTP", CTP_TAIL[0] + CTP_TAIL[1] / 2, CTP_END_Y + CTP_ROW, 180)
-place("R_CTPRST", 32.6, 17.2, 0)
 # Touch/gauge I2C3 pull-ups, between the MCU's east pins 15/16 and J_CTP.
 place("R_SCL", 32.6, 15.2, 0)
 place("R_SDA", 32.6, 13.4, 0)
@@ -273,7 +253,6 @@ place("D_OR", 45.6, 30.6, 90)
 place("R_HOLD", 45.8, 34.1, 90)
 place("R_BTN", 45.8, 44.3, 90)
 place("Q_BTN", 45.6, 47.6, 90)
-place("R_BTNN", 45.8, 51.0, 90)
 
 # ── Chin: radio module (antenna west), USB, power ──────────────────────────
 place("U11", 11.3, 74.3, 90)
@@ -283,7 +262,7 @@ place("C_RADIO1", 21.0, 75.0, 90)
 place("C_RADIO2", 21.0, 71.2, 90)
 place("R_CC2", 21.0, 78.6, 90)
 place("R_CC1", 21.0, 81.2, 90)
-for i, tp in enumerate(["TP_RSWDIO", "TP_RSWCLK", "TP_RRESET", "TP_R3V3"]):
+for i, tp in enumerate(["TP_RSWDIO", "TP_RSWCLK", "TP_R3V3"]):
     place(tp, 7.0 + i * 2.54, 78.0, 0, TOP)
 place("J1", 27.4, H - 3.6, 180)
 # Row of charger set/status resistors under the slot, USB protection row below.
@@ -311,19 +290,13 @@ place("R_FB2", 34.8, 83.0, 0)
 # (BAT, a few uA) and the I2C bus.
 place("U15", 45.8, 56.4, 90)
 place("C_GAUGE", 45.8, 59.4, 90)
-place("R_ALRT", 32.6, 19.0, 0)                 # GAUGE_ALRT pull-up, at the MCU end (pin 3)
-# Always-on LDO for the MCU's VBAT domain in the chin, next to the cell
-# connector it feeds from; VBAT_RTC is one slow net up to pin 6.
-place("U3", 30.6, 73.8, 0)
-place("C_RTCIN", 27.1, 74.0, 90)
-place("C_RTC", 33.6, 75.6, 90)
 
 NETCLASSES = [
     # name, track, clearance, via dia, via drill, nets. A class width is where a
     # track starts; widen power runs by hand where the current flows. GND is poured.
     ("Default", 0.15, 0.15, 0.45, 0.25, []),
     ("Power", 0.40, 0.15, 0.6, 0.3, ["VBUS", "SYS", "BAT", "V3V3", "L1_3V3", "L2_3V3"]),
-    ("Rail", 0.25, 0.15, 0.45, 0.25, ["RADIO_3V3", "VDD11", "VBAT_RTC", "SE_VCC", "CAM_AVDD",
+    ("Rail", 0.25, 0.15, 0.45, 0.25, ["RADIO_3V3", "VDD11", "SE_VCC", "CAM_AVDD",
                                       "CAM_DVDD", "BL_A", "BL_K"]),
     ("USB", 0.20, 0.15, 0.45, 0.25, ["USB_DP", "USB_DN", "USB_DP_MCU", "USB_DN_MCU"]),
 ]

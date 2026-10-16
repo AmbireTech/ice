@@ -70,7 +70,7 @@ export const CameraBlock = () => (
     <trace from=".U12 > .VSS" to="net.GND" />
     <trace from=".U12 > .CE" to="net.CAM_EN" />
     <trace from=".U12 > .VOUT" to="net.CAM_AVDD" />
-    {/* DVDD 1.3 V: TLV70313 DBV (SBVS148 Pin Functions: 1 IN, 2 GND, 3 EN, 4 NC, 5 OUT),
+    {/* DVDD 1.3 V: TLV70313 DBV (SBVS305 Pin Functions: 1 IN, 2 GND, 3 EN, 4 NC, 5 OUT),
         fixed output, 1 uF in and out. Another sensor's core voltage is another TLV703xx
         on the same land. */}
     <chip name="U14" footprint="pinrow5"
@@ -95,9 +95,10 @@ export const CameraBlock = () => (
         <trace from={`.${c} > .pin2`} to="net.GND" />
       </group>
     ))}
-    {/* CAM_EN low (LDOs off) until firmware drives it. RESETB needs no pull-up: the
-        sensor's own keeps it released, and it is unpowered whenever the MCU is not
-        driving it. SCCB pull-ups on its own bus. */}
+    {/* CAM_EN low (AVDD and DVDD off) until firmware drives it; DOVDD is the always-on
+        3.3 V. RESETB needs no pull-up: the sensor's own keeps it released, and while
+        the MCU is in reset CAM_EN's pull-down holds the core unpowered. SCCB pull-ups
+        on its own bus. */}
     {[["R_CAMEN", "CAM_EN", "GND"]].map(([r, net, to]) => (
       <group key={r}>
         <resistor name={r} resistance="100k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C25741"] }}

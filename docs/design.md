@@ -23,9 +23,9 @@ inside a secure element and never leave it; recovery is the Safe's other owners.
 | Airgap | MSK12C02 slide switch → TS3USB221A (USB data) + 74LVC1G02 / TPS22917 (radio power) + TXU0202 (radio UART isolation) | all JLC |
 | Display | NHD-2.4-240320AF-CSXP-CTP on Molex 54132-4062 + 6-pin 1.0 mm touch FPC | connectors JLC, panel hand-fitted |
 | Camera | OV2640 24-pin DVP module, ~66° lens refocused to ~15 cm, on a Jushuo AFC07 FPC connector; AVDD 2.8 V / DVDD 1.3 V (fixed TLV70313) / DOVDD 3.3 V | connector JLC, module hand-fitted |
-| Power | USB-C → BQ25185 charger (250 mA) → TPS63802 3.3 V buck-boost; MAX17048 battery gauge; soft-latch power button | all JLC, BQ25185/TPS63802/XC6206/USB-C/ESD as on the Nano |
+| Power | USB-C → BQ25185 charger (250 mA) → TPS63802 3.3 V buck-boost; MAX17048 battery gauge; soft-latch power button | all JLC, BQ25185/TPS63802/USB-C/ESD as on the Nano |
 
-Overlap with GridCore: charger, buck-boost, always-on LDO, USB-C and ESD, the
+Overlap with GridCore: charger, buck-boost, USB-C and ESD, the
 display panel with its connector and backlight pump, the slide switch, the
 battery connector, the netlist → KiCad flow and every gate script.
 
@@ -116,9 +116,10 @@ touch flex is merged into the TFT flex.
   **Stack-up: F.Cu / In1 = 3.3 V plane / In2 = solid GND / B.Cu.** Every part
   sits on B.Cu, whose return currents run in the plane next to it, so In2 is the
   unbroken GND; every 3.3 V pin and decap drops a via to In1, and the front, the
-  free layer for the buses between blocks, references the 3.3 V plane.
-  `board/wallet.kicad_dru` enforces both (In2: GND only; In1: 3.3 V, plus the
-  MCU's 1.1 V core link between pins 49 and 98).
+  free layer for the buses between blocks, references the 3.3 V plane, also
+  unbroken. `board/wallet.kicad_dru` enforces both (In2: GND only; In1: 3.3 V
+  only). The MCU's 1.1 V core link (pin 49 to pin 98) runs on the back copper
+  under the package, inside its pin ring.
 - **All parts on the back face (B.Cu).** The front face carries only the cell
   and the panel, plus the **programming pads** (MCU SWD and radio SWD). They are
   reachable by pogo pins before assembly and buried under the cell afterwards.
@@ -171,6 +172,11 @@ touch flex is merged into the TFT flex.
   remaining net (0 failed, 119 vias); the full humanRouter finish routes them
   all too (0 unconnected). Both are only a measure of how easy the hand route
   is; their copper is not kept.
+- **Bus return paths**: the back copper returns in In2 (GND), the front in In1
+  (3.3 V). A bus that changes layer changes reference, so its return hops through
+  the nearest decap: keep the camera PCLK and XCLK on one layer end to end, or put
+  a 100 nF 3.3 V-to-GND cap within ~2 mm of each layer-change via cluster. This
+  holds for JLC's 4-layer stacks, where the outer prepreg is the thin layer.
 - **Camera pins** are ordered on the north side as J_CAM orders them: XCLK comes
   from timer TIM3 on PB5 (not the clock-output pin in the west-side knot) and
   RST sits east of VSYNC, D6 and D7. PWDN is tied low at the connector.
@@ -244,20 +250,34 @@ device off, the cell charges and nothing else runs; there is no charge light.
    connector on a sample.
 4. **Touch tail contact face**: inherited from the Nano's analysis; confirm on
    the first panel before reflowing the touch connector.
-5. **Radio UART pins**: P0.31 (module TX, pad 9) and P0.30 (module RX, pad 10).
-   The TXU0202's inputs carry 5 MΩ pull-downs, so both lines idle low until
-   driven: discard one framing error at start-up, and keep the MCU's RX pin
-   pull-up on while the radio is off.
-7. **Firmware settings the hardware relies on**: BOOT0 is tied to GND, so the
-   ROM bootloader is entered through the option bytes over SWD; the power
-   button's BTN_N uses PA0's internal pull-up (kept through Standby/Shutdown);
-   XCLK for the camera is TIM3_CH2 PWM on PB5 (~20 MHz).
+5. **Radio UART pins**: P1.09 (module TX, pad 17) and P0.05 (module RX, pad 15),
+   full-speed I/O. Every GPIO on the module's north edge is "low frequency I/O
+   only" in the nRF52840 pin table (up to 10 kHz), so none carries the UART. The
+   TXU0202's inputs carry 5 MΩ pull-downs, so both lines idle low until driven:
+   discard one framing error at start-up, and keep the MCU's RX pin pull-up on
+   while the radio is off.
 6. **Secure element generation**: the board carries the current SE050E2
    (the C1 is "previous generation" in AN12436). Same land as the C1 and the
    SE051C2 fallback. Firmware must use applet 7.x behaviour: I2C at or below
    1 MHz (no clock stretching), PINs of 4+ bytes, the E2's SCP03 keys. JLC
    holds 594, enough for prototypes; for 1,000 units consign from DigiKey
    (~14,000 in stock, 16-week lead) or use JLC Global Sourcing.
+7. **Firmware settings the hardware relies on**:
+   - BOOT0 (PH3) is tied to GND: the ROM bootloader is entered through the option
+     bytes (nSWBOOT0/nBOOT0) over SWD; PH3 must never be made an output. Recovery
+     of a locked-up part is connect-under-reset on TP_NRST.
+   - The power button's BTN_N uses PA0's internal pull-up, kept through
+     Standby/Shutdown with PWR_PUCRA + APC (check in RM0456 at bring-up).
+   - Camera XCLK is TIM3_CH2 PWM on PB5 at 160/8 = 20 MHz (the OV2640 wants a
+     45–55 % duty cycle, so no odd divider). Hold CAM_RST (PE0) low while CAM_EN
+     rises, then release it; the TLV70313 has no output discharge.
+   - VREF+ shares VDDA's caps: keep the internal VREFBUF off.
+   - The touch controller's RST has no pull: pulse it low (≥ 100 µs, Newhaven's
+     power-up sequence) after boot before talking to it.
+8. **Camera core supply 1.3 V** follows the OV2640 data sheet v2.2 (Feb 2007, Table
+   6: VDD-D 1.24/1.3/1.36 V; its revision history raised it from 1.2 V). The older
+   v1.6 says 1.14–1.26 V. If a module's sensor turns out to be the old revision, the
+   TLV70312 (1.2 V) fits the same land.
 
 ## Flow
 

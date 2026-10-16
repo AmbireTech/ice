@@ -1296,6 +1296,42 @@
   "package": "VSON-10(2x3)",
   "stock": 41549
  },
+ "C2868385": {
+  "describe": "-40\u2103~+125\u2103@(Tj) 1 1.3V 300mA 35uA 375mV@(300mA) 48uVrms 5.5V 68dB@(1kHz) Fixed Over Current Protection\u3001Over Temperature Protection Positive SOT-23-5 Voltage Regulators - Linear, Low Drop Out (LDO) Regulators ROHS",
+  "land": {
+   "pads": 5,
+   "pitch": 0.95,
+   "sizes": [
+    [
+     0.53,
+     1.04
+    ],
+    [
+     0.53,
+     1.04
+    ],
+    [
+     0.53,
+     1.04
+    ],
+    [
+     0.53,
+     1.04
+    ],
+    [
+     0.53,
+     1.04
+    ]
+   ],
+   "span": [
+    1.9,
+    2.5
+   ]
+  },
+  "model": "TLV70313DBVR",
+  "package": "SOT-23-5",
+  "stock": 421
+ },
  "C2877852": {
   "describe": "-40\u2103~+125\u2103@(Tj) 1 130mV@(500mA) 25uA 30uVrms 500mA 50dB@(1kHz) 550mV~5.5V 6V Adjustable Positive Under Voltage Lockout\u3001Over Current Protection\u3001Thermal Shutdown SOT-23-5 Voltage Regulators - Linear, Low Drop Out (LDO) Regulators ROHS",
   "land": {
@@ -1960,6 +1996,54 @@
   "model": "ESDBW5V0A1",
   "package": "DFN1006-2",
   "stock": 22225
+ },
+ "C5186957": {
+  "describe": "-40\u2103~+125\u2103 1 1.08V~5.5V 1.08V~5.5V 12mA 12mA 2 200Mbps Bidirectional Level translator Output enable high-impedance\u3001Integrated pull-up resistor SPI\u3001JTAG\u3001UART Tri-State VSSOP-8 Translators, Level Shifters ROHS",
+  "land": {
+   "pads": 8,
+   "pitch": 0.5,
+   "sizes": [
+    [
+     0.28,
+     0.91
+    ],
+    [
+     0.28,
+     0.91
+    ],
+    [
+     0.28,
+     0.91
+    ],
+    [
+     0.28,
+     0.91
+    ],
+    [
+     0.28,
+     0.91
+    ],
+    [
+     0.28,
+     0.91
+    ],
+    [
+     0.28,
+     0.91
+    ],
+    [
+     0.28,
+     0.91
+    ]
+   ],
+   "span": [
+    1.5,
+    2.8
+   ]
+  },
+  "model": "TXU0202DCUR",
+  "package": "VSSOP-8",
+  "stock": 17972
  },
  "C5190917": {
   "describe": "QFN-20(3x3) Security Verification / Encryption ICs ROHS",

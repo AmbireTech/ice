@@ -68,8 +68,6 @@ MULT = {"p": 1e-12, "n": 1e-9, "u": 1e-6, "µ": 1e-6, "m": 1e-3,
 # original fault got through, because it also silences the real faults.
 WAIVED_LAND = {
     "U8": "IPC-nominal SOT-23-6 against the vendor's longer reflow land; same 6 pads, same 0.95 mm pitch",
-    "U9": "IPC-nominal SOT-23-6 against the vendor's longer reflow land; same 6 pads, same 0.95 mm pitch",
-    "U10": "IPC-nominal SOT-23-6 against the vendor's longer reflow land; same 6 pads, same 0.95 mm pitch",
     "D_OR": "IPC-nominal SOT-23 against the vendor's longer reflow land; same 3 pads, same pitch",
     "L_BUCK": "Murata's DFE2016 land (KiCad L_Murata_DFE201610P) for a DFE201612 part, as on the GridCore Nano",
     "L_SMPS": "Murata's DFE2016 land (KiCad L_Murata_DFE201610P) for a DFE201612 part, as on the GridCore Nano",
@@ -81,7 +79,6 @@ WAIVED_LAND = {
           "recommended footprint; EasyEDA's is a third-party copy",
     "U1": "TI's own DLH0010A land (BQ25185 data sheet, example board layout 4226298/A: pad columns (2.1) "
           "outer edge to outer edge, 0.1 mm to the exposed pad); EasyEDA's is a generic longer-toe land",
-    "U3": "IPC-nominal SOT-23 against the vendor's longer reflow land; same 3 pads, same pitch",
     "U13": "KiCad VQFN-16 3x3 land (the GridCore Nano's); the extra pads are paste apertures inside the "
            "exposed pad",
     "J_CAM": "KiCad's Jushuo AFC07-S24FCA-00 land for this exact part: same 24 pads at 0.5 mm and the same "

@@ -15,7 +15,7 @@ HUMAN_ROUTER=/path) on top of the existing copper:
   - layer plan: block wiring on the back copper, where the parts are; the front is
     kept for the highways. Power has no tracks of its own on the planes: V3V3 pins
     and decaps drop a via to the In1 plane, GND pads of caps and ICs a via to In2
-    (other GND pads take the pour). INNER_POWER names the one exception;
+    (other GND pads take the pour);
   - a block link longer than HIGHWAY_MM (a pull-up at the far end of a bus, a test pad
     across the board), or a power link longer than POWER_HIGHWAY_MM, is routed with
     its bus by the human.
@@ -40,7 +40,7 @@ sys.path.insert(0, str(HR))
 import pcbnew  # noqa: E402
 
 import run as hr_run  # noqa: E402
-from boardModel import B, F, IN1, boardPlanes, existingCopper, innerPlaneFills, loadModel, ripCopper  # noqa: E402
+from boardModel import B, F, boardPlanes, existingCopper, innerPlaneFills, loadModel, ripCopper  # noqa: E402
 from emit import runDrc, writeItem  # noqa: E402
 from router import Knobs, Router  # noqa: E402
 from run import negotiate, viaMmFor, winPadsFor  # noqa: E402
@@ -48,9 +48,6 @@ from strategy import followLeaders, phaseOrder, plan  # noqa: E402
 
 HIGHWAY_MM = 7.0
 POWER_HIGHWAY_MM = 10.0     # a power link this long (SYS across the board) is a highway too
-# The MCU's 1.1 V core rail joins pin 49 to pin 98 across the package: on In1 (the
-# 3.3 V plane, which board/wallet.kicad_dru lets it cross) it never meets a highway.
-INNER_POWER = {"VDD11": [B, IN1]}
 
 
 def route_blocks(src, out, blocks=None, minutes=6.0, knobs=(), log=print, skip_nets=(), first_nets=(),
@@ -107,7 +104,7 @@ def route_blocks(src, out, blocks=None, minutes=6.0, knobs=(), log=print, skip_n
         if c.net in skip_nets:
             skipped["net left to the human"] += 1
             continue
-        if c.kind in ("sig", "pwr") and c.b is not None and c.net not in INNER_POWER \
+        if c.kind in ("sig", "pwr") and c.b is not None \
                 and math.dist(c.a.center, c.b.center) > (highway_mm if c.kind == "sig" else POWER_HIGHWAY_MM):
             skipped["highway member (long link)"] += 1
             continue
@@ -117,8 +114,6 @@ def route_blocks(src, out, blocks=None, minutes=6.0, knobs=(), log=print, skip_n
     def layers_for(c):
         if c.kind == "gnd" or id(c) in early_ids:
             return [c.a.side] if c.kind == "gnd" else [F, B]
-        if c.net in INNER_POWER:
-            return INNER_POWER[c.net]
         return [B] if on_back(c) else [F, B]    # a front test pad needs the front
     hr_run.layersFor = layers_for                # negotiate() asks the same question
     log(f"existing copper: {len(tracks)} tracks, {len(vias)} vias")
