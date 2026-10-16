@@ -43,7 +43,8 @@ $KICAD_PY scripts/syncBoard.py           # dry run; --apply writes (close KiCad 
 $KICAD_PY scripts/checkPinNets.py        # IC pads vs datasheet pin tables, on the copper
 $KICAD_PY scripts/checkFpc.py            # connector/lever/antenna orientation, tail lengths
 scripts/trialRoute.sh                    # autoroute a copy with KiCadRoutingTools: failed nets / vias
-$KICAD_PY scripts/partialRoute.py --out /tmp/pr --first-nets USB_DP_MCU,USB_DN_MCU   # block wiring only, on a copy
+$KICAD_PY scripts/refreshKeepouts.py        # redraw the keep-out rule areas after a connector moves
+$KICAD_PY scripts/partialRoute.py --out /tmp/pr   # block wiring on a copy, hand copper kept
 $KICAD_PY scripts/checkParts.py board/wallet.kicad_pcb   # lands vs JLC's land per part
 ```
 

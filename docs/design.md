@@ -20,10 +20,10 @@ inside a secure element and never leave it; recovery is the Safe's other owners.
 | MCU | STM32U585VIT6Q, LQFP100 (Cortex-M33, TrustZone, 2 MB / 786 KB, AES+SAES+PKA+HASH+TRNG, DCMI, USB FS) | C5270986 — 54 in stock |
 | Secure element | NXP SE050E2HQ1 (secp256k1 + P-256 + Ed25519 keys generated inside, PIN objects with retry counters), own I2C bus. Fallback on the same land: SE051C2 | C5190917 (594 at JLC; DigiKey ~14k) |
 | Radio | Ebyte E73-2G4M08S1C (nRF52840 module, BLE only), behind the airgap gate | C356849 |
-| Airgap | MSK12C02 slide switch → TS3USB221A (USB data) + 74LVC1G02 / TPS22917 (radio power) + 2× SN74LVC1T45 | all JLC |
+| Airgap | MSK12C02 slide switch → TS3USB221A (USB data) + 74LVC1G02 / TPS22917 (radio power) + TXU0202 (radio UART isolation) | all JLC |
 | Display | NHD-2.4-240320AF-CSXP-CTP on Molex 54132-4062 + 6-pin 1.0 mm touch FPC | connectors JLC, panel hand-fitted |
-| Camera | OV2640 24-pin DVP module, ~66° lens refocused to ~15 cm, on a Jushuo AFC07 FPC connector; AVDD 2.8 V / DVDD 1.3 V (adjustable) / DOVDD 3.3 V | connector JLC, module hand-fitted |
-| Power | USB-C → BQ25185 charger (250 mA) → TPS63802 3.3 V buck-boost; MAX17048 battery gauge; XC6206 always-on for the STM32 RTC domain; soft-latch power button | all JLC, BQ25185/TPS63802/XC6206/USB-C/ESD as on the Nano |
+| Camera | OV2640 24-pin DVP module, ~66° lens refocused to ~15 cm, on a Jushuo AFC07 FPC connector; AVDD 2.8 V / DVDD 1.3 V (fixed TLV70313) / DOVDD 3.3 V | connector JLC, module hand-fitted |
+| Power | USB-C → BQ25185 charger (250 mA) → TPS63802 3.3 V buck-boost; MAX17048 battery gauge; soft-latch power button | all JLC, BQ25185/TPS63802/XC6206/USB-C/ESD as on the Nano |
 
 Overlap with GridCore: charger, buck-boost, always-on LDO, USB-C and ESD, the
 display panel with its connector and backlight pump, the slide switch, the
@@ -48,9 +48,10 @@ What makes it hold even against hostile firmware:
   here let firmware pull a floating switch to 0.3 V; found in review.)
 - The 1k in the switch's AIR throw also covers a switch that makes before it
   breaks: its other throw is GND.
-- The UART to the radio passes two SN74LVC1T45 buffers whose radio side is the
-  radio's own rail. With that rail at 0 V both ports are high-impedance (TI
-  SCES515N 7.3.6), so firmware cannot back-power the module through its I/O.
+- The UART to the radio passes a TXU0202 translator whose radio side, and its
+  enable, are the radio's own rail. With that rail at 0 V both ports are
+  high-impedance (TI SCES942A 9.3.4) and every pin holds Ioff, so firmware cannot
+  back-power the module through its I/O.
 - A 100k pull-up makes "airgapped" the state of a switch caught between
   positions.
 - The **RADIO light hangs on the radio's rail itself**: it is lit exactly when
@@ -111,9 +112,13 @@ touch flex is merged into the TFT flex.
 
 ## Board
 
-- 48 × 85 mm, 4 layers, 1.0 mm (the chin grew 3 mm in the routing pass). In1 is solid GND (enforced by
-  `board/wallet.kicad_dru`); In2 is GND poured around power runs; signals on
-  the outer layers.
+- 48 × 85 mm, 4 layers, 1.0 mm (the chin grew 3 mm in the routing pass).
+  **Stack-up: F.Cu / In1 = 3.3 V plane / In2 = solid GND / B.Cu.** Every part
+  sits on B.Cu, whose return currents run in the plane next to it, so In2 is the
+  unbroken GND; every 3.3 V pin and decap drops a via to In1, and the front, the
+  free layer for the buses between blocks, references the 3.3 V plane.
+  `board/wallet.kicad_dru` enforces both (In2: GND only; In1: 3.3 V, plus the
+  MCU's 1.1 V core link between pins 49 and 98).
 - **All parts on the back face (B.Cu).** The front face carries only the cell
   and the panel, plus the **programming pads** (MCU SWD and radio SWD). They are
   reachable by pogo pins before assembly and buried under the cell afterwards.
@@ -124,8 +129,10 @@ touch flex is merged into the TFT flex.
   power button plunger exits the east edge; its land is KiCad's ALPS SKRT land
   with pad 1 narrowed and the tab pads trimmed 0.05 mm, because the stock land
   leaves 0.1 mm between copper and the locating holes (JLC wants 0.2 mm).
-- The 32 kHz crystal is a 6 pF FC-135 on 8 pF caps, as ST asks of the LSE
-  oscillator, within 2 mm of its pins.
+- No 32 kHz crystal and no RTC backup supply: nothing on the device needs the
+  time across power-off (a Safe transaction carries no timestamp; the PIN retry
+  counter lives in the SE050). USB runs on the internal 48 MHz oscillator trimmed
+  from the USB frames, timeouts on the internal 32 kHz one.
 - Four M2 holes: two at the north corners, one at the panel's south-west corner
   (the board's south-west corner belongs to the antenna), one in the south-east
   corner.
@@ -140,37 +147,37 @@ touch flex is merged into the TFT flex.
 
 ## Placement for routing
 
-- **The placement is the owner's, by hand** (2026-10-15, 43 parts moved from the
-  scripted seed). Related parts sit with courtyards touching and decoupling caps
-  against their pins; there is no spacing rule. The scripted seed
-  (`newBoard.py` + the ratsnest pass of `scripts/optimizePlacement.py`) only
-  exists to start from.
-- **Routability is judged by routing, never by a proxy.** `scripts/trialRoute.sh`
-  autoroutes every net but GND on a copy (KiCadRoutingTools). On the hand-worked
-  board, `scripts/placeLoop.py` runs optimize → partial route → judge with every
-  hand-placed or copper-touched part locked. A crossing-count quench of the
-  remaining parts made it **worse** in every setting tried (2 → 3–6 failed nets
-  in the remainder): the proxy ignores existing copper, and the moves close the
-  channels the hand routing leaves. Placement changes on a hand-worked board are
-  targeted fixes, not a global pass.
-- **Block wiring is pre-routed; bundles are the human's.** `scripts/partialRoute.py`
-  routes only the wiring inside each functional block (an IC and the passives
-  most tied to it) plus GND fanout vias, with every existing track and via fixed
-  (never ripped). Wiring between blocks is left on the ratsnest. Results on the
-  2026-10-15 handoff board:
-  - the USB pair from the MCU to the USB switch is routed **first**, as a pair,
-    before the block wiring takes the room at the MCU's west pins (otherwise it
-    is the one bus that does not get through);
-  - the camera bus (all CAM_* nets, including its pull resistors) and VDD11's
-    link across the package are left to the human, so nothing of the pre-route
-    runs diagonally under the MCU where the camera bus crosses;
-  - what is left, autorouted as a judge: 2 nets fail (in the camera knot below),
-    against 5 failed (both USB lines, V3V3, VBAT_RTC, VBUS_SENSE) on the
-    hand-routed board without the pre-route.
-- **The camera knot.** The DCMI data pins on the MCU's west side (D0–D3, XCLK,
-  PWDN on pins 62–67) reach J_CAM in a different order than the connector's, and
-  DCMI is fixed to those pins (the pin optimizer finds no better order). Both
-  routers leave 2 of these 6 unrouted; they need a layer swap by hand.
+- **The placement is the owner's, by hand**, with targeted fixes where the
+  routing showed a problem. Related parts sit with courtyards touching and
+  decoupling caps against their pins; there is no spacing rule.
+- **Routability is judged by routing, never by a proxy.** A crossing-count
+  quench of the parts not hand-placed made the remainder *harder* to route in
+  every setting tried: the proxy ignores existing copper. Placement changes on a
+  hand-worked board are targeted fixes, each checked by routing.
+- **Keep-outs the routing needs are KiCad rule areas** (`scripts/refreshKeepouts.py`
+  redraws them from `newBoard.py` after a connector moves):
+  - **camera fan-in**: 3.1 mm of bare board east of J_CAM's contacts, where all 24
+    lines enter (the contacts face east; the camera LDOs used to fill it);
+  - **MCU west escape**: the strip outside pins 52–67, where the camera and SE
+    lines drop to the front layer.
+- **Blocks are pre-routed; the buses between them are the human's.**
+  `scripts/partialRoute.py` routes the wiring inside each block on the back
+  copper (the parts' side), a via to the 3.3 V plane for every 3.3 V pin and
+  decap, and a GND via for every cap and IC (0.25 mm clear of all pads), on top
+  of the hand-routed copper, which it never rips. A link longer than 7 mm (a
+  pull-up at the far end of a bus, a test pad across the board) or a power link
+  longer than 10 mm is left with its bus.
+- **Gauges on what is left** (2026-10-16): KiCadRoutingTools routes every
+  remaining net (0 failed, 119 vias); the full humanRouter finish routes them
+  all too (0 unconnected). Both are only a measure of how easy the hand route
+  is; their copper is not kept.
+- **Camera pins** are ordered on the north side as J_CAM orders them: XCLK comes
+  from timer TIM3 on PB5 (not the clock-output pin in the west-side knot) and
+  RST sits east of VSYNC, D6 and D7. PWDN is tied low at the connector.
+- **J_CAM is not where a stock camera tail lies flat.** A stock 20.5–21 mm module
+  bows 4.2–4.8 mm (`checkFpc.py` reports it); a ~16.5 mm custom flex lies flat.
+  Moving J_CAM 4.5 mm east instead would put its body over the MCU's north pins
+  and cost every north camera pin a via.
 - Small parts may sit under the display flex tails; `checkFpc.py` fails any tall
   part there.
 - MCU pins are chosen so each bus leaves the package facing its destination
@@ -191,11 +198,12 @@ touch flex is merged into the TFT flex.
 - The RADIO light sits directly under the south-west hole, next to the radio
   module, in the strip between the screw head and the antenna keep-out, so the
   west bridge into the chin stays open.
-- **The radio gate** (NOR, load switch, two UART buffers and their passives)
-  sits in its own west quadrant, around the corner from the MCU's radio UART. RADIO_3V3 and
-  the two radio-side UART lines run down the west edge to the module.
-- The front copper has no parts at all: use it as the free routing layer (drop
-  a via at the pin). In1 is GND only; In2 carries power.
+- **The radio gate** (NOR, load switch and their passives) sits in the
+  north-west quadrant. The UART translator sits between the TFT slot and the
+  radio module, right over the module's two north-edge UART pads, so no radio
+  line runs under the module; the two MCU-side lines come over the west bridge.
+- The front copper has no parts at all: it is the layer for the buses between
+  blocks (drop a via at the pin).
 - Signals reach the chin over three bridges between the slots and the edges:
   west (≈ 6 mm usable beside the hole), middle (2.6 mm) and east (3.7 mm).
 - **Keep-outs are KiCad rule areas** (DRC flags any part moved into them): both
@@ -219,21 +227,31 @@ device off, the cell charges and nothing else runs; there is no charge light.
 1. **Airgap switch direction**: confirm with a meter which lever position joins
    the common pin to pin 1 (3.3 V = AIRGAP). If it is the opposite of the silk,
    swap the AIR/ONLINE ends in `src/blocks/Radio.tsx`.
-2. **Camera connector pad order**: the 24-pin DVP modules are numbered from
-   both ends by different vendors (Ai-Thinker vs Espressif, pin N ↔ 25 − N).
-   This board uses Ai-Thinker's. Check the chosen module's flex against pads 1
-   and 24 before the first power-on; if reversed, change `J_CAM`'s pad map in
-   `board/footprints.json` to pad = 25 − pin.
-3. **Camera choice and focus**: OV2640, ~66° lens, 21 mm flex, focus set at
-   ~150 mm (stock modules are focused far and read phone screens poorly).
+2. **Camera connector contact face**: vendors number the 24-pin DVP flex from
+   either end (Ai-Thinker vs Espressif, pin N ↔ 25 − N), but that is numbering
+   only; the signal order along the flex is the same. This board follows
+   Ai-Thinker's numbering, which matches the modules checked so far once the
+   lens faces away from the board. What to check on a sample is which face of
+   the flex carries the contacts (the AFC07 is bottom-contact).
+3. **Camera choice and focus**: OV2640, ~66° lens, focus set at ~150 mm (stock
+   modules are focused far and read phone screens poorly). Best-documented
+   module: Union Image ZY-XSF3M2640B (8.5 mm head, 68.7°); a stock 20.5–21 mm
+   flex bows ~4.5 mm here, a ~16.5 mm custom flex (SincereFirst offers it) lies
+   flat. The head is 5.4–5.9 mm tall on every drawing found: check the case.
    Bench it against an SC031GS global-shutter module on an animated UR before
    committing; the SC031GS would need 1.8 V I/O and level translators (a board
    change). Check the module flex's contact face against the bottom-contact
    connector on a sample.
 4. **Touch tail contact face**: inherited from the Nano's analysis; confirm on
    the first panel before reflowing the touch connector.
-5. **Radio UART pins**: P0.13 (module TX) and P0.24 (module RX). The module
-   manual marks P1.10/P1.11 as low-frequency I/O, so they are not used.
+5. **Radio UART pins**: P0.31 (module TX, pad 9) and P0.30 (module RX, pad 10).
+   The TXU0202's inputs carry 5 MΩ pull-downs, so both lines idle low until
+   driven: discard one framing error at start-up, and keep the MCU's RX pin
+   pull-up on while the radio is off.
+7. **Firmware settings the hardware relies on**: BOOT0 is tied to GND, so the
+   ROM bootloader is entered through the option bytes over SWD; the power
+   button's BTN_N uses PA0's internal pull-up (kept through Standby/Shutdown);
+   XCLK for the camera is TIM3_CH2 PWM on PB5 (~20 MHz).
 6. **Secure element generation**: the board carries the current SE050E2
    (the C1 is "previous generation" in AN12436). Same land as the C1 and the
    SE051C2 fallback. Firmware must use applet 7.x behaviour: I2C at or below
@@ -255,7 +273,8 @@ $KICAD_PY scripts/syncBoard.py          # dry run; --apply writes (close KiCad f
 $KICAD_PY scripts/checkPinNets.py       # IC pads vs datasheet pin tables, on the board copper
 $KICAD_PY scripts/checkFpc.py           # connector / lever / antenna orientation, tail lengths
 scripts/trialRoute.sh                   # autoroute a copy: failed nets / vias (placement arbiter)
-$KICAD_PY scripts/partialRoute.py --out DIR [--first-nets ..] [--skip-nets ..]   # block wiring only, on a copy
+$KICAD_PY scripts/refreshKeepouts.py        # redraw the keep-out rule areas after a connector moves
+$KICAD_PY scripts/partialRoute.py --out DIR  # block wiring on a copy, hand copper kept
 $KICAD_PY scripts/placeLoop.py --base COMMIT   # optimize unlocked parts -> partial route -> judge, logged
 $KICAD_PY scripts/checkParts.py board/wallet.kicad_pcb   # each land vs the land JLC places that part on
 python3 scripts/jlcStock.py             # live JLC stock for every part number
