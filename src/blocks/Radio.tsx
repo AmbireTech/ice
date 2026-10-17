@@ -63,8 +63,8 @@ export const RadioBlock = () => (
       pinLabels={{ pin1: "D1P", pin2: "D1N", pin3: "D2P", pin4: "D2N", pin5: "GND", pin6: "OE_N",
         pin7: "DN", pin8: "DP", pin9: "S", pin10: "VCC" }}
       schX={-6} schY={-20} schSectionName={S} />
-    <trace from=".U6 > .D1P" to="net.USB_DP_MCU" />
-    <trace from=".U6 > .D1N" to="net.USB_DN_MCU" />
+    <trace from=".U6 > .D1P" to="net.USB_MCU_DP" />
+    <trace from=".U6 > .D1N" to="net.USB_MCU_DN" />
     <trace from=".U6 > .D2P" to="net.NC_USB_2DP" />
     <trace from=".U6 > .D2N" to="net.NC_USB_2DN" />
     <trace from=".U6 > .DP" to="net.USB_DP" />

@@ -290,7 +290,7 @@ NETCLASSES = [
     ("Power", 0.40, 0.15, 0.6, 0.3, ["VBUS", "SYS", "BAT", "V3V3", "L1_3V3", "L2_3V3"]),
     ("Rail", 0.25, 0.15, 0.45, 0.25, ["RADIO_3V3", "VDD11", "SE_VCC", "CAM_AVDD",
                                       "CAM_DVDD", "BL_A", "BL_K"]),
-    ("USB", 0.20, 0.15, 0.45, 0.25, ["USB_DP", "USB_DN", "USB_DP_MCU", "USB_DN_MCU"]),
+    ("USB", 0.20, 0.15, 0.45, 0.25, ["USB_DP", "USB_DN", "USB_MCU_DP", "USB_MCU_DN"]),
 ]
 
 

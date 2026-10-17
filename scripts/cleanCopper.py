@@ -10,11 +10,16 @@ What goes (the owner's cleanup of 2026-10-17, made a tool):
     stub; for a signal, an orphan. GND is never touched: a pad-less GND via is
     stitching.
   - crumbs: a track KiCad's DRC calls dangling that is shorter than 0.2 mm.
+  - on a net that is complete (no unconnected item of its own): a via KiCad calls
+    dangling (it joins one layer only, e.g. left in the middle of a single-layer
+    track after a reroute) and a dangling stub shorter than 1 mm. A net still
+    waiting for routing keeps its fanouts and stubs: they are the next route's start.
 Everything removed is listed. The board is re-checked by KiCad's DRC: if the
 unconnected count or the copper violations get worse, nothing is written.
 """
 import json
 import math
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -23,6 +28,7 @@ import pcbnew
 
 NM = 1e6
 CRUMB_MM = 0.2
+STUB_MM = 1.0
 
 
 def drc(path):
@@ -87,10 +93,19 @@ def main():
     unc0, cu0, d0 = drc(src)
     board = pcbnew.LoadBoard(str(src))
     stale = {t.m_Uuid.AsString(): t for t in pieces(board)}
-    crumbs = {it["uuid"] for v in d0["violations"] if v["type"] == "track_dangling" for it in v["items"]}
+    dangling = {it["uuid"] for v in d0["violations"] if v["type"] in ("track_dangling", "via_dangling")
+                for it in v["items"]}
+    open_nets = {re.search(r"\[(.*?)\]", it["description"]).group(1) for u in d0["unconnected_items"]
+                 for it in u["items"] if "[" in it["description"]}
     for t in board.GetTracks():
         u = t.m_Uuid.AsString()
-        if u in crumbs and t.GetClass() != "PCB_VIA" and t.GetLength() / NM < CRUMB_MM:
+        if u not in dangling:
+            continue
+        complete = t.GetNetname() not in open_nets
+        if t.GetClass() == "PCB_VIA":
+            if complete:
+                stale[u] = t
+        elif t.GetLength() / NM < (STUB_MM if complete else CRUMB_MM):
             stale[u] = t
     for u, t in stale.items():
         where = t.GetPosition() if t.GetClass() == "PCB_VIA" else t.GetStart()

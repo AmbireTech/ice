@@ -105,11 +105,11 @@
     "GPIO"
   ],
   "PA11": [
-    "USB_DN_MCU",
+    "USB_MCU_DN",
     "USB_OTG_FS_DM"
   ],
   "PA12": [
-    "USB_DP_MCU",
+    "USB_MCU_DP",
     "USB_OTG_FS_DP"
   ],
   "PE7": [

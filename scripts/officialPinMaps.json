@@ -192,11 +192,11 @@
     "pins": {
       "1": [
         "1D+",
-        "USB_DP_MCU"
+        "USB_MCU_DP"
       ],
       "2": [
         "1D-",
-        "USB_DN_MCU"
+        "USB_MCU_DN"
       ],
       "3": [
         "2D+",
