@@ -79,18 +79,47 @@ ul.plain { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; }
   .two { grid-template-columns: minmax(0, 1fr); }
   .losses { grid-template-columns: minmax(0, 1fr); }
 }
-/* 3D case preview */
-.stage { position: relative; aspect-ratio: 16 / 10; border-radius: 18px; overflow: hidden; background: var(--stage); }
+/* Device: the 3D preview beside its configurator */
+.build { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+.stage { position: relative; aspect-ratio: 4 / 5; max-width: 100%; border-radius: 18px; overflow: hidden; background: var(--stage); }
 .stage canvas { display: block; width: 100%; height: 100%; cursor: grab; }
 .stage-msg[hidden] { display: none; }
 .stage-msg { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: .9rem; }
-.vbar { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; }
-.seg { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 999px; }
-.seg button, .tog { font: 500 .82rem/1 var(--body); color: var(--muted); background: none; border: 0; border-radius: 999px; padding: 0 14px; min-height: 34px; cursor: pointer; }
+.config { display: grid; gap: 22px; min-width: 0; }
+.pane { display: grid; gap: 22px; }
+.pane[hidden] { display: none; }
+fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 10px; min-width: 0; }
+legend { font: 500 .72rem/1.2 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 0; margin-bottom: 10px; }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 999px; justify-self: start; }
+.seg.wide { display: flex; justify-self: stretch; }
+.seg.wide button { flex: 1; }
+.seg button, .tog { font: 500 .85rem/1 var(--body); color: var(--muted); background: none; border: 0; border-radius: 999px; padding: 0 14px; min-height: 36px; cursor: pointer; }
 .tog { border: 1px solid var(--line); }
+.onstage { position: absolute; left: 12px; bottom: 12px; background: var(--bg); }
 .seg button[aria-pressed="true"], .tog[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
-.seg button:focus-visible, .tog:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
-@media (max-width: 760px) { .stage { aspect-ratio: 4 / 5; } }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.swatches button { display: flex; align-items: center; gap: 10px; font: 500 .85rem/1.2 var(--body); color: var(--fg); background: none; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; cursor: pointer; text-align: left; }
+.swatches button[aria-pressed="true"] { border-color: var(--fg); box-shadow: inset 0 0 0 1px var(--fg); }
+.swatches i { position: relative; flex: none; width: 24px; height: 24px; border-radius: 6px; background: var(--mask); box-shadow: inset 0 0 0 1px var(--line); }
+.swatches i::after { content: ""; position: absolute; inset: 4px 6px; background: var(--ink); clip-path: polygon(55% 0, 100% 48%, 62% 100%, 28% 100%, 0 52%, 32% 30%); }
+.note { font-size: .82rem; line-height: 1.45; color: var(--muted); }
+.note.err { color: var(--warn); }
+.addr label { display: grid; gap: 4px; font-size: .85rem; min-width: 0; }
+.addr .hint { color: var(--muted); font-size: .78rem; margin-left: 6px; }
+.addr .row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+input { font: inherit; font-size: .95rem; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; min-width: 0; }
+.cta { font: 600 .95rem/1 var(--body); padding: 13px 22px; border-radius: 999px; border: 0; background: var(--fg); color: var(--bg); cursor: pointer; justify-self: start; }
+.cta:disabled { opacity: .45; cursor: not-allowed; }
+.dl { display: grid; gap: 6px; }
+.dl[hidden] { display: none; }
+.dlh { font: 600 .9rem/1.3 var(--body); margin: 0 0 8px; }
+.dl .file { display: flex; justify-content: space-between; align-items: center; gap: 12px; font: 500 .88rem/1.3 var(--body); color: var(--fg); background: var(--panel); border: 1px solid transparent; border-radius: 10px; padding: 11px 12px; cursor: pointer; text-align: left; }
+.dl .file:hover { border-color: var(--line); }
+.dl .file[aria-busy] { opacity: .6; cursor: progress; }
+.dl .meta { font: 400 .75rem/1 var(--mono); color: var(--muted); white-space: nowrap; }
+.dl .meta::after { content: " ↓"; }
+@media (max-width: 760px) { .build { grid-template-columns: minmax(0, 1fr); } }
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -116,20 +145,71 @@ ul.plain { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; }
 
   <section>
     <div class="eyebrow">The device</div>
-    <figure>
-      <div class="stage" id="stage" role="img" aria-label="3D model of the Ambire Signer in its translucent case. Drag to turn it.">
-        <p class="stage-msg" id="stageMsg">Loading the 3D model…</p>
-      </div>
-      <div class="vbar">
-        <div class="seg" role="group" aria-label="Case plastic">
-          <button type="button" data-mat="purple" aria-pressed="true">Purple</button>
-          <button type="button" data-mat="frost" aria-pressed="false">Frosted</button>
-          <button type="button" data-mat="clear" aria-pressed="false">Clear</button>
+    <div class="build">
+      <figure class="viewer">
+        <div class="stage" id="stage" role="img" aria-label="3D model of the Ambire Signer with its board and case. Drag to turn it.">
+          <p class="stage-msg" id="stageMsg">Loading the 3D model…</p>
+          <button type="button" class="tog onstage" id="explode" aria-pressed="false">Take apart</button>
         </div>
-        <button type="button" class="tog" id="explode" aria-pressed="false">Take apart</button>
+        <figcaption><b>Proto 0.</b> Drag to turn it. The airgap switch is in the left edge, the power button is a tab in the right edge that flexes in, and USB-C is at the bottom. The camera looks out of the back through an open window. <span id="dims"></span></figcaption>
+      </figure>
+
+      <div class="config">
+        <div class="seg wide" role="tablist" aria-label="How to get one">
+          <button type="button" role="tab" id="tabOrder" aria-controls="paneOrder" aria-selected="true" aria-pressed="true">Order to a PO box</button>
+          <button type="button" role="tab" id="tabDiy" aria-controls="paneDiy" aria-selected="false" aria-pressed="false">DIY</button>
+        </div>
+
+        <form id="paneOrder" role="tabpanel" aria-labelledby="tabOrder" class="pane">
+          <fieldset>
+            <legend>Board print</legend>
+            <div class="swatches" id="schemes"></div>
+            <p class="note" id="schemeNote"></p>
+          </fieldset>
+          <fieldset>
+            <legend>Case</legend>
+            <div class="seg" id="cases">
+              <button type="button" data-case="purple" aria-pressed="true">Purple</button>
+              <button type="button" data-case="clear" aria-pressed="false">Clear</button>
+              <button type="button" data-case="none" aria-pressed="false">None, I'll print it</button>
+            </div>
+            <div id="caseFiles" class="dl" hidden></div>
+          </fieldset>
+          <fieldset class="addr">
+            <legend>Ship to</legend>
+            <label><span>Name <span class="hint">any name works</span></span><input id="shipName" autocomplete="off"></label>
+            <label>PO box<input id="shipBox" autocomplete="off"></label>
+            <div class="row">
+              <label>City<input id="shipCity" autocomplete="off"></label>
+              <label>Postal code<input id="shipZip" autocomplete="off"></label>
+            </div>
+            <label>Country<input id="shipCountry" autocomplete="off"></label>
+          </fieldset>
+          <button type="submit" class="cta" disabled>Order</button>
+          <p class="note">Ordering opens after the first three devices are tested.</p>
+        </form>
+
+        <div id="paneDiy" role="tabpanel" aria-labelledby="tabDiy" class="pane" hidden>
+          <fieldset>
+            <legend>Board maker</legend>
+            <div class="seg" id="fabs">
+              <button type="button" data-fab="jlc" aria-pressed="true">JLCPCB</button>
+              <button type="button" data-fab="pcbway" aria-pressed="false">PCBWay</button>
+            </div>
+          </fieldset>
+          <div>
+            <h3 class="dlh">Board</h3>
+            <div class="dl" id="fabFiles"></div>
+          </div>
+          <div>
+            <h3 class="dlh">Case</h3>
+            <div class="dl" id="diyCaseFiles"></div>
+          </div>
+          <p class="note">These are the proto 0 board files as we ordered them, before the flame print. Upload the gerbers, BOM and pick-and-place files to the board maker; the screen, camera and battery go in by hand.</p>
+          <p class="note err" id="dlNote" hidden></p>
+        </div>
       </div>
-      <figcaption><b>Proto 0 in its case.</b> Drag to turn it. The airgap switch is in the left edge, the power button is a tab in the right edge that flexes in, and USB-C is at the bottom. The back shows the board with its planned artwork, and the camera looks out through an open window. <span id="dims"></span></figcaption>
-    </figure>
+    </div>
   </section>
 
 
@@ -264,13 +344,13 @@ ul.plain { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; }
       <p><b>The first three devices are ordered.</b> JLCPCB is making and assembling the boards. The screen, camera and battery go in by hand when they arrive.</p>
       <h3>Next</h3>
       <ul class="plain sub">
-        <li>Firmware work starts soon.</li>
+        <li>Firmware work starts soon, from a fork of Trezor's open-source firmware.</li>
         <li>A 3D-printed case for the first devices, from the model above.</li>
         <li>If it goes to production, it starts as a Safe signer. The hardware can do everything a Ledger or Trezor does; that can come later.</li>
       </ul>
       <h3>Different from the preview</h3>
       <ul class="plain sub">
-        <li>The first boards are plain purple. The full-colour artwork on the back needs JLC's own design tool, so this run goes without it.</li>
+        <li>The first boards are plain purple, with the old wordmark. The preview shows the next print: the flame alone, in the colours picked above.</li>
       </ul>
     </div>
   </section>
@@ -278,8 +358,9 @@ ul.plain { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; }
 
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script type="module">
-// The case preview. Every dimension comes from enclosure/enclosure.json, which the
-// enclosure generator writes from the board file; this script only draws it.
+// The device preview and configurator. Every dimension, the board model, the flame and
+// the print schemes come from enclosure/*.json, which enclosure/generate.py writes from
+// the board file; this script only draws them.
 // Model space: mm, X east, Y north, Z toward the screen (the viewer's Y is up).
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -287,8 +368,9 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 
-const stage = document.getElementById("stage");
-const msg = document.getElementById("stageMsg");
+const $ = (id) => document.getElementById(id);
+const stage = $("stage");
+const msg = $("stageMsg");
 
 function fail(what, error) {
   console.error(`enclosure preview: ${what}`, { error });
@@ -298,63 +380,76 @@ function fail(what, error) {
 
 const CASE = {
   purple: { color: 0xcdb2ff, attenuationColor: 0x6a2cff, attenuationDistance: 6, roughness: 0.2, transmission: 0.95 },
-  frost: { color: 0xd8c4ff, attenuationColor: 0x7b46ff, attenuationDistance: 5, roughness: 0.5, transmission: 0.92 },
   clear: { color: 0xffffff, attenuationColor: 0xffffff, attenuationDistance: Infinity, roughness: 0.04, transmission: 0.98 },
 };
 const EXPLODE = { bezel: 34, panel: 22, cell: 11, board: 0, shell: -18 };
 
-function roundedRect(path, xa, ya, xb, yb, r) {
-  path.moveTo(xa + r, ya);
-  path.lineTo(xb - r, ya);
-  path.absarc(xb - r, ya + r, r, -Math.PI / 2, 0);
-  path.lineTo(xb, yb - r);
-  path.absarc(xb - r, yb - r, r, 0, Math.PI / 2);
-  path.lineTo(xa + r, yb);
-  path.absarc(xa + r, yb - r, r, Math.PI / 2, Math.PI);
-  path.lineTo(xa, ya + r);
-  path.absarc(xa + r, ya + r, r, Math.PI, Math.PI * 1.5);
-  return path;
+// Files ship as text: the host serves no .glb/.zip and blocks data: fetches.
+async function fetchJson(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`);
+  return res.json();
 }
+const b64Bytes = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 
-// board coordinates (y south) → model space
 const boxFromRect = ([x0, y0, x1, y1], z0, z1, material) => {
   const m = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), material);
   m.position.set((x0 + x1) / 2, -(y0 + y1) / 2, (z0 + z1) / 2);
   return m;
 };
 
-function boardMesh(d, texture) {
-  const b = d.board;
-  const shape = roundedRect(new THREE.Shape(), 0, -b.h, b.w, 0, b.r);
-  for (const [x0, y0, x1, y1] of b.slots) shape.holes.push(roundedRect(new THREE.Path(), x0, -y1, x1, -y0, (y1 - y0) / 2 - 1e-3));
-  for (const [x, y, dia] of b.holes) shape.holes.push(new THREE.Path().absarc(x, -y, dia / 2, 0, Math.PI * 2, true));
+// The populated board, as KiCad exports it: uint16 positions over the board's box, one
+// chunk per material. The mask is shared so the print scheme can recolour it.
+function boardMesh(data, maskMat) {
+  const bin = b64Bytes(data.bin).buffer;
   const g = new THREE.Group();
-  const slab = new THREE.Mesh(
-    new THREE.ExtrudeGeometry(shape, { depth: b.t - 0.04, bevelEnabled: false, curveSegments: 16 }),
-    [new THREE.MeshStandardMaterial({ color: 0xeceae3, roughness: 0.6 }), new THREE.MeshStandardMaterial({ color: 0xcfc9b8, roughness: 0.7 })],
-  );
-  slab.position.z = -b.t + 0.02;
-  // The UV-printed back face, as the art preview shows it from behind: image left is the board's east edge.
-  const face = new THREE.ShapeGeometry(shape, 16);
-  const pos = face.attributes.position;
-  const uv = new Float32Array(pos.count * 2);
-  for (let i = 0; i < pos.count; i++) {
-    uv[2 * i] = (b.w - pos.getX(i)) / b.w;
-    uv[2 * i + 1] = 1 + pos.getY(i) / b.h;
+  g.position.fromArray(data.lo);
+  g.scale.fromArray(data.scale);
+  const mats = new Map();
+  const material = (c) => {
+    if (c.role === "mask") return maskMat;
+    const key = c.role + c.color.join();
+    if (!mats.has(key)) {
+      mats.set(key, c.role === "pads"
+        ? new THREE.MeshStandardMaterial({ color: 0xd8b25a, metalness: 1, roughness: 0.32, flatShading: true })
+        : c.role === "body"
+          ? new THREE.MeshStandardMaterial({ color: 0xbfae7e, roughness: 0.8, flatShading: true })
+          : new THREE.MeshStandardMaterial({ color: new THREE.Color().setRGB(...c.color, THREE.SRGBColorSpace), roughness: 0.55, flatShading: true }));
+    }
+    return mats.get(key);
+  };
+  for (const c of data.chunks) {
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(new Uint16Array(bin, c.vo, c.vc * 3), 3));
+    geo.setIndex(new THREE.BufferAttribute(new Uint16Array(bin, c.io, c.ic), 1));
+    g.add(new THREE.Mesh(geo, material(c)));
   }
-  face.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
-  const back = new THREE.Mesh(face, new THREE.MeshStandardMaterial({ map: texture, roughness: 0.5, side: THREE.DoubleSide }));
-  back.position.z = -b.t;
-  g.add(slab, back);
-  // The camera head is fitted by hand, so the board file has no model of it.
-  const [cx0, cy0, cx1, cy1] = d.camera;
-  const zb = d.z.boardBack;
-  g.add(boxFromRect(d.camera, zb - 5.9, zb, new THREE.MeshStandardMaterial({ color: 0x1c1e24, roughness: 0.5 })));
-  const lens = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 2.6, 0.6, 40), new THREE.MeshStandardMaterial({ color: 0x0b0c14, roughness: 0.08, metalness: 0.3 }));
-  lens.rotation.x = Math.PI / 2;
-  lens.position.set((cx0 + cx1) / 2, -(cy0 + cy1) / 2, zb - 6.1);
-  g.add(lens);
   return g;
+}
+
+// The flame on the back, drawn per scheme: every facet in ink, with a hairline of mask
+// between facets so one ink still shows the faceting. Mirrored, so it reads right from behind.
+function flameTexture(flame, scheme) {
+  const [bx0, by0, bx1, by1] = flame.box;
+  const px = 40, c = document.createElement("canvas");
+  c.width = Math.round((bx1 - bx0) / (bx1 - bx0) * 512);
+  c.height = Math.round((by1 - by0) / (bx1 - bx0) * 512);
+  const x = c.getContext("2d");
+  const k = c.width / (bx1 - bx0);
+  x.translate(c.width, 0);
+  x.scale(-k, k);
+  x.translate(-bx0, -by0);
+  const paths = flame.paths.map((d) => new Path2D(d));
+  x.fillStyle = scheme.ink;
+  for (const p of paths) x.fill(p);
+  x.strokeStyle = scheme.mask;
+  x.lineWidth = 3.2;
+  x.lineJoin = "round";
+  for (const p of paths) x.stroke(p);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  return t;
 }
 
 function screenTexture(w, h) {
@@ -404,12 +499,84 @@ function screenTexture(w, h) {
   return t;
 }
 
+// ── configurator: picks drive the preview ──
+const pick = (group, attr, value) => {
+  for (const b of group.querySelectorAll(`[${attr}]`)) b.setAttribute("aria-pressed", String(b.getAttribute(attr) === value));
+};
+function tabs(onDiy) {
+  for (const [tab, pane, on] of [["tabOrder", "paneOrder", !onDiy], ["tabDiy", "paneDiy", onDiy]]) {
+    $(tab).setAttribute("aria-selected", String(on));
+    $(tab).setAttribute("aria-pressed", String(on));
+    $(pane).hidden = !on;
+  }
+}
+$("tabOrder").addEventListener("click", () => tabs(false));
+$("tabDiy").addEventListener("click", () => tabs(true));
+$("paneOrder").addEventListener("submit", (e) => e.preventDefault());
+
+// ── downloads: rebuilt from their text parts, handed to the viewer's downloads capability ──
+let saver = null;
+const fmtSize = (n) => n < 1e6 ? `${Math.max(1, Math.round(n / 1e3))} KB` : `${(n / 1e6).toFixed(1)} MB`;
+async function fileData(f) {
+  const res = await fetch(f.part);
+  if (!res.ok) throw new Error(`${f.part}: HTTP ${res.status}`);
+  const text = await res.text();
+  return new Blob([f.b64 ? b64Bytes(text) : text]);
+}
+async function save(f, btn) {
+  const note = $("dlNote");
+  note.hidden = true;
+  btn.setAttribute("aria-busy", "true");
+  try {
+    const data = await fileData(f);
+    if (saver) {
+      await saver.save({ filename: f.filename, data });
+    } else {
+      // opened from disk: an ordinary browser download
+      const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(data), download: f.filename });
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    }
+  } catch (err) {
+    if (err && err.code === "declined") return;
+    console.warn("download failed", { file: f.filename, err });
+    note.textContent = `${f.filename} could not be saved: ${(err && (err.message || err.code)) || err}`;
+    note.hidden = false;
+  } finally {
+    btn.removeAttribute("aria-busy");
+  }
+}
+function fileList(el, files) {
+  el.replaceChildren(...files.map((f) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "file";
+    const name = document.createElement("span");
+    name.textContent = f.label;
+    const meta = document.createElement("span");
+    meta.className = "meta";
+    meta.textContent = `${f.filename.split(".").pop().toUpperCase()} · ${fmtSize(f.bytes)}`;
+    b.append(name, meta);
+    b.addEventListener("click", () => { if (!b.hasAttribute("aria-busy")) save(f, b); });
+    return b;
+  }));
+}
+
 async function main() {
-  const res = await fetch("enclosure/enclosure.json");
-  if (!res.ok) throw new Error(`enclosure.json: HTTP ${res.status}`);
-  const d = await res.json();
+  const d = await fetchJson("enclosure/enclosure.json");
   const [sw, sh, st] = d.size_mm;
-  document.getElementById("dims").textContent = `The case is ${sw} × ${sh} × ${st} mm.`;
+  $("dims").textContent = `The case is ${sw} × ${sh} × ${st} mm.`;
+
+  // downloads first: they do not need WebGL
+  const dl = d.downloads;
+  const showFab = (fab) => { pick($("fabs"), "data-fab", fab); fileList($("fabFiles"), dl.fabs[fab]); };
+  for (const b of $("fabs").querySelectorAll("[data-fab]")) b.addEventListener("click", () => showFab(b.dataset.fab));
+  showFab("jlc");
+  fileList($("diyCaseFiles"), dl.case);
+  fileList($("caseFiles"), dl.case);
+  if (window.claude?.use) {
+    window.claude.use("downloads").then((x) => { saver = x; }, (err) => console.warn("downloads capability did not load", { err }));
+  }
 
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -435,26 +602,13 @@ async function main() {
   scene.add(device);
 
   const caseMat = new THREE.MeshPhysicalMaterial({ thickness: 1.8, ior: 1.5, metalness: 0, envMapIntensity: 0.55 });
-  const setCase = (name) => {
-    const c = CASE[name];
-    caseMat.color.set(c.color);
-    caseMat.attenuationColor.set(c.attenuationColor);
-    caseMat.attenuationDistance = c.attenuationDistance;
-    caseMat.roughness = c.roughness;
-    caseMat.transmission = c.transmission;
-    for (const b of document.querySelectorAll("[data-mat]")) b.setAttribute("aria-pressed", String(b.dataset.mat === name));
-  };
-  setCase("purple");
+  const maskMat = new THREE.MeshStandardMaterial({ roughness: 0.5, flatShading: true });
+  const flameMat = new THREE.MeshStandardMaterial({ roughness: 0.6, alphaTest: 0.5, side: THREE.DoubleSide });
 
   const loader = new GLTFLoader();
   const loadPart = async (url) => {
-    // GLB bytes ship base64 in JSON: the host serves .json, not .glb, and blocks data: fetches.
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`);
-    const bytes = Uint8Array.from(atob((await res.json()).glb), (c) => c.charCodeAt(0));
-    const gltf = await loader.parseAsync(bytes.buffer, "");
-    // The generator's glTF is metres, turned Z-up to Y-up, one mesh per CAD face: put it
-    // back in model space as a single mesh.
+    // GLB bytes ship base64 in JSON; one mesh per CAD face, merged back into one.
+    const gltf = await loader.parseAsync(b64Bytes((await fetchJson(url)).glb).buffer, "");
     const toModel = new THREE.Matrix4().makeScale(1000, 1000, 1000).multiply(new THREE.Matrix4().makeRotationX(Math.PI / 2));
     const geos = [];
     gltf.scene.updateMatrixWorld(true);
@@ -465,25 +619,76 @@ async function main() {
     if (!merged) throw new Error(`${url}: faces could not be merged`);
     return new THREE.Group().add(new THREE.Mesh(merged, caseMat));
   };
-  const texture = await new THREE.TextureLoader().loadAsync(d.texture);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
   await document.fonts.ready;
+  const [shell, bezel, boardData] = await Promise.all([loadPart(d.parts.shell), loadPart(d.parts.bezel), fetchJson(d.board3d)]);
 
-  const [shell, bezel] = await Promise.all([loadPart(d.parts.shell), loadPart(d.parts.bezel)]);
-  const [px0, py0, px1, py1] = d.panel;
+  // Each part sits in its own group: the take-apart animation moves the groups, never the meshes.
+  const board = new THREE.Group().add(boardMesh(boardData, maskMat));
+  const [fx0, fy0, fx1, fy1] = d.flame.at;
+  const flame = new THREE.Mesh(new THREE.PlaneGeometry(fx1 - fx0, fy1 - fy0), flameMat);
+  flame.position.set((fx0 + fx1) / 2, -(fy0 + fy1) / 2, d.maskBack - 0.01);
+  board.add(flame);
+  // The camera module is fitted by hand, so the board file has no model of it.
+  const [cx0, cy0, cx1, cy1] = d.camera;
+  board.add(boxFromRect(d.camera, z.boardBack - 5.9, z.boardBack, new THREE.MeshStandardMaterial({ color: 0x1c1e24, roughness: 0.5 })));
+  const lens = new THREE.Mesh(new THREE.CylinderGeometry(2.6, 2.6, 0.6, 40), new THREE.MeshStandardMaterial({ color: 0x0b0c14, roughness: 0.08, metalness: 0.3 }));
+  lens.rotation.x = Math.PI / 2;
+  lens.position.set((cx0 + cx1) / 2, -(cy0 + cy1) / 2, z.boardBack - 6.1);
+  board.add(lens);
+
   const [vx0, vy0, vx1, vy1] = d.viewingArea;
   const panel = new THREE.Group();
   panel.add(boxFromRect(d.panel, z.panel[0], z.panel[1], new THREE.MeshStandardMaterial({ color: 0x0a0c0e, roughness: 0.25 })));
   const screen = new THREE.Mesh(new THREE.PlaneGeometry(vx1 - vx0, vy1 - vy0), new THREE.MeshBasicMaterial({ map: screenTexture(vx1 - vx0, vy1 - vy0), toneMapped: false }));
   screen.position.set((vx0 + vx1) / 2, -(vy0 + vy1) / 2, z.panel[1] + 0.02);
   panel.add(screen);
-  // Each part sits in its own group: the take-apart animation moves the groups, never the meshes.
   const cell = new THREE.Group().add(boxFromRect(d.cell, z.cell[0], z.cell[1], new THREE.MeshStandardMaterial({ color: 0xbfc2c6, roughness: 0.42, metalness: 0.65 })));
-  const board = boardMesh(d, texture);
   const parts = { shell, bezel, panel, cell, board };
   for (const p of Object.values(parts)) device.add(p);
   msg.hidden = true;
+
+  // print schemes
+  const swatches = $("schemes");
+  const setScheme = (s) => {
+    maskMat.color.set(s.mask);
+    flameMat.map?.dispose();
+    flameMat.map = flameTexture(d.flame, s);
+    flameMat.needsUpdate = true;
+    pick(swatches, "data-scheme", s.id);
+    $("schemeNote").textContent = s.colour
+      ? `${s.label} needs a full-colour print, which PCBWay offers.`
+      : `${s.label} is an ordinary solder mask and silkscreen, any board maker can do it.`;
+  };
+  swatches.replaceChildren(...d.schemes.map((s) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.dataset.scheme = s.id;
+    const dot = document.createElement("i");
+    dot.style.setProperty("--ink", s.ink);
+    dot.style.setProperty("--mask", s.mask);
+    b.append(dot, s.label);
+    b.addEventListener("click", () => setScheme(s));
+    return b;
+  }));
+  setScheme(d.schemes[0]);
+
+  // case
+  const setCase = (name) => {
+    const none = name === "none";
+    shell.visible = bezel.visible = !none;
+    $("caseFiles").hidden = !none;
+    if (!none) {
+      const c = CASE[name];
+      caseMat.color.set(c.color);
+      caseMat.attenuationColor.set(c.attenuationColor);
+      caseMat.attenuationDistance = c.attenuationDistance;
+      caseMat.roughness = c.roughness;
+      caseMat.transmission = c.transmission;
+    }
+    pick($("cases"), "data-case", name);
+  };
+  for (const b of $("cases").querySelectorAll("[data-case]")) b.addEventListener("click", () => setCase(b.dataset.case));
+  setCase("purple");
 
   // near plane well out: parts 1 mm apart must not z-fight on 16-bit depth buffers
   const camera = new THREE.PerspectiveCamera(26, 1, 40, 900);
@@ -491,20 +696,19 @@ async function main() {
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.enablePan = false;
-  controls.minDistance = 90;
+  controls.minDistance = 70;
   controls.maxDistance = 420;
   controls.autoRotate = true;
   controls.autoRotateSpeed = 1.1;
   controls.addEventListener("start", () => { controls.autoRotate = false; });
 
   let exploded = 0, target = 0;
-  const explodeBtn = document.getElementById("explode");
+  const explodeBtn = $("explode");
   explodeBtn.addEventListener("click", () => {
     target = target ? 0 : 1;
     explodeBtn.setAttribute("aria-pressed", String(!!target));
     explodeBtn.textContent = target ? "Put together" : "Take apart";
   });
-  for (const b of document.querySelectorAll("[data-mat]")) b.addEventListener("click", () => setCase(b.dataset.mat));
 
   const resize = () => {
     const { width, height } = stage.getBoundingClientRect();
@@ -529,5 +733,5 @@ async function main() {
 }
 
 if (!window.WebGLRenderingContext) fail("WebGL unavailable", new Error("no WebGLRenderingContext"));
-else main().catch((error) => fail("setup failed", error));
+main().catch((error) => fail("setup failed", error));
 </script>

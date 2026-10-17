@@ -129,9 +129,10 @@ at: all parts on the back face, which is the face the clear back shows.
 ## Licensing (not legal advice)
 
 trezor-firmware is plain GPLv3; forking it makes the whole firmware GPLv3 and
-GPLv3 §6 forbids locking out user-built firmware on a consumer device. Writing
-our own firmware (e.g. Rust, as Foundation's KeyOS) keeps the licence our choice
-and lets it share code with the extension.
+GPLv3 §6 requires letting users install their own builds on a consumer device.
+The owner accepts both (2026-10-17) and wants to start from Trezor's firmware:
+see [direction.md](direction.md) for the closest Trezor model (T3T2, not Model T)
+and what porting it takes.
 
 ## Competitive notes
 

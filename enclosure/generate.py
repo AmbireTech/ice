@@ -23,10 +23,13 @@ Parts (Z = 0 is the board's front face, +Z toward the screen; X east, Y north):
           its skirt laps over a tongue on the shell and snaps onto it
 
 Outputs:
-  enclosure/out/{shell,bezel}.{step,stl}     for print / quote
-  docs/enclosure/{shell,bezel}.json          GLB as base64 JSON for the 3D preview on the concept page
-  docs/enclosure/enclosure.json              the numbers the preview draws from
-  docs/enclosure/board-back.jpg              the UV-printed back face, cropped to the board
+  enclosure/out/{shell,bezel}.{step,stl}, case.3mf   for print / quote (the 3MF lays both
+                                                      parts out flat for printing)
+  docs/enclosure/                                     the concept page's 3D preview and configurator:
+    enclosure.json    the numbers the preview draws from, the flame, the print schemes
+    board.json        the populated board, from KiCad's own 3D export
+    {shell,bezel}.json  the case parts (GLB as base64: the artifact host serves no .glb)
+    downloads.json + files/   the DIY sets: fab files as ordered, and the case
 
 Run from hardware/ambire-wallet:
   ../../.venv-enclosure/bin/python enclosure/generate.py
@@ -44,6 +47,7 @@ import struct
 import subprocess
 import sys
 import tempfile
+import zipfile
 from pathlib import Path
 
 import numpy as np
@@ -59,15 +63,15 @@ from build123d import (
     export_step,
     export_stl,
     extrude,
+    Mesher,
     fillet,
 )
-from PIL import Image
 
 HERE = Path(__file__).resolve().parent.parent
 BOARD = HERE / "board/wallet.kicad_pcb"
 OUT = HERE / "enclosure/out"
 WEB = HERE / "docs/enclosure"
-ART = HERE / "art/preview_back_assembled.png"
+BRAND_LOGO = HERE / "art/brand/Ambire-ver-on-dark.svg"
 KICAD_3D = os.environ.get("KICAD_3DMODEL_DIR", "/Applications/KiCad/KiCad.app/Contents/SharedSupport/3dmodels")
 
 # ── Stack in front of the board ─────────────────────────────────────────────
@@ -108,6 +112,48 @@ TAB = (8.5, 4.0, 0.5, 1.0)   # power tab: length, height, slot width, thickness
 NUB_D, NUB_GAP = 2.2, 0.1    # nub on the tab; air left before the plunger tip
 
 M2_HEAD = (3.8, 1.6)  # pan head diameter, height
+
+# ── Back print ──────────────────────────────────────────────────────────────
+# The flame alone, from the official logo (github.com/AmbireTech/ambire-brand,
+# copied unmodified into art/brand/): its facets are Purple and Violet, its
+# shadows a translucent dark violet. It sits in the board's reserved artwork
+# panel (the "no parts: UV artwork" rule area).
+FLAME_FACETS = {"#6000FF", "#AF50FF"}
+FLAME_SHADOWS = {"#31155D"}
+FLAME_MARGIN = 0.6
+# Ink on mask. Brand colours: Purple #6000FF, Black #181A1F, Volt #D7FF00 (the
+# brand's neon green). JLC's standard silkscreen is white or black only, so a
+# purple flame or a Volt board is a full-colour print (PCBWay); white on black and
+# black on white are an ordinary mask + silkscreen order anywhere.
+PRINT_SCHEMES = [
+    {"id": "neon", "label": "Purple on neon", "ink": "#6000FF", "mask": "#D7FF00", "colour": True},
+    {"id": "black", "label": "Purple on black", "ink": "#6000FF", "mask": "#181A1F", "colour": True},
+    {"id": "white-black", "label": "White on black", "ink": "#F2F3F5", "mask": "#181A1F", "colour": False},
+    {"id": "black-white", "label": "Black on white", "ink": "#181A1F", "mask": "#EEEEEA", "colour": False},
+    {"id": "purple-white", "label": "Purple on white", "ink": "#6000FF", "mask": "#EEEEEA", "colour": True},
+]
+
+CASE_README = """Ambire signer proto 0 case
+
+case.3mf     both parts laid out for printing: the shell on its back, the bezel face down
+shell.stl    back shell (the board screws onto its four posts, M2 self-tapping)
+bezel.stl    front bezel (snaps onto the shell)
+*.step       the same parts for CAD
+
+Units are millimetres. Print in translucent or clear resin or PETG. Nothing has been
+test-printed yet: the snap fit and the power-button tab may need adjusting.
+"""
+
+# ── DIY downloads (the board as ordered; the case from this run) ────────────
+ORDER = HERE / "production/order"
+FAB_SETS = {
+    "jlc": [("Gerbers", ORDER / "jlc-plain/wallet_gerbers.zip"),
+            ("Bill of materials", ORDER / "jlc-plain/wallet_bom-jlc.csv"),
+            ("Pick and place", ORDER / "jlc-plain/wallet_positions-jlc.csv")],
+    "pcbway": [("Gerbers", ORDER / "jlc-plain/wallet_gerbers.zip"),
+               ("Bill of materials", ORDER / "pcbway/wallet_bom-pcbway.csv"),
+               ("Pick and place", ORDER / "pcbway/wallet_centroid-pcbway.csv")],
+}
 MESH_TOL = 0.03
 
 
@@ -141,7 +187,7 @@ def xy(node):
 
 
 def read_board(path: Path) -> dict:
-    root = sexp(path.read_text())
+    root = sexp(path.read_text(encoding="utf-8"))
     thickness = float(kid(kid(root, "general"), "thickness")[1])
 
     edges = []
@@ -215,7 +261,7 @@ def read_board(path: Path) -> dict:
 
 def panel_outline():
     """The panel outline newBoard.py lays the display tails from (x, y, w, h)."""
-    src = (HERE / "scripts/newBoard.py").read_text()
+    src = (HERE / "scripts/newBoard.py").read_text(encoding="utf-8")
     m = re.search(r"^PANEL = \(([^)]*)\)", src, re.M)
     if not m:
         raise SystemExit("PANEL not found in scripts/newBoard.py")
@@ -240,18 +286,20 @@ def fab_world(fp: dict) -> np.ndarray:
 # ───────────────────────────────────────────────────────────── parts geometry
 
 
-def parts_geometry(board_path: Path, tmp: Path) -> dict[str, np.ndarray]:
-    """Vertices of every modelled part, board mm: x, y (south +), h (height off the
-    back face; parts on the back are negative)."""
+def kicad_glb(board_path: Path, tmp: Path, *flags: str) -> list[tuple]:
+    """Export the board with kicad-cli and flatten it: one (ref, material, vertices,
+    triangles) per primitive, vertices in board mm as x, y (south +), h (height off the
+    back face; parts on the back are negative). ref is the footprint reference, or None
+    for the board's own layers (body, mask, pads)."""
     if not shutil.which("kicad-cli"):
         raise SystemExit("kicad-cli not on PATH (KiCad 8+)")
-    text = board_path.read_text()
+    text = board_path.read_text(encoding="utf-8")
     text = text.replace("${KIPRJMOD}", str(board_path.parent)).replace("${KICAD10_3DMODEL_DIR}", KICAD_3D)
     copy = tmp / "board.kicad_pcb"
-    copy.write_text(text)
-    glb = tmp / "parts.glb"
-    run = subprocess.run(["kicad-cli", "pcb", "export", "glb", "--no-board-body", "-f", "-o", str(glb), str(copy)],
-                         capture_output=True, text=True)
+    copy.write_text(text, encoding="utf-8")
+    glb = tmp / "export.glb"
+    run = subprocess.run(["kicad-cli", "pcb", "export", "glb", *flags, "-f", "-o", str(glb), str(copy)],
+                         capture_output=True, text=True, encoding="utf-8", errors="replace")
     if run.returncode != 0 or not glb.exists():
         raise SystemExit(f"kicad-cli glb export failed:\n{run.stdout}\n{run.stderr}")
     data = glb.read_bytes()
@@ -271,33 +319,179 @@ def parts_geometry(board_path: Path, tmp: Path) -> dict[str, np.ndarray]:
         m[:3, 3] = n.get("translation", [0, 0, 0])
         return m
 
-    def positions(acc_i):
-        a = g["accessors"][acc_i]
+    def accessor(i, width, dtype):
+        a = g["accessors"][i]
         bv = g["bufferViews"][a["bufferView"]]
         off = bv.get("byteOffset", 0) + a.get("byteOffset", 0)
-        stride = bv.get("byteStride", 12)
-        raw = np.frombuffer(bin_, dtype=np.uint8, count=stride * (a["count"] - 1) + 12, offset=off)
-        rows = np.lib.stride_tricks.as_strided(raw, shape=(a["count"], 12), strides=(stride, 1))
-        return np.ascontiguousarray(rows).view("<f4").reshape(-1, 3).astype(np.float64)
+        size = np.dtype(dtype).itemsize * width
+        stride = bv.get("byteStride", size)
+        raw = np.frombuffer(bin_, dtype=np.uint8, count=stride * (a["count"] - 1) + size, offset=off)
+        rows = np.lib.stride_tricks.as_strided(raw, shape=(a["count"], size), strides=(stride, 1))
+        return np.ascontiguousarray(rows).view(dtype).reshape(a["count"], width)
 
-    parts: dict[str, list] = {}
+    index_types = {5121: "<u1", 5123: "<u2", 5125: "<u4"}
+    out = []
 
     def walk(i, parent_m, ref):
         n = g["nodes"][i]
         m = parent_m @ matrix(n)
         if "mesh" in n:
             for p in g["meshes"][n["mesh"]]["primitives"]:
-                v = positions(p["attributes"]["POSITION"])
+                v = accessor(p["attributes"]["POSITION"], 3, "<f4").astype(np.float64)
                 v = (np.c_[v, np.ones(len(v))] @ m.T)[:, :3] * 1000.0
-                parts.setdefault(ref, []).append(v[:, [0, 2, 1]])  # glTF x, y-up, z -> board x, y, h
+                if "indices" in p:
+                    a = g["accessors"][p["indices"]]
+                    tri = accessor(p["indices"], 1, index_types[a["componentType"]]).reshape(-1, 3).astype(np.int64)
+                else:
+                    tri = np.arange(len(v)).reshape(-1, 3)
+                mi = p.get("material")
+                out.append((ref, None if mi is None else g["materials"][mi], v[:, [0, 2, 1]], tri))  # glTF x, y-up, z -> board x, y, h
         for c in n.get("children", []):
             walk(c, m, ref)
 
     for r in g["scenes"][0]["nodes"]:
         root = g["nodes"][r]
         for c in root.get("children", []):
-            walk(c, matrix(root), g["nodes"][c].get("name"))
+            name = g["nodes"][c].get("name") or ""
+            walk(c, matrix(root), None if name.startswith("=>") else name)
+    return out
+
+
+def parts_geometry(board_path: Path, tmp: Path) -> dict[str, np.ndarray]:
+    """Vertices of every modelled part (no board body), by reference."""
+    parts: dict[str, list] = {}
+    for ref, _, v, _ in kicad_glb(board_path, tmp, "--no-board-body"):
+        if ref:
+            parts.setdefault(ref, []).append(v)
     return {k: np.vstack(v) for k, v in parts.items()}
+
+
+def board_model(board_path: Path, tmp: Path, thickness: float) -> tuple[dict, bytes]:
+    """The populated board for the preview: KiCad's own export (body, soldermask, pads,
+    every part model), no silkscreen (the print is drawn by the page, per scheme).
+    Packed per material: uint16 positions quantised over the board's box, uint16
+    indices, in model space (X east, Y north, Z = 0 at the board's front face)."""
+    groups: dict[tuple, list] = {}
+    for ref, mat, v, tri in kicad_glb(board_path, tmp, "--include-soldermask", "--include-pads"):
+        pb = (mat or {}).get("pbrMetallicRoughness", {})
+        r, g_, b_, a = pb.get("baseColorFactor", [0.55, 0.55, 0.55, 1.0])
+        if ref is None:
+            # KiCad gives only the board layers explicit metal/roughness
+            role = "pads" if pb.get("metallicFactor", 0) > 0.5 else "mask" if a < 1 else "body"
+        else:
+            role = "part"
+        key = (role, round(r, 3), round(g_, 3), round(b_, 3))
+        model = np.c_[v[:, 0], -v[:, 1], v[:, 2] - thickness]
+        groups.setdefault(key, []).append((model, tri))
+    allp = np.vstack([P for lst in groups.values() for P, _ in lst])
+    lo, hi = allp.min(0), allp.max(0)
+    scale = (hi - lo) / 65535.0
+    chunks, blobs, offset = [], [], 0
+    for (role, r, g_, b_), lst in groups.items():
+        pending: list = []
+
+        def flush():
+            nonlocal offset, pending
+            if not pending:
+                return
+            P = np.vstack([q for q, _ in pending])
+            base, idx = 0, []
+            for q, t in pending:
+                idx.append(t + base)
+                base += len(q)
+            I = np.vstack(idx).astype("<u2")
+            pq = np.round((P - lo) / scale).astype("<u2").tobytes()
+            ib = I.tobytes()
+            pad = (-len(pq)) % 4
+            chunks.append({"role": role, "color": [r, g_, b_], "vo": offset, "vc": len(P),
+                           "io": offset + len(pq) + pad, "ic": int(I.size)})
+            blobs.extend([pq, b"\0" * pad, ib, b"\0" * ((-len(ib)) % 4)])
+            offset += len(pq) + pad + len(ib) + (-len(ib)) % 4
+            pending = []
+
+        count = 0
+        for P, T in lst:
+            if len(P) > 65535:
+                raise SystemExit(f"a {role} primitive has {len(P)} vertices; split it before packing")
+            if count + len(P) > 65535:
+                flush()
+                count = 0
+            pending.append((P, T))
+            count += len(P)
+        flush()
+    mask_back = float(min(P[:, 2].min() for (role, *_), lst in groups.items() if role == "mask" for P, _ in lst))
+    header = {"lo": lo.tolist(), "scale": scale.tolist(), "chunks": chunks, "maskBack": mask_back}
+    return header, b"".join(blobs)
+
+
+# ───────────────────────────────────────────────────────────── print artwork
+
+
+def flame_paths(svg: Path) -> dict:
+    """The Ambire flame alone (the purple facets of the official logo, no wordmark),
+    with its bounding box computed from the path data (curves sampled)."""
+    text = svg.read_text(encoding="utf-8")
+    facets, shadows = [], []
+    for tag in re.findall(r"<path\b[^>]*>", text):
+        fill = re.search(r'fill="(#[0-9A-Fa-f]{6})"', tag)
+        d = re.search(r'\sd="([^"]+)"', tag).group(1)
+        if not fill:
+            continue
+        colour = fill.group(1).upper()
+        if colour in FLAME_FACETS:
+            facets.append(d)
+        elif colour in FLAME_SHADOWS:
+            shadows.append(d)
+    if not facets:
+        raise SystemExit(f"no flame facets in {svg}")
+    pts = np.vstack([path_points(d) for d in facets])
+    x0, y0 = pts.min(0)
+    x1, y1 = pts.max(0)
+    return {"paths": facets, "box": [round(float(v), 3) for v in (x0, y0, x1, y1)]}
+
+
+def path_points(d: str) -> np.ndarray:
+    """Points along an SVG path (M/L/H/V/C/S/Q/Z, absolute or relative), curves sampled."""
+    toks = re.findall(r"[MmLlHhVvCcSsQqZz]|-?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?", d)
+    pts, i, cmd = [], 0, None
+    cur = np.zeros(2)
+    start = np.zeros(2)
+    while i < len(toks):
+        if toks[i].isalpha():
+            cmd = toks[i]
+            i += 1
+            if cmd in "Zz":
+                cur = start.copy()
+                continue
+        rel = cmd.islower()
+        c = cmd.upper()
+        n = {"M": 2, "L": 2, "H": 1, "V": 1, "C": 6, "S": 4, "Q": 4}[c]
+        args = [float(t) for t in toks[i:i + n]]
+        i += n
+        if c == "H":
+            nxt = np.array([args[0] + (cur[0] if rel else 0), cur[1]])
+        elif c == "V":
+            nxt = np.array([cur[0], args[0] + (cur[1] if rel else 0)])
+        else:
+            ctrl = np.array(args).reshape(-1, 2) + (cur if rel else 0)
+            if c in "CSQ":
+                curve = np.vstack([cur, ctrl])
+                for t in np.linspace(0, 1, 16):
+                    # de Casteljau
+                    q = curve.copy()
+                    while len(q) > 1:
+                        q = q[:-1] * (1 - t) + q[1:] * t
+                    pts.append(q[0])
+            nxt = ctrl[-1]
+        if c == "M":
+            start = nxt.copy()
+            if cmd == "m":
+                cmd = "l"
+            elif cmd == "M":
+                cmd = "L"
+        pts.append(nxt)
+        cur = nxt
+    return np.array(pts)
 
 
 # ──────────────────────────────────────────────────────────────── solids
@@ -501,6 +695,7 @@ def main():
     assert shell.is_valid and bezel.is_valid, "invalid solid"
 
     size = (out_o[2] - out_o[0], out_o[3] - out_o[1], z_top - z_floor_out)
+    print_3mf(shell, bezel, OUT / "case.3mf")
     for name, part in (("shell", shell), ("bezel", bezel)):
         export_step(part, str(OUT / f"{name}.step"))
         export_stl(part, str(OUT / f"{name}.stl"), tolerance=MESH_TOL, angular_tolerance=0.2)
@@ -509,7 +704,21 @@ def main():
         gltf_json(glb, WEB / f"{name}.json")
         glb.unlink()
 
-    texture(b)
+    with tempfile.TemporaryDirectory() as tmp:
+        header, blob = board_model(BOARD, Path(tmp), T)
+    header["bin"] = base64.b64encode(blob).decode()
+    (WEB / "board.json").write_text(json.dumps(header, separators=(",", ":")), encoding="utf-8")
+
+    flame = flame_paths(BRAND_LOGO)
+    fx0, fy0, fx1, fy1 = flame["box"]
+    ax0, ay0, ax1, ay1 = b["zones"]["no parts: UV artwork"]
+    k = min((ax1 - ax0 - 2 * FLAME_MARGIN) / (fx1 - fx0), (ay1 - ay0 - 2 * FLAME_MARGIN) / (fy1 - fy0))
+    fw, fh = (fx1 - fx0) * k, (fy1 - fy0) * k
+    cx, cy = (ax0 + ax1) / 2, (ay0 + ay1) / 2
+    flame["at"] = [round(v, 3) for v in (cx - fw / 2, cy - fh / 2, cx + fw / 2, cy + fh / 2)]
+    report.append(f"flame {fw:.1f} x {fh:.1f} mm in the artwork panel, mask back face at Z {header['maskBack']:.3f}")
+
+    downloads = write_downloads()
     data = {
         "generated_from": "board/wallet.kicad_pcb",
         "size_mm": [round(v, 1) for v in size],
@@ -521,7 +730,11 @@ def main():
         "camera": cam,
         "depthDriver": driver,
         "parts": {"shell": "enclosure/shell.json", "bezel": "enclosure/bezel.json"},
-        "texture": "enclosure/board-back.jpg",
+        "board3d": "enclosure/board.json",
+        "maskBack": header["maskBack"],
+        "flame": flame,
+        "schemes": PRINT_SCHEMES,
+        "downloads": downloads,
     }
     (WEB / "enclosure.json").write_text(json.dumps(data, indent=1))
 
@@ -539,23 +752,49 @@ def gltf_json(glb: Path, dest: Path):
     dest.write_text(json.dumps({"glb": base64.b64encode(glb.read_bytes()).decode()}))
 
 
-def texture(b):
-    """Crop the UV-art preview (the back seen from behind) to the board's face."""
-    im = Image.open(ART).convert("RGB")
-    a = np.asarray(im).astype(int)
-    rim = np.abs(a - np.array([238, 238, 233])).sum(-1) < 8   # the white mask rim the render draws around the art
+def print_3mf(shell, bezel, dest: Path):
+    """Both parts laid out for printing: the shell on its back, the bezel face down beside it."""
+    sb, bb = shell.bounding_box(), bezel.bounding_box()
+    flat_shell = Pos(-sb.min.X, -sb.min.Y, -sb.min.Z) * shell
+    turned = Rot(180, 0, 0) * bezel
+    tb = turned.bounding_box()
+    flat_bezel = Pos(sb.size.X + 8 - tb.min.X, -tb.min.Y, -tb.min.Z) * turned
+    m = Mesher()
+    m.add_shape(flat_shell, linear_deflection=MESH_TOL, angular_deflection=0.2, part_number="shell")
+    m.add_shape(flat_bezel, linear_deflection=MESH_TOL, angular_deflection=0.2, part_number="bezel")
+    m.write(str(dest))
 
-    def span(line):
-        idx = np.nonzero(line)[0]
-        return idx.min(), idx.max() + 1
 
-    x0, x1 = span(rim[a.shape[0] // 3])
-    y0, y1 = span(rim[:, a.shape[1] // 7])
-    ratio = (x1 - x0) / (y1 - y0)
-    if abs(ratio / (b["w"] / b["h"]) - 1) > 0.01:
-        raise SystemExit(f"art crop {x1 - x0}x{y1 - y0} does not match the board's aspect")
-    im.crop((x0, y0, x1, y1)).resize((768, round(768 * b["h"] / b["w"])), Image.LANCZOS).save(
-        WEB / "board-back.jpg", quality=86, optimize=True)
+def write_downloads() -> dict:
+    """The DIY files for the page. The host serves text only: CSVs go as they are, STEP as
+    .txt, binaries (zip, STL, 3MF) as base64 .txt; the page rebuilds each file and hands it
+    to the viewer's downloads capability."""
+    files_dir = WEB / "files"
+    if files_dir.exists():
+        shutil.rmtree(files_dir)
+    files_dir.mkdir()
+
+    def entry(label, src: Path):
+        raw = src.read_bytes()
+        if src.suffix == ".csv":
+            part, b64 = src.name, False
+            (files_dir / part).write_bytes(raw)
+        elif src.suffix in (".step", ".stp"):
+            part, b64 = src.name + ".txt", False
+            (files_dir / part).write_bytes(raw)
+        else:
+            part, b64 = src.name + ".b64.txt", True
+            (files_dir / part).write_text(base64.b64encode(raw).decode())
+        return {"label": label, "filename": src.name, "bytes": len(raw), "part": f"enclosure/files/{part}", "b64": b64}
+
+    # The viewer saves only allowlisted types (zip, csv, ...), so the case goes as one zip.
+    case_zip = OUT / "ambire-signer-case.zip"
+    with zipfile.ZipFile(case_zip, "w", zipfile.ZIP_DEFLATED) as z:
+        for name in ("case.3mf", "shell.stl", "bezel.stl", "shell.step", "bezel.step"):
+            z.write(OUT / name, name)
+        z.writestr("README.txt", CASE_README)
+    return {"fabs": {fab: [entry(l, p) for l, p in files] for fab, files in FAB_SETS.items()},
+            "case": [entry("Case: 3MF, STL and STEP (zip)", case_zip)]}
 
 
 if __name__ == "__main__":
