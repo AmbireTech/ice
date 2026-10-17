@@ -90,7 +90,7 @@ PANEL_GAP = 0.1       # under the lip; the foam takes the panel's +/-0.3 toleran
 # whose library models are missing from this KiCad install. Each gets a height
 # bound here, so a newly unmodelled part stops the build instead of passing unseen.
 CAM_HEAD_H = 5.9
-UNMODELLED_MAX_H = {"U5": 0.6, "U6": 0.6, "U13": 1.0, "U15": 0.8, "U16": 1.0, "J_CAM": 2.0, "SW_PWR": 3.3}
+UNMODELLED_MAX_H = {"U5": 0.6, "U6": 0.6, "U13": 1.0, "U15": 0.8, "U16": 1.0}
 BACK_CLEAR = 0.6      # between the deepest part and the inside of the back
 SKRT_ACTUATOR_H = 2.05  # ALPS SKRTLAE010: actuator centre above the board (distributor drawing data)
 
@@ -133,6 +133,7 @@ PRINT_SCHEMES = [
     {"id": "white-black", "label": "White on black", "ink": "#F2F3F5", "mask": "#181A1F", "colour": False},
     {"id": "black-white", "label": "Black on white", "ink": "#181A1F", "mask": "#EEEEEA", "colour": False},
     {"id": "purple-white", "label": "Purple on white", "ink": "#6000FF", "mask": "#EEEEEA", "colour": True},
+    {"id": "incognito", "label": "Incognito", "ink": None, "mask": "#181A1F", "colour": False},   # plain black, no print
 ]
 
 CASE_README = """Ambire signer proto 0 case
@@ -297,6 +298,7 @@ def kicad_glb(board_path: Path, tmp: Path, *flags: str) -> list[tuple]:
         raise SystemExit("kicad-cli not on PATH (KiCad 8+)")
     text = board_path.read_text(encoding="utf-8")
     text = text.replace("${KIPRJMOD}", str(board_path.parent)).replace("${KICAD10_3DMODEL_DIR}", KICAD_3D)
+    text = model_fallbacks(text, board_path.parent)
     copy = tmp / "board.kicad_pcb"
     copy.write_text(text, encoding="utf-8")
     glb = tmp / "export.glb"
@@ -357,6 +359,30 @@ def kicad_glb(board_path: Path, tmp: Path, *flags: str) -> list[tuple]:
             name = g["nodes"][c].get("name") or ""
             walk(c, matrix(root), None if name.startswith("=>") else name)
     return out
+
+
+def model_fallbacks(text: str, board_dir: Path) -> str:
+    """Where a footprint's model file does not exist (KiCad names library models it does
+    not ship), use board/models.json's model for that footprint, as applyModels.py would."""
+    table = {k: v for k, v in json.loads((board_dir / "models.json").read_text(encoding="utf-8")).items()
+             if not k.startswith("_")}
+    starts = [m.start() for m in re.finditer(r"\n\t\(footprint \"", text)] + [len(text)]
+    out, done = [text[:starts[0]]], []
+    for a, b in zip(starts, starts[1:]):
+        block = text[a:b]
+        lib = re.match(r'\n\t\(footprint "([^"]+)"', block).group(1)
+        model = re.search(r'\(model "([^"]+)"', block)
+        spec = table.get(lib)
+        if model and spec and not Path(model.group(1)).exists():
+            if any(spec["offset"]) or any(spec["rotate"]):
+                raise SystemExit(f"{lib}: models.json has an offset/rotation; apply it with scripts/applyModels.py")
+            path = spec["path"].replace("${KIPRJMOD}", str(board_dir))
+            block = block.replace(model.group(0), f'(model "{path}"', 1)
+            done.append(lib.split(":")[-1])
+        out.append(block)
+    if done:
+        print(f"  models.json stands in for missing models: {', '.join(sorted(set(done)))}")
+    return "".join(out)
 
 
 def parts_geometry(board_path: Path, tmp: Path) -> dict[str, np.ndarray]:
@@ -568,6 +594,7 @@ def main():
 
     # ── openings from whatever crosses the board edge ──
     openings = []
+    plunger_pts = None   # the power button's plunger: its opening is the flex tab, checked below
     for ref, v in parts.items():
         beyond = {
             "W": v[v[:, 0] < -0.05], "E": v[v[:, 0] > W + 0.05],
@@ -590,6 +617,8 @@ def main():
                 size_z = zhi - zlo + 2 * LEVER_CLR
                 openings.append((ref, side, wall_cut(side, b, along, (zlo + zhi) / 2, size_y, size_z, 0.6)))
                 report.append(f"airgap lever slot {size_y:.1f} x {size_z:.1f} at y {along:.2f}")
+            elif ref == "SW_PWR" and side == "E":
+                plunger_pts = pts
             else:
                 raise SystemExit(f"{ref} crosses the {side} board edge and has no opening rule")
 
@@ -610,6 +639,14 @@ def main():
         box(wx_in - 0.5, free_y, wx_out + 0.5, free_y + slot_w, pz - tab_h / 2 - slot_w, pz + tab_h / 2 + slot_w),
         box(wx_in - 0.5, hinge_y - 1.0, wx_out - tab_t, free_y, pz - tab_h / 2, pz + tab_h / 2),
     ]
+    if plunger_pts is not None:
+        mx, my_lo, my_hi = plunger_pts[:, 0].max(), plunger_pts[:, 1].min(), plunger_pts[:, 1].max()
+        mz_lo, mz_hi = z_back + plunger_pts[:, 2].min(), z_back + plunger_pts[:, 2].max()
+        if not (hinge_y < my_lo and my_hi < free_y and pz - tab_h / 2 < mz_lo and mz_hi < pz + tab_h / 2):
+            raise SystemExit(f"SW_PWR plunger (y {my_lo:.2f}..{my_hi:.2f}, Z {mz_lo:.2f}..{mz_hi:.2f}) is outside the power tab")
+        if mx > tip_x + NUB_GAP / 2:
+            raise SystemExit(f"SW_PWR model's plunger reaches x {mx:.2f}, past the land's tip {tip_x:.2f}: the nub would preload it")
+        report.append(f"power button model: plunger at x {mx:.2f}, inside the tab window")
     nub_x0 = tip_x + NUB_GAP
     nub_len = wx_out - tab_t - nub_x0
     nub = Pos(nub_x0 + nub_len / 2, -py_c, pz) * Rot(0, 90, 0) * Cylinder(NUB_D / 2, nub_len)

@@ -144,6 +144,7 @@ each one takes to make:
 | White on black | black | white | ordinary mask + silkscreen, any maker |
 | Black on white | white | black | ordinary mask + silkscreen, any maker |
 | Purple on white | white | Purple | full-colour print (PCBWay) |
+| Incognito | black | none | plain black board, any maker |
 
 JLC's standard silkscreen is white or black only, and no maker offers a Volt
 mask, so the three purple schemes need a colour print. JLC accepts colour print

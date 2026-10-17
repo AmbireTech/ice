@@ -137,19 +137,19 @@ input { font: inherit; font-size: .95rem; color: var(--fg); background: var(--bg
 </defs></svg>
 <main>
   <header class="col">
-    <div class="eyebrow">Ambire · hardware signer · proto 0</div>
+    <div class="eyebrow">Ambire · hardware signer</div>
     <h1 style="margin-top:12px">Ambire Signer</h1>
-    <p class="lede">A Safe-owner signing device. Its keys are generated inside two secure elements from two different vendors and never leave them, so there is no seed phrase. It decodes every Safe transaction on its own screen. A physical switch cuts the radio and USB data, and the see-through case shows the whole board.</p>
+    <p class="lede">The hardware signer built for Safe. Keys are created inside two certified security chips and never leave them, so there is no seed phrase to lose or leak. Every transaction is decoded on the device's own screen, one physical switch takes it fully offline, and the see-through case hides nothing.</p>
   </header>
 
   <section>
-    <div class="eyebrow">What actually lost money, 2024–2026</div>
+    <div class="eyebrow">Why it matters: what lost money in 2024–2026</div>
     <div class="losses">
       <div class="loss"><span class="amt">$1.4B</span><span class="what">Bybit, Feb 2025. Signers approved a Safe transaction their hardware wallets could not decode; it was a DELEGATECALL.</span></div>
       <div class="loss"><span class="amt">~$120M</span><span class="what">Coldcard, Jul 2026. A build bug generated seeds from a weak random-number generator.</span></div>
       <div class="loss"><span class="amt">$72–93M</span><span class="what">Ledger reseller implant, Sep–Oct 2026. An LTE implant was hidden under the screen; the tell was a visible wire.</span></div>
     </div>
-    <p class="sub col">None of these needed a lab. Each answer is a design choice: decode the Safe transaction on the device, generate keys inside a certified chip, and make implants visible.</p>
+    <p class="sub col">None of these needed a lab, and Ambire Signer answers each one by design: it decodes the Safe transaction on the device, creates keys inside certified chips, and puts the whole board on display.</p>
   </section>
 
   <section>
@@ -159,22 +159,22 @@ input { font: inherit; font-size: .95rem; color: var(--fg); background: var(--bg
       <div class="usp">
         <svg viewBox="152 0 133 200" fill="currentColor" aria-hidden="true"><path d="M196.677 28.5842L184.32 63.602C184.251 63.7983 184.222 64.0065 184.236 64.2141C184.249 64.4218 184.305 64.6244 184.4 64.8098L195.913 87.459L164.272 105.394C164.181 105.446 164.079 105.479 163.974 105.49C163.869 105.502 163.763 105.492 163.662 105.46C163.561 105.429 163.468 105.377 163.388 105.308C163.308 105.239 163.243 105.154 163.197 105.059L156.35 90.7985C156.234 90.5591 156.183 90.2937 156.201 90.0284C156.218 89.7631 156.305 89.507 156.451 89.2852L196.371 28.4387C196.384 28.4143 196.404 28.394 196.427 28.3798C196.451 28.3656 196.478 28.3582 196.506 28.3582C196.533 28.3582 196.56 28.3656 196.584 28.3798C196.608 28.394 196.627 28.4143 196.64 28.4387C196.658 28.4581 196.67 28.4815 196.676 28.5069C196.683 28.5322 196.683 28.5588 196.677 28.5842Z"/><path d="M258.643 75.505L284.854 131.39C284.99 131.68 285.033 132.005 284.975 132.321C284.918 132.637 284.764 132.926 284.534 133.15L215.612 199.781C215.503 199.887 215.366 199.958 215.217 199.987C215.068 200.015 214.914 199.998 214.774 199.939C214.634 199.88 214.515 199.781 214.432 199.655C214.348 199.528 214.303 199.38 214.303 199.228V137.967L257.756 96.0006C257.904 95.8582 258.022 95.6876 258.103 95.499C258.184 95.3103 258.227 95.1074 258.228 94.902L258.352 75.5705C258.352 75.5357 258.364 75.502 258.385 75.4748C258.407 75.4476 258.437 75.4287 258.471 75.421C258.505 75.4134 258.541 75.4176 258.572 75.4328C258.603 75.4481 258.628 75.4736 258.643 75.505Z"/><path d="M184.254 64.0167L156.299 89.678C156.341 89.5497 156.399 89.4274 156.473 89.3143L196.393 28.4677C196.406 28.4464 196.424 28.4286 196.446 28.4159C196.467 28.4032 196.492 28.396 196.517 28.395C196.542 28.3935 196.567 28.3983 196.59 28.4089C196.613 28.4195 196.632 28.4357 196.648 28.4558C196.663 28.476 196.673 28.4996 196.676 28.5245C196.68 28.5495 196.678 28.5749 196.669 28.5987L184.312 63.6093C184.275 63.7418 184.255 63.8789 184.254 64.0167Z"/><path d="M284.97 132.335L258.003 95.6805C258.149 95.4418 258.227 95.1675 258.228 94.8874L258.345 75.556C258.344 75.5357 258.347 75.5156 258.355 75.4968C258.362 75.478 258.374 75.461 258.388 75.4468H258.439C258.462 75.4353 258.487 75.4293 258.512 75.4293C258.537 75.4293 258.562 75.4353 258.585 75.4468C258.61 75.4622 258.63 75.485 258.643 75.5123L284.854 131.397C284.991 131.689 285.032 132.018 284.97 132.335Z"/><path d="M214.878 0.223515L243.953 71.5761C244.031 71.7639 244.072 71.9655 244.072 72.1691C244.072 72.3727 244.031 72.5743 243.953 72.7621L196.946 182.843C196.896 182.958 196.819 183.058 196.722 183.137C196.626 183.215 196.511 183.269 196.389 183.293C196.267 183.317 196.14 183.312 196.021 183.276C195.901 183.241 195.792 183.177 195.703 183.091L152.468 141.292C152.2 141.032 152.036 140.684 152.005 140.312C151.975 139.94 152.08 139.569 152.301 139.269L213.976 55.6424C214.17 55.3763 214.275 55.0552 214.274 54.7257V0.33266C214.268 0.257404 214.289 0.182337 214.334 0.121948C214.38 0.0615584 214.446 0.0201256 214.52 0.00565629C214.594 -0.00881302 214.671 0.00470573 214.735 0.0435967C214.8 0.0824877 214.848 0.143991 214.87 0.216244L214.878 0.223515Z"/><path d="M214.216 55.184L244.091 72.0927C244.082 71.9151 244.043 71.7403 243.974 71.5761L214.899 0.223509C214.876 0.163048 214.833 0.111877 214.778 0.0777426C214.723 0.0436087 214.659 0.0283784 214.594 0.0343484C214.553 0.0347206 214.513 0.0432896 214.475 0.0595357C214.438 0.0757817 214.404 0.0993783 214.376 0.128936C214.348 0.158301 214.326 0.192901 214.311 0.230795C214.303 0.26924 214.303 0.308752 214.311 0.347197V54.7329C214.309 54.886 214.284 55.0381 214.238 55.184H214.216Z"/></svg>
         <h3>Tight integration with Ambire and Safe</h3>
-        <p>Built around Ambire and Safe accounts from the first screen.</p>
+        <p>Designed around Ambire and Safe accounts from day one.</p>
       </div>
       <div class="usp">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/><path d="M10 14.5l-1.5 1.5 1.5 1.5M14 14.5l1.5 1.5-1.5 1.5"/></svg>
         <h3>Private and open source</h3>
-        <p>Open hardware and firmware you can read, check and build yourself.</p>
+        <p>Open hardware and firmware. Anyone can inspect it, and anyone can build one.</p>
       </div>
       <div class="usp">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="5" r="1.6"/><circle cx="12" cy="5" r="1.6"/><circle cx="19" cy="5" r="1.6"/><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/><circle cx="5" cy="19" r="1.6"/><circle cx="12" cy="19" r="1.6"/><circle cx="19" cy="19" r="1.6"/><path d="M6.6 5h3.8M13.6 5h3.8M5 6.6v3.8M12 13.6v3.8M19 6.6v3.8M6.6 19h3.8M13.6 12h3.8M6.2 13.2l4.6 4.6"/></svg>
         <h3>Post-quantum ready</h3>
-        <p>A Safe can add a post-quantum key as an extra owner when on-chain support is ready.</p>
+        <p>Add a post-quantum key to your Safe as soon as chains support it.</p>
       </div>
       <div class="usp">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2.5" width="14" height="19" rx="2.5"/><path d="M8.5 7h7M8.5 10.5h5"/><path d="M8.5 15.5l2 2 4-4"/></svg>
         <h3>Perfect clear signing</h3>
-        <p>Every Safe action decoded on the device's own screen before you sign.</p>
+        <p>See exactly what you sign: every Safe action, decoded on the device.</p>
       </div>
     </div>
   </section>
@@ -187,7 +187,7 @@ input { font: inherit; font-size: .95rem; color: var(--fg); background: var(--bg
           <p class="stage-msg" id="stageMsg">Loading the 3D model…</p>
           <button type="button" class="tog onstage" id="explode" aria-pressed="false">Take apart</button>
         </div>
-        <figcaption><b>Proto 0.</b> Drag to turn it. The airgap switch is in the left edge, the power button is a tab in the right edge that flexes in, and USB-C is at the bottom. The camera looks out of the back through an open window. <span id="dims"></span></figcaption>
+        <figcaption><b>Make it yours.</b> Drag to turn it, or take it apart. The airgap switch is on the left edge, the power button on the right and USB-C at the bottom; the QR camera looks out through a window in the back. <span id="dims"></span></figcaption>
       </figure>
 
       <div class="config">
@@ -200,7 +200,6 @@ input { font: inherit; font-size: .95rem; color: var(--fg); background: var(--bg
           <fieldset>
             <legend>Board print</legend>
             <div class="swatches" id="schemes"></div>
-            <p class="note" id="schemeNote"></p>
           </fieldset>
           <fieldset>
             <legend>Case</legend>
@@ -222,7 +221,7 @@ input { font: inherit; font-size: .95rem; color: var(--fg); background: var(--bg
             <label>Country<input id="shipCountry" autocomplete="off"></label>
           </fieldset>
           <button type="submit" class="cta" disabled>Order</button>
-          <p class="note">Ordering opens after the first three devices are tested.</p>
+          <p class="note">Ordering opens once the first three devices pass testing.</p>
         </form>
 
         <div id="paneDiy" role="tabpanel" aria-labelledby="tabDiy" class="pane" hidden>
@@ -241,7 +240,7 @@ input { font: inherit; font-size: .95rem; color: var(--fg); background: var(--bg
             <h3 class="dlh">Case</h3>
             <div class="dl" id="diyCaseFiles"></div>
           </div>
-          <p class="note">These are the proto 0 board files as we ordered them, before the flame print. Upload the gerbers, BOM and pick-and-place files to the board maker; the screen, camera and battery go in by hand.</p>
+          <p class="note">Everything you need to build your own. Upload the gerbers, bill of materials and pick-and-place file to the board maker, then fit the screen, camera and battery by hand. These are the files of our first run, before the flame print.</p>
           <p class="note err" id="dlNote" hidden></p>
         </div>
       </div>
@@ -278,7 +277,7 @@ input { font: inherit; font-size: .95rem; color: var(--fg); background: var(--bg
   <rect x="26" y="15" width="148" height="196" rx="5" fill="url(#fGlass)"/>
   <rect x="92" y="282" width="30" height="7" rx="3" fill="var(--fg-soft)"/>
 </svg>
-        <figcaption><b>Every action, decoded.</b> The device rebuilds the Safe transaction hash itself and shows each call in a MultiSend.</figcaption>
+        <figcaption><b>Every action, decoded.</b> The device rebuilds the Safe transaction itself and spells out each step of a batch, so what you see is what you sign.</figcaption>
       </figure>
       <figure>
         <svg viewBox="0 0 200 300" role="img" aria-label="Refusal screen">
@@ -304,7 +303,7 @@ input { font: inherit; font-size: .95rem; color: var(--fg); background: var(--bg
   <rect x="26" y="15" width="148" height="196" rx="5" fill="url(#fGlass)"/>
   <rect x="92" y="282" width="30" height="7" rx="3" fill="var(--fg-soft)"/>
 </svg>
-        <figcaption><b>The Bybit case, refused.</b> DELEGATECALL is blocked unless its target is on a short allowlist. Owner, threshold and module changes get their own warnings.</figcaption>
+        <figcaption><b>The Bybit attack, stopped.</b> Handing the Safe's control to unknown code (a DELEGATECALL) is blocked unless the target is on a short allowlist. Changes to owners, threshold and modules get their own warnings.</figcaption>
       </figure>
     </div>
   </section>
@@ -339,15 +338,15 @@ input { font: inherit; font-size: .95rem; color: var(--fg); background: var(--bg
     <text x="124" y="226" fill="var(--muted)" font-size="10">can switch off, never on</text>
   </g>
 </svg>
-        <figcaption><b>Airgap.</b> The switch drives both cut-offs directly. The light is wired to the radio's own power, so it cannot lie. Airgapped, the device signs over animated QR both ways.</figcaption>
+        <figcaption><b>One switch, fully offline.</b> It cuts USB data and the radio's power in hardware, not software. The light is wired to the radio itself, so it cannot lie. Offline, the device signs over animated QR codes in both directions.</figcaption>
       </figure>
       <div class="facts">
-        <h3>The board</h3>
+        <h3>Built to be looked at</h3>
         <ul class="plain sub">
-          <li>48 × 85 mm with four layers, and every part sits on the back. It is fully routed: KiCad's design-rule check reports 0 violations and 0 unconnected nets.</li>
-          <li>The back layer carries the parts and the wiring inside each block. Under it are a solid ground layer and a 3.3&nbsp;V plane. The front layer carries the buses between blocks.</li>
-          <li>The USB data pair to the main chip is routed as a differential pair.</li>
-          <li>The cell and the screen cover the front. The only things on it are the four screw holes and the pads for programming the main chip and the radio.</li>
+          <li>About the size of a credit card, and every part sits on the back, where the see-through case shows it.</li>
+          <li>The screen and the battery sit on the front, so nothing is hidden behind them.</li>
+          <li>Carefully designed and audited in-house: the board passes a full set of checks before every order.</li>
+          <li>A factory assembles it. Only the screen, camera and battery go in by hand.</li>
         </ul>
       </div>
     </div>
@@ -382,11 +381,11 @@ input { font: inherit; font-size: .95rem; color: var(--fg); background: var(--bg
       <ul class="plain sub">
         <li>Firmware work starts soon, from a fork of Trezor's open-source firmware.</li>
         <li>A 3D-printed case for the first devices, from the model above.</li>
-        <li>If it goes to production, it starts as a Safe signer. The hardware can do everything a Ledger or Trezor does; that can come later.</li>
+        <li>The hardware can replace a Ledger or Trezor. The first release focuses on what matters most to us: signing for Safe.</li>
       </ul>
       <h3>Different from the preview</h3>
       <ul class="plain sub">
-        <li>The first boards are plain purple, with the old wordmark. The preview shows the next print: the flame alone, in the colours picked above.</li>
+        <li>The first boards are plain purple with the old wordmark. The preview shows the next print: the flame alone, in the colours above.</li>
       </ul>
     </div>
   </section>
@@ -690,19 +689,17 @@ async function main() {
   const setScheme = (s) => {
     maskMat.color.set(s.mask);
     flameMat.map?.dispose();
-    flameMat.map = flameTexture(d.flame, s);
+    flameMat.map = s.ink ? flameTexture(d.flame, s) : null;
     flameMat.needsUpdate = true;
+    flame.visible = !!s.ink;   // Incognito: a plain black board, no flame
     pick(swatches, "data-scheme", s.id);
-    $("schemeNote").textContent = s.colour
-      ? `${s.label} needs a full-colour print, which PCBWay offers.`
-      : `${s.label} is an ordinary solder mask and silkscreen, any board maker can do it.`;
   };
   swatches.replaceChildren(...d.schemes.map((s) => {
     const b = document.createElement("button");
     b.type = "button";
     b.dataset.scheme = s.id;
     const dot = document.createElement("i");
-    dot.style.setProperty("--ink", s.ink);
+    dot.style.setProperty("--ink", s.ink || "transparent");
     dot.style.setProperty("--mask", s.mask);
     b.append(dot, s.label);
     b.addEventListener("click", () => setScheme(s));

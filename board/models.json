@@ -95,5 +95,33 @@
    0
   ],
   "note": "EasyEDA C49166860 model; 8/8 pads by scripts/alignModel.py"
+ },
+ "wallet:SW_Alps_SKRTLAE010_HoleClear": {
+  "path": "${KIPRJMOD}/../3d/Alps_SKRTLAE010.step",
+  "offset": [
+   0,
+   0,
+   0
+  ],
+  "rotate": [
+   0,
+   0,
+   0
+  ],
+  "note": "EasyEDA/LCSC C110293. KiCad's library names a model for this land that it does not ship. Body +/-2.3 vs the fab outline +/-2.25, plunger tip 2.05 vs 2.04, height 3.35 (datasheet 3.3)"
+ },
+ "Connector_FFC-FPC:Jushuo_AFC07-S24FCA-00_1x24-1MP_P0.50_Horizontal": {
+  "path": "${KIPRJMOD}/../3d/Jushuo_AFC07-S24FCA-00.step",
+  "offset": [
+   0,
+   0,
+   0
+  ],
+  "rotate": [
+   0,
+   0,
+   0
+  ],
+  "note": "EasyEDA/LCSC C262567. KiCad's library names a model for this land that it does not ship. Centred like the land; leads toward the contact row"
  }
 }
