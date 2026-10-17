@@ -128,7 +128,7 @@ ul.plain { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; }
         </div>
         <button type="button" class="tog" id="explode" aria-pressed="false">Take apart</button>
       </div>
-      <figcaption><b>Proto 0 in its case.</b> Drag to turn it. The airgap switch is in the left edge, the power button is a tab in the right edge that flexes in, and USB-C is at the bottom. The back shows the board and its printed artwork, and the camera looks out through an open window. The case is built from the board file. <span id="dims"></span></figcaption>
+      <figcaption><b>Proto 0 in its case.</b> Drag to turn it. The airgap switch is in the left edge, the power button is a tab in the right edge that flexes in, and USB-C is at the bottom. The back shows the board with its planned artwork, and the camera looks out through an open window. <span id="dims"></span></figcaption>
     </figure>
   </section>
 
@@ -261,25 +261,16 @@ ul.plain { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; }
   <section class="col">
     <div class="eyebrow">Status · 17 October 2026</div>
     <div class="status">
-      <p><b>Proto 0 board is fully routed.</b> It is 48 × 85 mm, 4 layers, 99 parts, all assembled by JLCPCB except the screen, camera and cell. KiCad's design-rule check is clean, and every chip's wiring has been checked against its datasheet pin table. It has not been ordered: the items below are still open.</p>
-      <h3>Enclosure</h3>
+      <p><b>The first three devices are ordered.</b> JLCPCB is making and assembling the boards. The screen, camera and battery go in by hand when they arrive.</p>
+      <h3>Next</h3>
       <ul class="plain sub">
-        <li>The first case is generated from the board file: a back shell and a front bezel that snaps onto it. The board screws onto four posts in the shell. The camera head sets how deep the back is.</li>
-        <li>The target material is translucent purple plastic. The camera gets an open window, because tinted plastic would blur the QR codes it reads.</li>
-        <li>Nothing has been printed yet. The snap fit, the power-button tab and the airgap slot are untested.</li>
+        <li>Firmware work starts soon.</li>
+        <li>A 3D-printed case for the first devices, from the model above.</li>
+        <li>If it goes to production, it starts as a Safe signer. The hardware can do everything a Ledger or Trezor does; that can come later.</li>
       </ul>
-      <h3>Open before ordering</h3>
+      <h3>Different from the preview</h3>
       <ul class="plain sub">
-        <li>Which way the airgap switch's lever points in each state, to be confirmed.</li>
-        <li>Part rotations, checked in JLC's assembly preview.</li>
-      </ul>
-      <h3>Later</h3>
-      <ul class="plain sub">
-        <li>Bench the OV2640 against a global-shutter SC031GS on an animated QR before committing.</li>
-        <li>The touch cable is long (56 mm). For production, a shorter cable or a single-flex panel.</li>
-        <li>The STM32U585 is thin at JLC (54 in stock), so production needs Global Sourcing. The SE050E2 has 594 at JLC and about 14,000 at DigiKey. The OPTIGA has none at JLC; finding it a source is a low priority.</li>
-        <li>The colour back print goes through PCBWay, because JLC no longer offers colour printing for board files that EasyEDA did not write.</li>
-        <li>Firmware: Safe transaction decoding, ERC-7730 descriptors, the two-key owner, the seed-mode PIN stretch, and an attested device certificate checked by the Ambire app.</li>
+        <li>The first boards are plain purple. The full-colour artwork on the back needs JLC's own design tool, so this run goes without it.</li>
       </ul>
     </div>
   </section>
@@ -457,7 +448,11 @@ async function main() {
 
   const loader = new GLTFLoader();
   const loadPart = async (url) => {
-    const gltf = await loader.loadAsync(url);
+    // GLB bytes ship base64 in JSON: the host serves .json, not .glb, and blocks data: fetches.
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`);
+    const bytes = Uint8Array.from(atob((await res.json()).glb), (c) => c.charCodeAt(0));
+    const gltf = await loader.parseAsync(bytes.buffer, "");
     // The generator's glTF is metres, turned Z-up to Y-up, one mesh per CAD face: put it
     // back in model space as a single mesh.
     const toModel = new THREE.Matrix4().makeScale(1000, 1000, 1000).multiply(new THREE.Matrix4().makeRotationX(Math.PI / 2));

@@ -24,7 +24,7 @@ Parts (Z = 0 is the board's front face, +Z toward the screen; X east, Y north):
 
 Outputs:
   enclosure/out/{shell,bezel}.{step,stl}     for print / quote
-  docs/enclosure/{shell,bezel}.json          glTF (JSON, buffer inlined) for the 3D preview on the concept page
+  docs/enclosure/{shell,bezel}.json          GLB as base64 JSON for the 3D preview on the concept page
   docs/enclosure/enclosure.json              the numbers the preview draws from
   docs/enclosure/board-back.jpg              the UV-printed back face, cropped to the board
 
@@ -534,16 +534,9 @@ def main():
 
 
 def gltf_json(glb: Path, dest: Path):
-    """GLB to self-contained glTF JSON (buffer as a data URI): the artifact host serves
-    .json but not .glb, and three's GLTFLoader reads either."""
-    data = glb.read_bytes()
-    jl = struct.unpack("<I", data[12:16])[0]
-    g = json.loads(data[20:20 + jl])
-    bl = struct.unpack("<I", data[20 + jl:24 + jl])[0]
-    payload = data[28 + jl:28 + jl + bl]
-    g["buffers"] = [{"byteLength": g["buffers"][0]["byteLength"],
-                     "uri": "data:application/octet-stream;base64," + base64.b64encode(payload).decode()}]
-    dest.write_text(json.dumps(g, separators=(",", ":")))
+    """GLB bytes as base64 in a .json file: the artifact host serves .json but not .glb,
+    and its CSP blocks fetching data: URIs, so the page parses the GLB in memory."""
+    dest.write_text(json.dumps({"glb": base64.b64encode(glb.read_bytes()).decode()}))
 
 
 def texture(b):
