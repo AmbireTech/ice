@@ -107,20 +107,12 @@ def footprint_keepouts(board):
     so a connector never sits in its own tail's keep-out."""
     fp = board.FindFootprintByReference
     tft, ctp, cam = (_box(fp(r)) for r in ("J_TFT", "J_CTP", "J_CAM"))
-    # The camera / SE pins on the MCU's west side (51-67) leave west and drop to the
-    # front copper right outside their pads: that strip holds their escape vias, so
-    # no parts (the VDD decaps sit just outside it, at pins 51 and 73/75).
-    u4 = fp("U4")
-    west = [p for p in u4.Pads() if p.GetNumber().isdigit() and 52 <= int(p.GetNumber()) <= 67]
-    edge = _box(u4)[0]          # the MCU courtyard's west edge, just outside the pad tips
-    wy = [pcbnew.ToMM(p.GetPosition().y) for p in west]
     # The display tails are NOT keep-outs: low parts (passives, SOT/QFN ICs) may
     # sit under the flex; scripts/checkFpc.py fails a tall part in a corridor.
     return [
         ("Camera module", CAMERA_HEAD),
         ("Camera flex", (CAMERA_HEAD[2], 2.2, cam[0] - 0.1, 15.3)),
         ("Camera fan-in", (cam[2], 0.3, cam[2] + CAM_FANIN, 15.5)),
-        ("MCU west escape", (edge - 2.4, min(wy) - 0.3, edge, max(wy) + 0.1)),
         ("UV artwork", UV_PANEL),
     ]
 

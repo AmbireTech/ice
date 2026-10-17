@@ -32064,7 +32064,7 @@
 	)
 	(zone
 		(layer "B.Cu")
-		(uuid "19b1cebe-61c4-4f17-9393-f5795410bd8c")
+		(uuid "2164d57d-53de-47e9-95eb-d2a9d23a3b2d")
 		(name "no parts: Camera module")
 		(hatch edge 0.5)
 		(connect_pads
@@ -32095,7 +32095,7 @@
 	)
 	(zone
 		(layer "B.Cu")
-		(uuid "532aa69e-db7f-4b28-8b7e-d80d4703a67a")
+		(uuid "3d15e22e-648c-4fa1-be50-3d635adbb92f")
 		(name "no parts: Camera fan-in")
 		(hatch edge 0.5)
 		(connect_pads
@@ -32126,7 +32126,39 @@
 	)
 	(zone
 		(layer "B.Cu")
-		(uuid "6fb4efb1-a0a9-4325-a09c-121ba4f4cba7")
+		(uuid "6c575f30-9e4f-4bce-994a-aee4f6a9b1bb")
+		(name "no parts: hole H1")
+		(hatch edge 0.5)
+		(connect_pads
+			(clearance 0)
+		)
+		(min_thickness 0.25)
+		(keepout
+			(tracks allowed)
+			(vias allowed)
+			(pads allowed)
+			(copperpour allowed)
+			(footprints not_allowed)
+		)
+		(placement
+			(enabled no)
+			(sheetname "")
+		)
+		(fill
+			(thermal_gap 0.5)
+			(thermal_bridge_width 0.5)
+			(island_removal_mode 0)
+		)
+		(polygon
+			(pts
+				(xy 5.8 3.2) (xy 5.451666 4.5) (xy 4.5 5.451666) (xy 3.2 5.8) (xy 1.9 5.451666) (xy 0.948333 4.5)
+				(xy 0.6 3.2) (xy 0.948333 1.9) (xy 1.899999 0.948333) (xy 3.199999 0.6) (xy 4.5 0.948333) (xy 5.451666 1.899999)
+			)
+		)
+	)
+	(zone
+		(layer "B.Cu")
+		(uuid "8de01ead-cb0d-4d38-a5fd-4ffe7da70527")
 		(name "no parts: hole H3")
 		(hatch edge 0.5)
 		(connect_pads
@@ -32159,7 +32191,71 @@
 	)
 	(zone
 		(layer "B.Cu")
-		(uuid "930b8734-07fb-49f4-a11a-2058de1f7460")
+		(uuid "9262be78-89e7-4754-bdba-e22d39b34ebc")
+		(name "no parts: hole H2")
+		(hatch edge 0.5)
+		(connect_pads
+			(clearance 0)
+		)
+		(min_thickness 0.25)
+		(keepout
+			(tracks allowed)
+			(vias allowed)
+			(pads allowed)
+			(copperpour allowed)
+			(footprints not_allowed)
+		)
+		(placement
+			(enabled no)
+			(sheetname "")
+		)
+		(fill
+			(thermal_gap 0.5)
+			(thermal_bridge_width 0.5)
+			(island_removal_mode 0)
+		)
+		(polygon
+			(pts
+				(xy 47.4 3.2) (xy 47.051666 4.5) (xy 46.099999 5.451666) (xy 44.8 5.8) (xy 43.5 5.451666) (xy 42.548333 4.5)
+				(xy 42.199999 3.2) (xy 42.548333 1.9) (xy 43.499999 0.948333) (xy 44.8 0.6) (xy 46.099999 0.948333)
+				(xy 47.051666 1.899999)
+			)
+		)
+	)
+	(zone
+		(layer "B.Cu")
+		(uuid "a093f28a-b6e5-4dd1-a90e-e2612a263b36")
+		(name "no parts: UV artwork")
+		(hatch edge 0.5)
+		(connect_pads
+			(clearance 0)
+		)
+		(min_thickness 0.25)
+		(keepout
+			(tracks allowed)
+			(vias allowed)
+			(pads allowed)
+			(copperpour allowed)
+			(footprints not_allowed)
+		)
+		(placement
+			(enabled no)
+			(sheetname "")
+		)
+		(fill
+			(thermal_gap 0.5)
+			(thermal_bridge_width 0.5)
+			(island_removal_mode 0)
+		)
+		(polygon
+			(pts
+				(xy 34 4.5) (xy 46 4.5) (xy 46 13.5) (xy 34 13.5)
+			)
+		)
+	)
+	(zone
+		(layer "B.Cu")
+		(uuid "a0c0c469-5597-4503-807c-2856aabf1c9f")
 		(name "no parts: Camera flex")
 		(hatch edge 0.5)
 		(connect_pads
@@ -35731,38 +35827,7 @@
 	)
 	(zone
 		(layer "B.Cu")
-		(uuid "b1c5b5a2-302c-4a40-a3c6-b949c566cee6")
-		(name "no parts: MCU west escape")
-		(hatch edge 0.5)
-		(connect_pads
-			(clearance 0)
-		)
-		(min_thickness 0.25)
-		(keepout
-			(tracks allowed)
-			(vias allowed)
-			(pads allowed)
-			(copperpour allowed)
-			(footprints not_allowed)
-		)
-		(placement
-			(enabled no)
-			(sheetname "")
-		)
-		(fill
-			(thermal_gap 0.5)
-			(thermal_bridge_width 0.5)
-			(island_removal_mode 0)
-		)
-		(polygon
-			(pts
-				(xy 10.825 25.7) (xy 13.225 25.7) (xy 13.225 33.6) (xy 10.825 33.6)
-			)
-		)
-	)
-	(zone
-		(layer "B.Cu")
-		(uuid "b21cbfe0-666e-4739-88c1-5bb186dae9d1")
+		(uuid "be53e657-05c0-4ce8-b0de-01b35903c855")
 		(name "no parts: hole H4")
 		(hatch edge 0.5)
 		(connect_pads
@@ -35795,7 +35860,7 @@
 	)
 	(zone
 		(layer "B.Cu")
-		(uuid "c04602fe-2457-477f-a178-d46824a06f56")
+		(uuid "ecb413fb-efe9-43ba-b118-8f946a63dbac")
 		(name "no tracks/vias: under the radio module")
 		(hatch edge 0.5)
 		(connect_pads
@@ -35821,102 +35886,6 @@
 		(polygon
 			(pts
 				(xy 5.59 69.1) (xy 17.009999 69.1) (xy 17.009999 79.5) (xy 5.59 79.5)
-			)
-		)
-	)
-	(zone
-		(layer "B.Cu")
-		(uuid "f8fb1ec2-188b-49bc-940e-d4435dc7a2bd")
-		(name "no parts: UV artwork")
-		(hatch edge 0.5)
-		(connect_pads
-			(clearance 0)
-		)
-		(min_thickness 0.25)
-		(keepout
-			(tracks allowed)
-			(vias allowed)
-			(pads allowed)
-			(copperpour allowed)
-			(footprints not_allowed)
-		)
-		(placement
-			(enabled no)
-			(sheetname "")
-		)
-		(fill
-			(thermal_gap 0.5)
-			(thermal_bridge_width 0.5)
-			(island_removal_mode 0)
-		)
-		(polygon
-			(pts
-				(xy 34 4.5) (xy 46 4.5) (xy 46 13.5) (xy 34 13.5)
-			)
-		)
-	)
-	(zone
-		(layer "B.Cu")
-		(uuid "fad572e9-eb0d-4b9d-845c-47a4c05c4b2d")
-		(name "no parts: hole H1")
-		(hatch edge 0.5)
-		(connect_pads
-			(clearance 0)
-		)
-		(min_thickness 0.25)
-		(keepout
-			(tracks allowed)
-			(vias allowed)
-			(pads allowed)
-			(copperpour allowed)
-			(footprints not_allowed)
-		)
-		(placement
-			(enabled no)
-			(sheetname "")
-		)
-		(fill
-			(thermal_gap 0.5)
-			(thermal_bridge_width 0.5)
-			(island_removal_mode 0)
-		)
-		(polygon
-			(pts
-				(xy 5.8 3.2) (xy 5.451666 4.5) (xy 4.5 5.451666) (xy 3.2 5.8) (xy 1.9 5.451666) (xy 0.948333 4.5)
-				(xy 0.6 3.2) (xy 0.948333 1.9) (xy 1.899999 0.948333) (xy 3.199999 0.6) (xy 4.5 0.948333) (xy 5.451666 1.899999)
-			)
-		)
-	)
-	(zone
-		(layer "B.Cu")
-		(uuid "ffb2a2fc-02a0-48d4-96bb-a3e13cc052d3")
-		(name "no parts: hole H2")
-		(hatch edge 0.5)
-		(connect_pads
-			(clearance 0)
-		)
-		(min_thickness 0.25)
-		(keepout
-			(tracks allowed)
-			(vias allowed)
-			(pads allowed)
-			(copperpour allowed)
-			(footprints not_allowed)
-		)
-		(placement
-			(enabled no)
-			(sheetname "")
-		)
-		(fill
-			(thermal_gap 0.5)
-			(thermal_bridge_width 0.5)
-			(island_removal_mode 0)
-		)
-		(polygon
-			(pts
-				(xy 47.4 3.2) (xy 47.051666 4.5) (xy 46.099999 5.451666) (xy 44.8 5.8) (xy 43.5 5.451666) (xy 42.548333 4.5)
-				(xy 42.199999 3.2) (xy 42.548333 1.9) (xy 43.499999 0.948333) (xy 44.8 0.6) (xy 46.099999 0.948333)
-				(xy 47.051666 1.899999)
 			)
 		)
 	)

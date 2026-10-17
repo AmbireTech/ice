@@ -14,8 +14,10 @@ HUMAN_ROUTER=/path) on top of the existing copper:
     between blocks belongs to a bus (a "highway"), left to the human;
   - layer plan: block wiring on the back copper, where the parts are; the front is
     kept for the highways. Power has no tracks of its own on the planes: V3V3 pins
-    and decaps drop a via to the In1 plane, GND pads of caps and ICs a via to In2
-    (other GND pads take the pour);
+    and decaps drop a via to the In1 plane. GND pads get no via of their own: they
+    take the outer pour, which stitching vias tie to In2 (the owner's rule,
+    2026-10-17: "we can just have stitching"); a GND pad the pour starves is
+    reported, not given a via beside it;
   - a block link longer than HIGHWAY_MM (a pull-up at the far end of a bus, a test pad
     across the board), or a power link longer than POWER_HIGHWAY_MM, is routed with
     its bus by the human.
@@ -90,9 +92,9 @@ def route_blocks(src, out, blocks=None, minutes=6.0, knobs=(), log=print, skip_n
             # block wiring takes the room around its pins
             early.append(c)
             continue
-        if c.deferred and c.net == "GND":
-            # only GND has a pour on the outer layers to take a pad without its own
-            # via; a 3.3 V pull-up or connector pin needs its via to the In1 plane
+        if c.kind == "gnd" and c.net == "GND":
+            # GND is poured on the outer layers: the pad takes the pour, stitching
+            # ties the pour to In2. A 3.3 V pin has no pour and keeps its plane via.
             skipped["GND pad left to the pour"] += 1
             continue
         if c.bundle:
@@ -148,18 +150,10 @@ def route_blocks(src, out, blocks=None, minutes=6.0, knobs=(), log=print, skip_n
         board.Save(outBoard)
         return runDrc(outBoard, str(Path(out) / "drc.json"))
     drc = write_and_check()
-    # a GND pad left to the pour that the pour starves (thermal spokes cut by wiring)
-    # gets its own fanout after all
-    starved = {(it["description"].split(" of ")[1].split()[0], it["description"].split()[1])
-               for v in drc["violations"] if v["type"] == "starved_thermal" for it in v["items"]
-               if it["description"].startswith("Pad ")}
-    repair = [c for c in conns if c.kind == "gnd" and c.deferred and (c.a.ref, c.a.num) in starved]
-    if repair:
-        for c in repair:
-            router.route(c, layers_for(c), winPadsFor(c), viaMm=viaMmFor(c, k))
-        fixed = sum(1 for c in repair if router.connected(c))
-        drc = write_and_check()
-        log(f"starved GND pads: {fixed}/{len(repair)} given their own via")
+    starved = sorted({it["description"] for v in drc["violations"] if v["type"] == "starved_thermal"
+                      for it in v["items"] if it["description"].startswith("Pad ")})
+    if starved:
+        log(f"GND pads with starved thermals (for stitching nearby, not a via beside them): {starved}")
     # a stub of new copper that ends in nothing is removed; a dangling track that was
     # already on the board is the human's
     stubs = {it["uuid"] for v in drc["violations"] if v["type"] in ("track_dangling", "via_dangling")

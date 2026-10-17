@@ -34,6 +34,11 @@ import newBoard as nb  # noqa: E402
 
 CROSSING_MM = 6.0                    # one crossing costs as much as 6 mm of airwire
 DECAP_MM = 3.0                       # each mm between a decoupling cap and its rail's nearest IC pin
+# an airwire leaving a chip's pin backwards (into or around the chip) costs this
+# many mm; sideways half of it. The owner's lesson (2026-10-17): the SE050 turned so
+# its I2C pins face the MCU -- airwire length and crossings cannot see which way a
+# pin escapes, so a chip whose pins point away from their partners looks just as good.
+FACING_MM = 4.0
 TOUCH = 0.0                          # courtyards may touch (the owner packs them at a median 0.01 mm)
 # Placed for a reason the ratsnest cannot see: the radio light sits under the
 # south-west hole by the owner's call, its resistor beside it.
@@ -110,6 +115,7 @@ class Model:
     def __init__(self, board, locked=()):
         self.board = board
         self.locked = set(locked)
+        self.parked = set()      # lifted off the board while a block is rebuilt (place_block)
         self.parts = {fp.GetReference(): Part(fp) for fp in board.GetFootprints()
                       if not fp.GetAttributes() & pcbnew.FP_BOARD_ONLY}
         self.net_pads = {}
@@ -234,7 +240,8 @@ class Model:
 
     # ── geometry ──
     def _wires(self, net):
-        pts = [(mm(pad.GetPosition().x), mm(pad.GetPosition().y)) for _, pad in self.net_pads[net]]
+        pts = [(mm(pad.GetPosition().x), mm(pad.GetPosition().y)) for ref, pad in self.net_pads[net]
+               if ref not in self.parked]
         return np.array([[*pts[i], *pts[j]] for i, j in mst_edges(pts)], float).reshape(-1, 4)
 
     def _legal_cache(self):
@@ -256,7 +263,8 @@ class Model:
         if any(nb._hits(tight, o) for o in self.forbidden + extra + ant):
             return False
         for ref, other in self.parts.items():
-            if ref != part.ref and other.side == part.side and nb._hits(box, self.boxes[ref]):
+            if ref != part.ref and ref not in self.parked and other.side == part.side \
+                    and nb._hits(box, self.boxes[ref]):
                 return False
         return self.copper_ok(part) and self.pads_ok(part)
 
@@ -288,6 +296,32 @@ class Model:
         x = crossings(own, others, own_ids, other_ids) + crossings(own, own, own_ids, own_ids) // 2
         return length + CROSSING_MM * x
 
+    def facing_cost(self, nets):
+        """FACING_MM x (1 - cos)/2 per airwire end at a pin of a chip with more than 4
+        pads, where the angle is between the wire and the pin's outward side."""
+        c = 0.0
+        for n in nets:
+            ends = [(ref, pad) for ref, pad in self.net_pads.get(n, []) if ref not in self.parked]
+            if len(ends) < 2:
+                continue
+            pts = [(mm(pad.GetPosition().x), mm(pad.GetPosition().y)) for _, pad in ends]
+            for i, j in mst_edges(pts):
+                for a, b in ((i, j), (j, i)):
+                    ref, pad = ends[a]
+                    part = self.parts[ref]
+                    if len(part.fp.Pads()) <= 4:
+                        continue
+                    cx, cy = part.pos()
+                    ox, oy = pts[a][0] - cx, pts[a][1] - cy
+                    if abs(ox) < 1e-6 and abs(oy) < 1e-6:     # exposed pad: no side
+                        continue
+                    nx, ny = (math.copysign(1, ox), 0.0) if abs(ox) >= abs(oy) else (0.0, math.copysign(1, oy))
+                    dx, dy = pts[b][0] - pts[a][0], pts[b][1] - pts[a][1]
+                    d = math.hypot(dx, dy)
+                    if d > 1e-6:
+                        c += FACING_MM * (1 - (dx * nx + dy * ny) / d) / 2
+        return c
+
     def total(self):
         allw, ids = self.all_wires()
         length = sum(LOW_WEIGHT.get(n, 1.0) * float(np.hypot(w[:, 2] - w[:, 0], w[:, 3] - w[:, 1]).sum())
@@ -315,6 +349,166 @@ class Model:
         undo()
         self.wires.update(saved)
         return False
+
+
+def satellites(m, ic):
+    """The 2-pad parts that belong to `ic`'s block: they share a signal net with it,
+    or they decouple one of its pins and sit within 4 mm of it."""
+    icp = m.parts[ic]
+    cx, cy = icp.pos()
+    sig = {pd.GetNetname() for pd in icp.fp.Pads()} - NO_AIRWIRE - {""}
+    out = []
+    for ref, p in m.parts.items():
+        pads = list(p.fp.Pads())
+        if ref == ic or len(pads) != 2 or ref in nb.ANCHORED or ref in m.locked:
+            continue
+        nets = {pd.GetNetname() for pd in pads}
+        near = math.hypot(p.pos()[0] - cx, p.pos()[1] - cy) < 4.0 + max(nb._box(icp.fp)[2] - nb._box(icp.fp)[0],
+                                                                        nb._box(icp.fp)[3] - nb._box(icp.fp)[1]) / 2
+        decap = False
+        if ref in m.decaps and near:
+            # a decap belongs to the IC whose rail pin is nearest to it
+            px, py = p.pos()
+            owner = min(m.decaps[ref][1], key=lambda rp: math.hypot(mm(rp[1].GetPosition().x) - px,
+                                                                     mm(rp[1].GetPosition().y) - py))[0]
+            decap = owner == ic
+        if nets & sig or decap:
+            out.append(ref)
+    return out
+
+
+def place_block(board, ic, sats=None, rotations=(0, 90, 180, 270), radius=3.0, log=print, locked=()):
+    """Rotate `ic` in place and rebuild its block around it, for each rotation; keep the
+    cheapest. The owner's lesson (2026-10-17): the SE050 turned -90 deg so its I2C
+    pins face the MCU, with its pull-ups re-seated inline, scored 26 where the best
+    rotation of the chip alone, passives left where they were, scored 56 -- an IC's
+    orientation can only be judged together with its satellites."""
+    m = Model(board, locked)
+    sats = list(sats) if sats is not None else satellites(m, ic)
+    icp = m.parts[ic]
+    x0, y0, r0 = *icp.pos(), icp.rot()
+    snap = {ref: (*m.parts[ref].pos(), m.parts[ref].rot()) for ref in sats}
+    # decaps first (they own the pin next to them), then the most-connected
+    sats.sort(key=lambda r2: (r2 not in m.decaps, -len(m.part_nets.get(r2, set()) & m.part_nets.get(ic, set()))))
+    block_nets = set().union(*(m.part_nets.get(r2, set()) for r2 in sats + [ic]))
+
+    def block_cost():
+        for n in block_nets:
+            m.wires[n] = m._wires(n)
+        others, ids = m.all_wires(skip=block_nets)
+        return m.nets_cost(block_nets, others, ids) + sum(m.decap_cost(r2) for r2 in sats) \
+            + m.facing_cost(block_nets)
+
+    def best_spot(ref, box, step):
+        p = m.parts[ref]
+        nets = m.part_nets.get(ref, set())
+        others, ids = m.all_wires(skip=nets)
+        best = None
+        x, y0b = box[0], box[1]
+        xs = [box[0] + i * step for i in range(int((box[2] - box[0]) / step) + 1)]
+        ys = [box[1] + j * step for j in range(int((box[3] - box[1]) / step) + 1)]
+        for cx in xs:
+            for cy in ys:
+                for rot in (0, 90, 180, 270):
+                    p.set(cx, cy, rot)
+                    if not m.legal(p):
+                        continue
+                    for n in nets:
+                        m.wires[n] = m._wires(n)
+                    c = m.nets_cost(nets, others, ids) + m.decap_cost(ref) + m.facing_cost(nets)
+                    if best is None or c < best[0]:
+                        best = (c, cx, cy, rot)
+        return best
+
+    def seat(ref, spot):
+        """Put ref at spot (or back where it was) and bring its airwires along."""
+        p = m.parts[ref]
+        if spot is not None:
+            p.set(spot[1], spot[2], spot[3])
+        m.moved(ref)
+        for n in m.part_nets.get(ref, set()):
+            m.wires[n] = m._wires(n)
+
+    def shift_block(dx, dy):
+        for ref in [ic] + sats:
+            p = m.parts[ref]
+            p.set(p.pos()[0] + dx, p.pos()[1] + dy, p.rot())
+        for ref in [ic] + sats:
+            m.moved(ref)
+
+    results = []
+    for rot in rotations:
+        m.parked = set(sats)
+        # in place if legal, else the nearest legal spot within 1 mm (a part placed by
+        # hand may sit closer to a margin than this model's rules allow)
+        spots = sorted(((x0 + i * 0.25, y0 + j * 0.25) for i in range(-4, 5) for j in range(-4, 5)),
+                       key=lambda q: math.hypot(q[0] - x0, q[1] - y0))
+        for qx, qy in spots:
+            icp.set(qx, qy, rot)
+            m.moved(ic)
+            if m.legal(icp):
+                break
+        else:
+            log(f"  {ic} @ {rot}: no legal spot within 1 mm")
+            continue
+        for n in block_nets:
+            m.wires[n] = m._wires(n)
+        bx = nb._box(icp.fp)
+        area = (bx[0] - radius, bx[1] - radius, bx[2] + radius, bx[3] + radius)
+        ok = True
+        for ref in sats:
+            m.parked.discard(ref)
+            b1 = best_spot(ref, area, 0.5)
+            if b1 is None:
+                ok = False
+                log(f"  {ic} @ {rot}: no legal spot for {ref}")
+                break
+            _, cx, cy, _ = b1
+            seat(ref, best_spot(ref, (cx - 0.5, cy - 0.5, cx + 0.5, cy + 0.5), 0.25) or b1)
+        if ok:
+            for _ in range(2):          # refine: re-seat each satellite near where it is
+                for ref in sats:
+                    px, py = m.parts[ref].pos()
+                    m.parked = {ref}
+                    seat(ref, best_spot(ref, (px - 1.0, py - 1.0, px + 1.0, py + 1.0), 0.25))
+                    m.parked = set()
+            # the whole block may slide too (the owner moved the SE 1.5 mm as well as turning it)
+            c = block_cost()
+            for _ in range(6):
+                improved = False
+                for dx, dy in ((0.5, 0), (-0.5, 0), (0, 0.5), (0, -0.5)):
+                    shift_block(dx, dy)
+                    if all(m.legal(m.parts[r2]) for r2 in [ic] + sats):
+                        c2 = block_cost()
+                        if c2 < c - 1e-6:
+                            c, improved = c2, True
+                            break
+                    shift_block(-dx, -dy)
+                if not improved:
+                    break
+            m.parked = set()
+            c = block_cost()
+            results.append((c, rot, {r2: (*m.parts[r2].pos(), m.parts[r2].rot()) for r2 in [ic] + sats}))
+            log(f"  {ic} @ {rot}: block cost {c:.1f}")
+        m.parked = set()
+        for ref, (sx, sy, sr) in snap.items():
+            m.parts[ref].set(sx, sy, sr)
+            m.moved(ref)
+    icp.set(x0, y0, r0)
+    m.moved(ic)
+    m.parked = set()
+    start = block_cost()
+    if not results:
+        return start, None
+    c, rot, pos = min(results, key=lambda t: t[0])
+    if c < start - 1e-6:
+        for ref, (sx, sy, sr) in pos.items():
+            m.parts[ref].set(sx, sy, sr)
+            m.moved(ref)
+        for p in m.parts.values():
+            p.fp.Reference().SetPosition(p.fp.GetPosition())
+    log(f"{ic}: start {start:.1f} -> best {c:.1f} at {rot} deg ({'applied' if c < start - 1e-6 else 'kept'})")
+    return start, (c, rot)
 
 
 def repair(board, locked, max_mm=1.0, log=print, only=None):

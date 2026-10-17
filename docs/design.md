@@ -155,17 +155,24 @@ touch flex is merged into the TFT flex.
   quench of the parts not hand-placed made the remainder *harder* to route in
   every setting tried: the proxy ignores existing copper. Placement changes on a
   hand-worked board are targeted fixes, each checked by routing.
+- **A chip faces its partner.** The owner turned the secure element −90° so its
+  I2C/ENA pins face the MCU, with the pull-ups inline between the two: airwire
+  length and crossings rate that no better than a chip whose pins point away, so
+  `optimizePlacement.place_block()` scores an IC together with its satellites,
+  for every rotation, with a pin-facing term (an airwire leaving a pin backwards
+  costs 4 mm). From the old layout it re-derives the owner's orientation.
+- **No GND via beside a GND pad.** GND pads take the outer pours; stitching vias
+  tie the pours to In2. Only 3.3 V pins and decaps get a via (to the In1 plane).
 - **Keep-outs the routing needs are KiCad rule areas** (`scripts/refreshKeepouts.py`
-  redraws them from `newBoard.py` after a connector moves):
-  - **camera fan-in**: 3.1 mm of bare board east of J_CAM's contacts, where all 24
-    lines enter (the contacts face east; the camera LDOs used to fill it);
-  - **MCU west escape**: the strip outside pins 52–67, where the camera and SE
-    lines drop to the front layer.
+  redraws them from `newBoard.py` after a connector moves): the **camera fan-in**,
+  3.1 mm of bare board east of J_CAM's contacts, where all 24 lines enter (the
+  contacts face east; the camera LDOs used to fill it). An "MCU west escape"
+  strip was tried and dropped: it forbade the SE pull-ups exactly where they
+  belong, inline between the SE and the MCU.
 - **Blocks are pre-routed; the buses between them are the human's.**
   `scripts/partialRoute.py` routes the wiring inside each block on the back
-  copper (the parts' side), a via to the 3.3 V plane for every 3.3 V pin and
-  decap, and a GND via for every cap and IC (0.25 mm clear of all pads), on top
-  of the hand-routed copper, which it never rips. A link longer than 7 mm (a
+  copper (the parts' side) and a via to the 3.3 V plane for every 3.3 V pin and
+  decap, on top of the hand-routed copper, which it never rips. A link longer than 7 mm (a
   pull-up at the far end of a bus, a test pad across the board) or a power link
   longer than 10 mm is left with its bus.
 - **Gauges on what is left** (2026-10-16): KiCadRoutingTools routes every
