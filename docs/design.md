@@ -162,7 +162,13 @@ touch flex is merged into the TFT flex.
   for every rotation, with a pin-facing term (an airwire leaving a pin backwards
   costs 4 mm). From the old layout it re-derives the owner's orientation.
 - **No GND via beside a GND pad.** GND pads take the outer pours; stitching vias
-  tie the pours to In2. Only 3.3 V pins and decaps get a via (to the In1 plane).
+  (every ~4 mm, 0.5 mm clear of pads) tie the pours to In2, and a signal via gets
+  a GND return via beside it. Only 3.3 V pins and decaps get a via (to the In1
+  plane). A pad the pour cannot reach is joined to the pour by a track, or gets a
+  via inside its exposed pad or pin ring. Exceptions, where the part asks for a
+  short path to the plane: the buck-boost's ground and its input/output caps, the
+  backlight charge pump, the charger's exposed pad, the radio module's ground pads
+  and the USB ESD clamp. `scripts/stripGndTies.py` removes the other ties.
 - **Keep-outs the routing needs are KiCad rule areas** (`scripts/refreshKeepouts.py`
   redraws them from `newBoard.py` after a connector moves): the **camera fan-in**,
   3.1 mm of bare board east of J_CAM's contacts, where all 24 lines enter (the
@@ -319,6 +325,7 @@ $KICAD_PY scripts/placeVariant.py IN OUT SPEC.json   # a placement variant (seed
 $KICAD_PY scripts/routeGauge.py BOARD --out DIR      # full autoroute on a copy, owner conventions: how routable is it
 $KICAD_PY scripts/cleanCopper.py IN [OUT]            # drop stale (pad-less) copper and crumbs; refuses if DRC gets worse
 $KICAD_PY scripts/widenFanouts.py IN [OUT]           # thicken 3.3 V pad-to-via links up to 0.4 mm
+$KICAD_PY scripts/stripGndTies.py IN [OUT]          # drop GND pad-to-via ties (pour + stitching instead)
 $KICAD_PY scripts/checkParts.py board/wallet.kicad_pcb   # each land vs the land JLC places that part on
 python3 scripts/jlcStock.py             # live JLC stock for every part number
 ```
