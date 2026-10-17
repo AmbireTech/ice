@@ -14,7 +14,11 @@ Origin: the board's aux origin is (0,0) = the outline's top-left corner, which p
 negative. Here the aux origin is moved IN MEMORY ONLY to the outline's bottom-left corner, and
 gerbers, drill and CPL all use that same point. The board file is never saved.
 
-    KPY export_fab.py <board.kicad_pcb> <outdir> <rotation_db.csv>
+    KPY export_fab.py <board.kicad_pcb> <outdir> <rotation_db.csv> [--colour]
+
+--colour: for a JLC colour-print (UV) order. The board-level back silkscreen texts
+the UV artwork replaces (art/build_uv.py REPLACED_TEXTS) are left out of the
+plot, in memory only, so they don't print twice.
 """
 import csv
 import hashlib
@@ -65,7 +69,9 @@ def pad_bbox_centre(pads):
 
 
 def main():
-    board_path, outdir, db_path = sys.argv[1], sys.argv[2], sys.argv[3]
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    colour = "--colour" in sys.argv
+    board_path, outdir, db_path = args[0], args[1], args[2]
     outdir = os.path.abspath(outdir)   # KiCad resolves a relative plot directory against the board file, not the cwd
     gerb_dir = os.path.join(outdir, "gerbers")
     work = os.path.join(outdir, "work")
@@ -74,6 +80,13 @@ def main():
     os.makedirs(work, exist_ok=True)
 
     board = pcbnew.LoadBoard(board_path)
+    if colour:
+        replaced = ("AIRGAP", "RADIO", "SECURE ELEMENT", "QR CAMERA", "AMBIRE")   # = art/build_uv.py REPLACED_TEXTS
+        hidden = [d for d in board.GetDrawings()
+                  if d.GetClass() == "PCB_TEXT" and d.GetLayer() == pcbnew.B_SilkS and d.GetText() in replaced]
+        for d in hidden:
+            board.Remove(d)          # the plotter ignores a board text's hidden flag; the file is never saved
+        print(f"colour print: {len(hidden)} back silk texts left out ({', '.join(sorted(d.GetText() for d in hidden))})")
     ds = board.GetDesignSettings()
     old_aux = pcbnew.VECTOR2I(ds.GetAuxOrigin())
 

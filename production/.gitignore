@@ -1,1 +1,9 @@
 out/
+out-colour/
+order/colour-src/
+order/uv_back_print.jpeg
+order/jlc-plain/gerbers/
+order/jlc-plain/work/
+order/jlc-colour/*
+!order/jlc-colour/wallet-colour-jlc.zip
+__pycache__/

@@ -352,6 +352,7 @@ $KICAD_PY scripts/checkParts.py board/wallet.kicad_pcb   # each land vs the land
 # JLC order set (refill zones and save in KiCad first: the export plots the fills as saved)
 $KICAD_PY production/export_fab.py board/wallet.kicad_pcb production/out production/jlc_rotation_db.csv
 python3 -I production/build_jlc_files.py production/out 10   # BOM + CPL (bottom side), JLC stock, rotation review
+production/make_order.sh                # the whole order set + pre-fab checks -> production/order (colour print included)
 python3 scripts/jlcStock.py             # live JLC stock for every part number
 ```
 
