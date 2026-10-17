@@ -15,6 +15,9 @@ NOTE  out of stock, to DNP in JLC's order UI: C1518668 SLS32AIA010MKUSON10XTMA2 
 NOTE  check by eye in JLC's placement preview: D_RADIO, J1, J_CAM, J_CTP, J_TFT, SW_AIR, SW_PWR, U1, U11, U13, U15, U16, U2, U4, U5, U6
 PASS  drill census: board holes vs drill files: 452 on the board, 452 in the files
 PASS  smallest drill (JLC charges extra below 0.25 mm): 0.25 mm
+PASS  PCBWay BOM / centroid: same parts as the JLC set, every line has manufacturer + MPN: 99 refs
+PASS  PCBWay fab zip: Gerbers + drills + print image (outline-sized, 1200 DPI, transparent = no ink) + positioning image: 15 files, print 2268x4016 px RGBA vs outline 2268x4016
+NOTE  sourcing: JLC/LCSC flags as not buyable: C1518668 SLS32AIA010MKUSON10XTMA2: This product is no longer manufactured.
 NOTE  colour print: not built (COLOUR=1); JLC rejects non-EasyEDA colour files
 
 all checks passed

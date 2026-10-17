@@ -9,6 +9,8 @@
 #                                         (2026-10-17): it has blocked non-EasyEDA colour files since
 #                                         Jan 2026 (TransJLC issues #10/#11). Kept for reference.
 # order/jlc-plain/wallet_gerbers.zip      the same board with ordinary white silkscreen
+# order/pcbway/                          PCBWay: fab zip with the UV back print + positioning image,
+#                                         turnkey BOM, centroid, ORDER-NOTES.txt (production/build_pcbway.py)
 # order/wallet_bom-jlc.csv, order/wallet_positions-jlc.csv   assembly (bottom side), same for both
 #
 # Needs: KiCad 10, rsvg-convert, Pillow, cryptography, and TransJLC 0.4.0 on PATH
@@ -35,6 +37,9 @@ echo "== plain set"
 python3 -I production/build_jlc_files.py "$OUT/jlc-plain" 10 > "$OUT/jlc-plain/build.log"
 cp "$OUT/jlc-plain/wallet_bom-jlc.csv" "$OUT/jlc-plain/wallet_positions-jlc.csv" \
    "$OUT/jlc-plain/work/rotation-review.csv" "$OUT/jlc-plain/work/stock.csv" "$OUT/"
+
+echo "== PCBWay set (full-colour UV back print)"
+"$KPY" production/build_pcbway.py "$OUT" | grep -v -iE "swig|wxApp"
 
 if [ "${COLOUR:-0}" = 1 ]; then
 echo "== colour set"

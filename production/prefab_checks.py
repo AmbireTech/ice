@@ -103,6 +103,37 @@ def main():
     report(hits == len(holes), "drill census: board holes vs drill files", f"{len(holes)} on the board, {hits} in the files")
     report(min(holes) / 1e6 >= 0.25, "smallest drill (JLC charges extra below 0.25 mm)", f"{min(holes) / 1e6:.2f} mm")
 
+    # ---- PCBWay set (production/build_pcbway.py)
+    pw = os.path.join(order, "pcbway")
+    bom_refs = sorted(r for ln in csv.DictReader(open(os.path.join(pw, "wallet_bom-pcbway.csv")))
+                      for r in ln["Reference Designator"].split(","))
+    jlc_refs = sorted(r for ln in csv.DictReader(open(os.path.join(order, "wallet_bom-jlc.csv")))
+                      for r in ln["Designator"].split(","))
+    cen_refs = sorted(r["Designator"] for r in csv.DictReader(open(os.path.join(pw, "wallet_centroid-pcbway.csv"))))
+    no_mpn = [ln["Reference Designator"] for ln in csv.DictReader(open(os.path.join(pw, "wallet_bom-pcbway.csv")))
+              if not ln["Manufacturers Name"] or not ln["Manufacturers Part Number"]]
+    report(bom_refs == jlc_refs == cen_refs and not no_mpn, "PCBWay BOM / centroid: same parts as the JLC set, every line has manufacturer + MPN",
+           f"{len(bom_refs)} refs" + (f"; no MPN: {no_mpn}" if no_mpn else ""))
+    pz = zipfile.ZipFile(os.path.join(pw, "wallet_pcbway_fab.zip"))
+    pnames = set(pz.namelist())
+    want_pw = {f for f in os.listdir(os.path.join(order, "jlc-plain/gerbers")) if "drl_map" not in f and not f.endswith(".gbrjob")}
+    want_pw |= {"wallet_bottom_UV_print_1200dpi.png", "wallet_UV_positioning.png"}
+    from PIL import Image
+    with pz.open("wallet_bottom_UV_print_1200dpi.png") as fh:
+        im = Image.open(fh)
+        size, mode = im.size, im.mode
+    sys.path.insert(0, os.path.join(HERE, "production"))
+    from colour_silk import outline_bounds
+    x0, y0, x1, y1 = outline_bounds(board)
+    exp = (round((x1 - x0) / 25.4 * 1200), round((y1 - y0) / 25.4 * 1200))
+    report(want_pw <= pnames and mode == "RGBA" and all(abs(a - b) <= 3 for a, b in zip(size, exp)),
+           "PCBWay fab zip: Gerbers + drills + print image (outline-sized, 1200 DPI, transparent = no ink) + positioning image",
+           f"{len(pnames)} files, print {size[0]}x{size[1]} px {mode} vs outline {exp[0]}x{exp[1]}"
+           + (f"; missing {sorted(want_pw - pnames)}" if want_pw - pnames else ""))
+    eol = [f"{code} {b['mpn']}: {b['eol']}" for code, b in json.load(open(os.path.join(pw, "brands.json"))).items() if b["eol"]]
+    if eol:
+        report(None, "sourcing: JLC/LCSC flags as not buyable", "; ".join(eol))
+
     # ---- colour print (only when make_order.sh built it, COLOUR=1)
     if not os.path.isdir(os.path.join(order, "jlc-colour")):
         report(None, "colour print", "not built (COLOUR=1); JLC rejects non-EasyEDA colour files")

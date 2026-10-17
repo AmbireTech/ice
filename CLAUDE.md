@@ -18,10 +18,12 @@ Ambire internals into GridCore's.
   with fiducials.
 - Colour (UV) back print: JLC does **not** offer its colour option for files that
   EasyEDA didn't write (blocked since Jan 2026, check changed again Aug 2026). Our
-  colour zip (`COLOUR=1 production/make_order.sh`, `production/colour_silk.py`) is
-  kept for reference only. Real routes: EasyEDA Pro does the final export, or PCBWay
-  full-colour UV (Gerbers + print image + positioning image). JLC's option also needs
-  white mask + ENIG.
+  JLC colour zip (`COLOUR=1 production/make_order.sh`, `production/colour_silk.py`)
+  is kept for reference only. The colour route is **PCBWay**: `production/order/pcbway/`
+  (`production/build_pcbway.py`) = fab zip with the print + positioning image,
+  turnkey BOM (manufacturer + MPN), centroid, `ORDER-NOTES.txt`.
+- JLC/LCSC flags the OPTIGA's part number SLS32AIA010MKUSON10XTMA2 as "no longer
+  manufactured" (2026-10-17); the pre-fab checks print it as a NOTE.
 
 ## The board file belongs to the owner
 

@@ -7,3 +7,6 @@ order/jlc-plain/work/
 order/jlc-colour/*
 !order/jlc-colour/wallet-colour-jlc.zip
 __pycache__/
+# PCBWay: the print and positioning images ship inside the fab zip; brands.json is an API cache
+order/pcbway/*.png
+order/pcbway/brands.json
