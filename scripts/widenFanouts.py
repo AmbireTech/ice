@@ -12,7 +12,9 @@ that makes KiCad's DRC worse is undone; the rest are kept. Lists what changed.
 import argparse
 import json
 import math
+import os
 import subprocess
+import tempfile
 from pathlib import Path
 
 import pcbnew
@@ -22,7 +24,7 @@ LINK_MM = 2.5
 
 
 def drc_items(path):
-    out = str(path) + ".widen.json"
+    out = os.path.join(tempfile.gettempdir(), Path(path).name + ".widen.json")   # never beside the board
     subprocess.run(["kicad-cli", "pcb", "drc", "--refill-zones", "--format", "json", "-o", out, str(path)],
                    capture_output=True)
     d = json.load(open(out))

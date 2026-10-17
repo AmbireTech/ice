@@ -20,7 +20,9 @@ unconnected count or the copper violations get worse, nothing is written.
 import json
 import math
 import re
+import os
 import subprocess
+import tempfile
 import sys
 from pathlib import Path
 
@@ -32,7 +34,7 @@ STUB_MM = 1.0
 
 
 def drc(path):
-    out = str(path) + ".clean.json"
+    out = os.path.join(tempfile.gettempdir(), Path(path).name + ".clean.json")   # never beside the board
     subprocess.run(["kicad-cli", "pcb", "drc", "--refill-zones", "--format", "json", "-o", out, str(path)],
                    capture_output=True)
     d = json.load(open(out))
