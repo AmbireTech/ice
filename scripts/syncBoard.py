@@ -43,6 +43,7 @@ KICAD_LIBS = Path(os.environ.get(
 sys.path.insert(0, str(Path(__file__).parent))
 import netlist  # noqa: E402
 import applyModels  # noqa: E402
+import newBoard as nb  # noqa: E402
 
 _io = pcbnew.PCB_IO_KICAD_SEXPR()
 
@@ -101,7 +102,11 @@ def sync(board, parts, fpmap, prune=False, park_x=None):
             fp.SetPosition(pcbnew.VECTOR2I(park_x, park_y))
             park_y += pcbnew.FromMM(6)
             board.Add(fp)
-            changes.append(f"{ref}: added ({spec}), parked east of the board")
+            # every part sits on the back face; flip after Add (Flip() on a footprint
+            # that has no board segfaults pcbnew)
+            fp.Flip(fp.GetPosition(), pcbnew.FLIP_DIRECTION_LEFT_RIGHT)
+            nb.style_text(fp, nb.BOT)
+            changes.append(f"{ref}: added ({spec}) on the back, parked east of the board")
         elif fp.GetFPIDAsString() != spec:
             new = load_footprint(spec)
             new.SetReference(ref)

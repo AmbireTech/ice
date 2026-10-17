@@ -19,6 +19,7 @@ inside a secure element and never leave it; recovery is the Safe's other owners.
 |---|---|---|
 | MCU | STM32U585VIT6Q, LQFP100 (Cortex-M33, TrustZone, 2 MB / 786 KB, AES+SAES+PKA+HASH+TRNG, DCMI, USB FS) | C5270986 — 54 in stock |
 | Secure element | NXP SE050E2HQ1 (secp256k1 + P-256 + Ed25519 keys generated inside, PIN objects with retry counters), own I2C bus. Fallback on the same land: SE051C2 | C5190917 (594 at JLC; DigiKey ~14k) |
+| Second secure element | Infineon OPTIGA Trust M V3 SLS32AIA010MK (CC EAL6+ hardware, P-256 key generated inside), on the same I2C bus. Fallback on the same land: Trust M V1 SLS32AIA010MH | C1518668 (0 at JLC: pre-order); V1 C539250 (60) |
 | Radio | Ebyte E73-2G4M08S1C (nRF52840 module, BLE only), behind the airgap gate | C356849 |
 | Airgap | MSK12C02 slide switch → TS3USB221A (USB data) + 74LVC1G02 / TPS22917 (radio power) + TXU0202 (radio UART isolation) | all JLC |
 | Display | NHD-2.4-240320AF-CSXP-CTP on Molex 54132-4062 + 6-pin 1.0 mm touch FPC | connectors JLC, panel hand-fitted |
@@ -68,7 +69,18 @@ keeps the MCU honest; the switch guarantees the radio and USB data paths.
 
 ## Secure element wiring
 
-SE050 on I2C4, which nothing else shares. VIN = 3.3 V; VOUT tied to VCC (the
+Two secure elements from two vendors, so one vendor's silicon break does not
+hand over the device's signing authority: each holds its own key, generated
+inside it, and the account counts the device as both keys together (see
+research.md). They share I2C4, which nothing else uses: SE050 at 0x48, OPTIGA at
+0x30, each with its own reset (SE050 ENA, OPTIGA RST from PD14, pulled high).
+
+OPTIGA Trust M (data sheet Rev 3.10): pin 1 GND, 3 SDA, 8 SCL, 9 RST, 10 VCC,
+100 nF at VCC (Figure 2); the centre pad is not in the contact table, so it is
+soldered but left unconnected. A warm reset holds RST low at least 10 us; the
+first transfer waits 15 ms after release (Table 14).
+
+SE050 on I2C4. VIN = 3.3 V; VOUT tied to VCC (the
 deep-power-down wiring, AN12395 Fig. 6), so the MCU can power the secure core
 down and up with ENA, which is a full reset if the I2C link ever wedges.
 Contactless antenna pins and ISO7816 RST_N to ground, ISO7816 IO/CLK open, as

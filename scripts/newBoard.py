@@ -102,6 +102,20 @@ UV_PANEL = (34.0, 4.5, 46.0, 13.5)
 LABEL_SLOTS = {"SECURE ELEMENT": (1.2, 36.3, 12.2, 37.7)}
 
 
+def style_text(fp, side):
+    """The board's text convention: the reference on the fab layer, 0.5 mm, on the
+    part's centre; no value; library silk legends (test-point names) off."""
+    ref_text = fp.Reference()
+    ref_text.SetLayer(pcbnew.B_Fab if side == BOT else pcbnew.F_Fab)
+    ref_text.SetTextSize(pcbnew.VECTOR2I_MM(0.5, 0.5))
+    ref_text.SetTextThickness(pcbnew.FromMM(0.08))
+    ref_text.SetPosition(fp.GetPosition())
+    fp.Value().SetVisible(False)
+    for t in fp.GraphicalItems():
+        if isinstance(t, pcbnew.PCB_TEXT) and t.GetLayer() in (pcbnew.F_SilkS, pcbnew.B_SilkS):
+            t.SetVisible(False)
+
+
 def footprint_keepouts(board):
     """The keep-out boxes, starting where each placed connector's courtyard ends,
     so a connector never sits in its own tail's keep-out."""
@@ -634,15 +648,7 @@ def main():
             fp.Flip(fp.GetPosition(), pcbnew.FLIP_DIRECTION_LEFT_RIGHT)
         fp.SetPosition(pcbnew.VECTOR2I_MM(x, y))
         fp.SetOrientationDegrees(rot)
-        ref_text = fp.Reference()
-        ref_text.SetLayer(pcbnew.B_Fab if side == BOT else pcbnew.F_Fab)
-        ref_text.SetTextSize(pcbnew.VECTOR2I_MM(0.5, 0.5))
-        ref_text.SetTextThickness(pcbnew.FromMM(0.08))
-        ref_text.SetPosition(fp.GetPosition())
-        fp.Value().SetVisible(False)
-        for t in fp.GraphicalItems():   # library silk legends (test-point names) off
-            if isinstance(t, pcbnew.PCB_TEXT) and t.GetLayer() in (pcbnew.F_SilkS, pcbnew.B_SilkS):
-                t.SetVisible(False)
+        style_text(fp, side)
 
     legalize(board)
     if "--no-optimize" not in sys.argv:

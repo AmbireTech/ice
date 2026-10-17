@@ -1,7 +1,8 @@
 # Ambire hardware signer — proto 0
 
-A Safe-owner signing device: STM32U585 + NXP SE050 secure element (keys
-generated inside, no seed phrase), BLE behind a hardware airgap switch, QR
+A Safe-owner signing device: STM32U585 + two secure elements from two vendors,
+NXP SE050 and Infineon OPTIGA Trust M (an independent key generated inside each,
+no seed phrase), BLE behind a hardware airgap switch, QR
 camera, 2.4" capacitive touch display, clear case. Lives here temporarily, next
 to the GridCore hardware it borrows from, until it moves to its own repo.
 

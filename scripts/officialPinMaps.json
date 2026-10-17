@@ -731,5 +731,55 @@
         "V3V3"
       ]
     }
+  },
+  "U16": {
+    "part": "SLS32AIA010MK",
+    "source": "Infineon OPTIGA Trust M data sheet Rev 3.10, Table 6",
+    "pins": {
+      "1": [
+        "GND",
+        "GND"
+      ],
+      "2": [
+        "NC",
+        "nc"
+      ],
+      "3": [
+        "SDA",
+        "SE_SDA"
+      ],
+      "4": [
+        "NC",
+        "nc"
+      ],
+      "5": [
+        "NC",
+        "nc"
+      ],
+      "6": [
+        "NC",
+        "nc"
+      ],
+      "7": [
+        "NC",
+        "nc"
+      ],
+      "8": [
+        "SCL",
+        "SE_SCL"
+      ],
+      "9": [
+        "RST (active low)",
+        "OPTIGA_RST"
+      ],
+      "10": [
+        "VCC",
+        "V3V3"
+      ],
+      "11": [
+        "centre pad (not in the contact table)",
+        "nc"
+      ]
+    }
   }
 }

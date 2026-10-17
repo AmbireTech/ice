@@ -22,8 +22,14 @@ first two directly; the clear case addresses the third.
 
 ## Architecture decision
 
-**Key model: a non-extractable key generated inside an NXP SE050, no seed
-phrase; recovery is the Safe's other owners.**
+**Key model: two non-extractable keys, generated inside two secure elements
+from two vendors (NXP SE050 and Infineon OPTIGA Trust M), no seed phrase;
+recovery is the Safe's other owners.** A Donjon-class laser attack on one chip
+yields one key, which is not enough: the account treats the device as one owner
+that needs both signatures (a 2-of-2 nested Safe as that owner, or an
+equivalent signer contract). The OPTIGA has no secp256k1, so its key is P-256
+and verifies through the passkey path below. A seed split across two chips, as
+in seed-phrase wallets, does not apply: these keys never leave their chips.
 
 - The SE050 holds **secp256k1** keys natively (Koblitz family in NXP's platform
   table; explicitly listed in the SE051 FIPS policy), so the device is a plain

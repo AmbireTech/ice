@@ -214,6 +214,66 @@
   "package": "SOT-23",
   "stock": 762618
  },
+ "C1518668": {
+  "describe": "USON-10-EP(3x3) Security Verification / Encryption ICs ROHS",
+  "land": {
+   "pads": 11,
+   "pitch": 0.5,
+   "sizes": [
+    [
+     0.25,
+     0.65
+    ],
+    [
+     0.25,
+     0.65
+    ],
+    [
+     0.25,
+     0.65
+    ],
+    [
+     0.25,
+     0.65
+    ],
+    [
+     0.25,
+     0.65
+    ],
+    [
+     0.25,
+     0.65
+    ],
+    [
+     0.25,
+     0.65
+    ],
+    [
+     0.25,
+     0.65
+    ],
+    [
+     0.25,
+     0.65
+    ],
+    [
+     0.25,
+     0.65
+    ],
+    [
+     1.7,
+     2.5
+    ]
+   ],
+   "span": [
+    2.0,
+    2.8
+   ]
+  },
+  "model": "SLS32AIA010MKUSON10XTMA2",
+  "package": "USON-10-EP(3x3)",
+  "stock": 0
+ },
  "C15195": {
   "describe": "10nF 50V X7R \u00b110% 0402 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
   "land": null,

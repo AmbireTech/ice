@@ -277,5 +277,8 @@
   "U9": "Package_SO:VSSOP-8_2.3x2mm_P0.5mm",
   "R_AIRSER": "Resistor_SMD:R_0402_1005Metric",
   "C_EN": "Capacitor_SMD:C_0402_1005Metric",
-  "C_RCT": "Capacitor_SMD:C_0402_1005Metric"
+  "C_RCT": "Capacitor_SMD:C_0402_1005Metric",
+  "U16": "Package_DFN_QFN:DFN-10-1EP_3x3mm_P0.5mm_EP1.7x2.5mm",
+  "C_OPT": "Capacitor_SMD:C_0402_1005Metric",
+  "R_OPTRST": "Resistor_SMD:R_0402_1005Metric"
 }

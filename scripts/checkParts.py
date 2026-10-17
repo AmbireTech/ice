@@ -73,14 +73,10 @@ WAIVED_LAND = {
     "L_SMPS": "Murata's DFE2016 land (KiCad L_Murata_DFE201610P) for a DFE201612 part, as on the GridCore Nano",
     "J1": "KiCad's HRO TYPE-C-31-M-12 land, the one the GridCore Nano uses; its shield legs are split "
           "into more pads than EasyEDA's",
-    "U15": "KiCad land generated from Maxim 21-0168, the MAX17048's own package outline; the extra pads are "
-           "paste apertures inside the exposed pad",
     "U5": "land drawn from NXP's SOT1969-1 package information (98ASA01228D Fig. 3-6), the vendor's own "
           "recommended footprint; EasyEDA's is a third-party copy",
     "U1": "TI's own DLH0010A land (BQ25185 data sheet, example board layout 4226298/A: pad columns (2.1) "
           "outer edge to outer edge, 0.1 mm to the exposed pad); EasyEDA's is a generic longer-toe land",
-    "U13": "KiCad VQFN-16 3x3 land (the GridCore Nano's); the extra pads are paste apertures inside the "
-           "exposed pad",
     "J_CAM": "KiCad's Jushuo AFC07-S24FCA-00 land for this exact part: same 24 pads at 0.5 mm and the same "
              "14.8 mm width; the depth differs by the mounting-tab position",
 }
@@ -176,7 +172,7 @@ def board_signature(fp):
              (pad.GetPosition().x - origin.x) / 1e6,
              (pad.GetPosition().y - origin.y) / 1e6,
              pad.GetSizeX() / 1e6, pad.GetSizeY() / 1e6)
-            for pad in fp.Pads()]
+            for pad in fp.Pads() if pad.IsOnCopperLayer()]   # paste-only apertures are not lands
     return signature(pads)
 
 
