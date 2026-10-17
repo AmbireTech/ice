@@ -45,6 +45,7 @@ $KICAD_PY scripts/checkFpc.py            # connector/lever/antenna orientation, 
 scripts/trialRoute.sh                    # autoroute a copy with KiCadRoutingTools: failed nets / vias
 $KICAD_PY scripts/refreshKeepouts.py        # redraw the keep-out rule areas after a connector moves
 $KICAD_PY scripts/partialRoute.py --out /tmp/pr   # block wiring on a copy, hand copper kept
+$KICAD_PY scripts/routeGauge.py --out /tmp/gauge  # how routable: full autoroute on a copy, metrics in gauge.json
 $KICAD_PY scripts/checkParts.py board/wallet.kicad_pcb   # lands vs JLC's land per part
 ```
 

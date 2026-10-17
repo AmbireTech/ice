@@ -175,10 +175,11 @@ touch flex is merged into the TFT flex.
   decap, on top of the hand-routed copper, which it never rips. A link longer than 7 mm (a
   pull-up at the far end of a bus, a test pad across the board) or a power link
   longer than 10 mm is left with its bus.
-- **Gauges on what is left** (2026-10-16): KiCadRoutingTools routes every
-  remaining net (0 failed, 119 vias); the full humanRouter finish routes them
-  all too (0 unconnected). Both are only a measure of how easy the hand route
-  is; their copper is not kept.
+- **The gauge is the deterministic humanRouter full finish** (`scripts/routeGauge.py`,
+  on a copy, with no GND fanouts and the pours stitched): the same board gives the
+  same numbers, so placements compare run against run. KiCadRoutingTools varied
+  2 vs 6 failed nets on near-identical boards. The autorouted copper is a measure,
+  never the deliverable.
 - **Bus return paths**: the back copper returns in In2 (GND), the front in In1
   (3.3 V). A bus that changes layer changes reference, so its return hops through
   the nearest decap: keep the camera PCLK and XCLK on one layer end to end, or put
@@ -302,7 +303,8 @@ $KICAD_PY scripts/checkFpc.py           # connector / lever / antenna orientatio
 scripts/trialRoute.sh                   # autoroute a copy: failed nets / vias (placement arbiter)
 $KICAD_PY scripts/refreshKeepouts.py        # redraw the keep-out rule areas after a connector moves
 $KICAD_PY scripts/partialRoute.py --out DIR  # block wiring on a copy, hand copper kept
-$KICAD_PY scripts/placeLoop.py --base COMMIT   # optimize unlocked parts -> partial route -> judge, logged
+$KICAD_PY scripts/placeVariant.py IN OUT SPEC.json   # a placement variant (seed spots, then block search per chip)
+$KICAD_PY scripts/routeGauge.py BOARD --out DIR      # full autoroute on a copy, owner conventions: how routable is it
 $KICAD_PY scripts/checkParts.py board/wallet.kicad_pcb   # each land vs the land JLC places that part on
 python3 scripts/jlcStock.py             # live JLC stock for every part number
 ```

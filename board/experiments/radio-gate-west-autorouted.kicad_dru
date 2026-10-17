@@ -1,0 +1,20 @@
+(version 1)
+
+# Stack-up: F.Cu / In1 / In2 / B.Cu. Every part sits on B.Cu, whose return
+# currents run in In2 -- so In2 is solid GND and nothing else routes on it.
+(rule "In2: GND only"
+  (condition "A.Type == 'Track' && A.NetName != 'GND'")
+  (layer "In2.Cu")
+  (constraint disallow track))
+
+# In1 is the 3.3 V plane, unbroken: the buses on the front copper return in it.
+(rule "In1: V3V3 plane"
+  (condition "A.Type == 'Track' && A.NetName != 'V3V3'")
+  (layer "In1.Cu")
+  (constraint disallow track))
+
+# Fine-pitch lands from the vendors' own drawings: the SE050's 0.4 mm HX2QFN and
+# the BQ25185's DLH0010A put pads closer than the board default.
+(rule "Fine-pitch lands"
+  (condition "A.Type == 'Pad' && B.Type == 'Pad' && (A.memberOfFootprint('U5') || A.memberOfFootprint('U1'))")
+  (constraint clearance (min 0.09mm)))

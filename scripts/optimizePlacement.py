@@ -377,7 +377,7 @@ def satellites(m, ic):
     return out
 
 
-def place_block(board, ic, sats=None, rotations=(0, 90, 180, 270), radius=3.0, log=print, locked=()):
+def place_block(board, ic, sats=None, rotations=(0, 90, 180, 270), radius=3.0, log=print, locked=(), force=False):
     """Rotate `ic` in place and rebuild its block around it, for each rotation; keep the
     cheapest. The owner's lesson (2026-10-17): the SE050 turned -90 deg so its I2C
     pins face the MCU, with its pull-ups re-seated inline, scored 26 where the best
@@ -501,13 +501,13 @@ def place_block(board, ic, sats=None, rotations=(0, 90, 180, 270), radius=3.0, l
     if not results:
         return start, None
     c, rot, pos = min(results, key=lambda t: t[0])
-    if c < start - 1e-6:
+    if force or c < start - 1e-6:       # force: the caller has chosen the rotation(s) to try
         for ref, (sx, sy, sr) in pos.items():
             m.parts[ref].set(sx, sy, sr)
             m.moved(ref)
         for p in m.parts.values():
             p.fp.Reference().SetPosition(p.fp.GetPosition())
-    log(f"{ic}: start {start:.1f} -> best {c:.1f} at {rot} deg ({'applied' if c < start - 1e-6 else 'kept'})")
+    log(f"{ic}: start {start:.1f} -> best {c:.1f} at {rot} deg ({'applied' if force or c < start - 1e-6 else 'kept'})")
     return start, (c, rot)
 
 
