@@ -53,7 +53,10 @@ POWER_HIGHWAY_MM = 10.0     # a power link this long (SYS across the board) is a
 
 
 def route_blocks(src, out, blocks=None, minutes=6.0, knobs=(), log=print, skip_nets=(), first_nets=(),
-                 highway_mm=HIGHWAY_MM):
+                 highway_mm=HIGHWAY_MM, links=()):
+    """links: [(ref, pad, ref, pad)] pad-to-pad connections routed first, on either
+    outer layer -- for a plane pad with no room for its own via, joined to a
+    neighbouring pin of the same net instead."""
     t0 = time.perf_counter()
     os.makedirs(out, exist_ok=True)
     name = Path(src).stem
@@ -111,6 +114,13 @@ def route_blocks(src, out, blocks=None, minutes=6.0, knobs=(), log=print, skip_n
             skipped["highway member (long link)"] += 1
             continue
         todo.append(c)
+    from router import Conn
+    pad_of = {(pd.ref, pd.num): pd for pd in model.pads}
+    for i, (ra, na, rb, nb_) in enumerate(links):
+        pa, pb = pad_of[(ra, na)], pad_of[(rb, nb_)]
+        if pa.net != pb.net:
+            raise SystemExit(f"--link {ra}.{na}-{rb}.{nb_}: different nets ({pa.net}, {pb.net})")
+        early.insert(0, Conn(100000 + i, pa.net, pa, pb, "pwr" if router.powerClass(pa.net) else "sig"))
     early_ids = {id(c) for c in early}
 
     def layers_for(c):
@@ -191,10 +201,13 @@ def main():
                     "even between blocks (critical pairs)")
     ap.add_argument("--skip-nets", default="", help="comma-separated nets left to the human")
     ap.add_argument("--highway-mm", type=float, default=HIGHWAY_MM)
+    ap.add_argument("--link", action="append", default=[], help="REF.PAD:REF.PAD, a pad-to-pad connection "
+                    "routed first (a plane pad with no room for a via, joined to a neighbour of its net)")
     a = ap.parse_args()
     split = lambda v: tuple(n for n in v.split(",") if n)
     route_blocks(a.board, a.out, split(a.blocks or "") or None, a.minutes, a.knob,
-                 skip_nets=split(a.skip_nets), first_nets=split(a.first_nets), highway_mm=a.highway_mm)
+                 skip_nets=split(a.skip_nets), first_nets=split(a.first_nets), highway_mm=a.highway_mm,
+                 links=[tuple(x for side in l.split(":") for x in side.split(".", 1)) for l in a.link])
 
 
 if __name__ == "__main__":

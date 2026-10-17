@@ -174,7 +174,19 @@ touch flex is merged into the TFT flex.
   copper (the parts' side) and a via to the 3.3 V plane for every 3.3 V pin and
   decap, on top of the hand-routed copper, which it never rips. A link longer than 7 mm (a
   pull-up at the far end of a bus, a test pad across the board) or a power link
-  longer than 10 mm is left with its bus.
+  longer than 10 mm is left with its bus. A 3.3 V pad with no room for its own
+  via is joined to a neighbouring pin of its net (`--link C_RCT.1:C_RIN.1`).
+- **Power fanouts are as thick as the pad allows** (0.4 mm, capped at the pad's
+  narrow side): a big plane via on a thin trace is ugly and buys nothing. The
+  router does this itself now; `scripts/widenFanouts.py` widens what older or
+  hand copper still has thin.
+- **No stale copper.** A plane via or stub that touches no pad of its net is
+  left over from a part that moved, not a fanout waiting for routing:
+  `scripts/cleanCopper.py` removes it (GND vias are stitching and stay).
+- **Autorouted nets are accepted one by one.** A net is kept only if its length
+  is close to its shortest tree and it adds no detour, hairpin or extra via;
+  the rest (the USB pair, the radio UART, AIRGAP) are ripped and left for the
+  hand, since a bad route there costs more to fix than to draw.
 - **The gauge is the deterministic humanRouter full finish** (`scripts/routeGauge.py`,
   on a copy, with no GND fanouts and the pours stitched): the same board gives the
   same numbers to within ~0.1 % (1395 vs 1396 mm), so placements compare run against run. KiCadRoutingTools varied
@@ -305,6 +317,8 @@ $KICAD_PY scripts/refreshKeepouts.py        # redraw the keep-out rule areas aft
 $KICAD_PY scripts/partialRoute.py --out DIR  # block wiring on a copy, hand copper kept
 $KICAD_PY scripts/placeVariant.py IN OUT SPEC.json   # a placement variant (seed spots, then block search per chip)
 $KICAD_PY scripts/routeGauge.py BOARD --out DIR      # full autoroute on a copy, owner conventions: how routable is it
+$KICAD_PY scripts/cleanCopper.py IN [OUT]            # drop stale (pad-less) copper and crumbs; refuses if DRC gets worse
+$KICAD_PY scripts/widenFanouts.py IN [OUT]           # thicken 3.3 V pad-to-via links up to 0.4 mm
 $KICAD_PY scripts/checkParts.py board/wallet.kicad_pcb   # each land vs the land JLC places that part on
 python3 scripts/jlcStock.py             # live JLC stock for every part number
 ```
