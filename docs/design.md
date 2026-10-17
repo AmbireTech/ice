@@ -149,6 +149,9 @@ touch flex is merged into the TFT flex.
 - Four M2 holes: two at the north corners, one at the panel's south-west corner
   (the board's south-west corner belongs to the antenna), one in the south-east
   corner.
+- **The front is incognito.** No brand mark on the front (bezel, chin or case): a
+  signer should not advertise what it is. The brand lives only on the back's UV
+  artwork, behind the clear case.
 - Brand: the back face is UV-printed (JLC multi-colour silkscreen) with the
   artwork in `art/` ("the only way in is light": Ambire Black with brand-colour
   beams from the camera window, the official logo in the reserved 12 × 9 mm
