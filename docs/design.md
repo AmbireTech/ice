@@ -319,6 +319,9 @@ device off, the cell charges and nothing else runs; there is no charge light.
    6: VDD-D 1.24/1.3/1.36 V; its revision history raised it from 1.2 V). The older
    v1.6 says 1.14–1.26 V. If a module's sensor turns out to be the old revision, the
    TLV70312 (1.2 V) fits the same land.
+9. **Device-bound PIN KDF** (research.md): measure the SAES rate keyed by the
+   DHUK, pick the chain length for about one second, and confirm in our
+   TrustZone/RDP configuration that software cannot read the DHUK.
 
 ## Flow
 

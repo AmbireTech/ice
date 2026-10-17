@@ -58,6 +58,29 @@ family as Trezor Safe 5/7. Has DCMI for the camera and USB FS. Avoided: ESP32
 double glitch), STM32F4 (Safe 3 break). LQFP100 rather than WLCSP: bare die is
 light-sensitive (the Raspberry Pi 2 xenon-flash reset) and the case is clear.
 
+**A seed protected by the STM32U5 alone: a device-bound slow KDF.** For a
+seed-phrase mode (a Trezor-style wallet) without relying on a second secure
+element, the MCU's own hardware key does the work. The STM32U5's SAES engine
+can use a derived hardware-unique key (DHUK) that software can never read.
+Stretch the PIN by chaining SAES encryptions under that key, each step's output
+fed into the next, roughly 100k-1M steps (*estimate*: about a second on the
+device; measure at bring-up). The result decrypts the seed stored in flash.
+- Unique to the device: the chain only runs inside this chip.
+- Fast on the device, impossible off it: guessing PINs offline needs the DHUK,
+  so an attacker must first extract it with a physical attack on ST's silicon
+  (fault injection, invasive probing). That additional attack is the accepted
+  compromise.
+- Limit: it slows guessing only once the chip's key is out; it adds no secrecy
+  after that. A 6-digit PIN is then a million guesses, so offer an optional
+  passphrase for protection that does not depend on silicon.
+- Optional extra layer: also mix in a secret the SE050 releases only for the
+  right PIN (with its retry counter), so an attacker must break both NXP's and
+  ST's chips. The second secure element (OPTIGA) adds a third vendor; its
+  sourcing is deprioritized in favour of this mechanism.
+- To verify, not assumed: that the DHUK is unreadable by software in our
+  TrustZone/RDP configuration (RM0456), SAES throughput with the DHUK, and the
+  STM32U5's published fault-injection results.
+
 **Radio: a separate Nordic nRF52840 module (Ebyte E73), BLE only, untrusted.**
 It is a pipe: it never sees a key or a PIN, so its own FI history does not
 matter. Its supply, and the USB data lines, are cut by the **airgap switch in
