@@ -10567,7 +10567,18 @@
 				(justify mirror)
 			)
 		)
-		(attr smd exclude_from_bom dnp)
+		(property "LCSC" "C1518668"
+			(at 0 0 0)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "59785202-a963-4efe-9b34-f22303df68c6")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start -1.61 1.61)
@@ -18568,7 +18579,18 @@
 				(justify mirror)
 			)
 		)
-		(attr smd exclude_from_bom dnp)
+		(property "LCSC" "C25741"
+			(at 0 0 0)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "14765e91-22c4-4c70-9cd1-d23f6f2f3edf")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start -0.153641 -0.38)
@@ -24207,7 +24229,18 @@
 				(justify mirror)
 			)
 		)
-		(attr smd exclude_from_bom dnp)
+		(property "LCSC" "C1525"
+			(at 0 0 0)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "74522f14-e058-4282-a5cc-a8523cf46f62")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(attr smd)
 		(duplicate_pad_numbers_are_jumpers no)
 		(fp_line
 			(start -0.107836 0.36)

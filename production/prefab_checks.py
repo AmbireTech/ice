@@ -80,8 +80,11 @@ def main():
            and "no LCSC part: []" in log, "BOM / placement parity, every part has an LCSC number",
            parity.group(0) if parity else "no parity line")
     stock = list(csv.DictReader(open(os.path.join(order, "jlc-plain/work/stock.csv"))))
-    short = [f"{r['LCSC']} {r['MPN']} ({r['Flag']})" for r in stock if r.get("Flag")]
+    short = [f"{r['LCSC']} {r['MPN']} ({r['Flag']})" for r in stock if r.get("Flag") and "deprioritized" not in r["Flag"]]
+    dnp_at_order = [f"{r['LCSC']} {r['MPN']} ({r['Refs']})" for r in stock if "deprioritized" in r.get("Flag", "")]
     report(not short, "JLC stock for 10 boards", f"{len(stock)} lines" + (f"; short: {short}" if short else ", all ok"))
+    if dnp_at_order:
+        report(None, "out of stock, to DNP in JLC's order UI", "; ".join(dnp_at_order))
     rot = list(csv.DictReader(open(os.path.join(order, "jlc-plain/work/rotation-review.csv"))))
     eye = [r["Designator"] for r in rot if "eye" in r.get("Status", "").lower()]
     report(None, "check by eye in JLC's placement preview", ", ".join(x for x in eye if x))
@@ -100,7 +103,10 @@ def main():
     report(hits == len(holes), "drill census: board holes vs drill files", f"{len(holes)} on the board, {hits} in the files")
     report(min(holes) / 1e6 >= 0.25, "smallest drill (JLC charges extra below 0.25 mm)", f"{min(holes) / 1e6:.2f} mm")
 
-    # ---- colour print
+    # ---- colour print (only when make_order.sh built it, COLOUR=1)
+    if not os.path.isdir(os.path.join(order, "jlc-colour")):
+        report(None, "colour print", "not built (COLOUR=1); JLC rejects non-EasyEDA colour files")
+        return finish(order)
     sys.path.insert(0, os.path.join(HERE, "production"))
     import colour_silk as cs
     polys, bounds = cs.mask_polygons(board), cs.outline_bounds(board)
@@ -136,7 +142,10 @@ def main():
     report(not missing and fcbs > 512, "colour zip contents", f"{len(names)} files, colour file {fcbs / 1e6:.1f} MB" +
            (f"; missing {missing}" if missing else ""))
     report(None, "colour order options", "white solder mask, ENIG, Silkscreen Technology = EasyEDA multi-color silkscreen, panel rails")
+    finish(order)
 
+
+def finish(order):
     text = "Ambire signer pre-fab checks\n" + "\n".join(lines) + f"\n\n{'FAILED: ' + ', '.join(failed) if failed else 'all checks passed'}\n"
     open(os.path.join(order, "PREFAB-CHECKS.txt"), "w").write(text)
     print(text)

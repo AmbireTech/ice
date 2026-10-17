@@ -4,8 +4,10 @@
 #
 #   production/make_order.sh            (from hardware/ambire-wallet; refill + save in KiCad first)
 #
-# order/jlc-colour/wallet-colour-jlc.zip  Gerbers in EasyEDA Pro form with the bottom colour print:
-#                                         upload at JLC, white mask, ENIG, "EasyEDA multi-color silkscreen"
+# order/jlc-colour/wallet-colour-jlc.zip  (COLOUR=1 only) Gerbers in EasyEDA Pro form with the bottom
+#                                         colour print. JLC did NOT offer its colour option for this zip
+#                                         (2026-10-17): it has blocked non-EasyEDA colour files since
+#                                         Jan 2026 (TransJLC issues #10/#11). Kept for reference.
 # order/jlc-plain/wallet_gerbers.zip      the same board with ordinary white silkscreen
 # order/wallet_bom-jlc.csv, order/wallet_positions-jlc.csv   assembly (bottom side), same for both
 #
@@ -34,6 +36,7 @@ python3 -I production/build_jlc_files.py "$OUT/jlc-plain" 10 > "$OUT/jlc-plain/b
 cp "$OUT/jlc-plain/wallet_bom-jlc.csv" "$OUT/jlc-plain/wallet_positions-jlc.csv" \
    "$OUT/jlc-plain/work/rotation-review.csv" "$OUT/jlc-plain/work/stock.csv" "$OUT/"
 
+if [ "${COLOUR:-0}" = 1 ]; then
 echo "== colour set"
 "$KPY" production/export_fab.py board/wallet.kicad_pcb "$OUT/colour-src" production/jlc_rotation_db.csv --colour | grep -E "colour print|files ->"
 mkdir -p "$OUT/colour-src/stage"
@@ -47,6 +50,7 @@ done
 "$KPY" production/colour_silk.py board/wallet.kicad_pcb "$OUT/uv_back_print.jpeg" \
   "$OUT/jlc-colour/Fabrication_ColorfulBottomSilkscreen.FCBS" --plain "$OUT/colour-src/bottom-colour.plain.svg"
 (cd "$OUT/jlc-colour" && rm -f ./*.zip && zip -q -X wallet-colour-jlc.zip ./*)
+fi
 
 echo "== pre-fab checks"
 "$KPY" production/prefab_checks.py "$OUT"

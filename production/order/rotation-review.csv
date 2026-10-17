@@ -14,6 +14,7 @@ C_GAUGE,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,-90.0,,0.0,270.0,0.00
 C_IN_BUCK,10uF,Capacitor_SMD:C_0805_2012Metric,C15850,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 C_NOR,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 C_NRST,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
+C_OPT,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 C_RADIO1,10uF,Capacitor_SMD:C_0603_1608Metric,C19702,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 C_RADIO2,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 C_RCT,1nF,Capacitor_SMD:C_0402_1005Metric,C14442,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
@@ -68,6 +69,7 @@ R_FB2,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,-90.0,,0.0,270.0,0.000,n
 R_HOLD,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 R_ILIM,13k,Resistor_SMD:R_0402_1005Metric,C25754,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 R_ISET,1.2k,Resistor_SMD:R_0402_1005Metric,C25862,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
+R_OPTRST,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 R_RLED,1k,Resistor_SMD:R_0402_1005Metric,C11702,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 R_ROFF,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 R_SCL,4.7k,Resistor_SMD:R_0402_1005Metric,C25900,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
@@ -88,6 +90,7 @@ U12,ME6211C28M5G-N,Package_TO_SOT_SMD:SOT-23-5,C53099,bottom,180.0,^SOT-23,180.0
 U13,TPS60230RGTR,Package_DFN_QFN:VQFN-16-1EP_3x3mm_P0.5mm_EP1.45x1.45mm,C1848364,bottom,180.0,,0.0,0.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
 U14,TLV70313DBVR,Package_TO_SOT_SMD:SOT-23-5,C2868385,bottom,180.0,^SOT-23,180.0,180.0,0.000,db-rule
 U15,MAX17048G+T10,Package_DFN_QFN:TDFN-8-1EP_2x2mm_P0.5mm_EP0.8x1.2mm,C2682616,bottom,0.0,,0.0,180.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
+U16,SLS32AIA010MK,Package_DFN_QFN:DFN-10-1EP_3x3mm_P0.5mm_EP1.7x2.5mm,C1518668,bottom,-90.0,^DFN-,270.0,180.0,0.000,db-rule (eye check: never seen on a GridCore BOTTOM part with a 90/270 offset)
 U2,TPS63802DLAR,wallet:Texas_DLA0010A_VSON-HR-10,C2845237,bottom,0.0,,0.0,180.0,0.075,NO KNOWN CORRECTION -> eye check in JLC preview
 U4,STM32U585VIT6Q,Package_QFP:LQFP-100_14x14mm_P0.5mm,C5270986,bottom,180.0,^LQFP-,270.0,270.0,0.000,db-rule (eye check: never seen on a GridCore BOTTOM part with a 90/270 offset)
 U5,SE050E2HQ1/Z01Z3Z,wallet:NXP_SOT1969-1_HX2QFN-20_3x3mm_P0.4mm,C5190917,bottom,-90.0,,0.0,270.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
