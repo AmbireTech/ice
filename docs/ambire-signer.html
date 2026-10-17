@@ -427,15 +427,17 @@ function boardMesh(data, maskMat) {
   return g;
 }
 
-// The flame on the back, drawn per scheme: every facet in ink, with a hairline of mask
-// between facets so one ink still shows the faceting. Mirrored, so it reads right from behind.
+// The flame across the back, drawn per scheme: every facet in ink, with a hairline of
+// mask between facets so one ink still shows the faceting. Mirrored, so it reads right
+// from behind.
 function flameTexture(flame, scheme) {
   const [bx0, by0, bx1, by1] = flame.box;
-  const px = 40, c = document.createElement("canvas");
-  c.width = Math.round((bx1 - bx0) / (bx1 - bx0) * 512);
-  c.height = Math.round((by1 - by0) / (bx1 - bx0) * 512);
+  const c = document.createElement("canvas");
+  c.width = 2048;
+  c.height = Math.round((by1 - by0) / (bx1 - bx0) * c.width);
   const x = c.getContext("2d");
   const k = c.width / (bx1 - bx0);
+  const unitsPerMm = (bx1 - bx0) / (flame.at[2] - flame.at[0]);
   x.translate(c.width, 0);
   x.scale(-k, k);
   x.translate(-bx0, -by0);
@@ -443,7 +445,7 @@ function flameTexture(flame, scheme) {
   x.fillStyle = scheme.ink;
   for (const p of paths) x.fill(p);
   x.strokeStyle = scheme.mask;
-  x.lineWidth = 3.2;
+  x.lineWidth = flame.gap * unitsPerMm;
   x.lineJoin = "round";
   for (const p of paths) x.stroke(p);
   const t = new THREE.CanvasTexture(c);

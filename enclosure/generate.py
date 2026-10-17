@@ -116,11 +116,13 @@ M2_HEAD = (3.8, 1.6)  # pan head diameter, height
 # ── Back print ──────────────────────────────────────────────────────────────
 # The flame alone, from the official logo (github.com/AmbireTech/ambire-brand,
 # copied unmodified into art/brand/): its facets are Purple and Violet, its
-# shadows a translucent dark violet. It sits in the board's reserved artwork
-# panel (the "no parts: UV artwork" rule area).
+# shadows a translucent dark violet. It is the whole back: as wide as the board
+# less a thin margin, centred top to bottom, printed between the parts. One ink
+# shows the faceting through a hairline of bare mask between facets.
 FLAME_FACETS = {"#6000FF", "#AF50FF"}
 FLAME_SHADOWS = {"#31155D"}
-FLAME_MARGIN = 0.6
+FLAME_MARGIN = 1.2   # to the board edge, each side
+FLAME_GAP = 0.35     # mm of mask between facets (JLC's thinnest silkscreen line is 0.15)
 # Ink on mask. Brand colours: Purple #6000FF, Black #181A1F, Volt #D7FF00 (the
 # brand's neon green). JLC's standard silkscreen is white or black only, so a
 # purple flame or a Volt board is a full-colour print (PCBWay); white on black and
@@ -711,12 +713,14 @@ def main():
 
     flame = flame_paths(BRAND_LOGO)
     fx0, fy0, fx1, fy1 = flame["box"]
-    ax0, ay0, ax1, ay1 = b["zones"]["no parts: UV artwork"]
+    ax0, ay0, ax1, ay1 = 0.0, 0.0, W, H
     k = min((ax1 - ax0 - 2 * FLAME_MARGIN) / (fx1 - fx0), (ay1 - ay0 - 2 * FLAME_MARGIN) / (fy1 - fy0))
     fw, fh = (fx1 - fx0) * k, (fy1 - fy0) * k
     cx, cy = (ax0 + ax1) / 2, (ay0 + ay1) / 2
     flame["at"] = [round(v, 3) for v in (cx - fw / 2, cy - fh / 2, cx + fw / 2, cy + fh / 2)]
-    report.append(f"flame {fw:.1f} x {fh:.1f} mm in the artwork panel, mask back face at Z {header['maskBack']:.3f}")
+    flame["gap"] = FLAME_GAP
+    report.append(f"flame {fw:.1f} x {fh:.1f} mm across the back, mask back face at Z {header['maskBack']:.3f}")
+
 
     downloads = write_downloads()
     data = {

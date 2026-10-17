@@ -132,9 +132,10 @@ The concept page carries the first version, next to the 3D model.
 ### Board print
 
 The back carries only the Ambire flame from the official logo, with no wordmark
-and the word "Ambire" nowhere. Its facets keep a hairline of mask between them,
-so one ink still shows the faceting. It sits in the board's reserved artwork
-panel. The five schemes and what each one takes to make:
+and the word "Ambire" nowhere. It is the whole back: as wide as the board less a
+thin margin, printed between the parts. Its facets keep a 0.35 mm hairline of
+mask between them, so one ink still shows the faceting. The five schemes and what
+each one takes to make:
 
 | Scheme | Mask | Flame | How it is made |
 |---|---|---|---|
