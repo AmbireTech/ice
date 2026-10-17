@@ -2,13 +2,15 @@
 """Remove copper that connects nothing, checked against KiCad's own connectivity.
 
     $KICAD_PY scripts/cleanCopper.py in.kicad_pcb [out.kicad_pcb]
+    $KICAD_PY scripts/cleanCopper.py in.kicad_pcb --check   # list only; exit 1 if anything is stale
 
 What goes (the owner's cleanup of 2026-10-17, made a tool):
   - stale copper: a piece of a net's tracks and vias (joined where ends meet, an
     end lands on a track or a via) that touches none of the net's pads. For a plane
     net that is a plane via left behind where a part used to be, with or without a
-    stub; for a signal, an orphan. GND is never touched: a pad-less GND via is
-    stitching.
+    stub; for a signal, an orphan. On GND only the tracks of such a piece go: a
+    pad-less GND via is stitching, a pad-less GND track is litter (the stub on a
+    stitching via at TP_SWDIO, 2026-10-17).
   - crumbs: a track KiCad's DRC calls dangling that is shorter than 0.2 mm.
   - on a net that is complete (no unconnected item of its own): a via KiCad calls
     dangling (it joins one layer only, e.g. left in the middle of a single-layer
@@ -82,16 +84,17 @@ def pieces(board):
     stale = []
     for g in groups.values():
         net = g[0].GetNetname()
-        if net == "GND" or not net:
+        if not net or any(pd.HitTest(p) for t in g for p in ends(t) for pd in pads.get(net, [])):
             continue
-        if not any(pd.HitTest(p) for t in g for p in ends(t) for pd in pads.get(net, [])):
-            stale += g
+        stale += [t for t in g if t.GetClass() != "PCB_VIA"] if net == "GND" else g
     return stale
 
 
 def main():
-    src = Path(sys.argv[1])
-    dst = Path(sys.argv[2]) if len(sys.argv) > 2 else src
+    check = "--check" in sys.argv
+    args = [a for a in sys.argv[1:] if a != "--check"]
+    src = Path(args[0])
+    dst = Path(args[1]) if len(args) > 1 else src
     unc0, cu0, d0 = drc(src)
     board = pcbnew.LoadBoard(str(src))
     stale = {t.m_Uuid.AsString(): t for t in pieces(board)}
@@ -113,6 +116,9 @@ def main():
         where = t.GetPosition() if t.GetClass() == "PCB_VIA" else t.GetStart()
         print(f"  {t.GetNetname():12s} {t.GetClass()[4:]:5s} at ({where.x / NM:.2f}, {where.y / NM:.2f})"
               + ("" if t.GetClass() == "PCB_VIA" else f" {t.GetLength() / NM:.2f} mm"))
+    if check:
+        print(f"{len(stale)} stale item(s)" + ("" if stale else ": clean"))
+        sys.exit(1 if stale else 0)
     for t in list(stale.values()):
         board.Remove(t)
     pcbnew.ZONE_FILLER(board).Fill(board.Zones())

@@ -1,6 +1,6 @@
 {
  "_comment": "3D model per footprint id, applied by scripts/applyModels.py (and by syncBoard/newBoard when they add parts). Offsets are KiCad's model offset (3D frame: y up), found by scripts/alignModel.py and checked against each model's own legs/pegs/lead feet. Vendor models are EasyEDA/LCSC STEPs in ../3d.",
- "Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12": {
+ "wallet:USB_C_Receptacle_HRO_TYPE-C-31-M-12_BoardEdge": {
   "path": "${KIPRJMOD}/../3d/USB_C_GCT_USB4105.step",
   "offset": [
    0,

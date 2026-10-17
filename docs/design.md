@@ -199,8 +199,11 @@ touch flex is merged into the TFT flex.
   router does this itself now; `scripts/widenFanouts.py` widens what older or
   hand copper still has thin.
 - **No stale copper.** A plane via or stub that touches no pad of its net is
-  left over from a part that moved, not a fanout waiting for routing:
-  `scripts/cleanCopper.py` removes it (GND vias are stitching and stay).
+  left over from a part that moved, not a fanout waiting for routing; a GND track
+  that reaches no pad is litter (a lone GND via is stitching). KiCad's interactive
+  router shoves free stitching vias, and a moved free via takes the net of the
+  plane it lands in: a "3.3 V via" connected to nothing is usually such a GND via.
+  `scripts/cleanCopper.py` removes all of these; `--check` must pass before a commit.
 - **Autorouted nets are accepted one by one.** A net is kept only if its length
   is close to its shortest tree and it adds no detour, hairpin or extra via;
   the rest (the USB pair, the radio UART, AIRGAP) are ripped and left for the
@@ -327,7 +330,7 @@ KICAD_PY=/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Vers
 npx tsci export index.circuit.tsx -f circuit-json -o board/netlist.circuit.json
 python3 scripts/checkNets.py            # every named net reaches two pads
 python3 scripts/checkMcuAf.py           # every MCU signal is an alternate function ST lists for that pin
-$KICAD_PY scripts/syncBoard.py          # dry run; --apply writes (close KiCad first)
+$KICAD_PY scripts/syncBoard.py          # dry run; --apply writes (close KiCad first); --refresh REF after editing its footprint
 $KICAD_PY scripts/checkPinNets.py       # IC pads vs datasheet pin tables, on the board copper
 $KICAD_PY scripts/checkFpc.py           # connector / lever / antenna orientation, tail lengths
 scripts/trialRoute.sh                   # autoroute a copy: failed nets / vias (placement arbiter)
@@ -336,6 +339,7 @@ $KICAD_PY scripts/partialRoute.py --out DIR  # block wiring on a copy, hand copp
 $KICAD_PY scripts/placeVariant.py IN OUT SPEC.json   # a placement variant (seed spots, then block search per chip)
 $KICAD_PY scripts/routeGauge.py BOARD --out DIR      # full autoroute on a copy, owner conventions: how routable is it
 $KICAD_PY scripts/cleanCopper.py IN [OUT]            # drop stale (pad-less) copper and crumbs; refuses if DRC gets worse
+$KICAD_PY scripts/cleanCopper.py BOARD --check       # gate: exit 1 if anything stale is left
 $KICAD_PY scripts/widenFanouts.py IN [OUT]           # thicken 3.3 V pad-to-via links up to 0.4 mm
 $KICAD_PY scripts/stripGndTies.py IN [OUT]          # drop GND pad-to-via ties (pour + stitching instead)
 $KICAD_PY scripts/checkParts.py board/wallet.kicad_pcb   # each land vs the land JLC places that part on

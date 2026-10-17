@@ -42,7 +42,7 @@
   "D_OR": "Package_TO_SOT_SMD:SOT-23",
   "D_RADIO": "LED_SMD:LED_0603_1608Metric",
   "J1": {
-    "fp": "Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12",
+    "fp": "wallet:USB_C_Receptacle_HRO_TYPE-C-31-M-12_BoardEdge",
     "pads": {
       "1": [
         "A4",

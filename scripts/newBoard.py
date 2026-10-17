@@ -432,6 +432,16 @@ def drawing(board, x0, y0, x1, y1, layer, width=0.1):
     board.Add(s)
 
 
+def segment(board, x0, y0, x1, y1, layer, width=0.1):
+    s = pcbnew.PCB_SHAPE(board)
+    s.SetShape(pcbnew.SHAPE_T_SEGMENT)
+    s.SetStart(pcbnew.VECTOR2I_MM(x0, y0))
+    s.SetEnd(pcbnew.VECTOR2I_MM(x1, y1))
+    s.SetLayer(layer)
+    s.SetWidth(pcbnew.FromMM(width))
+    board.Add(s)
+
+
 def text(board, t, x, y, layer, size=1.0, thick=0.15, rot=0):
     p = pcbnew.PCB_TEXT(board)
     p.SetText(t)
@@ -557,7 +567,11 @@ def artwork(board):
     # Camera module (OV2640 ESP32-CAM class, ~8.5 x 8.5 mm head) and its lens.
     drawing(board, 4.0, 4.5, 12.5, 13.0, d)
     text(board, "CAMERA", 8.25, 8.75, d, 0.7, 0.1)
-    drawing(board, 4.0, 4.5, 12.5, 13.0, pcbnew.B_SilkS, 0.15)
+    # the camera head on the silk, its corner notched clear of mounting hole H1's ring
+    n = 2.0
+    for a, c in (((4.0 + n, 4.5), (12.5, 4.5)), ((12.5, 4.5), (12.5, 13.0)), ((12.5, 13.0), (4.0, 13.0)),
+                 ((4.0, 13.0), (4.0, 4.5 + n))):
+        segment(board, *a, *c, pcbnew.B_SilkS, 0.15)
     text(board, "QR CAMERA", 9.0, 2.6, pcbnew.B_SilkS, 0.8, 0.12)
     # Antenna keep-out marker.
     ax0, ay0, ax1, ay1 = ANT_KEEPOUT
@@ -565,11 +579,10 @@ def artwork(board):
     # Switch and light legends: the two things a user must be able to read.
     # Which lever end is AIRGAP is a bring-up check (docs/design.md), so the
     # legend names the switch, not a position.
-    text(board, "AIRGAP", 5.2, 51.0, pcbnew.B_SilkS, 0.8, 0.12, 90)
+    text(board, "AIRGAP", 5.2, 50.4, pcbnew.B_SilkS, 0.8, 0.12, 90)
     text(board, "RADIO", 2.6, 64.4, pcbnew.B_SilkS, 0.8, 0.12)
     lx0, ly0, lx1, ly1 = LABEL_SLOTS["SECURE ELEMENT"]
     text(board, "SECURE ELEMENT", (lx0 + lx1) / 2, (ly0 + ly1) / 2, pcbnew.B_SilkS, 0.8, 0.12)
-    drawing(board, SX - 2.0, SY - 2.0, SX + 2.0, SY + 2.0, pcbnew.B_SilkS, 0.15)
     # Brand: placeholder for the full-colour UV-printed Ambire artwork.
     drawing(board, 34.0, 4.5, 46.0, 13.5, pcbnew.Dwgs_User)
     text(board, "UV ARTWORK", (UV_PANEL[0] + UV_PANEL[2]) / 2, 12.6, pcbnew.Dwgs_User, 0.6, 0.08)

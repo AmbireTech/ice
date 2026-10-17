@@ -4,6 +4,8 @@
     npx tsci export index.circuit.tsx -f circuit-json -o board/netlist.circuit.json
     $KICAD_PY scripts/syncBoard.py            # dry run: prints what would change
     $KICAD_PY scripts/syncBoard.py --apply    # writes the board (close it in KiCad first)
+    $KICAD_PY scripts/syncBoard.py --apply --refresh U2,J1   # also re-instantiate these from their library
+    $KICAD_PY scripts/syncBoard.py --board COPY.kicad_pcb ...  # work on another board file
 
 KICAD_PY is KiCad's bundled interpreter, the only one with `pcbnew`:
     /Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3
@@ -15,7 +17,9 @@ What it does:
   - a part in the netlist but not on the board is added, parked east of the
     outline for you to place;
   - a part whose footprint differs from board/footprints.json is swapped in place,
-    keeping position, rotation and side;
+    keeping position, rotation and side; --refresh does the same for a part whose
+    library footprint was edited (a board copy that differs from its library is a
+    DRC lib_footprint_mismatch);
   - value, the LCSC property and the DNP flag (no JLC number = DNP) follow the netlist;
   - a part on the board but not in the netlist is reported, and removed only with
     --prune; footprints marked "Not in schematic" (the mounting holes) are skipped.
@@ -71,7 +75,7 @@ def ensure_net(board, name):
     return net
 
 
-def sync(board, parts, fpmap, prune=False, park_x=None):
+def sync(board, parts, fpmap, prune=False, park_x=None, refresh=()):
     """Mutates `board`. Returns (changes, errors) as lists of strings."""
     changes, errors = [], []
     # board-only footprints (mounting holes) are not in the netlist by design
@@ -107,7 +111,7 @@ def sync(board, parts, fpmap, prune=False, park_x=None):
             fp.Flip(fp.GetPosition(), pcbnew.FLIP_DIRECTION_LEFT_RIGHT)
             nb.style_text(fp, nb.BOT)
             changes.append(f"{ref}: added ({spec}) on the back, parked east of the board")
-        elif fp.GetFPIDAsString() != spec:
+        elif fp.GetFPIDAsString() != spec or ref in refresh:
             new = load_footprint(spec)
             new.SetReference(ref)
             # add before flipping: Flip() on a footprint that has no board segfaults pcbnew
@@ -116,6 +120,15 @@ def sync(board, parts, fpmap, prune=False, park_x=None):
             if fp.IsFlipped():
                 new.Flip(new.GetPosition(), pcbnew.FLIP_DIRECTION_TOP_BOTTOM)
             new.SetOrientation(fp.GetOrientation())
+            nb.style_text(new, nb.BOT if new.IsFlipped() else nb.TOP)
+            # a pad's own settings survive the swap (the router sets solid pour
+            # connections on GND pads the thermals starve)
+            old_pads = {(p.GetNumber(), p.GetPosition().x, p.GetPosition().y): p for p in fp.Pads()}
+            for p in new.Pads():
+                o = old_pads.get((p.GetNumber(), p.GetPosition().x, p.GetPosition().y))
+                if o is not None:
+                    p.SetLocalZoneConnection(o.GetLocalZoneConnection())
+                    p.SetLocalClearance(o.GetLocalClearance())
             board.Remove(fp)
             changes.append(f"{ref}: footprint {fp.GetFPIDAsString()} -> {spec} (position kept)")
             fp = new
@@ -164,10 +177,13 @@ def sync(board, parts, fpmap, prune=False, park_x=None):
 def main():
     apply_ = "--apply" in sys.argv
     prune = "--prune" in sys.argv
+    arg = lambda flag: sys.argv[sys.argv.index(flag) + 1] if flag in sys.argv else None
+    refresh = set((arg("--refresh") or "").split(",")) - {""}
+    board_path = Path(arg("--board") or BOARD)
     parts = netlist.read(NETLIST)
     fpmap = {k: v for k, v in json.load(open(FPMAP)).items() if not k.startswith("_")}
-    board = pcbnew.LoadBoard(str(BOARD))
-    changes, errors = sync(board, parts, fpmap, prune=prune)
+    board = pcbnew.LoadBoard(str(board_path))
+    changes, errors = sync(board, parts, fpmap, prune=prune, refresh=refresh)
     for c in changes:
         print(c)
     for e in errors:
@@ -180,8 +196,8 @@ def main():
         return 0
     if apply_:
         board.BuildConnectivity()
-        pcbnew.SaveBoard(str(BOARD), board)
-        print(f"wrote {BOARD} ({len(changes)} change(s))")
+        pcbnew.SaveBoard(str(board_path), board)
+        print(f"wrote {board_path} ({len(changes)} change(s))")
     else:
         print(f"dry run: {len(changes)} change(s); --apply writes them")
     return 0
