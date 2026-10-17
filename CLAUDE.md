@@ -1,0 +1,86 @@
+# Ambire hardware signer — agent notes
+
+Read first: `README.md` (what the device is), `docs/design.md` (block by block,
+the full command flow, bring-up checks), `docs/research.md` (why this architecture).
+This file holds only the rules and traps those don't.
+
+This repo sits inside the GridCore (malaka-chrono) checkout for now, so a parent
+`CLAUDE.md` may also load. Its GridCore product rules (lap timer, device, deploy,
+brand name) don't apply here. Never copy GridCore internals into this repo, or
+Ambire internals into GridCore's.
+
+## State (2026-10-17)
+
+- Board `board/wallet.kicad_pcb`: hand-routed by the owner, DRC 0/0, every gate passing.
+- Order set: `production/make_order.sh` → `production/order/` with `PREFAB-CHECKS.txt`.
+  At order time the owner: checks the parts listed in that file in JLC's placement
+  preview, DNPs the OPTIGA (U16, C1518668, out of stock) in JLC's UI, asks for rails
+  with fiducials.
+- Colour (UV) back print: JLC does **not** offer its colour option for files that
+  EasyEDA didn't write (blocked since Jan 2026, check changed again Aug 2026). Our
+  colour zip (`COLOUR=1 production/make_order.sh`, `production/colour_silk.py`) is
+  kept for reference only. Real routes: EasyEDA Pro does the final export, or PCBWay
+  full-colour UV (Gerbers + print image + positioning image). JLC's option also needs
+  white mask + ENIG.
+
+## The board file belongs to the owner
+
+- **Never write `board/wallet.kicad_pcb` while KiCad may have it open**; a reload
+  drops their unsaved routing. Commit their file as-is first, work on a copy, and
+  install only if the original is unchanged (md5) — or ask / wait for "closing kicad".
+- `scripts/newBoard.py --force` destroys hand work. After the first hand edit, only
+  `syncBoard.py` (dry run first; `--apply` writes).
+- On a hand-worked board make targeted fixes only. Global re-placement or
+  crossing-quench made routability worse every time it was tried.
+
+## Owner's copper and placement rules
+
+- No stale copper: no stubs, no plane vias that reach no pad. `cleanCopper.py BOARD --check`
+  must pass before every commit.
+- Power fanouts thick (up to 0.4 mm, capped at the pad's narrow side), never a thin neck
+  on a plane via (`widenFanouts.py`).
+- In1 = V3V3 plane, In2 = solid GND (parts are on B.Cu and reference In2). One via per
+  3.3 V pad, short fanout; never 3.3 V trunks or daisy chains between plane vias.
+- No GND pad-to-via ties — the outer pour plus stitching vias carry GND. Kept ties are
+  listed in `scripts/stripGndTies.py` (switching stages, exposed pads carrying heat,
+  RF ground, ESD clamp, the owner's C_USBSW/R_FB2 tie). Stitching vias are "free" vias,
+  or KiCad's interactive router shoves and re-nets them.
+- Route differential pairs and other critical nets **before** general signals
+  (autorouted charger lines once took the USB pair's only corridor).
+- Accept autorouted nets one at a time: near-shortest length, no detour, hairpin or
+  extra via. Otherwise rip and leave them to the owner. The owner judges by look: a
+  DRC-clean full autoroute was still rejected-grade.
+- Placement: courtyards may touch (owner's median gap 0.01 mm); decaps hug their pins;
+  rotate an IC so its pins face their partner, judged with its passives re-seated;
+  pull-ups and series parts inline between source and destination. Judge routability
+  with a trial route (`trialRoute.sh` / `routeGauge.py`), never with spacing or
+  crossing proxies — those disagreed with the router.
+- The front (F.Cu side) of the device stays incognito: every part and the art live on the
+  back; only the mounting holes and the SWD/test pads (MCU and radio) are on the front.
+
+## Traps
+
+- KiCad `Flip(FLIP_DIRECTION_LEFT_RIGHT)` on these footprints mirrors **y**, not x.
+  Bottom-side rotations are derived empirically and asserted by `checkFpc.py`.
+- `src/parts/mcuAssign.json` can drift from `board/netlist.circuit.json`; `checkMcuAf.py`
+  diffs them. Re-export the netlist after editing assignments.
+- EasyEDA's footprint API 403s after bursts (`checkParts.py`, easyeda2kicad). Stale
+  `land: null` cache entries then read "cannot verify": delete just those keys, rerun.
+- pcbnew Python: one `LoadBoard` per process (a second one kills the first handle);
+  the plotter ignores the hidden flag on board text (remove it in memory instead).
+- KiCad's DRC alone misses joins that hold only by track overlap; the router's tidy pass
+  guards this, recheck after any track narrowing.
+- Rotation offsets for JLC come only from JLC's placement preview, never from a guess.
+- `partialRoute.py` / `routeGauge.py` drive humanizedKicadAutoRouter from
+  `../../tools/humanRouter` (or `HUMAN_ROUTER=/path`). It is its own repo; commit
+  router changes there. Run one board at a time (≈2 GB RAM each).
+
+## Writing
+
+- Name parts, not designators: "the SE050 secure element", "the 1 M airgap sense
+  resistor `R_x`" — the designator after the name, when the reader must find it.
+- Say "battery gauge", never "fuel gauge".
+- A revision changelog is a diff of the actual schematic/BOM, not a paraphrase.
+- Never call the board "fab ready"; report what the checks cover and what they don't
+  (impedance, IR drop/thermal, enclosure fit, power-up behaviour are not covered).
+- Commits: no GPG signing (`git commit --no-gpg-sign`); push to origin after committing.
