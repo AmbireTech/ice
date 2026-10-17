@@ -126,9 +126,11 @@ def sync(board, parts, fpmap, prune=False, park_x=None, refresh=()):
             old_pads = {(p.GetNumber(), p.GetPosition().x, p.GetPosition().y): p for p in fp.Pads()}
             for p in new.Pads():
                 o = old_pads.get((p.GetNumber(), p.GetPosition().x, p.GetPosition().y))
-                if o is not None:
-                    p.SetLocalZoneConnection(o.GetLocalZoneConnection())
-                    p.SetLocalClearance(o.GetLocalClearance())
+                if o is not None:     # only explicit overrides; "inherited" keeps the library's choice
+                    if o.GetLocalZoneConnection() != pcbnew.ZONE_CONNECTION_INHERITED:
+                        p.SetLocalZoneConnection(o.GetLocalZoneConnection())
+                    if o.GetLocalClearance() is not None:
+                        p.SetLocalClearance(o.GetLocalClearance())
             board.Remove(fp)
             changes.append(f"{ref}: footprint {fp.GetFPIDAsString()} -> {spec} (position kept)")
             fp = new
