@@ -1,134 +1,208 @@
 <title>Ambire Signer</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: one reading column; drawings break out into a wider band of figures. */
+/* Layout: one dark, brand-silk world. A full-bleed hero band, then a 1120px column of
+   sections, each opened by a mono eyebrow and a Poppins headline; Volt only on calls to action. */
 :root {
-  --bg: #f2f4f2;
-  --panel: #e6eae7;
-  --fg: #17201d;
-  --muted: #56625d;
-  --line: #c9d0cc;
-  --copper: #a8642c;
-  --mask: #33402c;
-  --screen: #0d1210;
-  --screen-fg: #e9efe9;
-  --ok: #2f7d4f;
-  --warn: #b3261e;
-  --acrylic: rgba(255,255,255,.55);
-  --case-hi: #f7faf8; --case-lo: #dde5e0; --case-edge: #b7c3bc; --fg-soft: #5d6a64;
-  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  color-scheme: dark;
+  /* Ambire brand: Purple #6000FF, Violet #AF50FF, Volt #D7FF00, Signal Blue #3871FF, Heat #FE4648, Black #181A1F, White #DCE2F2 */
+  --bg: #0c0d11;
+  --surface: #14151b;
+  --surface-2: #1c1d26;
+  --line: rgba(220, 226, 242, .10);
+  --line-2: rgba(220, 226, 242, .20);
+  --fg: #eef1fa;
+  --muted: #9ca2ba;
+  --faint: #6c7189;
+  --purple: #6000ff;
+  --violet: #af50ff;
+  --volt: #d7ff00;
+  --heat: #fe4648;
+  --on-volt: #101114;
+  --display: "Poppins", "Avenir Next", "Segoe UI", sans-serif;
   --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  --stage: #e7e8ee;
-  --brand: #6000ff;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #111715; --panel: #18201d; --fg: #e3e9e5; --muted: #98a59f; --line: #2c3632;
-    --copper: #d38b4f; --mask: #8fa37d; --screen: #050807; --screen-fg: #e9efe9;
-    --ok: #5fbf86; --warn: #ef6b62; --acrylic: rgba(255,255,255,.08); color-scheme: dark;
-    --case-hi: #26302c; --case-lo: #18201d; --case-edge: #3a4641; --fg-soft: #a9b5af; --stage: #151a19; --brand: #a77bff;
-  }
-}
-:root[data-theme="dark"] {
-  --brand: #a77bff;
-  --bg: #111715; --panel: #18201d; --fg: #e3e9e5; --muted: #98a59f; --line: #2c3632;
-  --copper: #d38b4f; --mask: #8fa37d; --screen: #050807; --screen-fg: #e9efe9;
-  --ok: #5fbf86; --warn: #ef6b62; --acrylic: rgba(255,255,255,.08); color-scheme: dark;
-  --case-hi: #26302c; --case-lo: #18201d; --case-edge: #3a4641; --fg-soft: #a9b5af; --stage: #151a19;
+  /* names the drawings and the 3D page use */
+  --brand: var(--violet);
+  --copper: var(--violet);
+  --panel: var(--surface-2);
+  --ok: #2fbf71;
+  --warn: var(--heat);
+  --stage: #0f1016;
+  --case-hi: #2b2d39; --case-lo: #191a21; --case-edge: #3d4050; --fg-soft: #8d93ab;
 }
 body {
   background: var(--bg); color: var(--fg); font: 16px/1.6 var(--body);
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 40px 64px;
+  padding-block: 0 48px;
+  overflow-x: hidden;
 }
-main { max-width: 980px; margin: 0 auto; display: grid; gap: 56px; }
+/* the brand's film grain, very faint, over everything */
+body::after {
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 50; opacity: .07; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+main { max-width: 1120px; margin: 0 auto; display: grid; gap: 120px; }
 .col { max-width: 66ch; }
-h1, h2 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.1; }
-h1 { font-size: clamp(2.4rem, 6vw, 3.6rem); font-weight: 700; letter-spacing: -.02em; }
-h2 { font-size: 1.6rem; font-weight: 700; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(3rem, 8vw, 5.6rem); font-weight: 600; line-height: .98; letter-spacing: -.035em; }
+h2 { font-size: clamp(1.9rem, 4vw, 2.8rem); font-weight: 600; line-height: 1.08; letter-spacing: -.025em; }
 p { margin: 0; }
-.eyebrow { font: 500 .75rem/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--copper); }
-.lede { font-size: 1.15rem; color: var(--fg); margin-top: 14px; }
+a { color: inherit; }
+.eyebrow { font: 500 .74rem/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--violet); }
 .sub { color: var(--muted); }
-section { display: grid; gap: 18px; }
-figure { margin: 0; display: grid; gap: 10px; min-width: 0; }
-figcaption { font: .82rem/1.45 var(--body); color: var(--muted); }
+section { display: grid; gap: 28px; }
+.head { display: grid; gap: 14px; }
+.head .sub { font-size: 1.08rem; max-width: 60ch; }
+figure { margin: 0; display: grid; gap: 12px; min-width: 0; }
+figcaption { font: .86rem/1.5 var(--body); color: var(--muted); }
 figcaption b { color: var(--fg); font-weight: 600; }
 svg { display: block; width: 100%; height: auto; }
-table { border-collapse: collapse; width: 100%; font-size: .93rem; }
-td, th { text-align: left; padding: 9px 12px 9px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
-th { font: 500 .72rem/1.2 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
-td:first-child { font-weight: 600; white-space: nowrap; padding-right: 18px; }
-.mono { font-family: var(--mono); font-size: .88em; }
-.tablewrap { overflow-x: auto; }
-.losses { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; }
-.loss { border-top: 2px solid var(--copper); padding-top: 10px; display: grid; gap: 4px; }
-.loss .amt { font: 700 1.6rem/1 var(--display); font-variant-numeric: tabular-nums; }
-.loss .what { font-size: .9rem; color: var(--muted); }
-ul.plain { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; }
-.status { background: var(--panel); border-radius: 10px; padding: 18px 20px; display: grid; gap: 10px; }
-.screens { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; max-width: 620px; }
-.screens svg { max-width: 280px; margin: 0 auto; }
-.facts { display: grid; gap: 8px; align-content: start; min-width: 0; }
-.facts h3 { font: 600 1rem/1.3 var(--body); margin: 0; }
-.status h3 { font: 600 .95rem/1.3 var(--body); margin: 6px 0 0; }
-.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
-@media (max-width: 760px) {
-  .two { grid-template-columns: minmax(0, 1fr); }
-  .losses { grid-template-columns: minmax(0, 1fr); }
+
+/* hero: full-bleed brand silk, headline left, the device right */
+.hero {
+  position: relative; margin-inline: calc(50% - 50vw); padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px));
+  background: var(--bg) url("brand/silk-hero.jpg") center / cover no-repeat;
+  overflow: hidden;
 }
-/* Device: the 3D preview beside its configurator */
+.hero::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(12,13,17,.92) 0%, rgba(12,13,17,.55) 42%, rgba(12,13,17,0) 70%), linear-gradient(0deg, var(--bg) 0%, rgba(12,13,17,0) 22%); }
+.hero-in { position: relative; max-width: 1120px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); align-items: center; gap: 24px; min-height: min(760px, 92vh); padding-block: 72px 56px; }
+.hero-copy { display: grid; gap: 22px; }
+.tagline { font: 500 clamp(1.25rem, 2.2vw, 1.6rem)/1.3 var(--display); letter-spacing: -.01em; }
+.tagline em { font-style: normal; background: linear-gradient(90deg, var(--violet), #d9a6ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.lede { font-size: 1.05rem; color: var(--muted); max-width: 52ch; }
+.ctas { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; }
+.btn { display: inline-flex; align-items: center; gap: 8px; font: 600 .95rem/1 var(--display); text-decoration: none; padding: 15px 24px; border-radius: 999px; border: 1px solid transparent; cursor: pointer; }
+.btn.primary { background: var(--volt); color: var(--on-volt); box-shadow: 0 10px 40px -12px rgba(215, 255, 0, .55); }
+.btn.ghost { border-color: var(--line-2); color: var(--fg); background: rgba(12, 13, 17, .35); backdrop-filter: blur(6px); }
+.btn:hover { transform: translateY(-1px); }
+.btn:focus-visible { outline: 2px solid var(--volt); outline-offset: 3px; }
+.stats { display: flex; flex-wrap: wrap; gap: 28px; margin-top: 14px; padding-top: 22px; border-top: 1px solid var(--line); }
+.stat { display: grid; gap: 2px; }
+.stat b { font: 600 1.9rem/1 var(--display); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.stat span { font: 500 .72rem/1.3 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.hero-shot { position: relative; display: grid; place-items: center; }
+.hero-shot img { width: min(100%, 520px); height: auto; filter: drop-shadow(0 40px 60px rgba(0, 0, 0, .55)); }
+.hero-shot::before { content: ""; position: absolute; width: 70%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, rgba(175, 80, 255, .35), rgba(96, 0, 255, 0) 70%); filter: blur(10px); }
+
+/* why it matters */
+.losses { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.loss { display: grid; gap: 10px; align-content: start; padding: 26px 24px; border-radius: 20px; background: linear-gradient(180deg, var(--surface-2), var(--surface)); border: 1px solid var(--line); }
+.loss .amt { font: 600 2.6rem/1 var(--display); letter-spacing: -.03em; color: var(--heat); font-variant-numeric: tabular-nums; }
+.loss .what { font-size: .92rem; color: var(--muted); }
+
+/* the solution */
+.usps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.usp { display: grid; gap: 12px; align-content: start; min-width: 0; padding: 26px 22px; border-radius: 20px; background: var(--surface); border: 1px solid var(--line); position: relative; overflow: hidden; }
+.usp::after { content: ""; position: absolute; inset: -40% -40% auto auto; width: 180px; height: 180px; border-radius: 50%; background: radial-gradient(circle, rgba(96, 0, 255, .28), transparent 70%); pointer-events: none; }
+.usp svg { width: 44px; height: 44px; padding: 9px; border-radius: 12px; color: #fff; background: linear-gradient(135deg, var(--purple), var(--violet)); box-shadow: 0 8px 24px -8px rgba(96, 0, 255, .8); }
+.usp h3 { font: 600 1.08rem/1.3 var(--display); letter-spacing: -.01em; }
+.usp p { font-size: .9rem; line-height: 1.5; color: var(--muted); }
+
+/* configurator */
 .build { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 28px; align-items: start; }
-.stage { position: relative; aspect-ratio: 4 / 5; max-width: 100%; border-radius: 18px; overflow: hidden; background: var(--stage); }
+.stage { position: relative; aspect-ratio: 4 / 5; max-width: 100%; border-radius: 24px; overflow: hidden; background: var(--stage); border: 1px solid var(--line); }
 .stage canvas { display: block; width: 100%; height: 100%; cursor: grab; }
 .stage-msg[hidden] { display: none; }
 .stage-msg { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: .9rem; }
-.config { display: grid; gap: 22px; min-width: 0; }
-.pane { display: grid; gap: 22px; }
+.config { display: grid; gap: 24px; min-width: 0; padding: 24px; border-radius: 24px; background: var(--surface); border: 1px solid var(--line); }
+.pane { display: grid; gap: 24px; }
 .pane[hidden] { display: none; }
 fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 10px; min-width: 0; }
-legend { font: 500 .72rem/1.2 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 0; margin-bottom: 10px; }
-.seg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 999px; justify-self: start; }
+legend { font: 500 .72rem/1.2 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); padding: 0; margin-bottom: 10px; }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 4px; background: var(--bg); border: 1px solid var(--line); border-radius: 999px; justify-self: start; }
 .seg.wide { display: flex; justify-self: stretch; }
 .seg.wide button { flex: 1; }
-.seg button, .tog { font: 500 .85rem/1 var(--body); color: var(--muted); background: none; border: 0; border-radius: 999px; padding: 0 14px; min-height: 36px; cursor: pointer; }
-.tog { border: 1px solid var(--line); }
-.onstage { position: absolute; left: 12px; bottom: 12px; background: var(--bg); }
-.seg button[aria-pressed="true"], .tog[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
-button:focus-visible, input:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
+.seg button, .tog { font: 500 .86rem/1 var(--display); color: var(--muted); background: none; border: 0; border-radius: 999px; padding: 0 16px; min-height: 38px; cursor: pointer; }
+.tog { border: 1px solid var(--line-2); }
+.onstage { position: absolute; left: 14px; bottom: 14px; background: rgba(12, 13, 17, .7); backdrop-filter: blur(8px); color: var(--fg); }
+.seg button[aria-pressed="true"], .tog[aria-pressed="true"] { background: var(--purple); color: #fff; border-color: var(--purple); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--volt); outline-offset: 2px; }
 .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
-.swatches button { display: flex; align-items: center; gap: 10px; font: 500 .85rem/1.2 var(--body); color: var(--fg); background: none; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; cursor: pointer; text-align: left; }
-.swatches button[aria-pressed="true"] { border-color: var(--fg); box-shadow: inset 0 0 0 1px var(--fg); }
-.swatches i { position: relative; flex: none; width: 24px; height: 24px; border-radius: 6px; background: var(--mask); box-shadow: inset 0 0 0 1px var(--line); }
+.swatches button { display: flex; align-items: center; gap: 10px; font: 500 .86rem/1.2 var(--display); color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 9px 10px; cursor: pointer; text-align: left; }
+.swatches button:hover { border-color: var(--line-2); }
+.swatches button[aria-pressed="true"] { border-color: var(--violet); box-shadow: inset 0 0 0 1px var(--violet), 0 0 0 4px rgba(175, 80, 255, .14); }
+.swatches i { position: relative; flex: none; width: 26px; height: 26px; border-radius: 7px; background: var(--mask); box-shadow: inset 0 0 0 1px var(--line-2); }
 .swatches i::after { content: ""; position: absolute; inset: 4px 6px; background: var(--ink); clip-path: polygon(55% 0, 100% 48%, 62% 100%, 28% 100%, 0 52%, 32% 30%); }
-.note { font-size: .82rem; line-height: 1.45; color: var(--muted); }
-.note.err { color: var(--warn); }
-.addr label { display: grid; gap: 4px; font-size: .85rem; min-width: 0; }
-.addr .hint { color: var(--muted); font-size: .78rem; margin-left: 6px; }
+.note { font-size: .84rem; line-height: 1.5; color: var(--muted); }
+.note.err { color: var(--heat); }
+.addr label { display: grid; gap: 6px; font-size: .86rem; min-width: 0; }
+.addr .hint { color: var(--faint); font-size: .78rem; margin-left: 6px; }
 .addr .row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
-input { font: inherit; font-size: .95rem; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; min-width: 0; }
-.cta { font: 600 .95rem/1 var(--body); padding: 13px 22px; border-radius: 999px; border: 0; background: var(--fg); color: var(--bg); cursor: pointer; justify-self: start; }
-.cta:disabled { opacity: .45; cursor: not-allowed; }
+input { font: inherit; font-size: .95rem; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; min-width: 0; }
+input:hover { border-color: var(--line-2); }
+.cta { font: 600 .98rem/1 var(--display); padding: 15px 26px; border-radius: 999px; border: 0; background: var(--volt); color: var(--on-volt); cursor: pointer; justify-self: start; }
+.cta:disabled { opacity: .4; cursor: not-allowed; }
 .dl { display: grid; gap: 6px; }
 .dl[hidden] { display: none; }
-.dlh { font: 600 .9rem/1.3 var(--body); margin: 0 0 8px; }
-.dl .file { display: flex; justify-content: space-between; align-items: center; gap: 12px; font: 500 .88rem/1.3 var(--body); color: var(--fg); background: var(--panel); border: 1px solid transparent; border-radius: 10px; padding: 11px 12px; cursor: pointer; text-align: left; }
-.dl .file:hover { border-color: var(--line); }
+.dlh { font: 600 .92rem/1.3 var(--display); margin: 0 0 10px; }
+.dl .file { display: flex; justify-content: space-between; align-items: center; gap: 12px; font: 500 .9rem/1.3 var(--display); color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 13px 14px; cursor: pointer; text-align: left; }
+.dl .file:hover { border-color: var(--violet); }
 .dl .file[aria-busy] { opacity: .6; cursor: progress; }
-.dl .meta { font: 400 .75rem/1 var(--mono); color: var(--muted); white-space: nowrap; }
-.dl .meta::after { content: " ↓"; }
-@media (max-width: 760px) { .build { grid-template-columns: minmax(0, 1fr); } }
-/* The solution: four points in one row */
-.usps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; }
-.usp { display: grid; gap: 8px; align-content: start; min-width: 0; }
-.usp svg { width: 30px; height: 30px; color: var(--brand); }
-.usp h3 { font: 600 1rem/1.3 var(--body); margin: 0; text-wrap: balance; }
-.usp p { font-size: .88rem; line-height: 1.45; color: var(--muted); }
-@media (max-width: 760px) { .usps { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.dl .meta { font: 400 .74rem/1 var(--mono); color: var(--muted); white-space: nowrap; }
+.dl .meta::after { content: "  ↓"; color: var(--volt); }
+
+/* clear signing */
+.screens { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; padding: 40px 28px 28px; border-radius: 28px; background: radial-gradient(60% 70% at 50% 35%, rgba(96, 0, 255, .30), transparent 70%), var(--surface); border: 1px solid var(--line); }
+.screens svg { max-width: 280px; margin: 0 auto; filter: drop-shadow(0 24px 40px rgba(0, 0, 0, .5)); }
+.screens figcaption { max-width: 34ch; margin: 0 auto; text-align: center; }
+
+/* inside */
+.two { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+.card { padding: 26px; border-radius: 24px; background: var(--surface); border: 1px solid var(--line); }
+.facts { display: grid; gap: 14px; align-content: start; min-width: 0; }
+.facts h3 { font: 600 1.2rem/1.3 var(--display); }
+ul.plain { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+ul.plain li { position: relative; padding-left: 22px; }
+ul.plain li::before { content: ""; position: absolute; left: 0; top: .62em; width: 8px; height: 8px; border-radius: 2px; transform: rotate(45deg); background: var(--violet); }
+
+/* architecture */
+.tablewrap { overflow-x: auto; border-radius: 20px; border: 1px solid var(--line); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+td, th { text-align: left; padding: 14px 18px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+th { font: 500 .7rem/1.2 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); }
+td:first-child { font: 600 .92rem/1.4 var(--display); white-space: nowrap; }
+td:nth-child(2) { color: var(--fg); }
+td:nth-child(3) { color: var(--muted); }
+.mono { font-family: var(--mono); font-size: .86em; }
+
+/* status */
+.status { display: grid; gap: 14px; padding: 30px; border-radius: 24px; background: linear-gradient(135deg, rgba(96, 0, 255, .18), rgba(96, 0, 255, 0) 60%), var(--surface); border: 1px solid var(--line); }
+.status > p { font-size: 1.05rem; }
+.status h3 { font: 600 .74rem/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--violet); margin-top: 10px; }
+.status ul.plain { color: var(--muted); }
+.badge { display: inline-flex; align-items: center; gap: 8px; justify-self: start; font: 600 .74rem/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--on-volt); background: var(--volt); padding: 8px 12px; border-radius: 999px; }
+.badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+/* closing band */
+.closer { display: block; position: relative; margin-inline: calc(50% - 50vw); padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px)); background: var(--bg) url("brand/silk-volt.jpg") center / cover no-repeat; overflow: hidden; }
+.closer::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, var(--bg) 0%, rgba(12, 13, 17, .25) 30%, rgba(12, 13, 17, .55) 100%); }
+.closer-in { position: relative; max-width: 1120px; margin: 0 auto; padding-block: 120px 110px; display: grid; gap: 22px; justify-items: start; }
+.closer h2 { font-size: clamp(2.2rem, 5vw, 3.6rem); max-width: 16ch; }
+.closer p { max-width: 50ch; color: #e4e7f3; }
+footer { max-width: 1120px; margin: 40px auto 0; display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; align-items: center; color: var(--faint); font: 500 .78rem/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+footer .mark { display: inline-flex; align-items: center; gap: 10px; color: var(--muted); }
+footer svg { width: 18px; height: 27px; color: var(--violet); }
+
+@media (max-width: 900px) {
+  .usps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hero-in { grid-template-columns: minmax(0, 1fr); min-height: 0; padding-block: 56px 40px; }
+  .hero-shot { order: -1; }
+  .hero-shot img { width: min(70%, 360px); }
+  .hero::before { background: linear-gradient(0deg, var(--bg) 0%, rgba(12,13,17,.75) 45%, rgba(12,13,17,.35) 100%); }
+}
+@media (max-width: 760px) {
+  main { gap: 88px; }
+  .build, .two, .losses { grid-template-columns: minmax(0, 1fr); }
+  .screens { grid-template-columns: minmax(0, 1fr); padding: 28px 16px 20px; }
+  .usps { grid-template-columns: minmax(0, 1fr); }
+  .config { padding: 18px; }
+}
+@media (prefers-reduced-motion: reduce) { .btn:hover { transform: none; } }
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -136,14 +210,32 @@ input { font: inherit; font-size: .95rem; color: var(--fg); background: var(--bg
   <linearGradient id="fGlass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".35" stop-color="#fff" stop-opacity="0"/></linearGradient>
 </defs></svg>
 <main>
-  <header class="col">
-    <div class="eyebrow">Ambire · hardware signer</div>
-    <h1 style="margin-top:12px">Ambire Signer</h1>
-    <p class="lede">The hardware signer built for Safe. Keys are created inside two certified security chips and never leave them, so there is no seed phrase to lose or leak. Every transaction is decoded on the device's own screen, one physical switch takes it fully offline, and the see-through case hides nothing.</p>
+  <header class="hero">
+    <div class="hero-in">
+      <div class="hero-copy">
+        <div class="eyebrow">Ambire · hardware signer</div>
+        <h1>Ambire Signer</h1>
+        <p class="tagline">The hardware signer <em>built for Safe.</em></p>
+        <p class="lede">Keys are created inside two certified security chips and never leave them, so there is no seed phrase to lose or leak. Every transaction is decoded on the device's own screen, one physical switch takes it fully offline, and the see-through case hides nothing.</p>
+        <div class="ctas">
+          <a class="btn primary" href="#configure">Configure yours</a>
+          <a class="btn ghost" href="#configure" data-open-diy>Build it yourself</a>
+        </div>
+        <div class="stats">
+          <div class="stat"><b>2</b><span>security chips</span></div>
+          <div class="stat"><b>0</b><span>seed phrases</span></div>
+          <div class="stat"><b>1</b><span>switch to go offline</span></div>
+        </div>
+      </div>
+      <div class="hero-shot"><img src="brand/signer.webp" alt="Ambire Signer in its translucent purple case, with the flame printed on the board inside" width="716" height="1167"></div>
+    </div>
   </header>
 
   <section>
-    <div class="eyebrow">Why it matters: what lost money in 2024–2026</div>
+    <div class="head">
+      <div class="eyebrow">Why it matters</div>
+      <h2>What lost money in 2024–2026</h2>
+    </div>
     <div class="losses">
       <div class="loss"><span class="amt">$1.4B</span><span class="what">Bybit, Feb 2025. Signers approved a Safe transaction their hardware wallets could not decode; it was a DELEGATECALL.</span></div>
       <div class="loss"><span class="amt">~$120M</span><span class="what">Coldcard, Jul 2026. A build bug generated seeds from a weak random-number generator.</span></div>
@@ -153,8 +245,10 @@ input { font: inherit; font-size: .95rem; color: var(--fg); background: var(--bg
   </section>
 
   <section>
-    <div class="eyebrow">The solution</div>
-    <h2>Ambire Signer</h2>
+    <div class="head">
+      <div class="eyebrow">The solution</div>
+      <h2>Four reasons it is different</h2>
+    </div>
     <div class="usps">
       <div class="usp">
         <svg viewBox="152 0 133 200" fill="currentColor" aria-hidden="true"><path d="M196.677 28.5842L184.32 63.602C184.251 63.7983 184.222 64.0065 184.236 64.2141C184.249 64.4218 184.305 64.6244 184.4 64.8098L195.913 87.459L164.272 105.394C164.181 105.446 164.079 105.479 163.974 105.49C163.869 105.502 163.763 105.492 163.662 105.46C163.561 105.429 163.468 105.377 163.388 105.308C163.308 105.239 163.243 105.154 163.197 105.059L156.35 90.7985C156.234 90.5591 156.183 90.2937 156.201 90.0284C156.218 89.7631 156.305 89.507 156.451 89.2852L196.371 28.4387C196.384 28.4143 196.404 28.394 196.427 28.3798C196.451 28.3656 196.478 28.3582 196.506 28.3582C196.533 28.3582 196.56 28.3656 196.584 28.3798C196.608 28.394 196.627 28.4143 196.64 28.4387C196.658 28.4581 196.67 28.4815 196.676 28.5069C196.683 28.5322 196.683 28.5588 196.677 28.5842Z"/><path d="M258.643 75.505L284.854 131.39C284.99 131.68 285.033 132.005 284.975 132.321C284.918 132.637 284.764 132.926 284.534 133.15L215.612 199.781C215.503 199.887 215.366 199.958 215.217 199.987C215.068 200.015 214.914 199.998 214.774 199.939C214.634 199.88 214.515 199.781 214.432 199.655C214.348 199.528 214.303 199.38 214.303 199.228V137.967L257.756 96.0006C257.904 95.8582 258.022 95.6876 258.103 95.499C258.184 95.3103 258.227 95.1074 258.228 94.902L258.352 75.5705C258.352 75.5357 258.364 75.502 258.385 75.4748C258.407 75.4476 258.437 75.4287 258.471 75.421C258.505 75.4134 258.541 75.4176 258.572 75.4328C258.603 75.4481 258.628 75.4736 258.643 75.505Z"/><path d="M184.254 64.0167L156.299 89.678C156.341 89.5497 156.399 89.4274 156.473 89.3143L196.393 28.4677C196.406 28.4464 196.424 28.4286 196.446 28.4159C196.467 28.4032 196.492 28.396 196.517 28.395C196.542 28.3935 196.567 28.3983 196.59 28.4089C196.613 28.4195 196.632 28.4357 196.648 28.4558C196.663 28.476 196.673 28.4996 196.676 28.5245C196.68 28.5495 196.678 28.5749 196.669 28.5987L184.312 63.6093C184.275 63.7418 184.255 63.8789 184.254 64.0167Z"/><path d="M284.97 132.335L258.003 95.6805C258.149 95.4418 258.227 95.1675 258.228 94.8874L258.345 75.556C258.344 75.5357 258.347 75.5156 258.355 75.4968C258.362 75.478 258.374 75.461 258.388 75.4468H258.439C258.462 75.4353 258.487 75.4293 258.512 75.4293C258.537 75.4293 258.562 75.4353 258.585 75.4468C258.61 75.4622 258.63 75.485 258.643 75.5123L284.854 131.397C284.991 131.689 285.032 132.018 284.97 132.335Z"/><path d="M214.878 0.223515L243.953 71.5761C244.031 71.7639 244.072 71.9655 244.072 72.1691C244.072 72.3727 244.031 72.5743 243.953 72.7621L196.946 182.843C196.896 182.958 196.819 183.058 196.722 183.137C196.626 183.215 196.511 183.269 196.389 183.293C196.267 183.317 196.14 183.312 196.021 183.276C195.901 183.241 195.792 183.177 195.703 183.091L152.468 141.292C152.2 141.032 152.036 140.684 152.005 140.312C151.975 139.94 152.08 139.569 152.301 139.269L213.976 55.6424C214.17 55.3763 214.275 55.0552 214.274 54.7257V0.33266C214.268 0.257404 214.289 0.182337 214.334 0.121948C214.38 0.0615584 214.446 0.0201256 214.52 0.00565629C214.594 -0.00881302 214.671 0.00470573 214.735 0.0435967C214.8 0.0824877 214.848 0.143991 214.87 0.216244L214.878 0.223515Z"/><path d="M214.216 55.184L244.091 72.0927C244.082 71.9151 244.043 71.7403 243.974 71.5761L214.899 0.223509C214.876 0.163048 214.833 0.111877 214.778 0.0777426C214.723 0.0436087 214.659 0.0283784 214.594 0.0343484C214.553 0.0347206 214.513 0.0432896 214.475 0.0595357C214.438 0.0757817 214.404 0.0993783 214.376 0.128936C214.348 0.158301 214.326 0.192901 214.311 0.230795C214.303 0.26924 214.303 0.308752 214.311 0.347197V54.7329C214.309 54.886 214.284 55.0381 214.238 55.184H214.216Z"/></svg>
@@ -162,32 +256,36 @@ input { font: inherit; font-size: .95rem; color: var(--fg); background: var(--bg
         <p>Designed around Ambire and Safe accounts from day one.</p>
       </div>
       <div class="usp">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/><path d="M10 14.5l-1.5 1.5 1.5 1.5M14 14.5l1.5 1.5-1.5 1.5"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M0 11.422c.104-.28.118-.785.176-1.093.09-.484.192-.945.335-1.417A12.03 12.03 0 0 1 6.73 1.6a11.98 11.98 0 0 1 9.155-.568 12.06 12.06 0 0 1 6.9 6.094 12 12 0 0 1 1.163 4.129c.01.092.024.196.053.283v1.738l-.007.019c-.066.191-.133.85-.171 1.086q-.124.756-.351 1.486a12.08 12.08 0 0 1-6.18 7.267c-.706.354-1.703.932-2.016-.165-.066-.231-.148-.47-.22-.7l-.586-1.88-.92-2.937c-.161-.513-.329-1.021-.471-1.54-.207-.75.57-.977 1.02-1.409a2.98 2.98 0 0 0 .61-3.399 3 3 0 0 0-1.7-1.54 3.130 3.130 0 0 0-2.32.125 2.98 2.98 0 0 0-1.516 1.7 2.986 2.986 0 0 0 .8 3.188c.438.403 1.162.614.94 1.346-.103.343-.206.705-.314 1.05l-.552 1.765q-.663 2.123-1.333 4.244c-.176.559-.565.76-1.122.546a11 11 0 0 1-1.185-.548 12 12 0 0 1-5.286-5.57 12.3 12.3 0 0 1-.8-2.285 16 16 0 0 1-.148-.77C.139 14.152.068 13.46 0 13.332z"/></svg>
         <h3>Private and open source</h3>
         <p>Open hardware and firmware. Anyone can inspect it, and anyone can build one.</p>
       </div>
       <div class="usp">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="5" r="1.6"/><circle cx="12" cy="5" r="1.6"/><circle cx="19" cy="5" r="1.6"/><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/><circle cx="5" cy="19" r="1.6"/><circle cx="12" cy="19" r="1.6"/><circle cx="19" cy="19" r="1.6"/><path d="M6.6 5h3.8M13.6 5h3.8M5 6.6v3.8M12 13.6v3.8M19 6.6v3.8M6.6 19h3.8M13.6 12h3.8M6.2 13.2l4.6 4.6"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 4H20M4 12H20M4 20H20M4 4V20M12 4V20M20 4V20M4 12L12 20M12 4L20 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity=".55"/><circle cx="4" cy="4" r="2.6"/><circle cx="12" cy="4" r="2.6"/><circle cx="20" cy="4" r="2.6"/><circle cx="4" cy="12" r="2.6"/><circle cx="12" cy="12" r="2.6"/><circle cx="20" cy="12" r="2.6"/><circle cx="4" cy="20" r="2.6"/><circle cx="12" cy="20" r="2.6"/><circle cx="20" cy="20" r="2.6"/></svg>
         <h3>Post-quantum ready</h3>
         <p>Add a post-quantum key to your Safe as soon as chains support it.</p>
       </div>
       <div class="usp">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2.5" width="14" height="19" rx="2.5"/><path d="M8.5 7h7M8.5 10.5h5"/><path d="M8.5 15.5l2 2 4-4"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12 4.5C6.3 4.5 2.4 8.9 1 12c1.4 3.1 5.3 7.5 11 7.5s9.6-4.4 11-7.5c-1.4-3.1-5.3-7.5-11-7.5Zm0 12.3a4.8 4.8 0 1 0 0-9.6 4.8 4.8 0 0 0 0 9.6Z"/><circle cx="12" cy="12" r="2.4"/></svg>
         <h3>Perfect clear signing</h3>
         <p>See exactly what you sign: every Safe action, decoded on the device.</p>
       </div>
     </div>
   </section>
 
-  <section>
-    <div class="eyebrow">Device configurator</div>
+  <section id="configure">
+    <div class="head">
+      <div class="eyebrow">Device configurator</div>
+      <h2>Make it yours</h2>
+      <p class="sub">Pick the board print and the case, then order one or download everything and build it yourself.</p>
+    </div>
     <div class="build">
       <figure class="viewer">
         <div class="stage" id="stage" role="img" aria-label="3D model of the Ambire Signer with its board and case. Drag to turn it.">
           <p class="stage-msg" id="stageMsg">Loading the 3D model…</p>
           <button type="button" class="tog onstage" id="explode" aria-pressed="false">Take apart</button>
         </div>
-        <figcaption><b>Make it yours.</b> Drag to turn it, or take it apart. The airgap switch is on the left edge, the power button on the right and USB-C at the bottom; the QR camera looks out through a window in the back. <span id="dims"></span></figcaption>
+        <figcaption>Drag to turn it, or take it apart. The airgap switch is on the left edge, the power button on the right and USB-C at the bottom; the QR camera looks out through a window in the back. <span id="dims"></span></figcaption>
       </figure>
 
       <div class="config">
@@ -247,9 +345,11 @@ input { font: inherit; font-size: .95rem; color: var(--fg); background: var(--bg
     </div>
   </section>
 
-
   <section>
-    <div class="eyebrow">Clear signing</div>
+    <div class="head">
+      <div class="eyebrow">Clear signing</div>
+      <h2>What you see is what you sign</h2>
+    </div>
     <div class="screens">
       <figure>
         <svg viewBox="0 0 200 300" role="img" aria-label="Signing screen">
@@ -289,7 +389,7 @@ input { font: inherit; font-size: .95rem; color: var(--fg); background: var(--bg
   <rect x="26" y="15" width="148" height="44" rx="5" fill="#c4372c"/>
   <g font-family="IBM Plex Sans, Helvetica, sans-serif" fill="#e9efe9">
     <text x="36" y="32" font-size="7" font-weight="600" letter-spacing=".6" fill="#fff">BLOCKED</text>
-    <text x="36" y="49" font-size="10.5" font-weight="600" fill="#fff">DELEGATECALL to unknown code</text>
+    <text x="36" y="49" font-size="10.5" font-weight="600" fill="#fff">Unknown DELEGATECALL</text>
     <text x="36" y="78" font-size="8.5">Hands control of the whole</text>
     <text x="36" y="90" font-size="8.5">Safe to another contract.</text>
     <text x="36" y="112" font-size="7" opacity=".55">TARGET</text>
@@ -309,38 +409,41 @@ input { font: inherit; font-size: .95rem; color: var(--fg); background: var(--bg
   </section>
 
   <section>
-    <div class="eyebrow">Inside</div>
+    <div class="head">
+      <div class="eyebrow">Inside</div>
+      <h2>Offline at the flip of a switch</h2>
+    </div>
     <div class="two">
-      <figure>
+      <figure class="card">
         <svg viewBox="0 0 440 250" role="img" aria-label="Airgap switch wiring">
   <g font-family="IBM Plex Sans, Helvetica, sans-serif" font-size="11.5" fill="var(--fg)">
     <rect x="14" y="96" width="104" height="52" rx="10" fill="var(--copper)"/>
     <text x="66" y="118" text-anchor="middle" font-weight="600" fill="#fff">Airgap</text>
     <text x="66" y="134" text-anchor="middle" fill="#fff">switch</text>
-    <rect x="186" y="20" width="132" height="46" rx="8" fill="var(--panel)" stroke="var(--line)"/>
+    <rect x="170" y="20" width="164" height="46" rx="8" fill="var(--panel)" stroke="var(--line)"/>
     <text x="252" y="40" text-anchor="middle" font-weight="600">USB data switch</text>
-    <text x="252" y="56" text-anchor="middle" fill="var(--muted)">D+ / D− disconnected</text>
-    <rect x="186" y="164" width="132" height="46" rx="8" fill="var(--panel)" stroke="var(--line)"/>
+    <text x="252" y="56" text-anchor="middle" fill="var(--muted)" font-size="10.5">USB data lines disconnected</text>
+    <rect x="170" y="164" width="164" height="46" rx="8" fill="var(--panel)" stroke="var(--line)"/>
     <text x="252" y="184" text-anchor="middle" font-weight="600">Radio power</text>
-    <text x="252" y="200" text-anchor="middle" fill="var(--muted)">whole module unpowered</text>
+    <text x="252" y="200" text-anchor="middle" fill="var(--muted)" font-size="10.5">whole module unpowered</text>
     <rect x="348" y="164" width="80" height="46" rx="8" fill="none" stroke="var(--muted)" stroke-dasharray="4 3"/>
     <text x="388" y="184" text-anchor="middle">BLE</text>
     <text x="388" y="200" text-anchor="middle" fill="var(--muted)">radio</text>
     <circle cx="378" cy="230" r="6" fill="#2f7d4f"/><circle cx="378" cy="230" r="10" fill="#2f7d4f" opacity=".2"/>
     <text x="392" y="234" fill="var(--muted)" font-size="11">light</text>
-    <path d="M118 112 C152 112 152 43 186 43" fill="none" stroke="var(--copper)" stroke-width="2.5"/>
-    <path d="M118 132 C152 132 152 187 186 187" fill="none" stroke="var(--copper)" stroke-width="2.5"/>
-    <path d="M318 187 H348" stroke="var(--fg)" stroke-width="1.5"/>
+    <path d="M118 112 C146 112 146 43 170 43" fill="none" stroke="var(--copper)" stroke-width="2.5"/>
+    <path d="M118 132 C146 132 146 187 170 187" fill="none" stroke="var(--copper)" stroke-width="2.5"/>
+    <path d="M334 187 H348" stroke="var(--fg)" stroke-width="1.5"/>
     <path d="M378 210 V220" stroke="var(--muted)" stroke-width="1.2"/>
     <rect x="14" y="190" width="104" height="40" rx="8" fill="none" stroke="var(--muted)"/>
     <text x="66" y="215" text-anchor="middle" fill="var(--muted)">MCU</text>
-    <path d="M118 210 H186" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="5 4"/>
+    <path d="M118 210 H170" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="5 4"/>
     <text x="124" y="226" fill="var(--muted)" font-size="10">can switch off, never on</text>
   </g>
 </svg>
         <figcaption><b>One switch, fully offline.</b> It cuts USB data and the radio's power in hardware, not software. The light is wired to the radio itself, so it cannot lie. Offline, the device signs over animated QR codes in both directions.</figcaption>
       </figure>
-      <div class="facts">
+      <div class="facts card">
         <h3>Built to be looked at</h3>
         <ul class="plain sub">
           <li>About the size of a credit card, and every part sits on the back, where the see-through case shows it.</li>
@@ -352,9 +455,11 @@ input { font: inherit; font-size: .95rem; color: var(--fg); background: var(--bg
     </div>
   </section>
 
-
-  <section class="col" style="max-width:none">
-    <div class="eyebrow">Architecture</div>
+  <section>
+    <div class="head">
+      <div class="eyebrow">Architecture</div>
+      <h2>Under the hood</h2>
+    </div>
     <div class="tablewrap">
       <table>
         <thead><tr><th>Part</th><th>Choice</th><th>Why</th></tr></thead>
@@ -373,23 +478,40 @@ input { font: inherit; font-size: .95rem; color: var(--fg); background: var(--bg
     </div>
   </section>
 
-  <section class="col">
-    <div class="eyebrow">Status · 17 October 2026</div>
+  <section class="col" style="max-width:780px">
+    <div class="head">
+      <div class="eyebrow">Status · 17 October 2026</div>
+      <h2>The first three are on their way</h2>
+    </div>
     <div class="status">
+      <span class="badge">Ordered</span>
       <p><b>The first three devices are ordered.</b> JLCPCB is making and assembling the boards. The screen, camera and battery go in by hand when they arrive.</p>
       <h3>Next</h3>
-      <ul class="plain sub">
+      <ul class="plain">
         <li>Firmware work starts soon, from a fork of Trezor's open-source firmware.</li>
         <li>A 3D-printed case for the first devices, from the model above.</li>
         <li>The hardware can replace a Ledger or Trezor. The first release focuses on what matters most to us: signing for Safe.</li>
       </ul>
       <h3>Different from the preview</h3>
-      <ul class="plain sub">
+      <ul class="plain">
         <li>The first boards are plain purple with the old wordmark. The preview shows the next print: the flame alone, in the colours above.</li>
       </ul>
     </div>
   </section>
 </main>
+
+<section class="closer">
+  <div class="closer-in">
+    <div class="eyebrow">Open hardware</div>
+    <h2>Build your own.</h2>
+    <p>Every file is on this page: the board, ready for JLCPCB or PCBWay, and a case you can print at home.</p>
+    <a class="btn primary" href="#configure" data-open-diy>Get the build files</a>
+  </div>
+</section>
+<footer>
+  <span class="mark"><svg viewBox="152 0 133 200" fill="currentColor" aria-hidden="true"><path d="M196.677 28.5842L184.32 63.602C184.251 63.7983 184.222 64.0065 184.236 64.2141C184.249 64.4218 184.305 64.6244 184.4 64.8098L195.913 87.459L164.272 105.394C164.181 105.446 164.079 105.479 163.974 105.49C163.869 105.502 163.763 105.492 163.662 105.46C163.561 105.429 163.468 105.377 163.388 105.308C163.308 105.239 163.243 105.154 163.197 105.059L156.35 90.7985C156.234 90.5591 156.183 90.2937 156.201 90.0284C156.218 89.7631 156.305 89.507 156.451 89.2852L196.371 28.4387C196.384 28.4143 196.404 28.394 196.427 28.3798C196.451 28.3656 196.478 28.3582 196.506 28.3582C196.533 28.3582 196.56 28.3656 196.584 28.3798C196.608 28.394 196.627 28.4143 196.64 28.4387C196.658 28.4581 196.67 28.4815 196.676 28.5069C196.683 28.5322 196.683 28.5588 196.677 28.5842Z"/><path d="M258.643 75.505L284.854 131.39C284.99 131.68 285.033 132.005 284.975 132.321C284.918 132.637 284.764 132.926 284.534 133.15L215.612 199.781C215.503 199.887 215.366 199.958 215.217 199.987C215.068 200.015 214.914 199.998 214.774 199.939C214.634 199.88 214.515 199.781 214.432 199.655C214.348 199.528 214.303 199.38 214.303 199.228V137.967L257.756 96.0006C257.904 95.8582 258.022 95.6876 258.103 95.499C258.184 95.3103 258.227 95.1074 258.228 94.902L258.352 75.5705C258.352 75.5357 258.364 75.502 258.385 75.4748C258.407 75.4476 258.437 75.4287 258.471 75.421C258.505 75.4134 258.541 75.4176 258.572 75.4328C258.603 75.4481 258.628 75.4736 258.643 75.505Z"/><path d="M184.254 64.0167L156.299 89.678C156.341 89.5497 156.399 89.4274 156.473 89.3143L196.393 28.4677C196.406 28.4464 196.424 28.4286 196.446 28.4159C196.467 28.4032 196.492 28.396 196.517 28.395C196.542 28.3935 196.567 28.3983 196.59 28.4089C196.613 28.4195 196.632 28.4357 196.648 28.4558C196.663 28.476 196.673 28.4996 196.676 28.5245C196.68 28.5495 196.678 28.5749 196.669 28.5987L184.312 63.6093C184.275 63.7418 184.255 63.8789 184.254 64.0167Z"/><path d="M284.97 132.335L258.003 95.6805C258.149 95.4418 258.227 95.1675 258.228 94.8874L258.345 75.556C258.344 75.5357 258.347 75.5156 258.355 75.4968C258.362 75.478 258.374 75.461 258.388 75.4468H258.439C258.462 75.4353 258.487 75.4293 258.512 75.4293C258.537 75.4293 258.562 75.4353 258.585 75.4468C258.61 75.4622 258.63 75.485 258.643 75.5123L284.854 131.397C284.991 131.689 285.032 132.018 284.97 132.335Z"/><path d="M214.878 0.223515L243.953 71.5761C244.031 71.7639 244.072 71.9655 244.072 72.1691C244.072 72.3727 244.031 72.5743 243.953 72.7621L196.946 182.843C196.896 182.958 196.819 183.058 196.722 183.137C196.626 183.215 196.511 183.269 196.389 183.293C196.267 183.317 196.14 183.312 196.021 183.276C195.901 183.241 195.792 183.177 195.703 183.091L152.468 141.292C152.2 141.032 152.036 140.684 152.005 140.312C151.975 139.94 152.08 139.569 152.301 139.269L213.976 55.6424C214.17 55.3763 214.275 55.0552 214.274 54.7257V0.33266C214.268 0.257404 214.289 0.182337 214.334 0.121948C214.38 0.0615584 214.446 0.0201256 214.52 0.00565629C214.594 -0.00881302 214.671 0.00470573 214.735 0.0435967C214.8 0.0824877 214.848 0.143991 214.87 0.216244L214.878 0.223515Z"/><path d="M214.216 55.184L244.091 72.0927C244.082 71.9151 244.043 71.7403 243.974 71.5761L214.899 0.223509C214.876 0.163048 214.833 0.111877 214.778 0.0777426C214.723 0.0436087 214.659 0.0283784 214.594 0.0343484C214.553 0.0347206 214.513 0.0432896 214.475 0.0595357C214.438 0.0757817 214.404 0.0993783 214.376 0.128936C214.348 0.158301 214.326 0.192901 214.311 0.230795C214.303 0.26924 214.303 0.308752 214.311 0.347197V54.7329C214.309 54.886 214.284 55.0381 214.238 55.184H214.216Z"/></svg>Ambire Signer · proto 0</span>
+  <span>Open hardware · Built for Safe</span>
+</footer>
 
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 <script type="module">
@@ -489,6 +611,22 @@ function flameTexture(flame, scheme) {
   return t;
 }
 
+// The stage behind the model: a soft brand-purple glow fading to the stage colour.
+function glowTexture(edge) {
+  const c = document.createElement("canvas");
+  c.width = c.height = 512;
+  const x = c.getContext("2d");
+  const g = x.createRadialGradient(256, 230, 10, 256, 256, 360);
+  g.addColorStop(0, "#3a1a8a");
+  g.addColorStop(0.45, "#1b1240");
+  g.addColorStop(1, edge);
+  x.fillStyle = g;
+  x.fillRect(0, 0, 512, 512);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
 function screenTexture(w, h) {
   const s = 16, c = document.createElement("canvas");
   c.width = Math.round(w * s);
@@ -549,6 +687,7 @@ function tabs(onDiy) {
 }
 $("tabOrder").addEventListener("click", () => tabs(false));
 $("tabDiy").addEventListener("click", () => tabs(true));
+for (const a of document.querySelectorAll("[data-open-diy]")) a.addEventListener("click", () => tabs(true));
 $("paneOrder").addEventListener("submit", (e) => e.preventDefault());
 
 // ── downloads: rebuilt from their text parts, handed to the viewer's downloads capability ──
@@ -622,11 +761,7 @@ async function main() {
   stage.prepend(renderer.domElement);
 
   const scene = new THREE.Scene();
-  const stageColor = () => getComputedStyle(stage).getPropertyValue("--stage").trim() || "#e9ebf0";
-  scene.background = new THREE.Color(stageColor());
-  const syncTheme = () => scene.background.set(stageColor());
-  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", syncTheme);
-  new MutationObserver(syncTheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  scene.background = glowTexture(getComputedStyle(stage).getPropertyValue("--stage").trim() || "#0f1016");
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(renderer), 0.04).texture;
   const key = new THREE.DirectionalLight(0xffffff, 1.4);
@@ -705,7 +840,7 @@ async function main() {
     b.addEventListener("click", () => setScheme(s));
     return b;
   }));
-  setScheme(d.schemes[0]);
+  setScheme(d.schemes.find((x) => x.id === "black") || d.schemes[0]);   // matches the hero shot
 
   // case
   const setCase = (name) => {

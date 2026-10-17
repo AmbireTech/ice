@@ -51,6 +51,7 @@ $KICAD_PY scripts/partialRoute.py --out /tmp/pr   # block wiring on a copy, hand
 $KICAD_PY scripts/routeGauge.py --out /tmp/gauge  # how routable: full autoroute on a copy, metrics in gauge.json
 $KICAD_PY scripts/checkParts.py board/wallet.kicad_pcb   # lands vs JLC's land per part
 ../../.venv-enclosure/bin/python enclosure/generate.py   # case from the board: enclosure/out/ (STEP, STL) + docs/enclosure/ (page preview)
+enclosure/render_hero.sh                  # the concept page's hero image from the 3D model (needs Chrome)
 ```
 
 - `board/footprints.json` picks each part's footprint, with pad maps where the
