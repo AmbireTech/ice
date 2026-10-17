@@ -65,8 +65,11 @@ export const SecureBlock = () => (
     <trace from=".U5 > .VOUT" to="net.SE_VCC" width={W_PWR_LITE} />
     <trace from=".U5 > .VCC" to="net.SE_VCC" width={W_PWR_LITE} />
 
+    {/* DNP on proto 0 (owner, 2026-10-17): JLC has none; fitting it later means
+        restoring jlcpcb C1518668 here and C1525 / C25741 on C_OPT / R_OPTRST below.
+        Unfitted is electrically safe: the SE050 keeps the bus and its pull-ups. */}
     <chip name="U16" footprint="pinrow11"
-      manufacturerPartNumber="SLS32AIA010MK" supplierPartNumbers={{ jlcpcb: ["C1518668"] }}
+      manufacturerPartNumber="SLS32AIA010MK"
       pinLabels={{ pin1: "GND", pin2: "NC2", pin3: "SDA", pin4: "NC4", pin5: "NC5", pin6: "NC6", pin7: "NC7",
         pin8: "SCL", pin9: "RST", pin10: "VCC", pin11: "EP" }}
       schX={0} schY={-16} schSectionName={S} />
@@ -78,9 +81,9 @@ export const SecureBlock = () => (
 
     {/* NXP specifies no decoupling; 100 nF on each supply node is the OM-SE050ARD practice. */}
     {/* OPTIGA: 100 nF at VCC (data sheet Figure 2). */}
-    {[["C_SEIN", "V3V3"], ["C_SEVCC", "SE_VCC"], ["C_OPT", "V3V3"]].map(([c, net]) => (
+    {[["C_SEIN", "V3V3", "C1525"], ["C_SEVCC", "SE_VCC", "C1525"], ["C_OPT", "V3V3", ""]].map(([c, net, jlc]) => (
       <group key={c}>
-        <capacitor name={c} capacitance="100nF" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C1525"] }}
+        <capacitor name={c} capacitance="100nF" footprint="0402" supplierPartNumbers={jlc ? { jlcpcb: [jlc] } : undefined}
           schX={3} schY={-10} schRotation="90deg" schSectionName={S} />
         <trace from={`.${c} > .pin1`} to={`net.${net}`} />
         <trace from={`.${c} > .pin2`} to="net.GND" />
@@ -89,9 +92,9 @@ export const SecureBlock = () => (
     {/* External pull-ups are required (the pads' own ~180 uA pulls are weak).
         ENA pulled high: the secure element runs unless the MCU parks it. */}
     {[["R_SESCL", "SE_SCL", "4.7k", "C25900"], ["R_SESDA", "SE_SDA", "4.7k", "C25900"],
-      ["R_SEENA", "SE_ENA", "100k", "C25741"], ["R_OPTRST", "OPTIGA_RST", "100k", "C25741"]].map(([r, net, v, jlc]) => (
+      ["R_SEENA", "SE_ENA", "100k", "C25741"], ["R_OPTRST", "OPTIGA_RST", "100k", ""]].map(([r, net, v, jlc]) => (
       <group key={r}>
-        <resistor name={r} resistance={v} footprint="0402" supplierPartNumbers={{ jlcpcb: [jlc] }}
+        <resistor name={r} resistance={v} footprint="0402" supplierPartNumbers={jlc ? { jlcpcb: [jlc] } : undefined}
           schX={-3} schY={-10} schRotation="90deg" schSectionName={S} />
         <trace from={`.${r} > .pin1`} to={`net.${net}`} />
         <trace from={`.${r} > .pin2`} to="net.V3V3" />

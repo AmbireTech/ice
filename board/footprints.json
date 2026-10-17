@@ -280,5 +280,6 @@
   "C_RCT": "Capacitor_SMD:C_0402_1005Metric",
   "U16": "Package_DFN_QFN:DFN-10-1EP_3x3mm_P0.5mm_EP1.7x2.5mm",
   "C_OPT": "Capacitor_SMD:C_0402_1005Metric",
-  "R_OPTRST": "Resistor_SMD:R_0402_1005Metric"
+  "R_OPTRST": "Resistor_SMD:R_0402_1005Metric",
+  "TP_RGND": "TestPoint:TestPoint_Pad_D1.0mm"
 }

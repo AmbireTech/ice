@@ -66,6 +66,7 @@ def pad_bbox_centre(pads):
 
 def main():
     board_path, outdir, db_path = sys.argv[1], sys.argv[2], sys.argv[3]
+    outdir = os.path.abspath(outdir)   # KiCad resolves a relative plot directory against the board file, not the cwd
     gerb_dir = os.path.join(outdir, "gerbers")
     work = os.path.join(outdir, "work")
     shutil.rmtree(gerb_dir, ignore_errors=True)

@@ -70,6 +70,7 @@ CTP_DROP = TFT_DROP + CTP_ABOVE_TFT
 TFT_END_Y = SLOT_C - (TFT_LEN - (SLOT_C - PANEL_S) - TFT_DROP)
 CTP_END_Y = SLOT_C - (CTP_LEN - (SLOT_C - PANEL_S) - CTP_DROP)
 TFT_ROW, CTP_ROW = 1.35, 1.05                 # connector origin to its contact row (north of origin)
+CTP_SLACK = 1.5      # mm of touch tail slack: a nominal-length tail landing exactly on the row left no margin for cell/tail tolerance (pre-order audit)
 TFT_SLACK = 2.5      # mm of TFT tail left as a gentle bow, buying a 4.6 mm routing channel south of the MCU (checkFpc allows 3)
 GAP = 0.5            # free board kept between courtyards: a via, or two 0.15 mm tracks
 OPT_RADIUS = 7.0     # how far the ratsnest pass may move a part from its seed (mm)
@@ -229,7 +230,7 @@ place("C_DOVDD", 24.6, 14.8, 0)
 # ── Display: TFT connector north of the slot, touch connector at the far end
 #    of its 56 mm tail, backlight pump west of the TFT connector ─────────────
 place("J_TFT", TFT_TAIL[0] + TFT_TAIL[1] / 2, TFT_END_Y + TFT_ROW + TFT_SLACK, 180)
-place("J_CTP", CTP_TAIL[0] + CTP_TAIL[1] / 2, CTP_END_Y + CTP_ROW, 180)
+place("J_CTP", CTP_TAIL[0] + CTP_TAIL[1] / 2, CTP_END_Y + CTP_ROW + CTP_SLACK, 180)
 # Touch/gauge I2C3 pull-ups, between the MCU's east pins 15/16 and J_CTP.
 place("R_SCL", 32.6, 15.2, 0)
 place("R_SDA", 32.6, 13.4, 0)
@@ -290,13 +291,12 @@ place("C_USBSW", 31.4, 69.6, 90)
 place("R_VB1", 23.6, 74.0, 90)
 place("R_VB2", 25.1, 74.0, 90)
 place("C_SYS", 35.2, 70.2, 0)
-# Out of J_BAT's plug strip, 1.9 mm from the charger's BAT pin (the strip also
-# pushes R_STAT2 and R_CE about 1 mm south of where the optimizer had them).
-place("C_BAT", 31.17, 72.95, 180)
+# Out of J_BAT's plug strip, beside the connector's BAT pin (owner's placement).
+place("C_BAT", 46.67, 75.11, -90)
 # Mouth inboard (west), pins at the edge: an outward mouth put the mated plug
 # through the enclosure wall (owner, 2026-10-17). The plug lies flat west of the
 # mouth over copper but not over parts: footprint_keepouts() keeps that strip.
-place("J_BAT", 42.6, 68.0, 90)
+place("J_BAT", 43.0, 68.6, 90)
 # Buck-boost between USB-C, the cell connector and the corner hole.
 place("U2", 37.6, 77.6, 0)
 place("C_IN_BUCK", 34.4, 77.6, 90)
@@ -584,22 +584,22 @@ def artwork(board):
     for a, c in (((4.0 + n, 4.5), (12.5, 4.5)), ((12.5, 4.5), (12.5, 13.0)), ((12.5, 13.0), (4.0, 13.0)),
                  ((4.0, 13.0), (4.0, 4.5 + n))):
         segment(board, *a, *c, pcbnew.B_SilkS, 0.15)
-    text(board, "QR CAMERA", 9.0, 2.6, pcbnew.B_SilkS, 0.8, 0.12)
+    text(board, "QR CAMERA", 9.0, 2.6, pcbnew.B_SilkS, 0.8, 0.15)
     # Antenna keep-out marker.
     ax0, ay0, ax1, ay1 = ANT_KEEPOUT
-    text(board, "ANT", (ax0 + ax1) / 2 + 0.6, (ay0 + ay1) / 2, pcbnew.B_SilkS, 0.8, 0.12, 90)
+    text(board, "ANT", (ax0 + ax1) / 2 + 0.6, (ay0 + ay1) / 2, pcbnew.B_SilkS, 0.8, 0.15, 90)
     # Switch and light legends: the two things a user must be able to read.
     # Which lever end is AIRGAP is a bring-up check (docs/design.md), so the
     # legend names the switch, not a position.
-    text(board, "AIRGAP", 5.2, 50.4, pcbnew.B_SilkS, 0.8, 0.12, 90)
-    text(board, "RADIO", 2.6, 64.4, pcbnew.B_SilkS, 0.8, 0.12)
+    text(board, "AIRGAP", 5.2, 50.4, pcbnew.B_SilkS, 0.8, 0.15, 90)
+    text(board, "RADIO", 2.6, 64.4, pcbnew.B_SilkS, 0.8, 0.15)
     lx0, ly0, lx1, ly1 = LABEL_SLOTS["SECURE ELEMENT"]
-    text(board, "SECURE ELEMENT", (lx0 + lx1) / 2, (ly0 + ly1) / 2, pcbnew.B_SilkS, 0.8, 0.12)
+    text(board, "SECURE ELEMENT", (lx0 + lx1) / 2, (ly0 + ly1) / 2, pcbnew.B_SilkS, 0.8, 0.15)
     # Brand: placeholder for the full-colour UV-printed Ambire artwork.
     drawing(board, 34.0, 4.5, 46.0, 13.5, pcbnew.Dwgs_User)
     text(board, "UV ARTWORK", (UV_PANEL[0] + UV_PANEL[2]) / 2, 12.6, pcbnew.Dwgs_User, 0.6, 0.08)
     text(board, "AMBIRE", 40.0, 9.0, pcbnew.B_SilkS, 2.0, 0.3)
-    text(board, "Ambire signer · proto 0", 13.0, H - 1.6, pcbnew.B_SilkS, 0.7, 0.12)
+    text(board, "Ambire signer · proto 0", 13.0, H - 1.6, pcbnew.B_SilkS, 0.7, 0.15)
 
 
 def write_project():
