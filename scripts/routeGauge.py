@@ -15,7 +15,8 @@ and DIR/gauge.json:
   unconnected, drc       KiCad's verdict on the routed copy
   new_mm                 added copper per layer; the front is the highway layer
   vias                   added signal vias / GND (stitching + return) vias
-  craft                  detours, wiggles, hairpins (hardware/carrier/.tools/audit_craft.py)
+  craft                  detours, wiggles, hairpins the routing added (hardware/carrier/.tools/
+                         audit_craft.py, findings already on the input board removed)
   facing                 per chip, how well its pins face their partners (+1 best)
   unreached_gnd          GND pads no pour reaches (each needs a connection by hand)
 The input board is never modified.
@@ -81,8 +82,14 @@ def main():
                new_mm={k: round(v) for k, v in sorted(new_mm.items())}, total_mm=round(sum(new_mm.values())),
                vias=dict(vias), unreached_gnd=unreached[-1].split(", ") if unreached else [])
     if CRAFT.exists():
-        c = subprocess.run([sys.executable, str(CRAFT), str(routed)], capture_output=True, text=True)
-        res["craft"] = [l.strip()[5:] for l in c.stdout.splitlines() if l.strip().startswith("NEW:")]
+        # only what the routing made: a finding already on the input board (the
+        # owner's own snaking track that the router merely extends) is not counted
+        def craft(path):
+            c = subprocess.run([sys.executable, str(CRAFT), str(path)], capture_output=True, text=True)
+            return [l.strip()[5:] for l in c.stdout.splitlines() if l.strip().startswith("NEW:")]
+        key = lambda f: f.split("@")[0].rsplit(":", 1)[0]       # kind:net, position-free
+        before_keys = {key(f) for f in craft(work / "wallet.kicad_pcb")}
+        res["craft"] = [f for f in craft(routed) if key(f) not in before_keys]
     sys.path.insert(0, str(HR))
     from analyze import pinFacing
     res["facing"] = {r: round(v["score"], 2) for r, v in pinFacing(pcbnew.LoadBoard(str(work / "wallet.kicad_pcb")),
