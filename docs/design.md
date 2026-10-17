@@ -346,6 +346,9 @@ $KICAD_PY scripts/cleanCopper.py BOARD --check       # gate: exit 1 if anything 
 $KICAD_PY scripts/widenFanouts.py IN [OUT]           # thicken 3.3 V pad-to-via links up to 0.4 mm
 $KICAD_PY scripts/stripGndTies.py IN [OUT]          # drop GND pad-to-via ties (pour + stitching instead)
 $KICAD_PY scripts/checkParts.py board/wallet.kicad_pcb   # each land vs the land JLC places that part on
+# JLC order set (refill zones and save in KiCad first: the export plots the fills as saved)
+$KICAD_PY production/export_fab.py board/wallet.kicad_pcb production/out production/jlc_rotation_db.csv
+python3 -I production/build_jlc_files.py production/out 10   # BOM + CPL (bottom side), JLC stock, rotation review
 python3 scripts/jlcStock.py             # live JLC stock for every part number
 ```
 

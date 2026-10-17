@@ -116,11 +116,17 @@ def style_text(fp, side):
             t.SetVisible(False)
 
 
+# The mated JST-PH plug (PHR-2) and its lead west of J_BAT's mouth: about 6 mm wide
+# and ~7 mm out from the header (*estimate*, check against the cell's lead).
+PLUG_MM, PLUG_W = 7.0, 6.0
+
+
 def footprint_keepouts(board):
     """The keep-out boxes, starting where each placed connector's courtyard ends,
     so a connector never sits in its own tail's keep-out."""
     fp = board.FindFootprintByReference
-    tft, ctp, cam = (_box(fp(r)) for r in ("J_TFT", "J_CTP", "J_CAM"))
+    tft, ctp, cam, bat = (_box(fp(r)) for r in ("J_TFT", "J_CTP", "J_CAM", "J_BAT"))
+    bat_y = sum(pcbnew.ToMM(p.GetPosition().y) for p in fp("J_BAT").Pads() if p.GetNumber() in ("1", "2")) / 2
     # The display tails are NOT keep-outs: low parts (passives, SOT/QFN ICs) may
     # sit under the flex; scripts/checkFpc.py fails a tall part in a corridor.
     return [
@@ -128,6 +134,7 @@ def footprint_keepouts(board):
         ("Camera flex", (CAMERA_HEAD[2], 2.2, cam[0] - 0.1, 15.3)),
         ("Camera fan-in", (cam[2], 0.3, cam[2] + CAM_FANIN, 15.5)),
         ("UV artwork", UV_PANEL),
+        ("Battery plug", (bat[0] - PLUG_MM, bat_y - PLUG_W / 2, bat[0], bat_y + PLUG_W / 2)),
     ]
 
 TOP, BOT = "top", "bottom"
@@ -283,8 +290,13 @@ place("C_USBSW", 31.4, 69.6, 90)
 place("R_VB1", 23.6, 74.0, 90)
 place("R_VB2", 25.1, 74.0, 90)
 place("C_SYS", 35.2, 70.2, 0)
-place("C_BAT", 35.2, 72.9, 0)
-place("J_BAT", 43.0, 68.6, -90)
+# Out of J_BAT's plug strip, 1.9 mm from the charger's BAT pin (the strip also
+# pushes R_STAT2 and R_CE about 1 mm south of where the optimizer had them).
+place("C_BAT", 31.17, 72.95, 180)
+# Mouth inboard (west), pins at the edge: an outward mouth put the mated plug
+# through the enclosure wall (owner, 2026-10-17). The plug lies flat west of the
+# mouth over copper but not over parts: footprint_keepouts() keeps that strip.
+place("J_BAT", 42.6, 68.0, 90)
 # Buck-boost between USB-C, the cell connector and the corner hole.
 place("U2", 37.6, 77.6, 0)
 place("C_IN_BUCK", 34.4, 77.6, 90)
