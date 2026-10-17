@@ -12,7 +12,9 @@ Kept, because the part asks for a short path to the plane:
   - the TPS60230 backlight charge pump (switching, exposed pad);
   - the BQ25185 charger's exposed pad (heat while charging);
   - the E73 radio module's ground pads (RF ground);
-  - the USBLC6 ESD clamp's ground (surge current).
+  - the USBLC6 ESD clamp's ground (surge current);
+  - C_USBSW / R_FB2 in the buck-boost corner: the owner's tie, without it the
+    pour is cut off there (2026-10-17).
 Afterwards the board is left with pads the pour may not reach and pour pieces
 without vias: run humanRouter with `--keep-copper --nets GND --knob
 fanoutParts=none`, which stitches and joins those pads to the pour.
@@ -26,7 +28,7 @@ import pcbnew
 NM = 1e6
 TIE_MM = 4.5
 KEEP = {"U2.2", "C_IN_BUCK.2", "C_3V3.2", "U13.7", "U13.14", "U13.17", "U1.5", "U1.11",
-        "U11.5", "U11.21", "D_ESD.2"}
+        "U11.5", "U11.21", "D_ESD.2", "C_USBSW.2", "R_FB2.2"}
 
 
 def touches(t, p):
