@@ -177,7 +177,7 @@ touch flex is merged into the TFT flex.
   longer than 10 mm is left with its bus.
 - **The gauge is the deterministic humanRouter full finish** (`scripts/routeGauge.py`,
   on a copy, with no GND fanouts and the pours stitched): the same board gives the
-  same numbers, so placements compare run against run. KiCadRoutingTools varied
+  same numbers to within ~0.1 % (1395 vs 1396 mm), so placements compare run against run. KiCadRoutingTools varied
   2 vs 6 failed nets on near-identical boards. The autorouted copper is a measure,
   never the deliverable.
 - **Bus return paths**: the back copper returns in In2 (GND), the front in In1

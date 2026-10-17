@@ -11,8 +11,8 @@ here is merged into it yet.
 
 ## Result (2026-10-17)
 
-Same autorouter run on both. It gives identical results for identical input, so
-the difference comes from the placement alone. Blocks were pre-routed in both;
+Same autorouter run on both. It repeats itself to within about 0.1 % on the same
+input, so a 10 % difference comes from the placement. Blocks were pre-routed in both;
 no GND via beside any GND pad; pours stitched.
 
 | | Copper the autorouter had to add | Front / back | Signal vias | Detours and wiggles flagged | Left unconnected |

@@ -6,8 +6,8 @@
 Runs humanizedKicadAutoRouter's full finish (tools/humanRouter, or HUMAN_ROUTER=/path)
 with --keep-copper, so every existing track and via stays, and with the owner's
 conventions: no GND via beside a GND pad (fanoutParts=none), the outer pours
-stitched to the GND plane. The router is deterministic, so two placements can be
-compared run against run (KiCadRoutingTools, the earlier gauge, gave 2 vs 6 failed
+stitched to the GND plane. The router repeats itself to within ~0.1 % (1395 vs 1396 mm
+on the same board), so two placements can be compared run against run (KiCadRoutingTools, the earlier gauge, gave 2 vs 6 failed
 nets on near-identical boards).
 
 Writes DIR/routed/<board> (the autorouted copy, a reference, never the deliverable)
