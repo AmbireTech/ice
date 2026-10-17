@@ -63,6 +63,16 @@ def pieces(board):
             return math.dist((p.x, p.y), (t.GetPosition().x, t.GetPosition().y)) <= t.GetWidth(pcbnew.F_Cu) / 2 + 1000
         return pcbnew.SEG(t.GetStart(), t.GetEnd()).Distance(p) <= t.GetWidth() / 2 + 1000
 
+    def on_pad(t, pd):
+        # copper overlapping the pad joins it, as in KiCad's own connectivity (not only an end inside it)
+        layer = pcbnew.B_Cu if t.GetClass() == "PCB_VIA" or t.GetLayer() == pcbnew.B_Cu else pcbnew.F_Cu
+        if not pd.IsOnLayer(layer):
+            return False
+        poly = pd.GetEffectivePolygon(layer)
+        if t.GetClass() == "PCB_VIA":
+            return poly.Distance(t.GetPosition()) <= t.GetWidth(layer) / 2
+        return poly.Collide(pcbnew.SEG(t.GetStart(), t.GetEnd()), t.GetWidth() // 2)
+
     by_net = {}
     for i, t in enumerate(items):
         by_net.setdefault(t.GetNetname(), []).append(i)
@@ -84,7 +94,7 @@ def pieces(board):
     stale = []
     for g in groups.values():
         net = g[0].GetNetname()
-        if not net or any(pd.HitTest(p) for t in g for p in ends(t) for pd in pads.get(net, [])):
+        if not net or any(on_pad(t, pd) for t in g for pd in pads.get(net, [])):
             continue
         stale += [t for t in g if t.GetClass() != "PCB_VIA"] if net == "GND" else g
     return stale
