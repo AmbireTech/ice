@@ -272,6 +272,37 @@ powers off by releasing `PWR_HOLD` and waiting ~2 s. Before that it puts the
 battery gauge in hibernate (~3 µA, still gauging). With USB plugged in and the
 device off, the cell charges and nothing else runs; there is no charge light.
 
+## Enclosure
+
+A two-part case: a back **shell** with the walls up to the board's front face,
+and a front **bezel** with the display window whose skirt laps over a tongue on
+the shell and snaps onto it. Target plastic: translucent purple.
+
+- **Built from the board, not typed in.** The generator reads the outline, slots,
+  mounting holes, camera keep-out and the power button's land from the board
+  file, and every modelled part from KiCad's own 3D export. The deepest part sets
+  the back cavity; whatever crosses the board edge (the USB-C mouth, the airgap
+  lever) gets a wall opening sized from its geometry, and a part crossing the edge
+  with no opening rule stops the build. Parts with no 3D model each carry a height
+  bound, so a new unmodelled part also stops it.
+- **Thickness, front to back:** bezel lip 0.8, panel 4.13 (Newhaven drawing),
+  cell 4.0 on 0.3 foam, board 1.0, back cavity 6.5, back 1.2. The back cavity is
+  set by the camera head (5.9 mm, hand-fitted, not in the board file); the
+  battery connector, at 5.6 mm, is the deepest modelled part.
+- **Board mounting:** four M2 self-tapping screws, driven from the front into
+  posts in the shell before the cell and panel go on. Three heads sit under the
+  panel, in the cell's 4.3 mm gap, clear of the cell. The post at the camera
+  corner is notched for the camera head (0.45 mm of wall left around its pilot).
+- **Camera:** an open window in the back, not plastic: tinted plastic blurs QR.
+- **Power button:** a tab cut into the east wall flexes in; a nub on it stops
+  0.1 mm short of the plunger tip, taken from the land's fab outline.
+- **Airgap lever:** its tip sits about 1 mm inside the wall, in a slot sized for
+  the lever plus its full travel. Operated with a pen tip, so it is hard to flip
+  by accident.
+- **Untested:** nothing is printed yet. The snap fit, the tab's stiffness, the
+  lever reach, and where the cell sits on the board (assumed centred under the
+  panel) all need a print and a board in hand.
+
 ## Bring-up checks that need parts in hand
 
 1. **Airgap switch direction**: confirm with a meter which lever position joins
