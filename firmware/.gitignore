@@ -1,0 +1,20 @@
+# Submodule checkouts made by fetch-vendor.sh (pinned in vendor-pins.txt)
+/trezor-firmware/crypto/tests/wycheproof/
+/trezor-firmware/vendor/QR-Code-generator/
+/trezor-firmware/vendor/cmsis_5/
+/trezor-firmware/vendor/cmsis_device_u5/
+/trezor-firmware/vendor/fido2-tests/
+/trezor-firmware/vendor/libopencm3/
+/trezor-firmware/vendor/libtropic/
+/trezor-firmware/vendor/micropython/
+/trezor-firmware/vendor/mldsa-native/
+/trezor-firmware/vendor/nanopb/
+/trezor-firmware/vendor/secp256k1-zkp/
+/trezor-firmware/vendor/sphincsplus/
+/trezor-firmware/vendor/stm32u5xx_hal_driver/
+/trezor-firmware/vendor/ts-tvl/
+
+# Build environment and outputs of docker-build.sh
+/trezor-firmware/.venv/
+/trezor-firmware/core/build/
+/out/

@@ -1,0 +1,433 @@
+from typing import TYPE_CHECKING
+
+from trezor.wire import DataError
+
+from .clear_signing import (
+    Array,
+    Atomic,
+    DisplayFormat,
+    parse_address,
+    parse_uint256,
+)
+from .yielding_vaults import UNKNOWN_VAULT, lookup_vault
+
+if TYPE_CHECKING:
+    from buffer_types import AnyBytes
+    from collections.abc import Coroutine, Iterable
+    from typing import Any
+
+    from trezor.messages import EthereumNetworkInfo, EthereumTokenInfo
+    from trezorui_api import StrPropertyType
+
+    from .definitions import Definitions
+    from .keychain import MsgInSignTx
+    from .yielding_vaults import EthereumVaultInfo
+
+# https://ethereum.org/developers/docs/standards/tokens/erc-4626
+FUNC_SIG_DEPOSIT = b"\x6e\x55\x3f\x65"
+FUNC_SIG_WITHDRAW = b"\xb4\x60\xaf\x94"
+FUNC_SIG_REDEEM = b"\xba\x08\x76\x52"
+FUNC_SIG_CLAIM = b"\x71\xee\x95\xc0"
+
+_MERKL_XYZ_CLAIM_DISTRIBUTOR_ADDR = (
+    b"\x3e\xf3\xd8\xba\x38\xeb\xe1\x8d\xb1\x33\xce\xc1\x08\xf4\xd1\x4c\xe0\x0d\xd9\xae"
+)
+
+# deposit(uint256 assets, address receiver)
+DEPOSIT_DISPLAY_FORMAT = DisplayFormat(
+    binding_context=None,
+    func_sig=FUNC_SIG_DEPOSIT,
+    provider_name=None,
+    intent="Deposit",
+    parameter_definitions=[
+        Atomic(parse_uint256),  # assets
+        Atomic(parse_address),  # receiver
+    ],
+    field_definitions=[],
+)
+
+# withdraw(uint256 assets, address receiver, address owner)
+WITHDRAW_DISPLAY_FORMAT = DisplayFormat(
+    binding_context=None,
+    func_sig=FUNC_SIG_WITHDRAW,
+    provider_name=None,
+    intent="Withdraw",
+    parameter_definitions=[
+        Atomic(parse_uint256),  # assets
+        Atomic(parse_address),  # receiver
+        Atomic(parse_address),  # owner
+    ],
+    field_definitions=[],
+)
+
+# redeem(uint256 shares, address receiver, address owner)
+REDEEM_DISPLAY_FORMAT = DisplayFormat(
+    binding_context=None,
+    func_sig=FUNC_SIG_REDEEM,
+    provider_name=None,
+    intent="Redeem",
+    parameter_definitions=[
+        Atomic(parse_uint256),  # shares
+        Atomic(parse_address),  # receiver
+        Atomic(parse_address),  # owner
+    ],
+    field_definitions=[],
+)
+
+# claim(address[] users, address[] tokens, uint256[] amounts, bytes32[][] proofs)
+# The proofs parameter is intentionally omitted from `parameter_definitions`:
+# we don't display it, so we skip the per-element parsing/allocations and only
+# manually validate the top-level array structure (see `_prepare_merkl_claim`).
+CLAIM_DISPLAY_FORMAT = DisplayFormat(
+    binding_context=None,
+    func_sig=FUNC_SIG_CLAIM,
+    provider_name=None,
+    intent="Claim",
+    parameter_definitions=[
+        Array(Atomic(parse_address)),  # users
+        Array(Atomic(parse_address)),  # tokens
+        Array(Atomic(parse_uint256)),  # amounts
+    ],
+    field_definitions=[],
+)
+
+
+def _is_merkl_xyz_claim(
+    func_sig: bytes, address_bytes: AnyBytes, chain_id: int
+) -> bool:
+    if func_sig != FUNC_SIG_CLAIM or address_bytes != _MERKL_XYZ_CLAIM_DISTRIBUTOR_ADDR:
+        return False
+
+    # https://api.merkl.xyz/v4/chains
+    _MERKL_XYZ_CHAIN_IDS = (
+        1,  # Ethereum
+        10,  # Optimism
+        30,  # Rootstock
+        50,  # XDC
+        56,  # BNB Chain
+        100,  # Gnosis
+        122,  # Fuse
+        130,  # Unichain
+        137,  # Polygon
+        143,  # Monad
+        146,  # Sonic
+        151,  # Redbelly
+        169,  # Manta
+        196,  # XLayer
+        239,  # TAC
+        250,  # Fantom
+        252,  # Fraxtal
+        324,  # ZKsync Era
+        480,  # World Chain
+        592,  # Astar
+        747,  # Flow
+        988,  # Stable
+        999,  # HyperEVM
+        1101,  # Polygon zkEVM
+        1135,  # Lisk
+        1284,  # Moonbeam
+        1329,  # Sei
+        1672,  # Pharos
+        1868,  # Soneium
+        1923,  # Swell
+        2020,  # Ronin
+        4114,  # Citrea
+        4217,  # Tempo
+        4326,  # MegaETH
+        4663,  # Robinhood Chain
+        5000,  # Mantle
+        5464,  # Saga EVM
+        6900,  # Nibiru
+        8217,  # Kaia
+        8453,  # Base
+        9745,  # Plasma
+        13371,  # Immutable
+        16661,  # 0g ai
+        25363,  # Fluent
+        31612,  # Mezo
+        34443,  # Mode
+        42161,  # Arbitrum
+        42220,  # Celo
+        42793,  # Etherlink
+        43111,  # Hemi
+        43114,  # Avalanche
+        48900,  # Zircuit
+        57073,  # Ink
+        59144,  # Linea
+        60808,  # BOB
+        80094,  # Berachain
+        81457,  # Blast
+        98866,  # Plume
+        167000,  # Taiko
+        534352,  # Scroll
+        685689,  # Gensyn
+        747474,  # Katana
+        1440000,  # XRPL EVM
+        5064014,  # Ethereal
+        21000000,  # Corn
+        2046399126,  # Skale
+    )
+
+    return chain_id in _MERKL_XYZ_CHAIN_IDS
+
+
+async def get_approver(
+    msg: MsgInSignTx,
+    initial_data: AnyBytes,
+    defs: Definitions,
+    address_bytes: bytes,
+    maximum_fee: str,
+    fee_items: Iterable[StrPropertyType],
+    sender_bytes: bytes,
+) -> Coroutine[Any, Any, None] | None:
+
+    from .clear_signing import SC_FUNC_SIG_BYTES
+
+    if msg.data_length > len(initial_data):
+        return None
+
+    # No more data should be loaded from host:
+    if len(initial_data) < SC_FUNC_SIG_BYTES:
+        return None
+
+    func_sig = bytes(initial_data[:SC_FUNC_SIG_BYTES])
+    calldata = memoryview(initial_data)[SC_FUNC_SIG_BYTES:]
+
+    if func_sig == FUNC_SIG_DEPOSIT:
+        display_format = DEPOSIT_DISPLAY_FORMAT
+    elif func_sig == FUNC_SIG_WITHDRAW:
+        display_format = WITHDRAW_DISPLAY_FORMAT
+    elif func_sig == FUNC_SIG_REDEEM:
+        display_format = REDEEM_DISPLAY_FORMAT
+    elif _is_merkl_xyz_claim(func_sig, address_bytes, defs.network.chain_id):
+        return await _prepare_merkl_claim(
+            calldata=calldata,
+            msg=msg,
+            network=defs.network,
+            maximum_fee=maximum_fee,
+            fee_items=fee_items,
+            sender_bytes=sender_bytes,
+        )
+    else:
+        return None
+
+    vault = lookup_vault(defs.network, address_bytes)
+
+    if func_sig == FUNC_SIG_REDEEM:
+        # redeem() amount is denominated in vault shares
+        token = vault.vault_token
+        if vault is UNKNOWN_VAULT and msg.supports_definition_request:
+            from .clear_signing import request_definitions
+
+            token_defs, _ = await request_definitions(msg.chain_id, address_bytes, None)
+            if token_defs is not None:
+                token = token_defs.get_token(address_bytes)
+    else:
+        # deposit() and withdraw() amounts are denominated in the underlying asset
+        token = await _get_asset_token(msg, defs, vault, address_bytes, func_sig)
+        if token is None:
+            return None
+
+    return await _prepare_vault_tx(
+        calldata=calldata,
+        display_format=display_format,
+        msg=msg,
+        network=defs.network,
+        maximum_fee=maximum_fee,
+        fee_items=fee_items,
+        sender_bytes=sender_bytes,
+        vault=vault,
+        token=token,
+    )
+
+
+async def _get_asset_token(
+    msg: MsgInSignTx,
+    defs: Definitions,
+    vault: EthereumVaultInfo,
+    address_bytes: bytes,
+    func_sig: bytes,
+) -> EthereumTokenInfo | None:
+    """Get the underlying asset token of a vault. For unknown vaults, the asset
+    token address is taken from the vault's external display format.
+
+    Returns `None` if the external display format has unexpected shape."""
+
+    if vault is not UNKNOWN_VAULT:
+        return vault.asset_token
+
+    from .clear_signing import (
+        TokenAmountFormatter,
+        find_display_format,
+        request_definitions,
+    )
+    from .tokens import UNKNOWN_TOKEN
+
+    ext_display_format = await find_display_format(func_sig, address_bytes, msg)
+    if ext_display_format is None:
+        return UNKNOWN_TOKEN
+
+    # The asset amount field is the one with a constant token address.
+    token_addr = None
+    for field in ext_display_format.field_definitions:
+        formatter = field.formatter
+        if (
+            isinstance(formatter, TokenAmountFormatter)
+            and formatter.const_token_address
+        ):
+            token_addr = formatter.const_token_address
+            break
+    if token_addr is None:
+        return None
+
+    # Checks built-in and request-provided token definitions first.
+    token = defs.get_token(token_addr)
+    if token is UNKNOWN_TOKEN and msg.supports_definition_request:
+        token_defs, _ = await request_definitions(msg.chain_id, token_addr, None)
+        if token_defs is not None:
+            token = token_defs.get_token(token_addr)
+    return token
+
+
+async def _prepare_vault_tx(
+    calldata: memoryview,
+    display_format: DisplayFormat,
+    msg: MsgInSignTx,
+    network: EthereumNetworkInfo,
+    maximum_fee: str,
+    fee_items: Iterable[StrPropertyType],
+    sender_bytes: bytes,
+    vault: EthereumVaultInfo,
+    token: EthereumTokenInfo,
+) -> Coroutine[Any, Any, None] | None:
+
+    from .clear_signing import InvalidFunctionCall
+    from .definitions import Definitions
+    from .layout import require_confirm_vault_tx
+
+    defs = Definitions(network, {})
+
+    try:
+        parameters, _ = await display_format.parse_calldata(calldata, msg, defs)
+
+        # All ERC-4626 vaults use the common file: https://github.com/ethereum/clear-signing-erc7730-registry/blob/master/ercs/calldata-erc4626-vaults.json
+        amount = parameters[0]
+        receiver_bytes = parameters[1]
+        owner_bytes = parameters[2] if len(parameters) > 2 else None
+
+        if (
+            not isinstance(amount, int)
+            or not isinstance(receiver_bytes, bytes)
+            or (owner_bytes is not None and not isinstance(owner_bytes, bytes))
+            or int.from_bytes(msg.value, "big") != 0
+            or amount == 0
+        ):
+            raise ValueError
+    except (ValueError, InvalidFunctionCall):
+        raise DataError("Invalid data for ERC-4626 vault transaction.")
+
+    # All atomic non-array fields for these 3 calls so this works.
+    params_size = len(display_format.parameter_definitions) * 32
+    calldata_suffix = calldata[params_size:] if len(calldata) > params_size else None
+
+    return require_confirm_vault_tx(
+        value=amount,
+        address_n=msg.address_n,
+        maximum_fee=maximum_fee,
+        fee_info_items=fee_items,
+        network=defs.network,
+        vault_str=(vault.name if vault is not UNKNOWN_VAULT else msg.to),
+        vault_is_address=vault is UNKNOWN_VAULT,
+        token=token,
+        func_sig=display_format.func_sig,
+        extra_data=calldata_suffix,
+        receiver_bytes=receiver_bytes if receiver_bytes != sender_bytes else None,
+        owner_bytes=owner_bytes if owner_bytes != sender_bytes else None,
+        chunkify=bool(msg.chunkify),
+    )
+
+
+async def _prepare_merkl_claim(
+    calldata: memoryview,
+    msg: MsgInSignTx,
+    network: EthereumNetworkInfo,
+    maximum_fee: str,
+    fee_items: Iterable[StrPropertyType],
+    sender_bytes: AnyBytes,
+) -> Coroutine[Any, Any, None] | None:
+
+    from .clear_signing import InvalidFunctionCall
+    from .definitions import Definitions
+    from .layout import require_confirm_claim_rewards
+    from .yielding_vaults import get_token_label
+
+    if int.from_bytes(msg.value, "big") != 0:
+        raise DataError("ETH transfer with Merkl.xyz claim not allowed")
+
+    defs = Definitions(network, {})
+
+    try:
+        parameters, _ = await CLAIM_DISPLAY_FORMAT.parse_calldata(calldata, msg, defs)
+        users, tokens, amounts = parameters
+        if (
+            not isinstance(users, list)
+            or not isinstance(tokens, list)
+            or not isinstance(amounts, list)
+        ):
+            raise ValueError
+
+        # The proofs head sits at offset 96, right after the three parsed array
+        # heads. We only validate that proofs is a well-formed top-level array
+        # whose length matches the others — we never read its elements.
+        _PROOFS_HEAD_OFFSET = 3 * 32
+        if _PROOFS_HEAD_OFFSET + 32 > len(calldata):
+            raise ValueError
+        proofs_body = int.from_bytes(
+            calldata[_PROOFS_HEAD_OFFSET : _PROOFS_HEAD_OFFSET + 32], "big"
+        )
+        if proofs_body + 32 > len(calldata):
+            raise ValueError
+        proofs_length = int.from_bytes(calldata[proofs_body : proofs_body + 32], "big")
+
+        if (
+            len(users) != len(tokens)
+            or len(tokens) != len(amounts)
+            or len(amounts) != proofs_length
+        ):
+            raise ValueError
+
+        if len(users) == 0:
+            raise ValueError
+
+        first_user = users[0]
+        if not isinstance(first_user, bytes):
+            raise ValueError
+
+    except (ValueError, InvalidFunctionCall):
+        raise DataError("Invalid data for claim rewards transaction")
+
+    # All receivers must be the same; otherwise revert to blind signing.
+    for other in users[1:]:
+        if other != first_user:
+            return None
+
+    # We don't show claim flows for non-signer users.
+    if sender_bytes != first_user:
+        return None
+
+    # Not sure about the UX if we fetch too many defintions so capping definition fetching to 4 for now.
+    try_fetch_definitions = len(tokens) <= 4
+
+    token_labels: list[str] = []
+    for token in tokens:
+        if not isinstance(token, bytes):
+            raise DataError("Invalid data for claim rewards transaction")
+        label = await get_token_label(token, network, msg, try_fetch_definitions)
+        token_labels.append(label)
+
+    return require_confirm_claim_rewards(
+        address_n=msg.address_n,
+        maximum_fee=maximum_fee,
+        fee_info_items=fee_items,
+        token_labels=token_labels,
+    )

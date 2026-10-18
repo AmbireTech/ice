@@ -1,0 +1,205 @@
+use num_traits::ToPrimitive;
+
+use super::firmware::{
+    AllowedTextContent, ConfirmHomescreen, ConfirmHomescreenMsg, DeviceMenuScreen, Homescreen,
+    HomescreenMsg, MnemonicInput, MnemonicKeyboard, MnemonicKeyboardMsg, NumberInput, PinKeyboard,
+    PinKeyboardMsg, ProgressScreen, SelectWordCountMsg, SelectWordCountScreen, SelectWordMsg,
+    SelectWordScreen, SetBrightnessScreen, StringInput, StringKeyboard, StringKeyboardMsg,
+    TextScreen, TextScreenMsg, ValueInput, ValueInputScreen, ValueInputScreenMsg,
+};
+use crate::micropython::{Error, Obj};
+use crate::ui::component::text::paragraphs::{Checklist, ParagraphVecShort};
+#[cfg(not(feature = "clippy"))]
+use crate::ui::component::{
+    text::paragraphs::{ParagraphSource, Paragraphs},
+    Component, Timeout,
+};
+use crate::ui::component::{FlowMsg, MsgMap};
+use crate::ui::layout::obj::ComponentMsgObj;
+use crate::ui::layout::result::{BACK, CANCELLED, CONFIRMED, INFO};
+
+impl ComponentMsgObj for PinKeyboard<'_> {
+    fn msg_try_into_obj(&self, msg: Self::Msg) -> Result<Obj, Error> {
+        match msg {
+            PinKeyboardMsg::Confirmed => self.pin().try_into(),
+            PinKeyboardMsg::Cancelled => Ok(CANCELLED.as_obj()),
+        }
+    }
+}
+
+impl<I: StringInput> ComponentMsgObj for StringKeyboard<I> {
+    fn msg_try_into_obj(&self, msg: Self::Msg) -> Result<Obj, Error> {
+        match msg {
+            StringKeyboardMsg::Confirmed(content) => content.as_str().try_into(),
+            StringKeyboardMsg::Cancelled => Ok(CANCELLED.as_obj()),
+        }
+    }
+}
+
+impl<T> ComponentMsgObj for MnemonicKeyboard<T>
+where
+    T: MnemonicInput,
+{
+    fn msg_try_into_obj(&self, msg: Self::Msg) -> Result<Obj, Error> {
+        match msg {
+            MnemonicKeyboardMsg::Confirmed => {
+                if let Some(word) = self.mnemonic() {
+                    word.try_into()
+                } else {
+                    fatal_error!("Invalid mnemonic")
+                }
+            }
+            MnemonicKeyboardMsg::Previous => "".try_into(),
+        }
+    }
+}
+
+// Clippy/compiler complains about conflicting implementations
+// TODO move the common impls to a common module
+#[cfg(not(feature = "clippy"))]
+impl<'a, T> ComponentMsgObj for Paragraphs<T>
+where
+    T: ParagraphSource<'a>,
+{
+    fn msg_try_into_obj(&self, _msg: Self::Msg) -> Result<Obj, Error> {
+        unreachable!()
+    }
+}
+
+// Clippy/compiler complains about conflicting implementations
+#[cfg(not(feature = "clippy"))]
+impl<T> ComponentMsgObj for (Timeout, T)
+where
+    T: Component<Msg = ()>,
+{
+    fn msg_try_into_obj(&self, _msg: Self::Msg) -> Result<Obj, Error> {
+        Ok(CANCELLED.as_obj())
+    }
+}
+
+impl ComponentMsgObj for Homescreen {
+    fn msg_try_into_obj(&self, msg: Self::Msg) -> Result<Obj, Error> {
+        match msg {
+            HomescreenMsg::Dismissed => Ok(CANCELLED.as_obj()),
+            HomescreenMsg::Menu => Ok(INFO.as_obj()),
+        }
+    }
+}
+
+impl ComponentMsgObj for ProgressScreen {
+    fn msg_try_into_obj(&self, _msg: Self::Msg) -> Result<Obj, Error> {
+        unreachable!()
+    }
+}
+
+impl<T> ComponentMsgObj for TextScreen<T>
+where
+    T: AllowedTextContent,
+{
+    fn msg_try_into_obj(&self, msg: Self::Msg) -> Result<Obj, Error> {
+        match msg {
+            TextScreenMsg::Cancelled => Ok(CANCELLED.as_obj()),
+            TextScreenMsg::Confirmed => Ok(CONFIRMED.as_obj()),
+            TextScreenMsg::Menu => Ok(INFO.as_obj()),
+        }
+    }
+}
+
+impl ComponentMsgObj for SelectWordScreen {
+    fn msg_try_into_obj(&self, msg: Self::Msg) -> Result<Obj, Error> {
+        match msg {
+            SelectWordMsg::Selected(i) => i.try_into(),
+            SelectWordMsg::Cancelled => Ok(CANCELLED.as_obj()),
+        }
+    }
+}
+
+impl ComponentMsgObj for SelectWordCountScreen {
+    fn msg_try_into_obj(&self, msg: Self::Msg) -> Result<Obj, Error> {
+        match msg {
+            SelectWordCountMsg::Selected(i) => i.try_into(),
+            SelectWordCountMsg::Cancelled => Ok(CANCELLED.as_obj()),
+        }
+    }
+}
+
+impl<T: ValueInput> ComponentMsgObj for ValueInputScreen<T> {
+    fn msg_try_into_obj(&self, msg: Self::Msg) -> Result<Obj, Error> {
+        match msg {
+            ValueInputScreenMsg::Confirmed(i) => i.try_into(),
+            ValueInputScreenMsg::Cancelled => Ok(CANCELLED.as_obj()),
+            // menu message is handled only in the flow
+            ValueInputScreenMsg::Menu => unreachable!(),
+            // changed value message is handled only in the flow
+            ValueInputScreenMsg::Changed(_) => unreachable!(),
+        }
+    }
+}
+
+/// Layout returned by `show_checklist`: the checklist of backup steps with an
+/// optional back button (chevron-up) in place of the cancel button.
+pub type ChecklistScreen =
+    MsgMap<TextScreen<Checklist<ParagraphVecShort<'static>>>, fn(TextScreenMsg) -> Option<FlowMsg>>;
+
+impl ComponentMsgObj for ChecklistScreen {
+    fn msg_try_into_obj(&self, msg: Self::Msg) -> Result<Obj, Error> {
+        // `TryFrom<FlowMsg> for Obj` covers all the emitted variants,
+        // including `FlowMsg::Back`.
+        msg.try_into()
+    }
+}
+
+/// Layout returned by `request_number`: the number input screen with the
+/// "more info" menu button in the header.
+pub type RequestNumberScreen =
+    MsgMap<ValueInputScreen<NumberInput>, fn(ValueInputScreenMsg) -> Option<FlowMsg>>;
+
+impl ComponentMsgObj for RequestNumberScreen {
+    fn msg_try_into_obj(&self, msg: Self::Msg) -> Result<Obj, Error> {
+        // Return not only the result, but also the currently displayed number,
+        // so that Python can e.g. show the corresponding "more info" text.
+        let value: u32 = self.inner().value();
+        match msg {
+            FlowMsg::Confirmed => Ok((CONFIRMED.as_obj(), value).try_into()?),
+            FlowMsg::Back => Ok((BACK.as_obj(), value).try_into()?),
+            FlowMsg::Info => Ok((INFO.as_obj(), value).try_into()?),
+            msg => msg.try_into(),
+        }
+    }
+}
+
+impl ComponentMsgObj for ConfirmHomescreen {
+    fn msg_try_into_obj(&self, msg: Self::Msg) -> Result<Obj, Error> {
+        match msg {
+            ConfirmHomescreenMsg::Cancelled => Ok(CANCELLED.as_obj()),
+            ConfirmHomescreenMsg::Confirmed => Ok(CONFIRMED.as_obj()),
+        }
+    }
+}
+
+impl ComponentMsgObj for SetBrightnessScreen {
+    fn msg_try_into_obj(&self, _msg: Self::Msg) -> Result<Obj, Error> {
+        Ok(CONFIRMED.as_obj())
+    }
+}
+
+impl ComponentMsgObj for DeviceMenuScreen {
+    fn msg_try_into_obj(&self, msg: Self::Msg) -> Result<Obj, Error> {
+        let next_menu_id = self.next_menu_id(msg);
+        let vertical_offset: u16 = match self.current_state() {
+            // If the same menu will be displayed, reuse current menu offset.
+            Some((current_menu_id, vertical_offset)) if current_menu_id == next_menu_id => {
+                // Only non-negative offsets are used.
+                vertical_offset.try_into().unwrap_or(0)
+            }
+            _ => 0, // Otherwise, don't reapply current menu offset.
+        };
+        (
+            msg.id_to_obj(),
+            msg.args_to_obj(),
+            next_menu_id.to_u8(),
+            vertical_offset,
+        )
+            .try_into()
+    }
+}

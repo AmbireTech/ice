@@ -1,0 +1,51 @@
+use xbuild::{CLibrary, Result, bail_unsupported};
+
+pub fn def_module(lib: &mut CLibrary) -> Result<()> {
+    lib.add_include("task/inc");
+    lib.add_rust_bindings(add_rust_bindings)?;
+
+    lib.add_sources(["task/pminfo.c", "task/system.c", "task/sysevent.c"]);
+
+    if cfg!(feature = "applets") {
+        lib.add_define("USE_APPLETS", Some("1"));
+        lib.add_source("task/applet.c");
+    }
+
+    if cfg!(feature = "app_loading") {
+        lib.add_define("USE_APP_LOADING", Some("1"));
+    }
+
+    if cfg!(feature = "emulator") {
+        lib.add_sources([
+            "task/unix/coreapp.c",
+            "task/unix/sdl_event.c",
+            "task/unix/systask.c",
+            "task/unix/system.c",
+        ]);
+    } else if cfg!(feature = "mcu_stm32") {
+        lib.add_sources([
+            "task/stm32/coreapp.c",
+            "task/stm32/systask.c",
+            "task/stm32/system.c",
+        ]);
+    } else {
+        bail_unsupported!();
+    }
+
+    Ok(())
+}
+
+fn add_rust_bindings(builder: bindgen::Builder) -> Result<bindgen::Builder> {
+    let builder = builder
+        // systask.h
+        .header("task/inc/sys/systask.h")
+        .allowlist_type("systask_id_t")
+        .allowlist_var("SYSTASK_MAX_TASKS")
+        // sysevent.h
+        .header("task/inc/sys/sysevent.h")
+        .allowlist_function("sysevents_poll")
+        .allowlist_type("syshandle_t")
+        .allowlist_type("sysevents_t")
+        .allowlist_type("syshandle_mask_t");
+    Ok(builder)
+}

@@ -1,0 +1,15 @@
+# trezor-firmware 5fdc180b99bd763c3d18411bba686909875eb337 (2026-10-16) submodule pins: path url commit
+crypto/tests/wycheproof https://github.com/google/wycheproof fc24cd5b787d8e496bff31b0468af693a652b0f2
+vendor/QR-Code-generator https://github.com/nayuki/QR-Code-generator.git 3c6d0b3cefb4e049dc337e82237c9644399716a8
+vendor/cmsis_5 https://github.com/ARM-software/CMSIS_5.git a75f01746df18bb5b929dfb8dc6c9407fac3a0f3
+vendor/cmsis_device_u5 https://github.com/STMicroelectronics/cmsis_device_u5.git f439f9687257f8e69daccb8dc6c4d1ed8dab73aa
+vendor/fido2-tests https://github.com/trezor/fido2-tests.git aa9775755e57831b6f0e5e6621142ba1479a1396
+vendor/libopencm3 https://github.com/libopencm3/libopencm3.git 5617ed466444790b787b6df8d7f21d1611905fd1
+vendor/libtropic https://github.com/tropicsquare/libtropic.git 0aa7e8873f08b0727138b7887b942268afca468a
+vendor/micropython https://github.com/trezor/micropython.git 579c7624bd2224c7e038504e4bc3de591a9fbcf9
+vendor/mldsa-native https://github.com/pq-code-package/mldsa-native.git db65535319d9750d75d34c6d170677415f9d2c46
+vendor/nanopb https://github.com/nanopb/nanopb.git c9124132a604047d0ef97a09c0e99cd9bed2c818
+vendor/secp256k1-zkp https://github.com/bitcoin-core/secp256k1.git 1a53f4961f337b4d166c25fce72ef0dc88806618
+vendor/sphincsplus https://github.com/sphincs/sphincsplus/ 129b72c80e122a22a61f71b5d2b042770890ccee
+vendor/stm32u5xx_hal_driver https://github.com/trezor/stm32u5xx_hal_driver.git 270974ea816779656ac8bb183344ac017e693677
+vendor/ts-tvl https://github.com/tropicsquare/ts-tvl c28a7d8865866baf442d53e01559e6d3fa87b9e4
