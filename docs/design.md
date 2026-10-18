@@ -152,14 +152,16 @@ touch flex is merged into the TFT flex.
 - **The front is incognito.** No brand mark on the front (bezel, chin or case): a
   signer should not advertise what it is. The brand lives only on the back's UV
   artwork, behind the clear case.
-- Brand: the back face is UV-printed (JLC multi-colour silkscreen) with the
-  artwork in `art/` ("the only way in is light": Ambire Black with brand-colour
-  beams from the camera window, the official logo in the reserved 12 × 9 mm
-  panel). JLC's colour print needs **white solder mask and ENIG**, and is
-  ordered through EasyEDA Pro. `art/build_uv.py` rebuilds the print file from
-  the current board and refuses to put ink on any pad or hole. If the board is
-  ordered with colour print, delete the plain-silk duplicates (AMBIRE,
-  QR CAMERA, SECURE ELEMENT, AIRGAP, RADIO) so they don't print twice.
+- Brand: the back carries the Ambire flame alone, in ordinary silkscreen: as
+  wide as the board less 1.2 mm a side, one ink with a 0.35 mm gap between facets,
+  cut back from pads, holes, vias, the edge, footprint silkscreen and the
+  human-readable labels (QR CAMERA, SECURE ELEMENT, AIRGAP, RADIO, ANT), which
+  stay as clean islands. The word "Ambire" is nowhere on the board.
+  `scripts/silkFlame.py` draws it (group FLAME, replaced on a rerun, DRC checked
+  on a copy before it installs); `art/flame.py` is the geometry, shared with the
+  concept page's preview. A full-colour version (purple on neon and the like)
+  needs PCBWay's colour print; `art/build_uv.py` still builds the older
+  "light beams" artwork for that route.
 
 ## Placement for routing
 
