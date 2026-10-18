@@ -29,6 +29,8 @@ pub fn def_module(lib: &mut CLibrary) -> Result<()> {
         add_driver_ltdc_dsi(lib)?;
     } else if cfg!(feature = "display_i8080") {
         add_driver_i8080(lib)?;
+    } else if cfg!(feature = "display_spi") {
+        add_driver_spi(lib)?;
     } else if cfg!(feature = "display_vg2864") {
         add_driver_vg2864(lib)?;
     } else if cfg!(feature = "display_stm32f429i_disc1") {
@@ -203,6 +205,38 @@ fn add_driver_i8080(lib: &mut CLibrary) -> Result<()> {
             ]);
         } else {
             bail_unsupported!();
+        }
+    } else {
+        bail_unsupported!();
+    }
+    Ok(())
+}
+
+// The i8080 driver's panels over 4-wire SPI: the same driver and panel code,
+// with display_io_spi.c as the transport and its DMA instead of bg_copy.
+fn add_driver_spi(lib: &mut CLibrary) -> Result<()> {
+    if cfg!(feature = "mcu_stm32u58") {
+        lib.add_sources([
+            "display/i8080/display_driver.c",
+            "display/i8080/display_io_spi.c",
+            "display/i8080/display_panel.c",
+        ]);
+        if cfg!(feature = "display_panel_lx154a2482") {
+            set_panel_lx154a2482(lib);
+            lib.add_source("display/i8080/panels/lx154a2482.c");
+        } else if cfg!(feature = "display_panel_dem240320b1") {
+            set_panel_dem240320b1(lib);
+            lib.add_source("display/i8080/panels/dem240320b1.c");
+        } else {
+            bail_unsupported!();
+        }
+        if cfg!(feature = "framebuffer") {
+            lib.add_sources([
+                "display/fb_queue/fb_queue.c",
+                "display/i8080/display_fb.c",
+            ]);
+        } else {
+            lib.add_source("display/i8080/display_nofb.c");
         }
     } else {
         bail_unsupported!();

@@ -93,6 +93,7 @@ uint32_t display_panel_identify(void) {
 uint32_t display_panel_identify(void) { return DISPLAY_ID_ST7789V; }
 #endif
 
+#ifndef DISPLAY_SPI  // reads the panel; the SPI transport is write-only
 bool display_panel_is_inverted() {
   bool inv_on = false;
   uint32_t id = display_panel_identify();
@@ -111,6 +112,7 @@ bool display_panel_is_inverted() {
 
   return inv_on;
 }
+#endif  // DISPLAY_SPI
 
 void display_panel_sleep(void) {
   uint32_t id = display_panel_identify();

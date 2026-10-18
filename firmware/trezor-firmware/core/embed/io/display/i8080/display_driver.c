@@ -67,17 +67,28 @@ bool display_init(display_content_mode_t mode) {
     display_panel_preserve_inversion();
 #endif
     display_io_init_gpio();
+#ifdef DISPLAY_SPI
+    // SPI sends pixels MSB first, the panel's default byte order
+    display_io_init_spi();
+    display_panel_init();
+#else
     display_io_init_fmc();
     display_panel_init();
     display_panel_set_little_endian();
+#endif
     backlight_init(BACKLIGHT_RESET, GAMMA_EXP);
   } else {
+#ifdef DISPLAY_SPI
+    // The previous stage left the GPIOs set; the SPI restarts from reset
+    display_io_init_spi();
+#else
     // Reinitialize FMC to set correct timing
     // We have to do this in reinit because boardloader is fixed.
     display_io_init_fmc();
 
     // Important for model T as this is not set in boardloader
     display_panel_set_little_endian();
+#endif
     display_panel_reinit();
     backlight_init(BACKLIGHT_RETAIN, GAMMA_EXP);
   }

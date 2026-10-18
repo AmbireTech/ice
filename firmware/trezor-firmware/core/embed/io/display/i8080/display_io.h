@@ -24,8 +24,43 @@
 #include <trezor_types.h>
 
 void display_io_init_gpio(void);
-void display_io_init_fmc(void);
 void display_io_init_te_interrupt(void);
+
+#ifdef DISPLAY_SPI
+
+// 4-wire SPI transport (display_io_spi.c). Write-only: no panel reads.
+
+#if !defined(DISPLAY_RST_PORT) || !defined(DISPLAY_RST_PIN) || \
+    !defined(DISPLAY_DC_PORT) || !defined(DISPLAY_DC_PIN) ||   \
+    !defined(DISPLAY_CS_PORT) || !defined(DISPLAY_CS_PIN)
+#error \
+    "Board header must define DISPLAY_RST_PORT/PIN, DISPLAY_DC_PORT/PIN and DISPLAY_CS_PORT/PIN"
+#endif
+
+#ifdef DISPLAY_IDENTIFY
+#error "DISPLAY_IDENTIFY reads the panel, which the SPI transport cannot do"
+#endif
+
+void display_io_init_spi(void);
+void display_io_spi_cmd(uint8_t cmd);
+void display_io_spi_data(uint8_t data);
+
+typedef void (*display_io_spi_callback_t)(void);
+
+// Sends `size` bytes of RGB565 pixels by DMA, after the RAMWR command, and
+// calls `callback` from the interrupt context when done
+void display_io_spi_start_dma(const uint8_t *src, size_t size,
+                              display_io_spi_callback_t callback);
+
+#define ISSUE_CMD_BYTE(X) display_io_spi_cmd(X)
+#define ISSUE_DATA_BYTE(X) display_io_spi_data(X)
+#define ISSUE_PIXEL_DATA(X)          \
+  display_io_spi_data((X) >> 8);     \
+  display_io_spi_data((X) & 0xFF)
+
+#else  // DISPLAY_SPI
+
+void display_io_init_fmc(void);
 
 #ifndef FMC_BANK1
 #define FMC_BANK1 0x60000000U
@@ -72,5 +107,7 @@ extern __IO DISP_MEM_TYPE *const DISPLAY_DATA_ADDRESS;
   ISSUE_DATA_BYTE((X) & 0xFF); \
   ISSUE_DATA_BYTE((X) >> 8)
 #endif
+
+#endif  // DISPLAY_SPI
 
 #endif  // TREZORHAL_DISPLAY_IO_H

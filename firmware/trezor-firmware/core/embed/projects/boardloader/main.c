@@ -17,6 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <trezor_bsp.h>
 #include <trezor_model.h>
 #include <trezor_rtl.h>
 
@@ -312,7 +313,29 @@ static inline void ensure_signed_bootloader(
 }
 #endif
 
+#ifdef POWER_HOLD_PIN
+// Latches the board's power on. The power button only lifts the regulator
+// enable while pressed (plus ~1 s of RC hold), so this runs before anything
+// that can take time or reset. Later stages never touch the pin; across a
+// reset the RC holds the rail until the boardloader sets it again.
+static void power_hold_init(void) {
+  POWER_HOLD_CLK_EN();
+  HAL_GPIO_WritePin(POWER_HOLD_PORT, POWER_HOLD_PIN, GPIO_PIN_SET);
+  GPIO_InitTypeDef GPIO_InitStructure = {
+      .Pin = POWER_HOLD_PIN,
+      .Mode = GPIO_MODE_OUTPUT_PP,
+      .Pull = GPIO_NOPULL,
+      .Speed = GPIO_SPEED_FREQ_LOW,
+  };
+  HAL_GPIO_Init(POWER_HOLD_PORT, &GPIO_InitStructure);
+}
+#endif
+
 int main(void) {
+#ifdef POWER_HOLD_PIN
+  power_hold_init();
+#endif
+
 #ifdef USE_TRUSTZONE
   tz_init();
 #endif

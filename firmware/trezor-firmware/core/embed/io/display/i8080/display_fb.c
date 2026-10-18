@@ -37,7 +37,7 @@
 #include <sys/trustzone.h>
 #endif
 
-#ifndef BOARDLOADER
+#if !defined(BOARDLOADER) && !defined(DISPLAY_SPI)
 #include "../bg_copy/bg_copy.h"
 #endif
 
@@ -139,9 +139,15 @@ static void start_fb_copy(void) {
 
     if (fb_idx >= 0) {
       display_panel_set_window(0, 0, DISPLAY_RESX - 1, DISPLAY_RESY - 1);
+#ifdef DISPLAY_SPI
+      display_io_spi_start_dma(get_fb_ptr(fb_idx),
+                               DISPLAY_RESX * DISPLAY_RESY * 2,
+                               bg_copy_callback);
+#else
       bg_copy_start_const_out_8(get_fb_ptr(fb_idx),
                                 (uint8_t *)DISPLAY_DATA_ADDRESS,
                                 PHYSICAL_FRAME_BUFFER_SIZE, bg_copy_callback);
+#endif
     }
   }
 }

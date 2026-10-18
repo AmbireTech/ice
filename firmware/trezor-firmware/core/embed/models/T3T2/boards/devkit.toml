@@ -18,4 +18,8 @@ panel = "io/touch_panel_lx154a2422cpt23"
 
 [nrf]
 
+# SMP (nRF management over the UART) is a property of the radio, not the
+# model: boards without the nRF leave it out.
+[smp]
+
 [nrf_auth]

@@ -54,6 +54,11 @@ fn set_panel_t2t1(_lib: &mut CLibrary) {
     // back to identity mapping when no TOUCH_PANEL_* macro is defined.
 }
 
+fn set_panel_nhd240320af(_lib: &mut CLibrary) {
+    // Newhaven NHD-2.4-240320AF (FT5426): identity mapping until a
+    // correction is measured on the panel.
+}
+
 fn set_panel_lx154a2422cpt23(lib: &mut CLibrary) {
     lib.add_define("TOUCH_PANEL_LX154A2422CPT23", Some("1"));
 }
@@ -71,6 +76,8 @@ fn add_driver_ft6x36(lib: &mut CLibrary) -> Result<()> {
     lib.add_source("touch/ft6x36/ft6x36.c");
     if cfg!(feature = "touch_panel_t2t1") {
         set_panel_t2t1(lib);
+    } else if cfg!(feature = "touch_panel_nhd240320af") {
+        set_panel_nhd240320af(lib);
     } else if cfg!(feature = "touch_panel_lx154a2422cpt23") {
         set_panel_lx154a2422cpt23(lib);
         lib.add_source("touch/ft6x36/panels/lx154a2422cpt23.c");

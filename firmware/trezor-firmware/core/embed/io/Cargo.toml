@@ -95,6 +95,7 @@ touch_sitronix = ["sys/i2c_bus"]
 touch_panel_t2t1 = []
 touch_panel_lx154a2422cpt23 = []
 touch_panel_lx250a2410a = []
+touch_panel_nhd240320af = []
 
 # Drivers below that always need framebuffer pull it in implicitly,
 # so any project selecting them via the board peripheral chain doesn't have
@@ -104,6 +105,7 @@ touch_panel_lx250a2410a = []
 display_none = []
 display_ltdc_dsi = ["framebuffer"]
 display_i8080 = []
+display_spi = []
 display_vg2864 = ["framebuffer"]
 display_stm32f429i_disc1 = ["framebuffer"]
 

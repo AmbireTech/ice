@@ -1,0 +1,17 @@
+# Ambire signer, proto 0. Pins and the parts not driven yet: ambire_p0.h.
+header = "T3T2/boards/ambire_p0.h"
+emulator_header = "T3T2/boards/unix.h"
+
+# The ST7789 over 4-wire SPI. The panel init is Trezor's DEM240320B1 sequence
+# (same controller and resolution) until it is tuned on the Newhaven panel.
+[display]
+driver = "io/display_spi"
+panel = "io/display_panel_dem240320b1"
+
+[backlight]
+driver = "io/backlight_pin"
+
+# FT5426, identity coordinate mapping until checked on the panel.
+[touch]
+driver = "io/touch_ft6x36"
+panel = "io/touch_panel_nhd240320af"
