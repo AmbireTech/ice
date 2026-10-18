@@ -278,7 +278,8 @@ device off, the cell charges and nothing else runs; there is no charge light.
 
 A two-part case: a back **shell** with the walls up to the board's front face,
 and a front **bezel** with the display window whose skirt laps over a tongue on
-the shell and snaps onto it. Target plastic: translucent purple.
+the shell. Four screws from the back hold the whole stack. Target plastic:
+translucent purple.
 
 - **Built from the board, not typed in.** The generator reads the outline, slots,
   mounting holes, camera keep-out and the power button's land from the board
@@ -291,19 +292,32 @@ the shell and snaps onto it. Target plastic: translucent purple.
   cell 4.0 on 0.3 foam, board 1.0, back cavity 6.5, back 1.2. The back cavity is
   set by the camera head (5.9 mm, hand-fitted, not in the board file); the
   battery connector, at 5.6 mm, is the deepest modelled part.
-- **Board mounting:** four M2 self-tapping screws, driven from the front into
-  posts in the shell before the cell and panel go on. Three heads sit under the
-  panel, in the cell's 4.3 mm gap, clear of the cell. The post at the camera
-  corner is notched for the camera head (0.45 mm of wall left around its pilot).
+- **Assembly:** screen face down into the bezel, battery onto the screen, board
+  onto the bezel's four bosses, shell over it, then 4× M2×10 pan-head screws from
+  the back. Each goes through a clearance hole in a shell standoff and the board's
+  hole into a 1.6 mm pilot in a bezel boss (2.8 mm of thread, the generator
+  refuses less than 2.5); the heads sit flush in counterbores in the back face.
+  The board is clamped between the standoffs and the bosses.
+- **Bosses under the screen:** three of the board's holes sit under the screen's
+  corners, so their bosses stand in the battery's layer, between the board and the
+  screen's back, which they also carry. Their undersides rise at 45° from the
+  fills, so the bezel prints face down without supports. The fills along the
+  screen's edges locate it; the chin is solid down to the board, with windows
+  where the display ribbons drop through the slots.
+- **Standoff at the camera corner** is notched for the camera head; the screw
+  passes 0.53 mm from the head (the generator wants at least 0.3).
+- **Draft:** both halves are 1 mm narrower at the back and front faces than at
+  the parting line (about 3°): softer, mouldable, still printable without
+  supports (the shell on its back, the bezel face down).
 - **Camera:** an open window in the back, not plastic: tinted plastic blurs QR.
 - **Power button:** a tab cut into the east wall flexes in; a nub on it stops
   0.1 mm short of the plunger tip, taken from the land's fab outline.
 - **Airgap lever:** its tip sits about 1 mm inside the wall, in a slot sized for
   the lever plus its full travel. Operated with a pen tip, so it is hard to flip
   by accident.
-- **Untested:** nothing is printed yet. The snap fit, the tab's stiffness, the
-  lever reach, and where the cell sits on the board (assumed centred under the
-  panel) all need a print and a board in hand.
+- **Untested:** nothing is printed yet. The thread in the bosses, the tab's
+  stiffness, the lever reach, and where the battery sits on the board (assumed
+  centred under the panel) all need a print and a board in hand.
 
 ## Bring-up checks that need parts in hand
 

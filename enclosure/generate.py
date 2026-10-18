@@ -15,12 +15,19 @@ The rest are datasheet constants, each with its source below.
 
 Parts (Z = 0 is the board's front face, +Z toward the screen; X east, Y north):
 
-  shell   back + walls up to the board's front face, four bosses the board screws
-          onto (M2 self-tapping, driven from the front before the cell and panel
-          go on), USB-C opening, airgap-lever slot, camera window, and a flex tab
-          in the east wall that presses the power button
+  shell   back + walls up to the board's front face; four standoffs the board rests
+          on, each with a clearance hole and a counterbore in the back face where the
+          screw head sits flush; USB-C opening, airgap-lever slot, camera window, and
+          a flex tab in the east wall that presses the power button
   bezel   front plate with the display window and walls down to the parting line;
-          its skirt laps over a tongue on the shell and snaps onto it
+          its skirt laps over a tongue on the shell. Inside: four threaded bosses at
+          the board's holes (under the screen's corners, where the battery is not),
+          solid fills that locate the screen, and a solid chin with windows for the
+          display ribbons
+
+Assembly: screen face down into the bezel, battery onto the screen, board onto the
+bosses, shell over it, four M2 screws from the back through shell and board into the
+bezel's bosses. The screws clamp the board between the standoffs and the bosses.
 
 Outputs:
   enclosure/out/{shell,bezel}.{step,stl}, case.3mf   for print / quote (the 3MF lays both
@@ -54,6 +61,7 @@ import numpy as np
 from build123d import (
     Axis,
     Box,
+    Rectangle,
     Cone,
     Cylinder,
     Pos,
@@ -71,7 +79,8 @@ HERE = Path(__file__).resolve().parent.parent
 BOARD = HERE / "board/wallet.kicad_pcb"
 OUT = HERE / "enclosure/out"
 WEB = HERE / "docs/enclosure"
-BRAND_LOGO = HERE / "art/brand/Ambire-ver-on-dark.svg"
+sys.path.insert(0, str(HERE / "art"))
+import flame as flame_art  # noqa: E402  (art/flame.py, shared with scripts/silkFlame.py)
 KICAD_3D = os.environ.get("KICAD_3DMODEL_DIR", "/Applications/KiCad/KiCad.app/Contents/SharedSupport/3dmodels")
 
 # ── Stack in front of the board ─────────────────────────────────────────────
@@ -110,27 +119,29 @@ DRAFT_MM = 1.0
 MAX_UNSUPPORTED = 45.0
 MIN_WALL = 1.2        # thinnest the drafted wall may get, at the back and front faces
 WINDOW_MARGIN = 0.3   # display window beyond the viewing area, each side
-BOSS_R, PILOT_R = 2.1, 0.8   # M2 self-tapping into a 1.6 mm pilot
+# Screws: M2 pan head, self-tapping into the bezel's bosses, from the back.
+STANDOFF_R = 2.5     # shell standoff under each board hole (the board keeps parts 2.6 mm off the hole centre)
+CLEAR_R = 1.2        # M2 clearance through the shell
+CB_R, CB_DEPTH = 2.05, 1.7   # counterbore for the 3.8 x 1.6 mm head, flush with the back face
+BOSS_R, PILOT_R = 2.2, 0.8   # bezel boss, 1.6 mm pilot for M2 self-tapping
+PILOT_TOP_CLR = 0.8  # pilot stops this far under the screen's back
+SCREW_LENGTHS = (6, 8, 10, 12)
+MIN_ENGAGE = 2.5     # mm of thread in the boss
 BOSS_PART_CLR = 0.2
-MIN_PILOT_WALL = 0.4  # thinnest boss wall left around the pilot after part clearances
+M2_SHANK_R = 1.0
+MIN_SHANK_CLR = 0.3  # screw shank to the nearest part; a standoff notched for a part may open on that side
+SCREEN_CLR = 0.15    # bezel fills to the screen's glass edge
+RIBBON_CLR = 0.3     # around the display ribbons' slots
 CAM_WINDOW_D = 6.0
 USB_PLUG = (12.6, 6.8, 2.2)  # opening for a USB-C plug overmold (w, h, corner r); common overmolds are <= 12.35 x 6.5
 LEVER_TRAVEL, LEVER_CLR = 1.5, 0.5   # MSK12C02 slide travel; clearance around the lever (it sits ~1 mm inside the wall: a pen tip, not a thumb)
 TAB = (8.5, 4.0, 0.5, 1.0)   # power tab: length, height, slot width, thickness
 NUB_D, NUB_GAP = 2.2, 0.1    # nub on the tab; air left before the plunger tip
 
-M2_HEAD = (3.8, 1.6)  # pan head diameter, height
 
 # ── Back print ──────────────────────────────────────────────────────────────
-# The flame alone, from the official logo (github.com/AmbireTech/ambire-brand,
-# copied unmodified into art/brand/): its facets are Purple and Violet, its
-# shadows a translucent dark violet. It is the whole back: as wide as the board
-# less a thin margin, centred top to bottom, printed between the parts. One ink
-# shows the faceting through a hairline of bare mask between facets.
-FLAME_FACETS = {"#6000FF", "#AF50FF"}
-FLAME_SHADOWS = {"#31155D"}
-FLAME_MARGIN = 1.2   # to the board edge, each side
-FLAME_GAP = 0.35     # mm of mask between facets (JLC's thinnest silkscreen line is 0.15)
+# The flame itself (facets, size, placement, gap) is art/flame.py, shared with the
+# board's silkscreen (scripts/silkFlame.py).
 # Ink on mask. Brand colours: Purple #6000FF, Black #181A1F, Volt #D7FF00 (the
 # brand's neon green). JLC's standard silkscreen is white or black only, so a
 # purple flame or a Volt board is a full-colour print (PCBWay); white on black and
@@ -147,12 +158,16 @@ PRINT_SCHEMES = [
 CASE_README = """Ambire signer proto 0 case
 
 case.3mf     both parts laid out for printing: the shell on its back, the bezel face down
-shell.stl    back shell (the board screws onto its four posts, M2 self-tapping)
-bezel.stl    front bezel (snaps onto the shell)
+shell.stl    back shell (four standoffs; the screw heads sit flush in its back face)
+bezel.stl    front bezel (the screen sits in it; the screws thread into its bosses)
+
+Assembly: screen face down into the bezel, battery onto the screen, board onto the
+bezel's bosses, shell over it, then 4x M2 pan-head screws (length below) from the
+back. Print the shell on its back and the bezel face down: neither needs supports.
 *.step       the same parts for CAD
 
 Units are millimetres. Print in translucent or clear resin or PETG. Nothing has been
-test-printed yet: the snap fit and the power-button tab may need adjusting.
+test-printed yet: the screw bosses and the power-button tab may need adjusting.
 """
 
 # ── DIY downloads (the board as ordered; the case from this run) ────────────
@@ -463,73 +478,6 @@ def board_model(board_path: Path, tmp: Path, thickness: float) -> tuple[dict, by
 # ───────────────────────────────────────────────────────────── print artwork
 
 
-def flame_paths(svg: Path) -> dict:
-    """The Ambire flame alone (the purple facets of the official logo, no wordmark),
-    with its bounding box computed from the path data (curves sampled)."""
-    text = svg.read_text(encoding="utf-8")
-    facets, shadows = [], []
-    for tag in re.findall(r"<path\b[^>]*>", text):
-        fill = re.search(r'fill="(#[0-9A-Fa-f]{6})"', tag)
-        d = re.search(r'\sd="([^"]+)"', tag).group(1)
-        if not fill:
-            continue
-        colour = fill.group(1).upper()
-        if colour in FLAME_FACETS:
-            facets.append(d)
-        elif colour in FLAME_SHADOWS:
-            shadows.append(d)
-    if not facets:
-        raise SystemExit(f"no flame facets in {svg}")
-    pts = np.vstack([path_points(d) for d in facets])
-    x0, y0 = pts.min(0)
-    x1, y1 = pts.max(0)
-    return {"paths": facets, "box": [round(float(v), 3) for v in (x0, y0, x1, y1)]}
-
-
-def path_points(d: str) -> np.ndarray:
-    """Points along an SVG path (M/L/H/V/C/S/Q/Z, absolute or relative), curves sampled."""
-    toks = re.findall(r"[MmLlHhVvCcSsQqZz]|-?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?", d)
-    pts, i, cmd = [], 0, None
-    cur = np.zeros(2)
-    start = np.zeros(2)
-    while i < len(toks):
-        if toks[i].isalpha():
-            cmd = toks[i]
-            i += 1
-            if cmd in "Zz":
-                cur = start.copy()
-                continue
-        rel = cmd.islower()
-        c = cmd.upper()
-        n = {"M": 2, "L": 2, "H": 1, "V": 1, "C": 6, "S": 4, "Q": 4}[c]
-        args = [float(t) for t in toks[i:i + n]]
-        i += n
-        if c == "H":
-            nxt = np.array([args[0] + (cur[0] if rel else 0), cur[1]])
-        elif c == "V":
-            nxt = np.array([cur[0], args[0] + (cur[1] if rel else 0)])
-        else:
-            ctrl = np.array(args).reshape(-1, 2) + (cur if rel else 0)
-            if c in "CSQ":
-                curve = np.vstack([cur, ctrl])
-                for t in np.linspace(0, 1, 16):
-                    # de Casteljau
-                    q = curve.copy()
-                    while len(q) > 1:
-                        q = q[:-1] * (1 - t) + q[1:] * t
-                    pts.append(q[0])
-            nxt = ctrl[-1]
-        if c == "M":
-            start = nxt.copy()
-            if cmd == "m":
-                cmd = "l"
-            elif cmd == "M":
-                cmd = "L"
-        pts.append(nxt)
-        cur = nxt
-    return np.array(pts)
-
-
 # ──────────────────────────────────────────────────────────────── solids
 
 
@@ -684,8 +632,8 @@ def main():
     shell += rr_prism(*tongue_o[:4], tongue_o[4], z_split, z_split + TONGUE_H) - rr_prism(*in_o[:4], in_o[4], z_split - 1, z_split + TONGUE_H + 1)
 
     for hx, hy, _ in b["holes"]:
-        boss = Pos(hx, -hy, (z_floor_in + z_back) / 2) * Cylinder(BOSS_R, z_back - z_floor_in + 0.02)
-        nearest = BOSS_R - PILOT_R
+        boss = Pos(hx, -hy, (z_floor_in + z_back) / 2) * Cylinder(STANDOFF_R, z_back - z_floor_in + 0.02)
+        nearest = math.inf
         cut_by = []
         envs = [(r, (v[:, 0].min(), v[:, 1].min(), v[:, 0].max(), v[:, 1].max())) for r, v in back.items()]
         envs.append(("camera head", tuple(cam)))
@@ -694,16 +642,21 @@ def main():
             dx = max(ex0 - hx, 0, hx - ex1)
             dy = max(ey0 - hy, 0, hy - ey1)
             d = math.hypot(dx, dy)
-            if d < BOSS_R:
-                boss -= box(ex0, ey0, ex1, ey1, z_floor_in - 1, z_back + 1)
-                nearest = min(nearest, d - PILOT_R)
+            if d < STANDOFF_R:
+                boss -= box(ex0, ey0, ex1, ey1, z_floor_in + 0.01, z_back + 1)   # the floor stays whole
+                raw = math.hypot(max(ex0 + BOSS_PART_CLR - hx, 0, hx - ex1 + BOSS_PART_CLR),
+                                 max(ey0 + BOSS_PART_CLR - hy, 0, hy - ey1 + BOSS_PART_CLR))
+                nearest = min(nearest, raw - M2_SHANK_R)
                 cut_by.append(ref)
-        if nearest < MIN_PILOT_WALL:
-            raise SystemExit(f"boss at {hx}, {hy}: {nearest:.2f} mm of wall left around the pilot ({cut_by})")
-        boss -= Pos(hx, -hy, (z_floor_in + z_back) / 2 + 0.3) * Cylinder(PILOT_R, z_back - z_floor_in)
+        if nearest < MIN_SHANK_CLR:
+            raise SystemExit(f"standoff at {hx}, {hy}: the screw passes {nearest:.2f} mm from {cut_by}")
         shell += boss
+        # clearance hole, and the head's counterbore in the back face with a 45 deg roof (prints without support)
+        shell -= Pos(hx, -hy, (z_floor_out + z_back) / 2) * Cylinder(CLEAR_R, z_back - z_floor_out + 2)
+        shell -= Pos(hx, -hy, z_floor_out - 0.5 + (CB_DEPTH + 0.5) / 2) * Cylinder(CB_R, CB_DEPTH + 0.5)
+        shell -= Pos(hx, -hy, z_floor_out + CB_DEPTH + (CB_R - CLEAR_R) / 2) * Cone(CB_R, CLEAR_R, CB_R - CLEAR_R)
         if cut_by:
-            report.append(f"boss {hx},{hy} notched for {', '.join(cut_by)}: {nearest:.2f} mm pilot wall")
+            report.append(f"standoff {hx},{hy} notched for {', '.join(cut_by)}: the screw passes {nearest:.2f} mm from it")
 
     ccx, ccy = (cam[0] + cam[2]) / 2, (cam[1] + cam[3]) / 2
     shell -= Pos(ccx, -ccy, (z_floor_in + z_floor_out) / 2) * Cylinder(CAM_WINDOW_D / 2, FLOOR + 1)
@@ -714,46 +667,55 @@ def main():
         shell -= c
     shell += nub
 
-    # snap bumps on the tongue's long sides, grooves in the bezel skirt
-    bumps, grooves = [], []
-    for sx, face in ((-1, -GAP - TONGUE_T), (1, W + GAP + TONGUE_T)):
-        for fy in (0.25, 0.75):
-            y = H * fy
-            ax = face - sx * 0.25
-            bumps.append(Pos(ax, -y, z_split + TONGUE_H / 2) * Rot(90, 0, 0) * Cylinder(0.5, 6.0))
-            grooves.append(Pos(ax, -y, z_split + TONGUE_H / 2) * Rot(90, 0, 0) * Cylinder(0.55, 6.6))
-    for bp in bumps:
-        shell += bp
-
     # ── bezel ──
     bezel = rr_prism_drafted(*out_o[:4], out_o[4], z_split, z_top, draft_front)
     bezel = fillet(bezel.edges().group_by(Axis.Z)[-1], FRONT_FILLET)
     bezel -= rr_prism(*in_o[:4], in_o[4], z_split - 1, z_lip)
     bezel -= rr_prism(*skirt_o[:4], skirt_o[4], z_split - 1, z_split + TONGUE_H + TONGUE_CLR)
     bezel -= rr_prism(*win, 0.8, z_lip - 1, z_top + 1)
-    rib_t, rib_l, rib_h, rib_c = 0.8, 4.0, 1.5, 0.15
-    for cx, sx in ((panel[0], -1), (panel[2], 1)):
-        for cy, sy in ((panel[1], -1), (panel[3], 1)):
-            ox, oy = cx + sx * rib_c, cy + sy * rib_c
-            bezel += box(min(ox, ox + sx * rib_t), min(oy + sy * rib_t, oy - sy * rib_l), max(ox, ox + sx * rib_t), max(oy + sy * rib_t, oy - sy * rib_l), z_lip - rib_h, z_lip + 0.01)
-            bezel += box(min(ox + sx * rib_t, ox - sx * rib_l), min(oy, oy + sy * rib_t), max(ox + sx * rib_t, ox - sx * rib_l), max(oy, oy + sy * rib_t), z_lip - rib_h, z_lip + 0.01)
-    for gr in grooves:
-        bezel -= gr
+    # Solid where the screen is not: fills along the screen's edges locate it, the chin
+    # is solid down to the board, with windows where the display ribbons drop through
+    # the board's slots.
+    glass = (panel[0] - SCREEN_CLR, panel[1] - SCREEN_CLR, panel[2] + SCREEN_CLR, panel[3] + SCREEN_CLR)
+    open_ = box(*glass, z_split - 1, z_lip + 0.01)
+    for sx0, sy0, sx1, sy1 in b["slots"]:
+        open_ += box(sx0 - RIBBON_CLR, glass[3] - 0.01, sx1 + RIBBON_CLR, sy1 + RIBBON_CLR, z_split - 1, z_lip + 0.01)
+    bezel += rr_prism(*in_o[:4], in_o[4], z_split, z_lip + 0.01) - open_
+
+    # Bosses at the board's holes, from the board's front up to the screen's back. Under
+    # the screen their underside rises 45 deg from the fills (a roof over the screen's
+    # corner), so the bezel prints face down without supports.
+    gw, gh = glass[2] - glass[0], glass[3] - glass[1]
+    roof = Rot(180, 0, 0) * extrude(Rectangle(gw, gh), amount=z_panel[0] - z_split + 0.02, taper=45)
+    roof = Pos((glass[0] + glass[2]) / 2, -(glass[1] + glass[3]) / 2, z_panel[0]) * roof
+    roof += box(*glass, z_panel[0] - 0.01, z_lip + 0.01)
+    pilot_top = z_panel[0] - PILOT_TOP_CLR
+    engage = []
+    for hx, hy, _ in b["holes"]:
+        boss = Pos(hx, -hy, (z_split + z_panel[0]) / 2) * Cylinder(BOSS_R, z_panel[0] - z_split)
+        bezel += boss - roof
+        bezel -= Pos(hx, -hy, (z_split - 0.01 + pilot_top) / 2) * Cylinder(PILOT_R, pilot_top - z_split + 0.01)
+        # thread in plastic: up to the roof at the pilot's far side, at most the pilot's depth
+        inside = glass[0] < hx < glass[2] and glass[1] < hy < glass[3]
+        far = min(hx + PILOT_R - glass[0], glass[2] - hx + PILOT_R, hy + PILOT_R - glass[1], glass[3] - hy + PILOT_R) if inside else 0
+        engage.append(min(pilot_top, z_panel[0] - far) - z_split)
+
+    # The screw: the longest stock M2 whose tip stays in the pilot.
+    seat = z_floor_out + CB_DEPTH
+    fits = [L for L in SCREW_LENGTHS if seat + L <= pilot_top]
+    if not fits:
+        raise SystemExit("no stock M2 length fits between the counterbore and the pilot")
+    screw = max(fits)
+    thread = min(min(engage), seat + screw - z_split)
+    if thread < MIN_ENGAGE:
+        raise SystemExit(f"M2x{screw}: only {thread:.2f} mm of thread in the bezel's bosses")
+    report.append(f"screws: 4x M2x{screw} pan head from the back, {thread:.1f} mm of thread in the bezel's bosses")
     for _, _, cut in openings:
         bezel -= cut
 
     # ── checks that the geometry, not prose, has to satisfy ──
     cell_rect = ((panel[0] + panel[2] - CELL[0]) / 2, (panel[1] + panel[3] - CELL[1]) / 2)
     cell_box = (*cell_rect, cell_rect[0] + CELL[0], cell_rect[1] + CELL[1])
-    for hx, hy, _ in b["holes"]:
-        # screws go in from the front: a head under the panel needs the cell's height and to miss the cell
-        if panel[0] < hx < panel[2] and panel[1] < hy < panel[3]:
-            if M2_HEAD[1] > z_panel[0]:
-                raise SystemExit(f"M2 head at {hx},{hy} is taller than the gap under the panel")
-            dx = max(cell_box[0] - hx, 0, hx - cell_box[2])
-            dy = max(cell_box[1] - hy, 0, hy - cell_box[3])
-            if math.hypot(dx, dy) < M2_HEAD[0] / 2:
-                raise SystemExit(f"M2 head at {hx},{hy} lands on the cell")
     if win[0] < panel[0] or win[2] > panel[2] or win[1] < panel[1] or win[3] > panel[3]:
         raise SystemExit("display window is larger than the glass")
     assert shell.is_valid and bezel.is_valid, "invalid solid"
@@ -773,14 +735,11 @@ def main():
     header["bin"] = base64.b64encode(blob).decode()
     (WEB / "board.json").write_text(json.dumps(header, separators=(",", ":")), encoding="utf-8")
 
-    flame = flame_paths(BRAND_LOGO)
-    fx0, fy0, fx1, fy1 = flame["box"]
-    ax0, ay0, ax1, ay1 = 0.0, 0.0, W, H
-    k = min((ax1 - ax0 - 2 * FLAME_MARGIN) / (fx1 - fx0), (ay1 - ay0 - 2 * FLAME_MARGIN) / (fy1 - fy0))
-    fw, fh = (fx1 - fx0) * k, (fy1 - fy0) * k
-    cx, cy = (ax0 + ax1) / 2, (ay0 + ay1) / 2
-    flame["at"] = [round(v, 3) for v in (cx - fw / 2, cy - fh / 2, cx + fw / 2, cy + fh / 2)]
-    flame["gap"] = FLAME_GAP
+    fbox = flame_art.box(flame_art.facets())
+    at = flame_art.placement(W, H, fbox)
+    flame = {"paths": flame_art.facet_paths(), "box": [round(v, 3) for v in fbox],
+             "at": [round(v, 3) for v in at], "gap": flame_art.GAP}
+    fw, fh = at[2] - at[0], at[3] - at[1]
     report.append(f"flame {fw:.1f} x {fh:.1f} mm across the back, mask back face at Z {header['maskBack']:.3f}")
 
 
