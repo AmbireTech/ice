@@ -197,6 +197,23 @@ footer svg { width: 18px; height: 27px; color: var(--violet); }
   .screens { grid-template-columns: minmax(0, 1fr); padding: 28px 16px 20px; }
   .config { padding: 18px; }
 }
+/* phones: segmented controls fill the width and keep labels on one line; cards give their content more room */
+@media (max-width: 600px) {
+  .seg { display: flex; justify-self: stretch; }
+  .seg button { flex: 1 1 auto; padding: 0 10px; white-space: nowrap; font-size: .8rem; }
+  .card, .config { padding: 16px; }
+  .screens { padding: 22px 12px 16px; }
+}
+/* phones: the architecture table becomes one card per row */
+@media (max-width: 600px) {
+  .tablewrap { overflow: visible; border: 0; background: none; border-radius: 0; }
+  table, tbody, tr, td { display: block; width: 100%; box-sizing: border-box; }
+  thead { display: none; }
+  tr { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; margin-bottom: 10px; }
+  td, tr:last-child td { border: 0; padding: 2px 0; }
+  td:first-child { white-space: normal; color: var(--violet); margin-bottom: 4px; }
+  td:nth-child(2) { font-weight: 500; }
+}
 @media (prefers-reduced-motion: reduce) { .btn:hover { transform: none; } }
 </style>
 
