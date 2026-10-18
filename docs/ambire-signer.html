@@ -80,10 +80,6 @@ svg { display: block; width: 100%; height: auto; }
 .btn.ghost { border-color: var(--line-2); color: var(--fg); background: rgba(12, 13, 17, .35); backdrop-filter: blur(6px); }
 .btn:hover { transform: translateY(-1px); }
 .btn:focus-visible { outline: 2px solid var(--volt); outline-offset: 3px; }
-.stats { display: flex; flex-wrap: wrap; gap: 28px; margin-top: 14px; padding-top: 22px; border-top: 1px solid var(--line); }
-.stat { display: grid; gap: 2px; }
-.stat b { font: 600 1.9rem/1 var(--display); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
-.stat span { font: 500 .72rem/1.3 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .hero-shot { position: relative; display: grid; place-items: center; }
 .hero-shot img { width: min(100%, 520px); height: auto; filter: drop-shadow(0 40px 60px rgba(0, 0, 0, .55)); }
 .hero-shot::before { content: ""; position: absolute; width: 70%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, rgba(175, 80, 255, .35), rgba(96, 0, 255, 0) 70%); filter: blur(10px); }
@@ -220,11 +216,6 @@ footer svg { width: 18px; height: 27px; color: var(--violet); }
         <div class="ctas">
           <a class="btn primary" href="#configure">Configure yours</a>
           <a class="btn ghost" href="#configure" data-open-diy>Build it yourself</a>
-        </div>
-        <div class="stats">
-          <div class="stat"><b>2</b><span>security chips</span></div>
-          <div class="stat"><b>0</b><span>seed phrases</span></div>
-          <div class="stat"><b>1</b><span>switch to go offline</span></div>
         </div>
       </div>
       <div class="hero-shot"><img src="brand/signer.webp" alt="Ambire Signer in its translucent purple case, with the flame printed on the board inside" width="716" height="1167"></div>
