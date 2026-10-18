@@ -1,0 +1,44 @@
+name: Concept page
+
+# Publishes the concept page (docs/ambire-signer.html) to GitHub Pages as the
+# site's index, with only the files it loads (brand/, enclosure/). The rest of
+# docs/ (design notes, research) stays out of the public site.
+# Needs Settings -> Pages -> Source: GitHub Actions.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - docs/ambire-signer.html
+      - docs/brand/**
+      - docs/enclosure/**
+      - .github/workflows/concept-page.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Stage the page and its files
+        run: |
+          mkdir -p _site
+          cp docs/ambire-signer.html _site/index.html
+          cp -R docs/brand docs/enclosure _site/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
