@@ -6,7 +6,7 @@
 Run by make_order.sh after the plain JLC set (it reuses jlc-plain's BOM lines and
 stock table) and after art/build_uv.py has rebuilt the print file. Writes <order>/pcbway/:
 
-  wallet_pcbway_fab.zip   Gerbers + drills (back silk without the labels the art
+  wallet_pcbway_fab.zip   Gerbers + drills (back silk without the labels and flame the art
                           replaces) + the print image + the positioning image, one
                           zip as PCBWay asks for UV printing
   wallet_bom-pcbway.csv   turnkey BOM: manufacturer + MPN from JLC's parts API,
@@ -41,7 +41,7 @@ BOARDS = 10
 
 
 def export_gerbers(out):
-    """Gerbers with the replaced back-silk labels left out (export_fab.py --colour)."""
+    """Gerbers with the back silk the print replaces (labels, flame) left out (export_fab.py --colour)."""
     src = os.path.join(out, "src")
     r = subprocess.run([KPY, os.path.join(HERE, "production/export_fab.py"), BOARD, src,
                         os.path.join(HERE, "production/jlc_rotation_db.csv"), "--colour"],

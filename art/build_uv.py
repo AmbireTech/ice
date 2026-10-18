@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
-"""Build the full-colour UV artwork for the back (B.*) face of the Ambire signer board.
+"""Build the full-colour UV print for the back (B.*) face of the Ambire signer board:
+the Ambire flame in Purple (art/flame.py, the same flame scripts/silkFlame.py puts in the
+silkscreen) over the base of one of the purple schemes, with the functional labels.
 
 Everything placement-dependent is re-derived from the CURRENT board on every run:
-  * board outline + slots           <- Edge.Cuts in the .kicad_pcb
-  * no-ink areas                    <- B.Mask openings (kicad-cli SVG) + every drill (kicad-cli Excellon)
-  * logo zone / camera / flex tails <- labelled Dwgs.User rectangles ("UV ARTWORK", "CAMERA", "TFT TAIL", "TOUCH TAIL")
-  * label positions                 <- the board-level B.SilkS texts "AIRGAP", "RADIO", ...
+  * board outline + slots    <- Edge.Cuts in the .kicad_pcb
+  * no-ink areas             <- B.Mask openings (kicad-cli SVG) + every drill (kicad-cli Excellon) + the CAMERA window
+  * camera / flex tails      <- labelled Dwgs.User rectangles ("CAMERA", "TFT TAIL", "TOUCH TAIL")
+  * label positions          <- the board-level B.SilkS texts "AIRGAP", "RADIO", ...
 The board file is only read; previews render a patched temporary copy.
 
 Requires: kicad-cli (KiCad 10), rsvg-convert, Python 3 with Pillow + numpy.
-Run:  python3 build_uv.py            (full 1200 DPI print files + previews)
-      python3 build_uv.py --directions   (also the 3-direction comparison sheet)
+Run:  python3 build_uv.py                  (1200 DPI print files + previews, purple on neon)
+      python3 build_uv.py --scheme black   (purple on black; or white)
 """
 from __future__ import annotations
 
@@ -25,9 +27,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+import flame  # noqa: E402  (art/flame.py)
+
 DEFAULT_BOARD = HERE.parent / "board" / "wallet.kicad_pcb"
 BRAND = HERE / "brand"
 OUT = HERE / "out"
@@ -43,10 +48,10 @@ C = {
     "heat": "#FE4648",    # Ambire Heat (secondary)
 }
 
-# Board-level B.SilkS texts the artwork replaces with restyled versions.
-RESTYLED_LABELS = ("AIRGAP", "RADIO", "SECURE ELEMENT", "QR CAMERA")
-# Board-level B.SilkS texts the artwork replaces outright (the logo takes their place).
-REPLACED_TEXTS = RESTYLED_LABELS + ("AMBIRE",)
+# Board-level B.SilkS texts the print replaces with restyled versions
+# (production/export_fab.py --colour leaves them, and the silkscreen flame, out of the Gerbers).
+RESTYLED_LABELS = ("AIRGAP", "RADIO", "SECURE ELEMENT", "QR CAMERA", "ANT")
+FLAME_GROUP = "FLAME"  # scripts/silkFlame.py's group: the white silkscreen flame
 
 
 def rgb(hexstr: str) -> np.ndarray:
@@ -97,7 +102,7 @@ class Board:
     loops: list[list[tuple[float, float]]]  # closed polylines, KiCad mm (front view)
     bbox: tuple[float, float, float, float]  # minx, miny, maxx, maxy
     zones: dict[str, tuple[float, float, float, float]]  # Dwgs.User rect label -> (x0, y0, x1, y1)
-    silk_texts: dict[str, tuple[float, float, float]]  # B.SilkS board text -> (x, y, size)
+    silk_texts: dict[str, tuple[float, float, float, float]]  # B.SilkS board text -> (x, y, size, rotation)
     sexpr: list = field(repr=False, default_factory=list)
 
 
@@ -173,7 +178,7 @@ def load_board(path: Path) -> Board:
         elif layer == "B.SilkS" and n[0] == "gr_text":
             at = child(n, "at")
             size = float(child(child(child(n, "effects"), "font"), "size")[1])
-            silk[n[1]] = (float(at[1]), float(at[2]), size)
+            silk[n[1]] = (float(at[1]), float(at[2]), size, float(at[3]) if len(at) > 3 else 0.0)
     loops = chain_segments(segs) + closed
     loops.sort(key=poly_area, reverse=True)
     xs = [p[0] for p in loops[0]]
@@ -186,7 +191,7 @@ def load_board(path: Path) -> Board:
         if inside:
             r = min(inside, key=lambda r: abs((r[2] - r[0]) * (r[3] - r[1])))
             zones[label] = (min(r[0], r[2]), min(r[1], r[3]), max(r[0], r[2]), max(r[1], r[3]))
-    for need in ("UV ARTWORK", "CAMERA"):
+    for need in ("CAMERA",):
         if need not in zones:
             raise RuntimeError(f'Dwgs.User rectangle labelled "{need}" not found on the board')
     return Board(loops, bbox, zones, silk, root)
@@ -212,15 +217,6 @@ class Grid:
     def back_x(self, x):
         """KiCad x -> mm from the left edge as seen from behind."""
         return self.wmm - (x - self.x0)
-
-    def back_rect(self, r):
-        x0, y0, x1, y1 = r
-        return (self.back_x(x1), y0 - self.y0, self.back_x(x0), y1 - self.y0)
-
-    def mm_grid(self):
-        xs = (np.arange(self.w) + 0.5) / self.ppm
-        ys = (np.arange(self.h) + 0.5) / self.ppm
-        return np.meshgrid(xs, ys)
 
 
 def disk_dilate(mask: Image.Image, radius_px: float) -> Image.Image:
@@ -273,21 +269,6 @@ def raster_layer(board_path: Path, layer: str, g: Grid, tmp: Path, margin_mm: fl
     return np.array(Image.open(png).convert("RGBA"))[:, :, 3] > 0
 
 
-def part_bodies(board_path: Path, g: Grid, tmp: Path) -> np.ndarray:
-    """Courtyard outlines filled solid. Rendered with a margin so courtyards that overhang
-    the board edge (connectors) still close before the flood fill."""
-    mp = int(round(6.0 * g.ppm))
-    filled = fill_closed(raster_layer(board_path, "B.CrtYd", g, tmp, margin_mm=6.0))
-    return filled[mp:mp + g.h, mp:mp + g.w]
-
-
-def fill_closed(lines: np.ndarray) -> np.ndarray:
-    """Outline raster -> outline plus everything it encloses (flood the outside from the border)."""
-    padded = Image.fromarray(np.pad(lines, 2).astype(np.uint8) * 255).copy()
-    ImageDraw.floodfill(padded, (0, 0), 128)
-    return (np.array(padded) != 128)[2:-2, 2:-2]
-
-
 def drill_holes(board_path: Path, g: Grid, tmp: Path) -> np.ndarray:
     """255 over every drilled hole and slot (front view), from kicad-cli's Excellon output."""
     ddir = Path(tempfile.mkdtemp(prefix="drill_", dir=tmp))
@@ -326,116 +307,31 @@ def drill_holes(board_path: Path, g: Grid, tmp: Path) -> np.ndarray:
 
 # --------------------------------------------------------------------------- artwork (back view, mm)
 
-
-def colormap(t: np.ndarray, stops: list[tuple[float, str]]) -> np.ndarray:
-    pos = np.array([s[0] for s in stops])
-    cols = np.array([rgb(s[1]) for s in stops])
-    out = np.empty(t.shape + (3,))
-    for ch in range(3):
-        out[..., ch] = np.interp(t, pos, cols[:, ch])
-    return out
-
-
-def smoothstep(e0, e1, x):
-    t = np.clip((x - e0) / (e1 - e0), 0, 1)
-    return t * t * (3 - 2 * t)
-
-
-def grain(shape, amount, seed=7):
-    return np.random.default_rng(seed).normal(0, amount, shape)[..., None]
-
-
-def calm_field(X, Y, rect, pad):
-    """1 well away from rect, 0 inside it: used to keep the logo's clear space quiet."""
-    x0, y0, x1, y1 = rect
-    dx = np.maximum(np.maximum(x0 - X, X - x1), 0)
-    dy = np.maximum(np.maximum(y0 - Y, Y - y1), 0)
-    return smoothstep(0, pad, np.hypot(dx, dy))
-
-
-@dataclass
-class Ctx:
-    g: Grid
-    X: np.ndarray
-    Y: np.ndarray
-    logo_zone: tuple  # back-view mm
-    cam: tuple        # back-view mm
-
-
-# Beams leaving the camera window: (angle deg, 90 = straight down / 180 = left as seen from behind,
-# half-width deg, strength). Aimed at where bare board stays visible around the parts.
-FLARE_BEAMS = [(91, 4.0, 1.00), (103, 2.2, 0.75), (116, 5.5, 0.90), (130, 2.6, 0.70), (146, 6.5, 0.55), (163, 2.8, 0.45)]
-
-
-def art_flare(c: Ctx) -> np.ndarray:
-    """Light enters through the camera window and fans across the board (Ambire 'Flare')."""
-    X, Y = c.X, c.Y
-    cx, cy = (c.cam[0] + c.cam[2]) / 2, (c.cam[1] + c.cam[3]) / 2
-    dx, dy = X - cx, Y - cy
-    r = np.hypot(dx, dy)
-    th = np.degrees(np.arctan2(dy, dx))
-    bend = th - 0.10 * r + 0.0009 * r * r  # rays curve as they travel: liquid, not laser
-    reach = (0.35 + 0.65 * np.exp(-r / 45.0)) * smoothstep(5.0, 12.0, r)
-    light = np.zeros_like(X)
-    fringe = np.zeros_like(X)
-    for ang, half, k in FLARE_BEAMS:
-        d = (bend - ang) / half
-        light += k * np.exp(-d * d)
-        fringe += k * np.exp(-((d - 1.1) / 0.45) ** 2)  # Signal Blue on one flank
-    calm = calm_field(X, Y, c.logo_zone, 7.0)
-    haze = 0.20 * np.exp(-r / 30.0) + 0.10 * smoothstep(40, 80, Y)
-    t = np.clip((light * reach + haze) * calm, 0, 1.0)
-    col = colormap(t, [(0, C["black"]), (0.16, "#22095A"), (0.38, C["purple"]), (0.62, C["violet"]),
-                       (0.84, "#E4F59A"), (1.0, C["volt"])])
-    f = np.clip(fringe * reach * calm * 0.55, 0, 0.55)[..., None]
-    col = col * (1 - f) + rgb(C["blue"]) * f
-    return np.clip(col + grain(X.shape, 0.018), 0, 1)
-
-
-def art_liquid(c: Ctx) -> np.ndarray:
-    """Ambire 'Liquid' background: warped marble in purple / violet with one Volt streak."""
-    X, Y = c.X / 48.0, c.Y / 48.0
-    u, v = X.copy(), Y.copy()
-    for k, (a, f, ph) in enumerate([(0.28, 2.1, 0.3), (0.19, 3.7, 1.9), (0.11, 6.3, 4.2)]):
-        u, v = u + a * np.sin(f * v + ph), v + a * np.cos(f * u + ph * 1.3)
-    t = 0.5 + 0.5 * np.sin(5.2 * u + 2.4 * v)
-    streak = np.exp(-((np.sin(3.1 * u - 1.7 * v + 0.8)) ** 2) / 0.012)
-    col = colormap(t, [(0, C["black"]), (0.3, "#2A0C78"), (0.55, C["purple"]), (0.8, C["violet"]), (1, "#E6B8FF")])
-    col = col * (1 - 0.85 * streak[..., None]) + rgb(C["volt"]) * 0.85 * streak[..., None]
-    calm = 1 - 0.85 * (1 - calm_field(c.X, c.Y, c.logo_zone, 6.0))  # darken behind the logo
-    return np.clip(col * calm[..., None] + grain(X.shape, 0.03), 0, 1)
-
-
-def art_facets(c: Ctx) -> np.ndarray:
-    """Ambire 'Modern Bold': Purple field, layered facets at the flame's beam angles."""
-    X, Y = c.X, c.Y
-    base = colormap(np.clip((X * 0.4 + Y) / 100.0, 0, 1), [(0, C["purple"]), (1, C["blue"])])
-    img = base.copy()
-    # Facet slopes follow the logo's beams (steep ~ -62 deg and shallow ~ +32 deg).
-    facets = [(-1.9, 70, 7.0, 0.32), (-1.9, 98, 10.0, 0.24), (0.62, -2, 9.0, 0.22), (0.62, 30, 6.0, 0.30),
-              (-1.9, 126, 5.0, 0.36), (0.62, 54, 12.0, 0.18)]
-    for slope, off, width, alpha in facets:
-        d = (Y - slope * X - off) / math.hypot(1, slope)
-        band = smoothstep(-width / 2 - 0.4, -width / 2, d) * (1 - smoothstep(width / 2, width / 2 + 0.4, d))
-        img = img * (1 - alpha * band[..., None]) + rgb(C["violet"]) * alpha * band[..., None]
-    return np.clip(img + grain(X.shape, 0.02), 0, 1)
-
-
-DIRECTIONS = {
-    "flare": (art_flare, "Ambire-ver-on-dark.svg", C["volt"]),
-    "liquid": (art_liquid, "logo-ver-simplified-white.svg", C["volt"]),
-    "facets": (art_facets, "logo-ver-simplified-white.svg", "#FFFFFF"),
+# The purple schemes of docs/direction.md "Board print": (base ink under the flame or None for
+# bare white mask, label colour). The flame itself is always Ambire Purple.
+SCHEMES = {
+    "neon": (C["volt"], C["black"]),
+    "black": (C["black"], C["white"]),
+    "white": (None, C["black"]),
 }
+LABEL_CLEAR = 0.5  # mm of flame-free base around each label (scripts/silkFlame.py does the same)
 
 
-def render_logo(svg: Path, box_px: tuple[int, int], tmp: Path) -> Image.Image:
-    """Official logo file, rasterised, cropped to its ink, scaled uniformly to fit box_px."""
-    big = tmp / f"logo_{svg.stem}.png"
-    run(["rsvg-convert", "-w", "4000", "-o", str(big), str(svg)])
-    im = Image.open(big).convert("RGBA")
-    im = im.crop(im.getchannel("A").getbbox())
-    s = min(box_px[0] / im.width, box_px[1] / im.height)
-    return im.resize((max(1, round(im.width * s)), max(1, round(im.height * s))), Image.LANCZOS)
+def flame_raster(g: Grid) -> np.ndarray:
+    """The flame (art/flame.py, the geometry scripts/silkFlame.py puts in the silkscreen), front
+    view: the facets filled, minus a flame.GAP-wide band along every facet outline."""
+    facets = flame.facets()
+    fbox = flame.box(facets)
+    at = flame.placement(g.wmm, g.hmm, fbox)
+    m = Image.new("L", (g.w, g.h), 0)
+    d = ImageDraw.Draw(m)
+    polys = [[g.px_front(g.x0 + x, g.y0 + y) for x, y in (flame.to_board(pt, fbox, at) for pt in p)]
+             for f in facets for p in f]
+    for p in polys:
+        d.polygon(p, fill=255)
+    for p in polys:
+        d.line(p + p[:1], fill=0, width=max(1, round(flame.GAP * g.ppm)), joint="curve")
+    return np.array(m) > 0
 
 
 def label_image(label: str, cap_mm: float, g: Grid, color: str) -> Image.Image:
@@ -453,90 +349,61 @@ def label_image(label: str, cap_mm: float, g: Grid, color: str) -> Image.Image:
     return im.crop(im.getchannel("A").getbbox())
 
 
-def place_labels(img: Image.Image, board: Board, g: Grid, color: str, occupied: np.ndarray,
-                 search_mm=6.0, clear_mm=0.25) -> list[str]:
-    """Restyled functional labels, as close as possible to where the owner put the plain
-    B.SilkS text, on the nearest spot whose box is clear of parts, no-ink areas and the
-    zones the flex tails hide (occupied, back view). Tries 0.85 mm caps horizontal, then
-    0.80 mm (JLC's colour-text minimum), then vertical. Returns notes for the build log."""
-    integ = np.pad(occupied.astype(np.int64).cumsum(0).cumsum(1), ((1, 0), (1, 0)))
-    cl = int(round(clear_mm * g.ppm))
-    step = max(1, int(round(0.1 * g.ppm)))
-    rng = int(search_mm * g.ppm)
-    notes = []
+def place_labels(board: Board, g: Grid, color: str) -> list:
+    """The functional labels in Poppins, where the owner put the plain B.SilkS text: same
+    centre, cap height and angle. Returns (centre px, image) per label, back view."""
+    placed = []
     for label in RESTYLED_LABELS:
         if label not in board.silk_texts:
             continue
-        x, y, _ = board.silk_texts[label]
-        ox, oy = g.back_x(x) * g.ppm, (y - g.y0) * g.ppm
-        best = None
-        for penalty, cap, rot in ((0.0, 0.85, 0), (0.6, 0.80, 0), (2.0, 0.85, 90), (2.4, 0.80, 90)):
-            lab = label_image(label, cap, g, color)
-            if rot:
-                lab = lab.rotate(rot, expand=True)
-            hw, hh = lab.width / 2 + cl, lab.height / 2 + cl
-            for dy in range(-rng, rng + 1, step):
-                for dx in range(-rng, rng + 1, step):
-                    score = math.hypot(dx, dy) / g.ppm + penalty
-                    if dx * dx + dy * dy > rng * rng or (best and score >= best[0]):
-                        continue
-                    x0, x1 = int(ox + dx - hw), int(ox + dx + hw)
-                    y0, y1 = int(oy + dy - hh), int(oy + dy + hh)
-                    if x0 < 0 or y0 < 0 or x1 >= g.w or y1 >= g.h:
-                        continue
-                    if integ[y1, x1] - integ[y0, x1] - integ[y1, x0] + integ[y0, x0] == 0:
-                        best = (score, ox + dx, oy + dy, lab, cap, rot)
-        if best is None:
-            notes.append(f'label "{label}": no clear spot within {search_mm} mm -- LEFT OUT, keep it as plain silk')
-            continue
-        _, bx, by, lab, cap, rot = best
-        # Quiet the background under the label (the art may run a bright beam through it).
-        shade = Image.new("L", img.size, 0)
-        pad = 0.45 * g.ppm
-        ImageDraw.Draw(shade).rounded_rectangle(
-            [bx - lab.width / 2 - pad, by - lab.height / 2 - pad, bx + lab.width / 2 + pad, by + lab.height / 2 + pad],
-            radius=pad, fill=210)
-        shade = shade.filter(ImageFilter.GaussianBlur(pad / 2))
-        dark = Image.new("RGBA", img.size, C["black"])
-        dark.putalpha(shade)
-        img.alpha_composite(dark)
+        x, y, size, rot = board.silk_texts[label]
+        lab = label_image(label, size, g, color)
+        if rot:  # a mirrored bottom text turned +rot in KiCad reads turned -rot from behind
+            lab = lab.rotate(-rot, expand=True)
+        placed.append((g.back_x(x) * g.ppm, (y - g.y0) * g.ppm, lab))
+    return placed
+
+
+def build_art(scheme: str, board: Board, g: Grid) -> Image.Image:
+    base, label_col = SCHEMES[scheme]
+    ink = flame_raster(g)[:, ::-1]  # back view
+    placed = place_labels(board, g, label_col)
+    # Each label sits on an island of plain base, LABEL_CLEAR around its ink box.
+    island = Image.new("L", (g.w, g.h), 0)
+    di = ImageDraw.Draw(island)
+    pad = LABEL_CLEAR * g.ppm
+    for bx, by, lab in placed:
+        di.rectangle([bx - lab.width / 2 - pad, by - lab.height / 2 - pad, bx + lab.width / 2 + pad, by + lab.height / 2 + pad], fill=255)
+    ink &= ~(np.array(island) > 0)
+    a = np.zeros((g.h, g.w, 4), np.uint8)
+    if base:
+        a[...] = (*(rgb(base) * 255 + 0.5).astype(np.uint8), 255)
+    a[ink] = (*(rgb(C["purple"]) * 255 + 0.5).astype(np.uint8), 255)
+    img = Image.fromarray(a)
+    for bx, by, lab in placed:
         img.alpha_composite(lab, (int(round(bx - lab.width / 2)), int(round(by - lab.height / 2))))
-        moved = math.hypot(bx - ox, by - oy) / g.ppm
-        if moved > 0.05 or cap != 0.85 or rot:
-            notes.append(f'label "{label}": {cap} mm caps{", vertical" if rot else ""}, moved {moved:.1f} mm to clear parts')
-    return notes
-
-
-def build_art(direction: str, board: Board, g: Grid, tmp: Path, occupied: np.ndarray) -> tuple[Image.Image, list[str]]:
-    fn, logo_file, label_col = DIRECTIONS[direction]
-    X, Y = g.mm_grid()
-    lz = g.back_rect(board.zones["UV ARTWORK"])
-    cam = g.back_rect(board.zones["CAMERA"])
-    rgbf = fn(Ctx(g, X, Y, lz, cam))
-    img = Image.fromarray((rgbf * 255 + 0.5).astype(np.uint8)).convert("RGBA")
-    # Logo: clear space of ~1.3 mm on every side of the reserved zone (brand p.37 clearspace).
-    pad = 1.3
-    box = ((lz[2] - lz[0] - 2 * pad) * g.ppm, (lz[3] - lz[1] - 2 * pad) * g.ppm)
-    logo = render_logo(BRAND / logo_file, (int(box[0]), int(box[1])), tmp)
-    cx, cy = (lz[0] + lz[2]) / 2 * g.ppm, (lz[1] + lz[3]) / 2 * g.ppm
-    img.alpha_composite(logo, (int(round(cx - logo.width / 2)), int(round(cy - logo.height / 2))))
-    notes = place_labels(img, board, g, label_col, occupied)
-    return img, notes
+    return img
 
 
 # --------------------------------------------------------------------------- previews
 
 
 def keyed_board_copy(board_path: Path, tmp: Path) -> Path:
-    """Temporary copy: magenta B.Mask / cyan B.SilkS keys, absolute 3D paths, replaced texts removed."""
+    """Temporary copy: magenta B.Mask / cyan B.SilkS keys, absolute 3D paths, replaced labels and the
+    silkscreen flame removed."""
     text = board_path.read_text()
     text = text.replace("${KIPRJMOD}", str(board_path.parent))
     stack = ('(setup\n\t\t(stackup\n'
              '\t\t\t(layer "B.Mask" (type "Bottom Solder Mask") (color "#FF00FFFF") (thickness 0.01))\n'
              '\t\t\t(layer "B.SilkS" (type "Bottom Silk Screen") (color "#00FFFFFF"))\n\t\t)')
     text = text.replace("(setup", stack, 1)
-    for label in REPLACED_TEXTS:  # drop the plain silk labels the artwork replaces
+    for label in RESTYLED_LABELS:  # drop the plain silk labels the print replaces
         text = re.sub(r'\n\t\(gr_text "' + re.escape(label) + r'"\n(?:\t\t.*\n)*?\t\)', "", text)
+    group = re.search(r'\n\t\(group "' + FLAME_GROUP + r'"\n(?:\t\t.*\n)*?\t\)', text)
+    if group:  # and the white silkscreen flame the print replaces
+        for uuid in re.findall(r'"([0-9a-f-]{36})"', group[0])[1:]:  # [0] is the group's own uuid
+            text = re.sub(r'\n\t\(gr_poly\n(?:\t\t.*\n)*?\t\t\(uuid "' + uuid + r'"\)\n\t\)', "", text)
+        text = text.replace(group[0], "")
     out = tmp / "keyed.kicad_pcb"
     out.write_text(text)
     return out
@@ -606,7 +473,7 @@ def zone_raster(board: Board, g: Grid, names, grow_mm=0.0) -> np.ndarray:
     return np.array(m) > 0
 
 
-def build(board_path: Path, direction: str, dpi: int, pad_margin: float, edge_margin: float, tmp: Path):
+def build(board_path: Path, scheme: str, dpi: int, pad_margin: float, edge_margin: float, tmp: Path):
     board = load_board(board_path)
     g = Grid(board, dpi)
     inside = np.array(board_mask(board, g, edge_margin)) > 0
@@ -615,27 +482,24 @@ def build(board_path: Path, direction: str, dpi: int, pad_margin: float, edge_ma
         | zone_raster(board, g, ["CAMERA"])
     keepout = np.array(disk_dilate(Image.fromarray(keepout_raw.astype(np.uint8) * 255), pad_margin * g.ppm)) > 0
     allowed = (inside & ~keepout)[:, ::-1]  # back view
-    # Where a label must not sit: part bodies (courtyards), no-ink areas, and areas hidden by the flex tails.
-    bodies = part_bodies(board_path, g, tmp)
-    occupied = (bodies | keepout | ~inside | zone_raster(board, g, ["TFT TAIL", "TOUCH TAIL"]))[:, ::-1]
-    art, notes = build_art(direction, board, g, tmp, occupied)
+    art = build_art(scheme, board, g)
     a = np.array(art)
     a[..., 3] = np.where(allowed, a[..., 3], 0)
     # Self-check: no ink on any raw opening/hole/window, nothing outside the inset outline.
     leak = (a[..., 3] > 0) & (keepout_raw[:, ::-1] | ~inside[:, ::-1])
     if leak.any():
         raise RuntimeError(f"ink lands on {int(leak.sum())} forbidden pixels")
-    return board, g, Image.fromarray(a), notes, keepout_raw[:, ::-1]
+    return board, g, Image.fromarray(a), keepout_raw[:, ::-1]
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--board", type=Path, default=DEFAULT_BOARD)
-    ap.add_argument("--direction", choices=sorted(DIRECTIONS), default="flare")
+    ap.add_argument("--scheme", choices=list(SCHEMES), default="neon", help="purple on neon, black or white (docs/direction.md)")
     ap.add_argument("--dpi", type=int, default=1200, help="print raster resolution (JLC's UV printer: up to 1200 DPI)")
     ap.add_argument("--pad-margin", type=float, default=0.10, help="mm of bare mask kept around every opening/hole")
     ap.add_argument("--edge-margin", type=float, default=0.30, help="mm kept clear of the outline and slots")
-    ap.add_argument("--directions", action="store_true", help="also render the 3-direction comparison sheet")
+    ap.add_argument("--schemes", action="store_true", help="also render the comparison sheet of the schemes")
     ap.add_argument("--no-preview", action="store_true")
     args = ap.parse_args()
     for tool in ("kicad-cli", "rsvg-convert"):
@@ -644,14 +508,12 @@ def main():
     OUT.mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="uvart_") as td:
         tmp = Path(td)
-        board, g, art, notes, keepout_back = build(args.board, args.direction, args.dpi, args.pad_margin, args.edge_margin, tmp)
-        for n in notes:
-            print("note:", n)
+        board, g, art, keepout_back = build(args.board, args.scheme, args.dpi, args.pad_margin, args.edge_margin, tmp)
         back = OUT / "uv_back_seen_from_behind.png"
         front = OUT / "uv_back_kicad_front_view.png"
         art.save(back, dpi=(args.dpi, args.dpi))
         ImageOps.mirror(art).save(front, dpi=(args.dpi, args.dpi))
-        print(f"{back.name}: {art.width}x{art.height}px @ {args.dpi} DPI = {g.wmm:.2f} x {g.hmm:.2f} mm")
+        print(f"{back.name}: purple on {args.scheme}, {art.width}x{art.height}px @ {args.dpi} DPI = {g.wmm:.2f} x {g.hmm:.2f} mm")
         print(f"{front.name}: mirrored copy in KiCad (front-view) coordinates")
         # Check sheet: art over white mask, raw no-ink areas in red (red must never touch colour).
         chk = Image.new("RGBA", art.size, (242, 242, 238, 255))
@@ -660,17 +522,17 @@ def main():
         red[keepout_back] = (255, 0, 0, 255)
         chk.alpha_composite(Image.fromarray(red))
         chk.convert("RGB").resize((g.w // 2, g.h // 2), Image.LANCZOS).save(OUT / "check_no_ink.png")
-        if args.no_preview and not args.directions:
+        if args.no_preview and not args.schemes:
             return
         keyed = render_keyed(args.board, tmp)
         if not args.no_preview:
             composite(keyed, art, board, assembled=False).save(HERE / "preview_back.png")
             composite(keyed, art, board, assembled=True).save(HERE / "preview_back_assembled.png")
             print("preview_back.png, preview_back_assembled.png")
-        if args.directions:
+        if args.schemes:
             tiles = []
-            for name in DIRECTIONS:
-                _, _, a, _, _ = build(args.board, name, 300, args.pad_margin, args.edge_margin, tmp)
+            for name in SCHEMES:
+                _, _, a, _ = build(args.board, name, 300, args.pad_margin, args.edge_margin, tmp)
                 t = composite(keyed, a, board, assembled=True)
                 t = t.resize((460, round(460 * t.height / t.width)), Image.LANCZOS)
                 tiles.append((name, t))
@@ -680,9 +542,9 @@ def main():
             d = ImageDraw.Draw(sheet)
             for i, (name, t) in enumerate(tiles):
                 sheet.paste(t, (20 + i * 480, 56))
-                d.text((20 + i * 480, 14), f"{chr(65 + i)} · {name}", font=font, fill=C["black"])
-            sheet.save(HERE / "directions.png")
-            print("directions.png")
+                d.text((20 + i * 480, 14), f"purple on {name}", font=font, fill=C["black"])
+            sheet.save(HERE / "schemes.png")
+            print("schemes.png")
 
 
 if __name__ == "__main__":

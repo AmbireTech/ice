@@ -165,8 +165,7 @@ JLC's standard silkscreen is white or black only, and no maker offers a Volt
 mask, so the three purple schemes need a colour print. JLC accepts colour print
 only for files from its own design tool, so those go through PCBWay.
 
-**Done:** the flame is in the board file as ordinary silkscreen
-(`scripts/silkFlame.py`), so the white-on-black and black-on-white schemes need
-nothing more. **Not done yet:** the colour-print image. The PCBWay print file
-(`art/build_uv.py`) still carries the old "light beams" artwork with the
-wordmark, so the purple schemes cannot be ordered as shown.
+The flame is in the board file as ordinary silkscreen (`scripts/silkFlame.py`),
+so the white-on-black and black-on-white schemes need nothing more. The purple
+schemes' colour print is `art/build_uv.py --scheme neon|black|white`; the
+PCBWay order set carries purple on neon.

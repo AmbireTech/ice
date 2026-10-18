@@ -27,8 +27,8 @@ Ambire internals into GridCore's.
   turnkey BOM (manufacturer + MPN), centroid, `ORDER-NOTES.txt`.
 - JLC/LCSC flags the OPTIGA's part number SLS32AIA010MKUSON10XTMA2 as "no longer
   manufactured" (2026-10-17); the pre-fab checks print it as a NOTE.
-- The PCBWay colour print (`art/build_uv.py`) is still the old Flare art with the
-  wordmark, while the board's back silkscreen is the flame; see `art/README.md`.
+- The PCBWay colour print (`art/build_uv.py`) is the same flame in Purple, on a Volt
+  base by default (`--scheme`); its Gerbers leave the white flame and labels out.
 - Firmware: `firmware/trezor-firmware/` is trezor-firmware vendored without .git
   (base commit: first line of `firmware/vendor-pins.txt`), built as T3T2 with our
   board `ambire_p0` via `firmware/docker-build.sh`. A weekly workflow

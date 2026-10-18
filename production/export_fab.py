@@ -16,9 +16,9 @@ gerbers, drill and CPL all use that same point. The board file is never saved.
 
     KPY export_fab.py <board.kicad_pcb> <outdir> <rotation_db.csv> [--colour]
 
---colour: for a JLC colour-print (UV) order. The board-level back silkscreen texts
-the UV artwork replaces (art/build_uv.py REPLACED_TEXTS) are left out of the
-plot, in memory only, so they don't print twice.
+--colour: for a colour-print (UV) order. The back silkscreen the UV print replaces,
+the board-level labels (art/build_uv.py RESTYLED_LABELS) and the white flame (group
+FLAME), is left out of the plot, in memory only, so it doesn't print twice.
 """
 import csv
 import hashlib
@@ -81,12 +81,16 @@ def main():
 
     board = pcbnew.LoadBoard(board_path)
     if colour:
-        replaced = ("AIRGAP", "RADIO", "SECURE ELEMENT", "QR CAMERA", "AMBIRE")   # = art/build_uv.py REPLACED_TEXTS
+        replaced = ("AIRGAP", "RADIO", "SECURE ELEMENT", "QR CAMERA", "ANT")   # = art/build_uv.py RESTYLED_LABELS
         hidden = [d for d in board.GetDrawings()
                   if d.GetClass() == "PCB_TEXT" and d.GetLayer() == pcbnew.B_SilkS and d.GetText() in replaced]
         for d in hidden:
             board.Remove(d)          # the plotter ignores a board text's hidden flag; the file is never saved
-        print(f"colour print: {len(hidden)} back silk texts left out ({', '.join(sorted(d.GetText() for d in hidden))})")
+        flame = [i for g in board.Groups() if g.GetName() == "FLAME" for i in g.GetItems()]
+        for i in flame:
+            board.Remove(i)
+        print(f"colour print: {len(hidden)} back silk texts left out ({', '.join(sorted(d.GetText() for d in hidden))}), "
+              f"{len(flame)} flame polygons left out")
     ds = board.GetDesignSettings()
     old_aux = pcbnew.VECTOR2I(ds.GetAuxOrigin())
 

@@ -1,14 +1,15 @@
 # Back print: Ambire signer
 
-The back face is the one the case shows, so it carries the brand. There are two
-prints, and today they disagree:
+The back face is the one the case shows, so it carries the brand: the Ambire
+flame alone, with no wordmark. It comes in two forms, drawn from the same geometry
+(`flame.py`):
 
-| | What it is | Made by | State |
+| | What it is | Made by | Used by |
 |---|---|---|---|
-| **Flame silkscreen** | The Ambire flame alone, one ink, across the whole back | `flame.py` (geometry) + `../scripts/silkFlame.py` (into the board) | In the board file; the next run |
-| **Colour print** | The "Flare" light-beams artwork below, with the logo and wordmark | `build_uv.py` | Used by the PCBWay order set; not redone for the flame yet |
+| **Flame silkscreen** | The flame in one ink (white), across the whole back | `../scripts/silkFlame.py` (into the board) | The board file, the JLC order set; the next run |
+| **Colour print** | The flame in Purple on a Volt, black or white base, with the labels | `build_uv.py` | The PCBWay order set |
 
-The first three boards were ordered before either, with the old wordmark in
+The first three boards were ordered before the flame, with the old wordmark in
 plain silkscreen. The schemes the configurator offers, and which of them need
 the colour print, are in [../docs/direction.md](../docs/direction.md#board-print).
 
@@ -30,51 +31,55 @@ $KICAD_PY ../scripts/silkFlame.py --apply  # install (close KiCad first)
 Rerun it after moving parts, pads or labels on the back. `flame.py` is also what
 the concept page's 3D preview draws.
 
-## The colour print ("Flare")
+## The colour print
 
 ![assembled preview](preview_back_assembled.png)
 
-**"The only way in is light."** The signer is air-gapped, so a transaction can only reach it as a QR code read through the camera window. The artwork makes that literal. The back is printed in Ambire Black, and beams of Ambire Volt, Violet and Purple, with a Signal Blue fringe, fan out of the camera window across the board in the style of the brand's "Flare" backgrounds. The beams are aimed at the parts of the board that stay visible between components. The official vertical Ambire logo (colour symbol, white wordmark, the brand's "over black" colourway) sits alone in the quiet top-left corner, with its full clear space. The functional labels (AIRGAP, RADIO, SECURE ELEMENT, QR CAMERA) are set in Poppins SemiBold in Volt, on a darkened patch so a beam never washes them out.
+The same flame as the silkscreen, in Ambire Purple, over the base of one of the
+purple schemes in [../docs/direction.md](../docs/direction.md#board-print):
 
-This predates the decision to show the flame alone. To print the purple flame
-schemes, this script needs a flame direction in place of the Flare.
+| `--scheme` | Base | Labels |
+|---|---|---|
+| `neon` (default) | Volt #D7FF00 | Black |
+| `black` | Black #181A1F | White |
+| `white` | none: the white mask shows | Black |
 
-### Directions considered
+The facets keep the same 0.35 mm gap of base between them as the silkscreen. The
+labels (QR CAMERA, SECURE ELEMENT, AIRGAP, RADIO, ANT) are set in Poppins SemiBold
+where they are in the silkscreen, at the same size and angle, each on a clean
+island of base 0.5 mm wide. `schemes.png` shows all three on the board.
 
-See `directions.png`:
-
-- **A · Flare** (chosen). A dark base makes the parts look precise and expensive. Colour shows up only where light "travels", so the busy areas stay calm. The concept is tied to what the product actually does. On a white-mask board, dark ink also hides solder flux stains and handling marks best.
-- **B · Liquid.** This is the brand's signature texture, but between dense parts it reads as noise. Its bright areas also compete with the parts and with the logo.
-- **C · Facets** (Modern Bold). Clean, but a flat purple-to-blue gradient reads as "coloured solder mask". It does not say anything about the product.
+In the PCBWay order set, the back silkscreen Gerber leaves out the labels and the
+white flame, so neither prints twice.
 
 ### Files
 
 - `out/uv_back_seen_from_behind.png`: **the print file**. RGBA, 1200 DPI, 2268×4016 px = 48.00×85.00 mm. It shows the back as a person sees it. Transparent pixels mean no ink. The PCBWay order set ships it as `wallet_bottom_UV_print_1200dpi.png`.
 - `out/uv_back_kicad_front_view.png`: the same image mirrored, in KiCad's front-looking coordinates (the frame bottom-layer Gerbers use).
-- `out/check_no_ink.png`: the art over white mask, with every pad, opening, drill and the camera window in red. Red must never touch colour; the build also checks this itself.
-- `preview_back.png`: the art on a fresh 3D render of the back.
+- `out/check_no_ink.png`: the print over white mask, with every pad, opening, drill and the camera window in red. Red must never touch colour; the build also checks this itself.
+- `preview_back.png`: the print on a fresh 3D render of the back.
 - `preview_back_assembled.png`: the same with the two display flex tails and the camera module drawn on.
-- `directions.png`: the three concepts.
+- `schemes.png`: the three schemes side by side.
 
-The PNGs in `out/` are about 14 MB each (the brand texture's grain), so they stay
-out of git; `production/make_order.sh` rebuilds them.
+The PNGs in `out/` stay out of git; `production/make_order.sh` rebuilds them.
 
 ### Rebuild after placement changes
 
 ```
 python3 -m venv .venv && .venv/bin/pip install pillow numpy
-.venv/bin/python build_uv.py               # print files + previews (~30 s)
-.venv/bin/python build_uv.py --directions  # also directions.png
+.venv/bin/python build_uv.py                  # print files + previews, purple on neon (~30 s)
+.venv/bin/python build_uv.py --scheme black   # another scheme
+.venv/bin/python build_uv.py --schemes        # also schemes.png
 ```
 
 The script needs `kicad-cli` (KiCad 10) and `rsvg-convert` on the PATH. It only reads `../board/wallet.kicad_pcb`. Each run re-derives the following from the board:
 
 - **Outline and slots:** from Edge.Cuts.
 - **No-ink areas:** the B.Mask openings and every PTH/NPTH drill and slot (via kicad-cli), plus the CAMERA window.
-- **Logo, camera and flex-tail zones:** from the labelled Dwgs.User rectangles `UV ARTWORK`, `CAMERA`, `TFT TAIL` and `TOUCH TAIL`. Move a rectangle and the art follows.
-- **Label positions:** from the board-level B.SilkS texts. Each label is moved to the nearest spot clear of courtyards, no-ink areas and the flex tails. If there is no room, it falls back to 0.80 mm caps, then to vertical text. The script prints every move. A label that cannot fit is left out with a warning.
+- **Camera and flex-tail zones (previews):** from the labelled Dwgs.User rectangles `CAMERA`, `TFT TAIL` and `TOUCH TAIL`.
+- **Labels:** from the board-level B.SilkS texts: position, size and angle.
 
-Options: `--direction`, `--dpi`, `--pad-margin`, `--edge-margin`.
+Options: `--scheme`, `--dpi`, `--pad-margin`, `--edge-margin`.
 
 ## Who prints colour
 
@@ -118,20 +123,16 @@ What we found about JLC's process when we researched it (2026-10-14):
 
 Everything comes from github.com/AmbireTech/ambire-brand, commit `5939a5bf` (2026-06-01).
 
-- **Logo:** `Logos/Ambire/SVG/Ambire-ver-on-dark.svg`, copied unmodified into `brand/`. The flame is its Purple and Violet facets. Directions B and C use `logo-ver-simplified-white.svg`.
-- **Colours:** *Ambire Brand Basics.pdf* v2.0, pages 49 and 51:
+- **Logo:** `Logos/Ambire/SVG/Ambire-ver-on-dark.svg`, copied unmodified into `brand/`. The flame is its Purple and Violet facets.
+- **Colours used:** *Ambire Brand Basics.pdf* v2.0, pages 49 and 51:
   - Purple `#6000FF`
   - Black `#181A1F`
   - White `#DCE2F2`
-  - Violet `#AF50FF`
   - Volt `#D7FF00`
-  - Signal Blue `#3871FF`
-  - Heat `#FE4648` (not used)
 - **Font:** Poppins, the brand's main typeface (page 43). The file `brand/Poppins-SemiBold.ttf` is from Google Fonts and licensed under the OFL (`brand/Poppins-OFL.txt`).
-- **Rules followed** (pages 37–41): the logo keeps its clear space, it is not stretched, recoloured or given effects, it is not repeated as a pattern, and it sits on high contrast.
+- **Rules followed** (pages 37–41): the flame is not stretched or given effects and is not repeated as a pattern. Printing it alone, in one colour, is the board-print decision in [../docs/direction.md](../docs/direction.md#board-print).
 
 ## Open questions
 
-1. **The colour print for the flame.** `build_uv.py` needs a flame direction (the purple schemes in direction.md) before a PCBWay colour order matches the board. Until then the PCBWay set is inconsistent: its back silkscreen Gerber (labels removed) still carries the flame in white, which would print over the Flare image with its wordmark. Either leave the FLAME group out of that Gerber or replace the image.
-2. **The white mask shows through on purpose** as a 0.10 mm ring around each pad and a 0.30 mm rim at the edge. Ask the maker what clearance they apply themselves; if they pull the ink back too, `--pad-margin 0` may be correct.
-3. **PCBWay's colour price and how it orients a bottom-side image** are not recorded here; `wallet_UV_positioning.png` is in the zip so they can check the image against the Gerbers.
+1. **The white mask shows through on purpose** as a 0.10 mm ring around each pad and a 0.30 mm rim at the edge. Ask the maker what clearance they apply themselves; if they pull the ink back too, `--pad-margin 0` may be correct.
+2. **PCBWay's colour price and how it orients a bottom-side image** are not recorded here; `wallet_UV_positioning.png` is in the zip so they can check the image against the Gerbers.

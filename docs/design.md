@@ -162,9 +162,8 @@ touch flex is merged into the TFT flex.
   `scripts/silkFlame.py` draws it (group FLAME, replaced on a rerun, DRC checked
   on a copy before it installs); `art/flame.py` is the geometry, shared with the
   concept page's preview. A full-colour version (purple on neon and the like)
-  needs PCBWay's colour print; `art/build_uv.py` still builds the older
-  "light beams" artwork with the wordmark for that route, so the PCBWay set does
-  not match the board yet. The first three boards (ordered before the flame)
+  needs PCBWay's colour print; `art/build_uv.py` builds it from the same flame,
+  and the PCBWay set leaves the white flame out of its silkscreen. The first three boards (ordered before the flame)
   carry the old wordmark in silkscreen.
 
 ## Placement for routing
