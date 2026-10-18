@@ -14,6 +14,7 @@ board/.history/
 board/~*.lck
 board/fp-info-cache
 scripts/__pycache__/
+art/__pycache__/
 .cand/
 
 # art/out/: print files rebuilt by art/build_uv.py from the board (~14 MB each)
