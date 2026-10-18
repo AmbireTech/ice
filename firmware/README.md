@@ -51,8 +51,12 @@ open; `--production` would set level 2, which locks SWD for good.
 
 ## Keeping up with Trezor
 
+The sync runs one way, Trezor → us: it pulls Trezor's new commits into
+`trezor-firmware/` here and keeps our changes on top. Nothing is ever sent to
+Trezor.
+
 `sync-upstream.sh` moves the tree to a newer upstream commit and keeps our
-changes. It replays them as one commit on top of the target in a scratch
+changes. It re-applies them as one commit on top of the target in a scratch
 checkout (`firmware/.upstream/`, not committed), so a clash with upstream comes
 out as an ordinary git conflict, and then copies the result back and rewrites
 `vendor-pins.txt`.

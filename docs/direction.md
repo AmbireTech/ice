@@ -19,13 +19,13 @@ The owner prefers to start from Trezor's firmware, or a fork of it, ideally
 from Model T. GPLv3 is acceptable.
 
 **Status (2026-10-18):** the fork exists. `firmware/trezor-firmware/` is
-trezor-firmware, started from `5fdc180` and kept on Trezor's `main` by a weekly
-sync PR (base commit: first line of `firmware/vendor-pins.txt`), built as T3T2
-with our own board definition (`ambire_p0`): pin map, power latch, display over
-SPI, touch, both I2C buses, development keys. It is step 2 of the suggested
-order below, without the radio, the secure elements, the charger, the battery
-gauge or the camera so far. The changes, build and flashing:
-[firmware/README.md](../firmware/README.md).
+trezor-firmware, started from `5fdc180` and kept current with Trezor's `main` by
+a weekly PR that pulls their new commits in (base commit: first line of
+`firmware/vendor-pins.txt`), built as T3T2 with our own board definition
+(`ambire_p0`): pin map, power latch, display over SPI, touch, both I2C buses,
+development keys. It is step 2 of the suggested order below, without the radio,
+the secure elements, the charger, the battery gauge or the camera so far. The
+changes, build and flashing: [firmware/README.md](../firmware/README.md).
 
 **Model T is the wrong base.** It runs an STM32F427 (no TrustZone) with a
 240×240 parallel display and no secure element. Trezor still ships fixes for it

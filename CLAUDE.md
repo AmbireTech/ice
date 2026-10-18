@@ -32,8 +32,9 @@ Ambire internals into GridCore's.
 - Firmware: `firmware/trezor-firmware/` is trezor-firmware vendored without .git
   (base commit: first line of `firmware/vendor-pins.txt`), built as T3T2 with our
   board `ambire_p0` via `firmware/docker-build.sh`. A weekly workflow
-  (`.github/workflows/firmware-upstream-sync.yml`) syncs it with Trezor's main
-  and opens a PR. Build, flash, sync and our changes: `firmware/README.md`.
+  (`.github/workflows/firmware-upstream-sync.yml`) pulls Trezor's new commits
+  into it (one way: Trezor → us) and opens a PR here. Build, flash, sync and our
+  changes: `firmware/README.md`.
 
 ## Firmware
 

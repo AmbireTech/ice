@@ -1,10 +1,11 @@
 name: Firmware upstream sync
 
-# Weekly: replay our firmware changes onto trezor-firmware main
-# (firmware/sync-upstream.sh), build our board and Trezor's T3T2 devkit, and
-# open or update one PR from the branch firmware/upstream-sync. A failing
-# build makes it a draft; conflicts open an issue instead. firmware/README.md
-# has the details.
+# Weekly, one way (Trezor -> us): pull trezor-firmware main's new commits
+# into firmware/trezor-firmware, keeping our changes on top
+# (firmware/sync-upstream.sh). Nothing is sent to Trezor. Then build our board
+# and Trezor's T3T2 devkit, and open or update one PR here from the branch
+# firmware/upstream-sync. A failing build makes it a draft; conflicts open an
+# issue instead. firmware/README.md has the details.
 
 on:
   schedule:
@@ -60,7 +61,7 @@ jobs:
           title="Firmware: upstream sync conflicts"
           # shellcheck disable=SC2016  # backticks are Markdown
           {
-            echo "Replaying our firmware changes onto trezor-firmware [\`${target:0:9}\`](https://github.com/trezor/trezor-firmware/commit/$target) conflicts in:"
+            echo "Pulling trezor-firmware [\`${target:0:9}\`](https://github.com/trezor/trezor-firmware/commit/$target) into our firmware conflicts with our changes in:"
             echo
             git -C firmware/.upstream/work diff --name-only --diff-filter=U | sed 's/^/- `/; s/$/`/'
             echo
