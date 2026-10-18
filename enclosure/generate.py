@@ -102,11 +102,13 @@ GAP = 0.3             # board edge to wall
 TONGUE_T, TONGUE_H, TONGUE_CLR = 0.8, 1.8, 0.1
 BACK_FILLET, FRONT_FILLET = 1.5, 1.2
 # Outer walls lean in toward the back and toward the front, widest at the parting
-# line, so the two halves meet flush. 1 deg is barely visible, softens the box and
+# line, so the two halves meet flush: the back and front faces are DRAFT_MM narrower
+# (in total, both sides together) than the parting line. That softens the box and
 # lets a moulded part release; both halves still print flat face down without
-# supports (the walls overhang 1 deg, far inside the ~45 deg a printer manages).
-DRAFT = 1.0
+# supports (the walls overhang ~3 deg, far inside the ~45 deg a printer manages).
+DRAFT_MM = 1.0
 MAX_UNSUPPORTED = 45.0
+MIN_WALL = 1.2        # thinnest the drafted wall may get, at the back and front faces
 WINDOW_MARGIN = 0.3   # display window beyond the viewing area, each side
 BOSS_R, PILOT_R = 2.1, 0.8   # M2 self-tapping into a 1.6 mm pilot
 BOSS_PART_CLR = 0.2
@@ -594,6 +596,12 @@ def main():
     z_panel = (z_cell[1], z_cell[1] + PANEL_T)
     z_lip = z_panel[1] + PANEL_GAP
     z_top = z_lip + LIP
+    draft_back = math.degrees(math.atan(DRAFT_MM / 2 / (z_split - z_floor_out)))
+    draft_front = math.degrees(math.atan(DRAFT_MM / 2 / (z_top - z_split)))
+    if max(draft_back, draft_front) >= MAX_UNSUPPORTED:
+        raise SystemExit("draft: the walls would need supports when printed")
+    if WALL - DRAFT_MM / 2 < MIN_WALL:
+        raise SystemExit(f"draft: the wall thins to {WALL - DRAFT_MM / 2:.2f} mm at the back/front, under {MIN_WALL}")
 
     px0, py0, pw, ph = panel_outline()
     panel = (px0, py0, px0 + pw, py0 + ph)
@@ -665,14 +673,12 @@ def main():
     nub_x0 = tip_x + NUB_GAP
     nub_len = wx_out - tab_t - nub_x0
     nub = Pos(nub_x0 + nub_len / 2, -py_c, pz) * Rot(0, 90, 0) * Cylinder(NUB_D / 2, nub_len)
-    report.append(f"draft {DRAFT} deg: back {2 * math.tan(math.radians(DRAFT)) * (z_split - z_floor_out):.2f} mm and front "
-                  f"{2 * math.tan(math.radians(DRAFT)) * (z_top - z_split):.2f} mm narrower than the parting line")
+    report.append(f"draft: back and front {DRAFT_MM} mm narrower than the parting line "
+                  f"({draft_back:.1f} / {draft_front:.1f} deg), wall {WALL - DRAFT_MM / 2:.2f} mm at its thinnest")
     report.append(f"power tab {tab_len} x {tab_h} in the east wall, nub {NUB_GAP} mm off the plunger tip (x {tip_x:.2f})")
 
     # ── shell ──
-    if not 0 <= DRAFT < MAX_UNSUPPORTED:
-        raise SystemExit(f"draft {DRAFT} deg: the walls would need supports when printed")
-    shell = rr_prism_drafted(*out_o[:4], out_o[4], z_split, z_floor_out, DRAFT)
+    shell = rr_prism_drafted(*out_o[:4], out_o[4], z_split, z_floor_out, draft_back)
     shell = fillet(shell.edges().group_by(Axis.Z)[0], BACK_FILLET)
     shell -= rr_prism(*in_o[:4], in_o[4], z_floor_in, z_split + 1)
     shell += rr_prism(*tongue_o[:4], tongue_o[4], z_split, z_split + TONGUE_H) - rr_prism(*in_o[:4], in_o[4], z_split - 1, z_split + TONGUE_H + 1)
@@ -720,7 +726,7 @@ def main():
         shell += bp
 
     # ── bezel ──
-    bezel = rr_prism_drafted(*out_o[:4], out_o[4], z_split, z_top, DRAFT)
+    bezel = rr_prism_drafted(*out_o[:4], out_o[4], z_split, z_top, draft_front)
     bezel = fillet(bezel.edges().group_by(Axis.Z)[-1], FRONT_FILLET)
     bezel -= rr_prism(*in_o[:4], in_o[4], z_split - 1, z_lip)
     bezel -= rr_prism(*skirt_o[:4], skirt_o[4], z_split - 1, z_split + TONGUE_H + TONGUE_CLR)
