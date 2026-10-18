@@ -4,6 +4,7 @@ name: Concept page
 # site's index, with only the files it loads (brand/, enclosure/). The rest of
 # docs/ (design notes, research) stays out of the public site.
 # Needs Settings -> Pages -> Source: GitHub Actions.
+# Live at https://ambiretech.github.io/secure-signer/
 
 on:
   push:

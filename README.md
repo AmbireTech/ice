@@ -39,7 +39,9 @@ and [KiCadRoutingTools](https://github.com/drandyhaas/KiCadRoutingTools).
   candidates and how they were judged
 - [docs/ambire-signer.html](docs/ambire-signer.html) — the concept page shared
   with the team (3D model, configurator with DIY downloads, clear signing,
-  architecture, status); live copy: https://claude.ai/artifact/LLUtmWoVMm4PUxiSL7d5Ad
+  architecture, status); public copy: https://ambiretech.github.io/secure-signer/
+  (deployed by `.github/workflows/concept-page.yml`), Claude artifact:
+  https://claude.ai/artifact/LLUtmWoVMm4PUxiSL7d5Ad
 
 ## Firmware
 
