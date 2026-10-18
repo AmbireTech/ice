@@ -44,16 +44,18 @@ and [KiCadRoutingTools](https://github.com/drandyhaas/KiCadRoutingTools).
 ## Firmware
 
 Trezor's firmware, ported to this board: `firmware/trezor-firmware/` is
-[trezor-firmware](https://github.com/trezor/trezor-firmware) at `5fdc180`
-(2026-10-16) with our changes on top. It builds as Trezor's T3T2 model with our
-own board, `ambire_p0`: our pin map, the display over SPI (Trezor's is
+[trezor-firmware](https://github.com/trezor/trezor-firmware) with our changes on
+top, started from `5fdc180` (2026-10-16). Every Monday a workflow replays our
+changes onto Trezor's latest `main`, builds, and opens a PR; the current base is
+the first line of `firmware/vendor-pins.txt`. It builds as Trezor's T3T2 model
+with our own board, `ambire_p0`: our pin map, the display over SPI (Trezor's is
 parallel), the FT5426 touch, and a power latch in the boardloader. Development
-keys only, for the bench. The secure elements, radio, camera, charger and battery
-gauge are not driven yet.
+keys only, for the bench. The secure elements, radio, camera, charger and
+battery gauge are not driven yet.
 
 `firmware/docker-build.sh` builds it in Docker with Trezor's own toolchain.
-Build, flashing, the full list of changes and the bring-up checks:
-[firmware/README.md](firmware/README.md). What is left and why:
+Build, flashing, syncing with Trezor, the full list of changes and the bring-up
+checks: [firmware/README.md](firmware/README.md). What is left and why:
 [docs/direction.md](docs/direction.md#2-trezor-compatible-start-from-trezors-firmware).
 
 ## Board

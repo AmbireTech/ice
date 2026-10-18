@@ -29,9 +29,25 @@ Ambire internals into GridCore's.
   manufactured" (2026-10-17); the pre-fab checks print it as a NOTE.
 - The PCBWay colour print (`art/build_uv.py`) is still the old Flare art with the
   wordmark, while the board's back silkscreen is the flame; see `art/README.md`.
-- Firmware: `firmware/trezor-firmware/` is trezor-firmware `5fdc180` vendored
-  without .git, built as T3T2 with our board `ambire_p0` via
-  `firmware/docker-build.sh`. Build, flash and our changes: `firmware/README.md`.
+- Firmware: `firmware/trezor-firmware/` is trezor-firmware vendored without .git
+  (base commit: first line of `firmware/vendor-pins.txt`), built as T3T2 with our
+  board `ambire_p0` via `firmware/docker-build.sh`. A weekly workflow
+  (`.github/workflows/firmware-upstream-sync.yml`) syncs it with Trezor's main
+  and opens a PR. Build, flash, sync and our changes: `firmware/README.md`.
+
+## Firmware
+
+- Touch Trezor's files as little as possible: new files over edits, `#ifdef`
+  switches beside upstream code, never reformat or move it. Each sync replays our
+  diff; every upstream line we change is a conflict candidate.
+- Move to a newer upstream only with `firmware/sync-upstream.sh`; never copy
+  upstream files over by hand or edit the first line of `vendor-pins.txt`. The
+  sync replays committed files only: commit firmware changes first.
+- Build with `firmware/docker-build.sh` (host has no ARM toolchain). Both it and
+  the sync resolve physical paths: this checkout is reachable as
+  `~/linux/ivo/storage/...` and `~/storage/...`, and git reports the latter.
+- The upstream T3T2 emulator did not build at `5fdc180` (devkit too): no UI
+  preview until Trezor fixes it.
 
 ## The board file belongs to the owner
 

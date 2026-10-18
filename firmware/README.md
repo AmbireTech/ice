@@ -1,10 +1,13 @@
 # Firmware
 
 The signer runs Trezor's firmware, ported to this board. `trezor-firmware/` is
-[trezor/trezor-firmware](https://github.com/trezor/trezor-firmware) `main` at
-`5fdc180` (2026-10-16), committed here without its `.git`. Its submodules are
-not committed: `vendor-pins.txt` pins each one and `fetch-vendor.sh` checks
-them out.
+[trezor/trezor-firmware](https://github.com/trezor/trezor-firmware) with our
+changes on top, committed here without its `.git`. The first line of
+`vendor-pins.txt` names the upstream commit it is based on (`5fdc180`,
+2026-10-16, when the port started); a weekly sync moves it forward (see
+[Keeping up with Trezor](#keeping-up-with-trezor)). The submodules are not
+committed: `vendor-pins.txt` pins each one and `fetch-vendor.sh` checks them
+out.
 
 The board is a new board of Trezor's T3T2 model (the Safe 5 family at
 240×320): `T3T2/boards/ambire_p0`. The firmware therefore reports itself as a
@@ -46,9 +49,45 @@ On its first boot the boardloader programs the rest of the option bytes and
 restarts. Development builds leave readout protection at level 0, so SWD stays
 open; `--production` would set level 2, which locks SWD for good.
 
+## Keeping up with Trezor
+
+`sync-upstream.sh` moves the tree to a newer upstream commit and keeps our
+changes. It replays them as one commit on top of the target in a scratch
+checkout (`firmware/.upstream/`, not committed), so a clash with upstream comes
+out as an ordinary git conflict, and then copies the result back and rewrites
+`vendor-pins.txt`.
+
+```sh
+firmware/sync-upstream.sh              # to Trezor's main
+firmware/sync-upstream.sh core/v2.12.5  # to a release tag, or any commit
+firmware/docker-build.sh               # check it still builds
+git commit                             # or pass --commit to the sync
+```
+
+It only replays what is committed, so commit firmware changes first. On a
+conflict it stops and lists the files: fix them in `firmware/.upstream/work`,
+`git add` them there, then `firmware/sync-upstream.sh --continue` (or
+`--abort`, which leaves the tree untouched).
+
+**Every Monday** the workflow `.github/workflows/firmware-upstream-sync.yml`
+does this on GitHub against Trezor's `main`. It builds our board and Trezor's
+devkit, and opens (or updates) one PR from the branch `firmware/upstream-sync`.
+A failing build makes the PR a draft with the end of the log. A conflict opens
+an issue, "Firmware: upstream sync conflicts", with the commands to resolve it
+locally. It can also be run by hand from the Actions tab, with any upstream ref.
+
+For the PR to be opened, the repository (or the organisation) must allow it:
+Settings → Actions → General → "Allow GitHub Actions to create and approve pull
+requests". Without it the sync branch is still pushed, and the PR can be opened
+from it by hand.
+
+Keep our changes easy to replay: add files rather than edit Trezor's, put
+switches beside upstream code rather than rewriting it, and never reformat or
+move upstream code. Every upstream line we touch can conflict at each sync.
+
 ## What the port changes
 
-Against upstream `5fdc180`:
+Against the upstream base:
 
 | Where (`core/embed/`) | What |
 |---|---|
@@ -83,6 +122,6 @@ Things only a board in hand can answer:
 4. **Backlight**: the on state is the pin's internal pull-up, which puts about
    2.3 V on the TPS60230's enable through the board's 1 k / 100 k divider.
 
-The T3T2 emulator does not build at `5fdc180`, for Trezor's own devkit either
+The T3T2 emulator did not build at `5fdc180`, for Trezor's own devkit either
 (chip attestation and the OPTIGA certificate exist only for the T3W1
 emulator).

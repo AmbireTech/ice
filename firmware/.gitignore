@@ -18,3 +18,6 @@
 /trezor-firmware/.venv/
 /trezor-firmware/core/build/
 /out/
+
+# Scratch clone and worktree of sync-upstream.sh
+/.upstream/

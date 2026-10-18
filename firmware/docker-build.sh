@@ -58,9 +58,12 @@ if [ "${1:-}" = "--" ]; then
   shift
   cmd="$*"
 else
-  projects=("${@:-boardloader bootloader firmware}")
+  projects=("$@")
+  if [ $# -eq 0 ]; then
+    projects=(boardloader bootloader firmware)
+  fi
   cmd=""
-  for p in ${projects[*]}; do
+  for p in "${projects[@]}"; do
     cmd+="xtask build $p -m $MODEL -b $BOARD $XTASK_OPTS && "
   done
   if [ $# -eq 0 ]; then

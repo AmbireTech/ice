@@ -19,11 +19,13 @@ The owner prefers to start from Trezor's firmware, or a fork of it, ideally
 from Model T. GPLv3 is acceptable.
 
 **Status (2026-10-18):** the fork exists. `firmware/trezor-firmware/` is
-trezor-firmware at `5fdc180`, built as T3T2 with our own board definition
-(`ambire_p0`): pin map, power latch, display over SPI, touch, both I2C buses,
-development keys. It is step 2 of the suggested order below, without the radio,
-the secure elements, the charger, the battery gauge or the camera so far. The
-changes, build and flashing: [firmware/README.md](../firmware/README.md).
+trezor-firmware, started from `5fdc180` and kept on Trezor's `main` by a weekly
+sync PR (base commit: first line of `firmware/vendor-pins.txt`), built as T3T2
+with our own board definition (`ambire_p0`): pin map, power latch, display over
+SPI, touch, both I2C buses, development keys. It is step 2 of the suggested
+order below, without the radio, the secure elements, the charger, the battery
+gauge or the camera so far. The changes, build and flashing:
+[firmware/README.md](../firmware/README.md).
 
 **Model T is the wrong base.** It runs an STM32F427 (no TrustZone) with a
 240×240 parallel display and no secure element. Trezor still ships fixes for it
@@ -73,7 +75,9 @@ The Safe 5 (T3T1) shares our MCU and OPTIGA but has a 240×240 screen.
 **What fits as it is:**
 
 - The UI layouts read the screen size from the panel definition. T3T2 runs the
-  Safe 5 layout at 240×320, and there is an emulator build (`T3T2/boards/unix.h`).
+  Safe 5 layout at 240×320. It has an emulator header (`T3T2/boards/unix.h`),
+  but at `5fdc180` the T3T2 emulator does not build, Trezor's devkit included:
+  chip attestation and the OPTIGA certificate exist only for the T3W1 emulator.
 - The ft6x36 touch driver should take our FocalTech FT5426 with panel-mapping
   changes only.
 - The MCU start-up already supports running from the internal oscillator only,
@@ -95,7 +99,8 @@ The Safe 5 (T3T1) shares our MCU and OPTIGA but has a 240×240 screen.
 
 **Suggested order:**
 
-1. Run the T3T2 emulator to judge the UI at 240×320.
+1. Run the T3T2 emulator to judge the UI at 240×320. *(Blocked: it does not
+   build upstream at `5fdc180`.)*
 2. Port to our board without the radio: display over SPI, touch, OPTIGA, power,
    USB. *(Started: display, touch and power latch are in; the OPTIGA is not fitted
    on the first boards.)*
