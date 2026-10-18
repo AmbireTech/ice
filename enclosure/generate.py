@@ -101,6 +101,12 @@ LIP = 0.8             # bezel over the glass
 GAP = 0.3             # board edge to wall
 TONGUE_T, TONGUE_H, TONGUE_CLR = 0.8, 1.8, 0.1
 BACK_FILLET, FRONT_FILLET = 1.5, 1.2
+# Outer walls lean in toward the back and toward the front, widest at the parting
+# line, so the two halves meet flush. 1 deg is barely visible, softens the box and
+# lets a moulded part release; both halves still print flat face down without
+# supports (the walls overhang 1 deg, far inside the ~45 deg a printer manages).
+DRAFT = 1.0
+MAX_UNSUPPORTED = 45.0
 WINDOW_MARGIN = 0.3   # display window beyond the viewing area, each side
 BOSS_R, PILOT_R = 2.1, 0.8   # M2 self-tapping into a 1.6 mm pilot
 BOSS_PART_CLR = 0.2
@@ -531,6 +537,15 @@ def rr_prism(x0, y0, x1, y1, r, z0, z1):
     return Pos((x0 + x1) / 2, -(y0 + y1) / 2, z0) * extrude(sk, amount=z1 - z0)
 
 
+def rr_prism_drafted(x0, y0, x1, y1, r, z_wide, z_narrow, draft):
+    """Rounded-rectangle prism whose sides lean in by `draft` degrees from z_wide to z_narrow."""
+    sk = RectangleRounded(x1 - x0, y1 - y0, min(r, (x1 - x0) / 2 - 1e-3, (y1 - y0) / 2 - 1e-3))
+    part = extrude(sk, amount=abs(z_narrow - z_wide), taper=draft)   # narrows toward +Z
+    if z_narrow < z_wide:
+        part = Rot(180, 0, 0) * part   # the outline is symmetric, so flipping keeps it in place
+    return Pos((x0 + x1) / 2, -(y0 + y1) / 2, z_wide) * part
+
+
 def box(x0, y0, x1, y1, z0, z1):
     return Pos((x0 + x1) / 2, -(y0 + y1) / 2, (z0 + z1) / 2) * Box(x1 - x0, y1 - y0, z1 - z0)
 
@@ -650,10 +665,14 @@ def main():
     nub_x0 = tip_x + NUB_GAP
     nub_len = wx_out - tab_t - nub_x0
     nub = Pos(nub_x0 + nub_len / 2, -py_c, pz) * Rot(0, 90, 0) * Cylinder(NUB_D / 2, nub_len)
+    report.append(f"draft {DRAFT} deg: back {2 * math.tan(math.radians(DRAFT)) * (z_split - z_floor_out):.2f} mm and front "
+                  f"{2 * math.tan(math.radians(DRAFT)) * (z_top - z_split):.2f} mm narrower than the parting line")
     report.append(f"power tab {tab_len} x {tab_h} in the east wall, nub {NUB_GAP} mm off the plunger tip (x {tip_x:.2f})")
 
     # ── shell ──
-    shell = rr_prism(*out_o[:4], out_o[4], z_floor_out, z_split)
+    if not 0 <= DRAFT < MAX_UNSUPPORTED:
+        raise SystemExit(f"draft {DRAFT} deg: the walls would need supports when printed")
+    shell = rr_prism_drafted(*out_o[:4], out_o[4], z_split, z_floor_out, DRAFT)
     shell = fillet(shell.edges().group_by(Axis.Z)[0], BACK_FILLET)
     shell -= rr_prism(*in_o[:4], in_o[4], z_floor_in, z_split + 1)
     shell += rr_prism(*tongue_o[:4], tongue_o[4], z_split, z_split + TONGUE_H) - rr_prism(*in_o[:4], in_o[4], z_split - 1, z_split + TONGUE_H + 1)
@@ -701,7 +720,7 @@ def main():
         shell += bp
 
     # ── bezel ──
-    bezel = rr_prism(*out_o[:4], out_o[4], z_split, z_top)
+    bezel = rr_prism_drafted(*out_o[:4], out_o[4], z_split, z_top, DRAFT)
     bezel = fillet(bezel.edges().group_by(Axis.Z)[-1], FRONT_FILLET)
     bezel -= rr_prism(*in_o[:4], in_o[4], z_split - 1, z_lip)
     bezel -= rr_prism(*skirt_o[:4], skirt_o[4], z_split - 1, z_split + TONGUE_H + TONGUE_CLR)
