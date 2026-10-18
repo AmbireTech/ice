@@ -40,8 +40,8 @@ and [KiCadRoutingTools](https://github.com/drandyhaas/KiCadRoutingTools).
 - [docs/ambire-signer.html](docs/ambire-signer.html) — the concept page shared
   with the team (3D model, configurator with DIY downloads, clear signing,
   architecture, status); public copy: https://ambiretech.github.io/secure-signer/
-  (deployed by `.github/workflows/concept-page.yml`), Claude artifact:
-  https://claude.ai/artifact/LLUtmWoVMm4PUxiSL7d5Ad
+  (deployed by `.github/workflows/concept-page.yml`); the old Claude artifact
+  link (https://claude.ai/artifact/LLUtmWoVMm4PUxiSL7d5Ad) now points there
 
 ## Firmware
 
