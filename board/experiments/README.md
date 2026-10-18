@@ -1,7 +1,9 @@
 # Placement experiments
 
-Candidates for the next pass. `board/wallet.kicad_pcb` stays the board; nothing
-here is merged into it yet.
+Candidates for the next pass. `board/wallet.kicad_pcb` stays the board.
+
+**Merged (2026-10-17):** the radio gate beside the airgap switch, below, is now on
+the board (commit `8b8eda3`). The files here are the record of how it was judged.
 
 | File | What it is |
 |---|---|

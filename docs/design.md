@@ -5,8 +5,10 @@ is and the decisions behind each block.
 
 ## The device
 
-A Safe-owner signing device. No seed phrase: the signing keys are generated
-inside a secure element and never leave it; recovery is the Safe's other owners.
+A Safe-owner signing device. The hardware is built for keys generated inside
+the secure elements that never leave them, with no seed phrase and the Safe's
+other owners as recovery. The firmware starts from Trezor's, which is a
+seed-phrase wallet; how the two fit is open ([direction.md](direction.md)).
 
 ```
  front ─┬─ glass: Newhaven 2.4" IPS 240x320, capacitive touch (same panel as the GridCore Nano)
@@ -15,12 +17,12 @@ inside a secure element and never leave it; recovery is the Safe's other owners.
  back  ─┴─ clear case: the back face, the camera lens and the radio light are what you see
 ```
 
-| Block | Part | JLC |
+| Block | Part | JLC (stock on 2026-10-18) |
 |---|---|---|
-| MCU | STM32U585VIT6Q, LQFP100 (Cortex-M33, TrustZone, 2 MB / 786 KB, AES+SAES+PKA+HASH+TRNG, DCMI, USB FS) | C5270986 — 54 in stock |
-| Secure element | NXP SE050E2HQ1 (secp256k1 + P-256 + Ed25519 keys generated inside, PIN objects with retry counters), own I2C bus. Fallback on the same land: SE051C2 | C5190917 (594 at JLC; DigiKey ~14k) |
-| Second secure element | Infineon OPTIGA Trust M V3 SLS32AIA010MK (CC EAL6+ hardware, P-256 key generated inside), on the same I2C bus. Fallback on the same land: Trust M V1 SLS32AIA010MH | C1518668 (0 at JLC: pre-order); V1 C539250 (60) |
-| Radio | Ebyte E73-2G4M08S1C (nRF52840 module, BLE only), behind the airgap gate | C356849 |
+| MCU | STM32U585VIT6Q, LQFP100 (Cortex-M33, TrustZone, 2 MB / 786 KB, AES+SAES+PKA+HASH+TRNG, DCMI, USB FS) | C5270986 (43) |
+| Secure element | NXP SE050E2HQ1 (secp256k1 + P-256 + Ed25519 keys generated inside, PIN objects with retry counters), own I2C bus. Fallback on the same land: SE051C2 | C5190917 (585; DigiKey ~14k) |
+| Second secure element | Infineon OPTIGA Trust M V3 SLS32AIA010MK (CC EAL6+ hardware, P-256 key generated inside), on the same I2C bus. Fallback on the same land: Trust M V1 SLS32AIA010MH | C1518668 (0, and JLC/LCSC list it as no longer manufactured): not fitted on the first boards; V1 C539250 |
+| Radio | Ebyte E73-2G4M08S1C (nRF52840 module, BLE only), behind the airgap gate | C356849 (1176) |
 | Airgap | MSK12C02 slide switch → TS3USB221A (USB data) + 74LVC1G02 / TPS22917 (radio power) + TXU0202 (radio UART isolation) | all JLC |
 | Display | NHD-2.4-240320AF-CSXP-CTP on Molex 54132-4062 + 6-pin 1.0 mm touch FPC | connectors JLC, panel hand-fitted |
 | Camera | OV2640 24-pin DVP module, ~66° lens refocused to ~15 cm, on a Jushuo AFC07 FPC connector; AVDD 2.8 V / DVDD 1.3 V (fixed TLV70313) / DOVDD 3.3 V | connector JLC, module hand-fitted |
@@ -150,8 +152,8 @@ touch flex is merged into the TFT flex.
   (the board's south-west corner belongs to the antenna), one in the south-east
   corner.
 - **The front is incognito.** No brand mark on the front (bezel, chin or case): a
-  signer should not advertise what it is. The brand lives only on the back's UV
-  artwork, behind the clear case.
+  signer should not advertise what it is. The brand lives only on the back, behind
+  the case.
 - Brand: the back carries the Ambire flame alone, in ordinary silkscreen: as
   wide as the board less 1.2 mm a side, one ink with a 0.35 mm gap between facets,
   cut back from pads, holes, vias, the edge, footprint silkscreen and the
@@ -161,7 +163,9 @@ touch flex is merged into the TFT flex.
   on a copy before it installs); `art/flame.py` is the geometry, shared with the
   concept page's preview. A full-colour version (purple on neon and the like)
   needs PCBWay's colour print; `art/build_uv.py` still builds the older
-  "light beams" artwork for that route.
+  "light beams" artwork with the wordmark for that route, so the PCBWay set does
+  not match the board yet. The first three boards (ordered before the flame)
+  carry the old wordmark in silkscreen.
 
 ## Placement for routing
 
@@ -186,12 +190,16 @@ touch flex is merged into the TFT flex.
   short path to the plane: the buck-boost's ground and its input/output caps, the
   backlight charge pump, the charger's exposed pad, the radio module's ground pads
   and the USB ESD clamp. `scripts/stripGndTies.py` removes the other ties.
-- **Keep-outs the routing needs are KiCad rule areas** (`scripts/refreshKeepouts.py`
-  redraws them from `newBoard.py` after a connector moves): the **camera fan-in**,
-  3.1 mm of bare board east of J_CAM's contacts, where all 24 lines enter (the
-  contacts face east; the camera LDOs used to fill it). An "MCU west escape"
-  strip was tried and dropped: it forbade the SE pull-ups exactly where they
-  belong, inline between the SE and the MCU.
+- **Keep-outs are KiCad rule areas** (DRC flags any part moved into them;
+  `scripts/refreshKeepouts.py` redraws them from `newBoard.py` after a connector
+  moves). No parts on the back in: the **camera fan-in**, 3.1 mm of bare board
+  east of the camera connector's contacts, where all 24 lines enter (the contacts
+  face east; the camera LDOs used to fill it); the camera head and its flex run;
+  the battery plug; the old UV-artwork logo panel; a ring around each mounting
+  hole. No copper on any layer at the antenna end, and no tracks or vias on the
+  back under the radio module (GND fill only). An "MCU west escape" strip was
+  tried and dropped: it forbade the SE pull-ups exactly where they belong, inline
+  between the SE and the MCU.
 - **Blocks are pre-routed; the buses between them are the human's.**
   `scripts/partialRoute.py` routes the wiring inside each block on the back
   copper (the parts' side) and a via to the 3.3 V plane for every 3.3 V pin and
@@ -250,19 +258,16 @@ touch flex is merged into the TFT flex.
 - The RADIO light sits directly under the south-west hole, next to the radio
   module, in the strip between the screw head and the antenna keep-out, so the
   west bridge into the chin stays open.
-- **The radio gate** (NOR, load switch and their passives) sits in the
-  north-west quadrant. The UART translator sits between the TFT slot and the
+- **The radio gate** (NOR, load switch and their passives) sits beside the
+  airgap switch on the west edge, so AIRGAP and the radio's supply are a few
+  millimetres each instead of 30–40 mm down the west side
+  ([experiments](../board/experiments/README.md)). The UART translator sits between the TFT slot and the
   radio module, right over the module's two north-edge UART pads, so no radio
   line runs under the module; the two MCU-side lines come over the west bridge.
 - The front copper has no parts at all: it is the layer for the buses between
   blocks (drop a via at the pin).
 - Signals reach the chin over three bridges between the slots and the edges:
   west (≈ 6 mm usable beside the hole), middle (2.6 mm) and east (3.7 mm).
-- **Keep-outs are KiCad rule areas** (DRC flags any part moved into them): both
-  display-tail corridors, the camera head and its flex run, the UV-artwork
-  panel, a 2.6 mm ring around each mounting hole (all back-face, no parts), the
-  antenna end (no copper on any layer) and the area under the radio module (no
-  tracks or vias on the back copper, GND fill only).
 
 ## Power on and off
 
@@ -351,8 +356,9 @@ translucent purple.
    (the C1 is "previous generation" in AN12436). Same land as the C1 and the
    SE051C2 fallback. Firmware must use applet 7.x behaviour: I2C at or below
    1 MHz (no clock stretching), PINs of 4+ bytes, the E2's SCP03 keys. JLC
-   holds 594, enough for prototypes; for 1,000 units consign from DigiKey
-   (~14,000 in stock, 16-week lead) or use JLC Global Sourcing.
+   holds 585 (2026-10-18), enough for prototypes; for 1,000 units consign from DigiKey
+   (~14,000 in stock, 16-week lead) or use JLC Global Sourcing. The OPTIGA is not
+   fitted on the first boards; firmware must run without it.
 7. **Firmware settings the hardware relies on**:
    - BOOT0 (PH3) is tied to GND: the ROM bootloader is entered through the option
      bytes (nSWBOOT0/nBOOT0) over SWD; PH3 must never be made an output. Recovery
@@ -375,34 +381,5 @@ translucent purple.
 
 ## Flow
 
-Same as the GridCore Nano:
-
-```sh
-cd hardware/ambire-wallet
-KICAD_PY=/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3
-npx tsci export index.circuit.tsx -f circuit-json -o board/netlist.circuit.json
-python3 scripts/checkNets.py            # every named net reaches two pads
-python3 scripts/checkMcuAf.py           # every MCU signal is an alternate function ST lists for that pin
-$KICAD_PY scripts/syncBoard.py          # dry run; --apply writes (close KiCad first); --refresh REF after editing its footprint
-$KICAD_PY scripts/checkPinNets.py       # IC pads vs datasheet pin tables, on the board copper
-$KICAD_PY scripts/checkFpc.py           # connector / lever / antenna orientation, tail lengths
-scripts/trialRoute.sh                   # autoroute a copy: failed nets / vias (placement arbiter)
-$KICAD_PY scripts/refreshKeepouts.py        # redraw the keep-out rule areas after a connector moves
-$KICAD_PY scripts/partialRoute.py --out DIR  # block wiring on a copy, hand copper kept
-$KICAD_PY scripts/placeVariant.py IN OUT SPEC.json   # a placement variant (seed spots, then block search per chip)
-$KICAD_PY scripts/routeGauge.py BOARD --out DIR      # full autoroute on a copy, owner conventions: how routable is it
-$KICAD_PY scripts/cleanCopper.py IN [OUT]            # drop stale (pad-less) copper and crumbs; refuses if DRC gets worse
-$KICAD_PY scripts/cleanCopper.py BOARD --check       # gate: exit 1 if anything stale is left
-$KICAD_PY scripts/widenFanouts.py IN [OUT]           # thicken 3.3 V pad-to-via links up to 0.4 mm
-$KICAD_PY scripts/stripGndTies.py IN [OUT]          # drop GND pad-to-via ties (pour + stitching instead)
-$KICAD_PY scripts/checkParts.py board/wallet.kicad_pcb   # each land vs the land JLC places that part on
-# JLC order set (refill zones and save in KiCad first: the export plots the fills as saved)
-$KICAD_PY production/export_fab.py board/wallet.kicad_pcb production/out production/jlc_rotation_db.csv
-python3 -I production/build_jlc_files.py production/out 10   # BOM + CPL (bottom side), JLC stock, rotation review
-production/make_order.sh                # the whole order set + pre-fab checks -> production/order (JLC plain + PCBWay with the UV print; COLOUR=1 adds the JLC colour zip, which JLC rejects)
-python3 scripts/jlcStock.py             # live JLC stock for every part number
-```
-
-`scripts/newBoard.py --force` regenerates the board from scratch (outline,
-slots, stack-up, pours, keep-out, placement) and **destroys hand work**. After
-the first hand edit, use `syncBoard.py` only.
+The commands that build and check the board, and the order set:
+[board-flow.md](board-flow.md).

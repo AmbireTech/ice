@@ -1,4 +1,4 @@
-# Product direction (owner, 2026-10-17)
+# Product direction (owner, 2026-10-17; status updated 2026-10-18)
 
 Three decisions, and what each one costs. The firmware findings were checked
 against trezor-firmware at commit `5fdc180` (2026-10-16); paths below are in that
@@ -17,6 +17,13 @@ still open.
 
 The owner prefers to start from Trezor's firmware, or a fork of it, ideally
 from Model T. GPLv3 is acceptable.
+
+**Status (2026-10-18):** the fork exists. `firmware/trezor-firmware/` is
+trezor-firmware at `5fdc180`, built as T3T2 with our own board definition
+(`ambire_p0`): pin map, power latch, display over SPI, touch, both I2C buses,
+development keys. It is step 2 of the suggested order below, without the radio,
+the secure elements, the charger, the battery gauge or the camera so far. The
+changes, build and flashing: [firmware/README.md](../firmware/README.md).
 
 **Model T is the wrong base.** It runs an STM32F427 (no TrustZone) with a
 240×240 parallel display and no secure element. Trezor still ships fixes for it
@@ -89,7 +96,9 @@ The Safe 5 (T3T1) shares our MCU and OPTIGA but has a 240×240 screen.
 **Suggested order:**
 
 1. Run the T3T2 emulator to judge the UI at 240×320.
-2. Port to our board without the radio: display over SPI, touch, OPTIGA, power, USB.
+2. Port to our board without the radio: display over SPI, touch, OPTIGA, power,
+   USB. *(Started: display, touch and power latch are in; the OPTIGA is not fitted
+   on the first boards.)*
 3. Decide the radio question before the next board revision. Moving to SPI
    plus four GPIOs is cheap now and expensive later.
 
@@ -127,14 +136,15 @@ The concept page carries the first version, next to the 3D model.
   - bill of materials and pick-and-place (CSV)
   - the case: one zip holding the 3MF, STL and STEP files
 
-  The board files are proto 0 as ordered, before the flame print.
+  The board files are the next run's, with the flame in white silkscreen. The
+  first three boards were ordered before the flame and carry the old wordmark.
 
 ### Board print
 
 The back carries only the Ambire flame from the official logo, with no wordmark
 and the word "Ambire" nowhere. It is the whole back: as wide as the board less a
 thin margin, printed between the parts. Its facets keep a 0.35 mm hairline of
-mask between them, so one ink still shows the faceting. The five schemes and what
+mask between them, so one ink still shows the faceting. The schemes and what
 each one takes to make:
 
 | Scheme | Mask | Flame | How it is made |
@@ -150,6 +160,8 @@ JLC's standard silkscreen is white or black only, and no maker offers a Volt
 mask, so the three purple schemes need a colour print. JLC accepts colour print
 only for files from its own design tool, so those go through PCBWay.
 
-**Not done yet:** the flame in the board file itself, as silkscreen or as the
-colour-print image. The board was open in KiCad, so it was left untouched. The
-print files (`art/build_uv.py`) still carry the old artwork with the wordmark.
+**Done:** the flame is in the board file as ordinary silkscreen
+(`scripts/silkFlame.py`), so the white-on-black and black-on-white schemes need
+nothing more. **Not done yet:** the colour-print image. The PCBWay print file
+(`art/build_uv.py`) still carries the old "light beams" artwork with the
+wordmark, so the purple schemes cannot be ordered as shown.

@@ -1,69 +1,74 @@
 # Ambire hardware signer — proto 0
 
 A Safe-owner signing device: STM32U585 + two secure elements from two vendors,
-NXP SE050 and Infineon OPTIGA Trust M (an independent key generated inside each,
-no seed phrase), BLE behind a hardware airgap switch, QR
-camera, 2.4" capacitive touch display, clear case. Lives here temporarily, next
-to the GridCore hardware it borrows from, until it moves to its own repo.
+NXP SE050 and Infineon OPTIGA Trust M, BLE behind a hardware airgap switch, QR
+camera, 2.4" capacitive touch display, see-through case. Open hardware; the
+firmware starts from a fork of Trezor's.
+
+**Status (2026-10-18):** the first three boards are ordered from JLCPCB (plain
+purple, the old wordmark on the back, the OPTIGA not fitted). The board file has
+moved on since: the flame on the back in place of the wordmark, ready for the
+next run. The firmware port has started on the fork (below), ahead of the boards
+arriving.
+
+<img src="docs/brand/signer.webp" width="360" alt="The signer in its translucent purple case, with the flame printed on the back of the board">
+
+*Render of the 3D model: the board's back face through the case, with the flame
+in silkscreen. The front (screen side) carries no brand at all.*
+
+Hand-routed by [@Ivshti](https://github.com/Ivshti), but component placement is
+verified and optimized with
+[humanizedKicadAutoRouter](https://github.com/Ivshti/humanizedKicadAutoRouter)
+and [KiCadRoutingTools](https://github.com/drandyhaas/KiCadRoutingTools).
+
+## Docs
 
 - [docs/research.md](docs/research.md) — threat landscape 2024–2026, how the
   incumbents are built, why this architecture
-- [docs/design.md](docs/design.md) — the board, block by block, and the
-  bring-up checks that need parts in hand
+- [docs/design.md](docs/design.md) — the board, block by block, the case, and
+  the bring-up checks that need parts in hand
 - [docs/direction.md](docs/direction.md) — open hardware, starting from Trezor's
   firmware (what stands in the way), the configurator and the board print schemes
-- [docs/ambire-signer.html](docs/ambire-signer.html) — the short concept page
-  shared with the team (renders, clear-signing screens, stack, architecture);
-  live copy: https://claude.ai/artifact/LLUtmWoVMm4PUxiSL7d5Ad
+- [firmware/README.md](firmware/README.md) — the Trezor firmware port: build,
+  flash, what changed, bring-up checks
+- [docs/board-flow.md](docs/board-flow.md) — netlist → board → checks → order
+  set: the commands and the order-time steps
+- [art/README.md](art/README.md) — the back print: the flame silkscreen and the
+  full-colour print for PCBWay
+- [board/experiments/README.md](board/experiments/README.md) — placement
+  candidates and how they were judged
+- [docs/ambire-signer.html](docs/ambire-signer.html) — the concept page shared
+  with the team (3D model, configurator with DIY downloads, clear signing,
+  architecture, status); live copy: https://claude.ai/artifact/LLUtmWoVMm4PUxiSL7d5Ad
 
-<img src="docs/back-face-uv.jpg" width="420" alt="Back face through the clear case, with the UV-printed Ambire artwork">
+## Firmware
 
-*The back face as the clear case shows it, with the UV-printed artwork (rebuilt from the current placement by `art/build_uv.py`). Display flex tails in orange; camera module drawn on.*
+Trezor's firmware, ported to this board: `firmware/trezor-firmware/` is
+[trezor-firmware](https://github.com/trezor/trezor-firmware) at `5fdc180`
+(2026-10-16) with our changes on top. It builds as Trezor's T3T2 model with our
+own board, `ambire_p0`: our pin map, the display over SPI (Trezor's is
+parallel), the FT5426 touch, and a power latch in the boardloader. Development
+keys only, for the bench. The secure elements, radio, camera, charger and battery
+gauge are not driven yet.
 
-> **Routed with [humanizedKicadAutoRouter](https://github.com/Ivshti/humanizedKicadAutoRouter)**:
-> a headless KiCad autorouter that routes the way a person does. It lays each
-> functional block first, then power sized for its current, then the buses
-> between blocks in planned corridors, and it counts a board as done only when
-> KiCad's own DRC agrees. Here it pre-routes the wiring inside each block on
-> top of the hand-routed copper (`scripts/partialRoute.py`) and serves as the
-> gauge of how routable a placement is.
+`firmware/docker-build.sh` builds it in Docker with Trezor's own toolchain.
+Build, flashing, the full list of changes and the bring-up checks:
+[firmware/README.md](firmware/README.md). What is left and why:
+[docs/direction.md](docs/direction.md#2-trezor-compatible-start-from-trezors-firmware).
 
-## Board flow
+## Board
 
-Same as the GridCore Nano: `index.circuit.tsx` and `src/blocks/` are the
-**netlist** (no placement); `board/wallet.kicad_pcb` is the board, placed by
-script once, routed by hand in KiCad.
+The board is KiCad (`board/wallet.kicad_pcb`), with the netlist in tscircuit
+(`index.circuit.tsx`, `src/blocks/`). How it is checked and turned into an
+order: [docs/board-flow.md](docs/board-flow.md). The order set is in
+`production/order/` (JLCPCB, and PCBWay for the full-colour back print).
 
-```sh
-cd hardware/ambire-wallet
-npm install
-KICAD_PY=/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3
-npx tsci export index.circuit.tsx -f circuit-json -o board/netlist.circuit.json
-python3 scripts/checkNets.py             # every named net reaches two pads
-python3 scripts/checkMcuAf.py            # MCU signals vs ST's pin database
-python3 scripts/jlcStock.py              # live JLC stock per part number
-$KICAD_PY scripts/syncBoard.py           # dry run; --apply writes (close KiCad first)
-$KICAD_PY scripts/checkPinNets.py        # IC pads vs datasheet pin tables, on the copper
-$KICAD_PY scripts/checkFpc.py            # connector/lever/antenna orientation, tail lengths
-scripts/trialRoute.sh                    # autoroute a copy with KiCadRoutingTools: failed nets / vias
-$KICAD_PY scripts/refreshKeepouts.py        # redraw the keep-out rule areas after a connector moves
-$KICAD_PY scripts/partialRoute.py --out /tmp/pr   # block wiring on a copy, hand copper kept
-$KICAD_PY scripts/routeGauge.py --out /tmp/gauge  # how routable: full autoroute on a copy, metrics in gauge.json
-$KICAD_PY scripts/checkParts.py board/wallet.kicad_pcb   # lands vs JLC's land per part
-../../.venv-enclosure/bin/python enclosure/generate.py   # case from the board: enclosure/out/ (STEP, STL) + docs/enclosure/ (page preview)
-enclosure/render_hero.sh                  # the concept page's hero image from the 3D model (needs Chrome)
-```
+## Similar projects
 
-- `board/footprints.json` picks each part's footprint, with pad maps where the
-  netlist and the land disagree (USB-C, switches, FPC tabs).
-- `board/wallet.pretty/` holds the lands KiCad does not ship: the SE050's NXP
-  SOT1969-1 land, the E73 module, the hole-clear ALPS SKRT button, and the
-  Nano's BQ25185 / TPS63802 / Molex 54132 / touch-FPC lands.
-- `src/parts/stm32u585Pins.ts` is **generated** from ST's pin database by
-  `scripts/genStm32Pins.py`; the MCU's signal pins are assigned in
-  `src/parts/mcuAssign.json`.
-- `scripts/newBoard.py --force` regenerates the board from scratch (outline,
-  slots, stack-up, pours, keep-outs, placement, then the ratsnest pass of
-  `scripts/optimizePlacement.py`) and **destroys hand work**.
-- A part is assembled by JLC exactly when it carries a JLC part number. The
-  display panel, camera module and cell are fitted by hand.
+- [wedgie.dev](https://wedgie.dev)
+- [Keycard Shell](https://keycard.tech/products/keycard-shell): an open-source,
+  air-gapped signer around a Keycard smart card, with a camera for animated QR
+  and no radio
+- picowallet (Austin Griffith, 2026-09): the same key model, a P-256 key
+  generated in an ATECC608 behind a vault contract, on an RP2350
+  (see [docs/research.md](docs/research.md#competitive-notes))

@@ -1,7 +1,8 @@
 # Ambire hardware signer — agent notes
 
-Read first: `README.md` (what the device is), `docs/design.md` (block by block,
-the full command flow, bring-up checks), `docs/research.md` (why this architecture).
+Read first: `README.md` (what the device is, firmware fork), `docs/design.md`
+(block by block, bring-up checks), `docs/board-flow.md` (the commands, the order
+set), `docs/research.md` (why this architecture).
 This file holds only the rules and traps those don't.
 
 This repo sits inside the GridCore (malaka-chrono) checkout for now, so a parent
@@ -26,6 +27,11 @@ Ambire internals into GridCore's.
   turnkey BOM (manufacturer + MPN), centroid, `ORDER-NOTES.txt`.
 - JLC/LCSC flags the OPTIGA's part number SLS32AIA010MKUSON10XTMA2 as "no longer
   manufactured" (2026-10-17); the pre-fab checks print it as a NOTE.
+- The PCBWay colour print (`art/build_uv.py`) is still the old Flare art with the
+  wordmark, while the board's back silkscreen is the flame; see `art/README.md`.
+- Firmware: `firmware/trezor-firmware/` is trezor-firmware `5fdc180` vendored
+  without .git, built as T3T2 with our board `ambire_p0` via
+  `firmware/docker-build.sh`. Build, flash and our changes: `firmware/README.md`.
 
 ## The board file belongs to the owner
 
