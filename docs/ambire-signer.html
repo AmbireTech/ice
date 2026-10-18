@@ -551,7 +551,12 @@ const CASE = {
   purple: { color: 0xcdb2ff, attenuationColor: 0x6a2cff, attenuationDistance: 6, roughness: 0.2, transmission: 0.95 },
   clear: { color: 0xffffff, attenuationColor: 0xffffff, attenuationDistance: Infinity, roughness: 0.04, transmission: 0.98 },
 };
-const EXPLODE = { bezel: 34, panel: 22, cell: 11, board: 0, shell: -18 };
+// Take apart: the stack opens along Z, the front half lifts out above it with its inside
+// (bosses, screen fills, chin) facing the viewer, the screws back out of the shell.
+const EXPLODE = { bezel: [0, 104, -26], panel: [0, 0, 24], cell: [0, 0, 12], board: [0, 0, 0], shell: [0, 0, -20], screws: [0, 0, -44] };
+const APART_CENTRE = [0, 48, 0];   // the camera re-centres between the stack and the front half
+const APART_SOLIDITY = 0.45;
+const APART_ZOOM = 1.05;           // the camera backs off this much more while apart       // apart, the case is less see-through so its bosses and fills read
 
 // Files ship as text: the host serves no .glb/.zip and blocks data: fetches.
 async function fetchJson(url) {
@@ -827,7 +832,20 @@ async function main() {
   screen.position.set((vx0 + vx1) / 2, -(vy0 + vy1) / 2, z.panel[1] + 0.02);
   panel.add(screen);
   const cell = new THREE.Group().add(boxFromRect(d.cell, z.cell[0], z.cell[1], new THREE.MeshStandardMaterial({ color: 0xbfc2c6, roughness: 0.42, metalness: 0.65 })));
-  const parts = { shell, bezel, panel, cell, board };
+  // The four M2 screws, from the back: head in the shell's counterbore, shank up into the bezel's boss.
+  const sc = d.screws;
+  const steel = new THREE.MeshStandardMaterial({ color: 0xc3c7cf, metalness: 1, roughness: 0.3 });
+  const screws = new THREE.Group();
+  for (const [hx, hy] of sc.holes) {
+    const head = new THREE.Mesh(new THREE.CylinderGeometry(sc.head[0] / 2, sc.head[0] / 2, sc.head[1], 28), steel);
+    head.rotation.x = Math.PI / 2;
+    head.position.set(hx, -hy, sc.seat - sc.head[1] / 2);
+    const shank = new THREE.Mesh(new THREE.CylinderGeometry(sc.d / 2, sc.d / 2 * 0.8, sc.length, 20), steel);
+    shank.rotation.x = Math.PI / 2;
+    shank.position.set(hx, -hy, sc.seat + sc.length / 2);
+    screws.add(head, shank);
+  }
+  const parts = { shell, bezel, panel, cell, board, screws };
   for (const p of Object.values(parts)) device.add(p);
   msg.hidden = true;
 
@@ -855,9 +873,11 @@ async function main() {
   setScheme(d.schemes.find((x) => x.id === "black") || d.schemes[0]);   // matches the hero shot
 
   // case
+  let exploded = 0, target = 0;   // take-apart progress, 0 = assembled
+  let caseTransmission = 1;
   const setCase = (name) => {
     const none = name === "none";
-    shell.visible = bezel.visible = !none;
+    shell.visible = bezel.visible = screws.visible = !none;
     $("caseFiles").hidden = !none;
     if (!none) {
       const c = CASE[name];
@@ -865,7 +885,8 @@ async function main() {
       caseMat.attenuationColor.set(c.attenuationColor);
       caseMat.attenuationDistance = c.attenuationDistance;
       caseMat.roughness = c.roughness;
-      caseMat.transmission = c.transmission;
+      caseTransmission = c.transmission;
+      caseMat.transmission = caseTransmission * (1 - APART_SOLIDITY * exploded);
     }
     pick($("cases"), "data-case", name);
   };
@@ -884,7 +905,6 @@ async function main() {
   controls.autoRotateSpeed = 1.1;
   controls.addEventListener("start", () => { controls.autoRotate = false; });
 
-  let exploded = 0, target = 0;
   const explodeBtn = $("explode");
   explodeBtn.addEventListener("click", () => {
     target = target ? 0 : 1;
@@ -907,8 +927,19 @@ async function main() {
   if (reduceMotion) controls.autoRotate = false;
   renderer.setAnimationLoop(() => {
     if (!visible) return;
-    exploded += (target - exploded) * (reduceMotion ? 1 : 0.12);
-    for (const [k, p] of Object.entries(parts)) p.position.z = EXPLODE[k] * exploded;
+    const step = reduceMotion ? 1 : 0.12;
+    const was = exploded;
+    exploded += (target - exploded) * step;
+    for (const [k, p] of Object.entries(parts)) p.position.set(...EXPLODE[k].map((v) => v * exploded));
+    caseMat.transmission = caseTransmission * (1 - APART_SOLIDITY * exploded);
+    if (exploded !== was) {
+      // keep both halves in frame: re-centre and ease the camera out while apart
+      const centre = new THREE.Vector3(...APART_CENTRE.map((v) => v * exploded));
+      const offset = camera.position.clone().sub(controls.target);
+      offset.setLength(offset.length() * (1 + APART_ZOOM * exploded) / (1 + APART_ZOOM * was));
+      controls.target.copy(centre);
+      camera.position.copy(centre).add(offset);
+    }
     controls.update();
     renderer.render(scene, camera);
   });

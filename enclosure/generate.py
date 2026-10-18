@@ -756,6 +756,8 @@ def main():
         "depthDriver": driver,
         "parts": {"shell": "enclosure/shell.json", "bezel": "enclosure/bezel.json"},
         "board3d": "enclosure/board.json",
+        "screws": {"length": screw, "d": 2.0, "head": [3.8, 1.6], "seat": seat,
+                   "holes": [[hx, hy] for hx, hy, _ in b["holes"]]},
         "maskBack": header["maskBack"],
         "flame": flame,
         "schemes": PRINT_SCHEMES,
