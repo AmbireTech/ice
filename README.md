@@ -1,15 +1,18 @@
-# Ambire hardware signer — proto 0
+# Ambire hardware signer
 
 A Safe-owner signing device: STM32U585 + two secure elements from two vendors,
 NXP SE050 and Infineon OPTIGA Trust M, BLE behind a hardware airgap switch, QR
 camera, 2.4" capacitive touch display, see-through case. Open hardware; the
 firmware starts from a fork of Trezor's.
 
-**Status (2026-10-18):** the first three boards are ordered from JLCPCB (plain
-purple, the old wordmark on the back, the OPTIGA not fitted). The board file has
-moved on since: the flame on the back in place of the wordmark, ready for the
-next run. The firmware port has started on the fork (below), ahead of the boards
-arriving.
+**Status (2026-10-22):** proto 0, the first three boards, is ordered from JLCPCB
+(plain purple, the old wordmark on the back, a LiPo pouch, the OPTIGA not
+fitted). The board file is now **proto 1**: one AAA cell of any chemistry in
+clips on the front instead of the pouch (NiMH charged over USB only once
+identified as NiMH), a case 6.5 mm thinner with the cell and the camera standing
+out of it, a joystick below the cell, a buzzer, and the flame on the back. Why and
+how: [docs/power-aaa.md](docs/power-aaa.md). The firmware port has started on the
+fork (below), for proto 0.
 
 <img src="docs/brand/signer.webp" width="360" alt="The signer in its translucent purple case, with the flame printed on the back of the board">
 
@@ -25,6 +28,8 @@ and [KiCadRoutingTools](https://github.com/drandyhaas/KiCadRoutingTools).
 
 - [docs/research.md](docs/research.md) — threat landscape 2024–2026, how the
   incumbents are built, why this architecture
+- [docs/power-aaa.md](docs/power-aaa.md) — one AAA cell: which cells, how long
+  they last, charging only NiMH, the power parts
 - [docs/design.md](docs/design.md) — the board, block by block, the case, and
   the bring-up checks that need parts in hand
 - [docs/direction.md](docs/direction.md) — open hardware, starting from Trezor's
@@ -41,7 +46,11 @@ and [KiCadRoutingTools](https://github.com/drandyhaas/KiCadRoutingTools).
   with the team (3D model, configurator with DIY downloads, clear signing,
   architecture, status); public copy: https://ambiretech.github.io/secure-signer/
   (deployed by `.github/workflows/concept-page.yml`); the old Claude artifact
-  link (https://claude.ai/artifact/LLUtmWoVMm4PUxiSL7d5Ad) now points there
+  link (https://claude.ai/artifact/LLUtmWoVMm4PUxiSL7d5Ad) now points there.
+  That page shows proto 0 and stays as it is.
+- [docs/v2/index.html](docs/v2/index.html) — the same page for proto 1 (the AAA
+  cell, the joystick, the thinner case), with its own model and downloads:
+  https://ambiretech.github.io/secure-signer/v2/ (the proto 0 page does not link it)
 
 ## Firmware
 

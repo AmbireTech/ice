@@ -109,6 +109,36 @@ ended by firmware on a voltage peak/plateau and dT/dt, with the timer and the NT
 behind it. Panasonic's −ΔV method starts at 0.5 C; at 0.3 C the dip is weak,
 which is why the fast rate leans on temperature and the timer.
 
+## Standby: off is the resting state
+
+**Off** (the boost shut down), the board draws about 1.3–2.3 µA from the cell: the
+1M/1M sense divider (~0.6 µA), the charger's output leakage (0.35 µA typ), the boost
+in shutdown (0.01 µA typ), and the reverse-FET gate network into the boost's output
+divider (~0.3–0.5 µA). The joystick's power-on transistor adds nanoamps. That would
+take more than 35 years to empty any of these cells, so off is limited by the cell's
+own self-discharge (standard eneloop: 70 % left after 10 years, ~2.6 µA average;
+eneloop pro ~16 µA in year one; L92 25-year shelf life) — not by the board.
+
+The power key is the **joystick's centre press, held**: a PNP from the cell pulls
+the boost's enable up exactly like a power button did, and the MCU reads the same
+press as BTN_N. There is no separate power button.
+
+**Asleep** (boost on, MCU in Stop) would last only 1–3 months as drawn, and about
+6–9 months on a standard eneloop (14–23 on an L92) with these changes, none applied:
+the 100k pull-down on PWR_HOLD to 1–10 M (with SHDN's 1M to ~10M and its 1 µF to
+~0.33 µF); the SE050's ENA pull-up turned into a pull-down; the OPTIGA (70 µA asleep)
+and the display/touch (~62 µA) on switched rails; the airgap sense resistors scaled
+up. The boost's own no-load input current (~66 µA at 1.2 V, its data sheet's curve)
+then dominates. So firmware should use "asleep" only for a short window after use
+(10–30 min) and then switch fully off.
+
+**IMU wake on motion** ("pick up to start") was looked at and left out of proto 1:
+with the boost off it needs its own always-on supply (a MAX17220 nanopower boost:
+the only accelerometer that runs from the cell directly, the ADXL367, is unbuyable
+at JLC and quits at 1.1 V), each wake is a 1–2.5 s cold boot, and a pocket or bag
+would wake it 10–100 times a day. If wanted later: a LIS2DW12 (JLC, ~20k in stock,
+$1, ~0.4 µA) on the 3.3 V rail for pick-up-to-wake during the asleep window.
+
 ## The other parts this revision looked at
 
 - **Clips**: MYOUNG MY-AAA-19-J (−, spring) and MY-AAA-20-J (+, leaf). SMT, they grip
@@ -118,10 +148,14 @@ which is why the fast rate leans on temperature and the timer.
   through its label: a torn label on an alkaline cell (whose can is +) can short it
   through the − clip.
 - **Sound**: a true MEMS microspeaker needs a 15–30 V drive amplifier and none is
-  stocked at JLC. A 7.5 × 7.5 × 2.5 mm magnetic transducer (KELIKING KLJ-7525-3627,
-  85 dB at 10 cm, side port) driven by one MOSFET from a timer pin does the beeps.
-- **Edge buttons**: the power button's part (ALPS SKRTLAE010, 33k in stock); a
-  low-profile alternative is the Panasonic EVQP7 family (1.35 mm).
+  stocked at JLC. A magnetic transducer driven by one MOSFET from a timer pin does
+  the beeps: the Huaneng MLT-5020 (5.0 × 5.5 × 2.0 mm, 75 dB at 10 cm, port on
+  top, 58k at JLC). The louder 7.5 mm parts (KLJ-7525-3627 or MLT-7525, 80–85 dB)
+  have a 9 mm land, which no free spot on the board takes.
+- **Joystick**: every reflowable four-way-plus-push part at JLC is 7.5 mm or more;
+  the ALPS SKRHAAE010 (pure SMD, no holes through the board) sits on the front below
+  the cell. It is digital (on/off contacts), not an analog stick: the analog ones at
+  JLC (ALPS RKJXV) are 13 mm through-hole parts.
 
 ## Open risks
 

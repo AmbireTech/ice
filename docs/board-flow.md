@@ -63,7 +63,7 @@ $KICAD_PY scripts/silkFlame.py           # dry run on a copy, with DRC; --apply 
 production/make_order.sh                 # print image, JLC + PCBWay sets, pre-fab checks -> production/order/
 
 # case and pictures
-../../.venv-enclosure/bin/python enclosure/generate.py   # case from the board: enclosure/out/ (STEP, STL) + docs/enclosure/ (page preview)
+../../.venv-enclosure/bin/python enclosure/generate.py   # case from the board: enclosure/out/ (STEP, STL) + docs/v2/enclosure/ (the /v2/ page's preview)
 enclosure/render_hero.sh                 # the concept page's hero image from the 3D model (needs Chrome)
 ```
 

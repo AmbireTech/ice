@@ -1,4 +1,4 @@
-# Ambire hardware signer — proto 0 design
+# Ambire hardware signer — proto 1 design
 
 Why this architecture: [research.md](research.md). This file is what the board
 is and the decisions behind each block.
@@ -11,11 +11,19 @@ other owners as recovery. The firmware starts from Trezor's, which is a
 seed-phrase wallet; how the two fit is open ([direction.md](direction.md)).
 
 ```
- front ─┬─ glass: Newhaven 2.4" IPS 240x320, capacitive touch (same panel as the GridCore Nano)
-        ├─ 1S LiPo pouch, ~500 mAh, on the board's plain face
-        ├─ PCB 48 x 85 mm, 4 layers, 1.0 mm  — every part on the back face
- back  ─┴─ clear case: the back face, the camera lens and the radio light are what you see
+ front ─┬─ glass: Newhaven 2.4" IPS 240x320, capacitive touch (same panel as the GridCore Nano),
+        │  on foam tape straight on the board; one AAA cell in two clips across the chin,
+        │  standing out of the case
+        ├─ PCB 48 x 87 mm, 4 layers, 1.0 mm  — every part on the back face but the cell's
+        │  clips and the joystick
+ back  ─┴─ clear case: the back face, the radio light and the camera head (standing out
+           through an open window) are what you see
 ```
+
+Proto 0 (the first three boards, ordered) had a 1S LiPo pouch under the screen.
+Proto 1 replaces it with one AAA cell of any chemistry, which makes the device
+6.5 mm thinner (11.5 mm without the cell and camera). The research behind it:
+[power-aaa.md](power-aaa.md).
 
 | Block | Part | JLC (stock on 2026-10-18) |
 |---|---|---|
@@ -26,11 +34,12 @@ seed-phrase wallet; how the two fit is open ([direction.md](direction.md)).
 | Airgap | MSK12C02 slide switch → TS3USB221A (USB data) + 74LVC1G02 / TPS22917 (radio power) + TXU0202 (radio UART isolation) | all JLC |
 | Display | NHD-2.4-240320AF-CSXP-CTP on Molex 54132-4062 + 6-pin 1.0 mm touch FPC | connectors JLC, panel hand-fitted |
 | Camera | OV2640 24-pin DVP module, ~66° lens refocused to ~15 cm, on a Jushuo AFC07 FPC connector; AVDD 2.8 V / DVDD 1.3 V (fixed TLV70313) / DOVDD 3.3 V | connector JLC, module hand-fitted |
-| Power | USB-C → BQ25185 charger (250 mA) → TPS63802 3.3 V buck-boost; MAX17048 battery gauge; soft-latch power button | all JLC, BQ25185/TPS63802/USB-C/ESD as on the Nano |
+| Power | One AAA cell (NiMH, lithium or alkaline; a 10440 Li-ion survives) in two SMT clips (MYOUNG MY-AAA-19-J / -20-J) → AO3416 reverse-cell blocker → LTC3539-2 boost to 3.3 V; USB-C → TLV62569P buck → TPS2116 picks USB first; BQ25172 NiMH charger, MCU-gated; soft latch on the joystick's centre press | all JLC (LTC3539-2: 2,400) |
+| Sound | Huaneng MLT-5020 magnetic transducer (5 × 5.5 × 2 mm, 75 dB at 10 cm), AO3416 low-side, LPTIM3 PWM | JLC |
+| Joystick | ALPS SKRHAAE010: four directions + centre push, 7.5 mm, on the front below the cell | JLC C202423 (521) |
 
-Overlap with GridCore: charger, buck-boost, USB-C and ESD, the
-display panel with its connector and backlight pump, the slide switch, the
-battery connector, the netlist → KiCad flow and every gate script.
+Overlap with GridCore: USB-C and ESD, the display panel with its connector and
+backlight pump, the slide switch, the netlist → KiCad flow and every gate script.
 
 ## The airgap switch is the authority, not the firmware
 
@@ -64,9 +73,9 @@ In airgap mode the device talks by animated QR both ways: it scans the request
 with the camera and shows the signature as a QR.
 
 What the airgap does **not** cover: it cuts USB data and radio power. A hostile
-MCU on a malicious charger could still signal by switching the 250 mA charge
-current on and off (`CHG_CE`), and the display and camera are optical channels
-by design. Firmware integrity (secure boot, TrustZone, signed updates) is what
+MCU on a malicious charger could still signal by switching the NiMH charge current
+on and off (`CHG_OFF`, `CHG_HI`), and the display, camera and buzzer are optical and
+acoustic channels by design. Firmware integrity (secure boot, TrustZone, signed updates) is what
 keeps the MCU honest; the switch guarantees the radio and USB data paths.
 
 ## Secure element wiring
@@ -114,10 +123,12 @@ on the back face.
 
 Connector positions come from the tail lengths, not from the picture:
 `newBoard.py` runs each tail from the panel edge to its slot, down through the
-cell (4.0 mm), foam (0.3 mm) and board (1.0 mm) — the touch flex leaves from the
-touch glass, 2.7 mm higher — and north to the connector's contact row.
-`checkFpc.py` fails if a placed connector leaves the tail short or with more
-than 3 mm of slack. Change `CELL_T` there if the chosen pouch is thicker.
+foam (0.3 mm) and board (1.0 mm) — the touch flex leaves from the touch glass,
+2.7 mm higher — and north to the connector's contact row. `checkFpc.py` fails if a
+placed connector leaves the tail short or with more than 3 mm of slack. Proto 0's
+tails also dropped through a 4 mm pouch; proto 1 moved the slots 2 mm south
+instead (each millimetre south costs a tail two), so both tails land exactly where
+they did and the connectors stayed put.
 
 The touch tail's length is the one awkward thing: it lies along the back
 face's east side (x 36.5–43.5) up to its connector. Only low parts sit under it.
@@ -126,7 +137,8 @@ touch flex is merged into the TFT flex.
 
 ## Board
 
-- 48 × 85 mm, 4 layers, 1.0 mm (the chin grew 3 mm in the routing pass).
+- 48 × 87 mm, 4 layers, 1.0 mm (the chin grew 3 mm in proto 0's routing pass, and
+  2 mm in proto 1 for the joystick below the cell).
   **Stack-up: F.Cu / In1 = 3.3 V plane / In2 = solid GND / B.Cu.** Every part
   sits on B.Cu, whose return currents run in the plane next to it, so In2 is the
   unbroken GND; every 3.3 V pin and decap drops a via to In1, and the front, the
@@ -134,23 +146,30 @@ touch flex is merged into the TFT flex.
   unbroken. `board/wallet.kicad_dru` enforces both (In2: GND only; In1: 3.3 V
   only). The MCU's 1.1 V core link (pin 49 to pin 98) runs on the back copper
   under the package, inside its pin ring.
-- **All parts on the back face (B.Cu).** The front face carries only the cell
-  and the panel, plus the **programming pads** (MCU SWD and radio SWD). They are
-  reachable by pogo pins before assembly and buried under the cell afterwards.
-- The chin (south of the slots) holds USB-C (mouth south), the radio module
-  (antenna west, with a copper keep-out on every layer), the charger, buck-boost
-  and the cell connector (cable out the east edge).
-- The airgap switch's lever exits the west edge next to the RADIO light. The
-  power button plunger exits the east edge; its land is KiCad's ALPS SKRT land
-  with pad 1 narrowed and the tab pads trimmed 0.05 mm, because the stock land
-  leaves 0.1 mm between copper and the locating holes (JLC wants 0.2 mm).
+- **All parts on the back face (B.Cu)**, except the AAA cell's two clips. The
+  front face carries the panel, the clips, and the **programming pads** (MCU SWD
+  under the panel, radio SWD just south of the cell). They are reachable by pogo
+  pins before assembly.
+- **The chin** (south of the slots) holds the AAA cell on the front, across the
+  board (the clips' bases span 47 mm of the 48), and on the back USB-C (mouth
+  south), the radio module, the boost, the charger and the USB buck.
+- **The radio's antenna points south**, at the board edge in the south-west corner,
+  with a copper keep-out on every layer. Proto 0's antenna pointed west from a
+  module across the chin; with a metal cell over the chin's front that would have
+  sat under the can, which detunes a chip antenna. `checkFpc.py` fails if the cell
+  (between its clips, 10.5 mm across) overlaps the antenna keep-out. The module's
+  pad row faces north, so its UART translator sits on the west bridge next to the
+  UART pads.
+- The airgap switch's lever exits the west edge next to the RADIO light. There is
+  no power button on the edge: the joystick's centre press is the power key.
 - No 32 kHz crystal and no RTC backup supply: nothing on the device needs the
   time across power-off (a Safe transaction carries no timestamp; the PIN retry
   counter lives in the SE050). USB runs on the internal 48 MHz oscillator trimmed
   from the USB frames, timeouts on the internal 32 kHz one.
-- Four M2 holes: two at the north corners, one at the panel's south-west corner
-  (the board's south-west corner belongs to the antenna), one in the south-east
-  corner.
+- Four M2 holes: two at the north corners (under the panel: locating pins in the
+  case), one in the strip between the panel and the cell west of the TFT slot, and
+  one in the south-east corner: the two screws. The south-west corner belongs to the
+  antenna.
 - **The front is incognito.** No brand mark on the front (bezel, chin or case): a
   signer should not advertise what it is. The brand lives only on the back, behind
   the case.
@@ -194,8 +213,8 @@ touch flex is merged into the TFT flex.
   moves). No parts on the back in: the **camera fan-in**, 3.1 mm of bare board
   east of the camera connector's contacts, where all 24 lines enter (the contacts
   face east; the camera LDOs used to fill it); the camera head and its flex run;
-  the battery plug; the old UV-artwork logo panel; a ring around each mounting
-  hole. No copper on any layer at the antenna end, and no tracks or vias on the
+  a ring around each mounting hole. The battery plug's and the old UV-artwork
+  panel's keep-outs went with proto 0: the buzzer sits in that north-east corner. No copper on any layer at the antenna end, and no tracks or vias on the
   back under the radio module (GND fill only). An "MCU west escape" strip was
   tried and dropped: it forbade the SE pull-ups exactly where they belong, inline
   between the SE and the MCU.
@@ -254,9 +273,8 @@ touch flex is merged into the TFT flex.
   would save a few mA at full speed, small next to the ~115 mA backlight, but
   its inductor and input cap had to sit in that lane. The 33 Ω SPI series
   resistors are gone for the same reason.
-- The RADIO light sits directly under the south-west hole, next to the radio
-  module, in the strip between the screw head and the antenna keep-out, so the
-  west bridge into the chin stays open.
+- The RADIO light sits in the strip west of the radio module, under the cell's −
+  clip on the other side.
 - **The radio gate** (NOR, load switch and their passives) sits beside the
   airgap switch on the west edge, so AIRGAP and the radio's supply are a few
   millimetres each instead of 30–40 mm down the west side
@@ -268,61 +286,128 @@ touch flex is merged into the TFT flex.
 - Signals reach the chin over three bridges between the slots and the edges:
   west (≈ 6 mm usable beside the hole), middle (2.6 mm) and east (3.7 mm).
 
+## Power: one AAA cell
+
+Why these parts, which cells and how long they last: [power-aaa.md](power-aaa.md).
+
+```
+ USB-C VBUS -> TLV62569P buck -> V3V3_USB --VIN1--+
+                                   | PG -> PR1    | TPS2116 (USB first) -> V3V3
+                                   \-> BQ25172 ----+-> BAT (NiMH only, MCU-gated)
+ AAA: BAT -> LTC3539-2 boost, SHDN = soft latch -> V_BOOST --VIN2--+
+      BAT_N -> AO3416 (reverse-cell blocker) -> GND
+```
+
+- **The boost runs from every cell that fits**: it starts at 0.88 V (max), runs to
+  0.5 V, and keeps regulating when the cell is *above* 3.3 V, so a 10440 Li-ion at
+  4.2 V never reaches the 3.3 V rail (the STM32's absolute maximum is 4.0 V). No
+  Schottky across it: that would defeat exactly this. Firmware applies the
+  chemistry's own cut-off (NiMH or alkaline ~1.0 V under load, Li-ion 3.0 V).
+- **A reversed cell** is blocked by an AO3416 in the cell's low side: its body
+  diode conducts a correctly inserted cell from the first instant, its gate follows
+  the cell (threshold 0.4–1.0 V) and then the boost's own output (~3 V, ~25 mΩ).
+  Driving the gate from the 3.3 V rail instead would connect a reversed cell
+  whenever USB is plugged in.
+- **USB powers the board**, and the TPS2116 hands over to the cell (switching on
+  the buck's power-good, at 90 % of 3.3 V) without a gap when the cable comes out,
+  as long as firmware holds the boost on.
+- **The charger is NiMH-only and off by default.** The BQ25172 charges constant
+  current only, never starts on a cell resting above ~1.33 V, stops above 1.65–
+  1.75 V, has a 4 h safety timer and its own NTC on the cell (0–45 °C). A transistor
+  holds its TS pin low until the MCU, having identified the cell as NiMH, lets go;
+  a reset or a dead MCU puts it back. 83 mA (0.1 C, the eneloop standard charge) or
+  250 mA (0.3 C, ended by firmware on the cell's own signs). Fed from the USB 3.3 V
+  rail, not VBUS, so it dissipates 0.48 W at 250 mA instead of 0.9 W.
+- **The MCU reads the cell** at the + clip (1M/1M, its own trace from the clip pad)
+  and at the − clip (so the reverse FET is not part of the reading), and its
+  temperature on a second NTC. No battery gauge: the MAX17048 was a Li-ion gauge.
+- **The backlight pump runs from V3V3**: with one AAA there is no battery-level
+  rail. 3.3 V is too close to the LEDs' ~3.1 V for the pump's 1x mode at full
+  current, so expect ~1.5× the LED current at full brightness: the biggest load.
+
 ## Power on and off
 
-The power button pulls the 3.3 V buck-boost's enable up through one diode; the
-MCU holds it through the other (`PWR_HOLD`). 1 µF on the enable with its 1M
-pull-down keeps the rail up for ~1 s through any MCU reset (watchdog, brown-out,
-firmware update, debugger), so a reset never turns the device off. Firmware
-powers off by releasing `PWR_HOLD` and waiting ~2 s. Before that it puts the
-battery gauge in hibernate (~3 µA, still gauging). With USB plugged in and the
-device off, the cell charges and nothing else runs; there is no charge light.
+The power key is the joystick's centre press, held. The press grounds `JOY_CEN`,
+which turns on a PNP (MMBT3906, 1M base-emitter, 100k to the contact) from the cell
+into `BTN`; `BTN` pulls the LTC3539's SHDN up to the cell through one diode of a
+BAT54C; the MCU holds it through the other (`PWR_HOLD`). SHDN's guaranteed high is
+0.88 V, so the button starts the board from a cell resting at ≥ ~1.05 V. 1 µF on
+SHDN with 1M (and the pin's own 4M) pulling it down keeps the boost on ~1 s through
+any MCU reset (watchdog, brown-out, firmware update, debugger); from a button press
+on a 1.2 V cell it holds ~0.25 s, which the boardloader beats by far. An NPN, not a
+FET (it must switch from a 0.9 V cell), turns `BTN` into `BTN_N`, so while running the
+MCU reads the same centre press (a short press selects, a hold powers off). Off,
+the board draws ~1.3–2.3 µA from the cell, less than the cell's own self-discharge
+(power-aaa.md#standby-off-is-the-resting-state). There is no side power button. Firmware
+powers off by releasing `PWR_HOLD` and waiting ~2 s. With USB plugged in the board
+is powered whatever the latch says; firmware keeps the screen dark and charges a
+NiMH cell. There is no charge light.
+
+## Buzzer and joystick
+
+- **Buzzer**: a 5 × 5.5 × 2 mm magnetic transducer (Huaneng MLT-5020, 75 dB at
+  10 cm, 4 kHz) in the north-east corner, its sound port facing a 2 mm hole in the
+  back of the case, driven by an AO3416 from LPTIM3 (TIM3 already clocks the camera).
+  A MEMS microspeaker needs a 15–30 V driver and none is stocked at JLC; the louder
+  7.5 mm transducers have a 9 mm land that no free spot takes.
+- **Joystick**: an ALPS SKRHAAE010 (four directions and a centre push, 7.5 × 7.5 mm,
+  SMD, reflowed by JLC) on the front, below the cell and beside USB-C. The board grew
+  2 mm at the south for it: the cell's clips leave 9.6 mm to the edge, the land needs
+  8.6. Its stem stands through a hole in the case and stops 0.25 mm under the front
+  face, so a printed cap goes on it. Every line between the chin and the MCU crosses
+  one of the three narrow bridges beside the display slots, so the four directions
+  share one ADC line: each switches its own resistor (15k/27k/47k/100k) from a node
+  pulled up by 15k to GND. The ADC, referenced to the same 3.3 V, tells every single
+  direction and every pair (diagonals) apart: 110 mV between neighbouring codes,
+  39 mV of margin with all the 1 % resistors at their limits. The push has its own
+  line.
 
 ## Enclosure
 
 A two-part case: a back **shell** with the walls up to the board's front face,
 and a front **bezel** with the display window whose skirt laps over a tongue on
-the shell. Four screws from the back hold the whole stack. Plastic: always
-see-through, in four colours: ice blue, orange and purple (all transparent
-tints) and clear.
+the shell. Plastic: always see-through, in four colours: ice blue, orange and
+purple (all transparent tints) and clear.
 
 - **Built from the board, not typed in.** The generator reads the outline, slots,
-  mounting holes, camera keep-out and the power button's land from the board
-  file, and every modelled part from KiCad's own 3D export. The deepest part sets
-  the back cavity; whatever crosses the board edge (the USB-C mouth, the airgap
-  lever) gets a wall opening sized from its geometry, and a part crossing the edge
-  with no opening rule stops the build. Parts with no 3D model each carry a height
-  bound, so a new unmodelled part also stops it.
-- **Thickness, front to back:** bezel lip 0.8, panel 4.13 (Newhaven drawing),
-  cell 4.0 on 0.3 foam, board 1.0, back cavity 6.5, back 1.2. The back cavity is
-  set by the camera head (5.9 mm, hand-fitted, not in the board file); the
-  battery connector, at 5.6 mm, is the deepest modelled part.
-- **Assembly:** screen face down into the bezel, battery onto the screen, board
-  onto the bezel's four bosses, shell over it, then 4× M2×10 pan-head screws from
-  the back. Each goes through a clearance hole in a shell standoff and the board's
-  hole into a 1.6 mm pilot in a bezel boss (2.8 mm of thread, the generator
-  refuses less than 2.5); the heads sit flush in counterbores in the back face.
-  The board is clamped between the standoffs and the bosses.
-- **Bosses under the screen:** three of the board's holes sit under the screen's
-  corners, so their bosses stand in the battery's layer, between the board and the
-  screen's back, which they also carry. Their undersides rise at 45° from the
-  fills, so the bezel prints face down without supports. The fills along the
-  screen's edges locate it; the chin is solid down to the board, with windows
-  where the display ribbons drop through the slots.
-- **Standoff at the camera corner** is notched for the camera head; the screw
-  passes 0.53 mm from the head (the generator wants at least 0.3).
+  mounting holes, camera keep-out, the cell's clips and the joystick
+  from the board file, and every fitted, modelled part from KiCad's own 3D export.
+  The deepest part sets the back cavity; whatever crosses the board edge (the USB-C
+  mouth, the airgap lever) gets a wall opening sized from its geometry, and a part
+  crossing the edge with no opening rule stops the build. Parts with no 3D model
+  each carry a height bound, so a new unmodelled part also stops it. Parts not
+  fitted are left out.
+- **Thickness, front to back:** bezel lip 0.8, panel 4.13 (Newhaven drawing) on
+  0.3 foam, board 1.0, back cavity 4.0, back 1.2: **11.5 mm** (case 52.2 × 91.2 mm), 6.5 mm less than
+  proto 0's 18.0. The back cavity is set by the USB-C receptacle (3.40 mm). Two things stand
+  out of it on purpose: the **camera head** (5.9 mm, through an open window in the
+  back, 0.7 mm proud) and the **AAA cell** with its clips (through an opening in the
+  bezel's chin, 5.4 mm proud of the front).
+- **Fastening:** the screen sits straight on the board, so the two holes under its
+  corners have no room for a boss: the shell's standoffs carry **locating pins**
+  there. The two **screws** (M2×8 pan head from the back, flush in counterbores)
+  go into the bezel's solid chin at the holes clear of the screen, 3.5 mm of thread
+  (the generator refuses less than 2.5). The north edge is held by a **hook**: a
+  30 mm ridge inside the bezel's skirt that drops into a groove in the shell's
+  tongue.
+- **Assembly:** screen onto the board on foam tape, ribbons through the slots into
+  their connectors; board into the shell onto the pins and standoffs; bezel hooked
+  in at the north and swung down; two screws; the cell into its clips from the
+  front.
+- **Standoff at the camera corner** is notched for the camera head; the pin there
+  passes 0.53 mm from the head.
 - **Draft:** both halves are 1 mm narrower at the back and front faces than at
   the parting line (about 3°): softer, mouldable, still printable without
   supports (the shell on its back, the bezel face down).
-- **Camera:** an open window in the back, not plastic: tinted plastic blurs QR.
-- **Power button:** a tab cut into the east wall flexes in; a nub on it stops
-  0.1 mm short of the plunger tip, taken from the land's fab outline.
 - **Airgap lever:** its tip sits about 1 mm inside the wall, in a slot sized for
   the lever plus its full travel. Operated with a pen tip, so it is hard to flip
   by accident.
-- **Untested:** nothing is printed yet. The thread in the bosses, the tab's
-  stiffness, the lever reach, and where the battery sits on the board (assumed
-  centred under the panel) all need a print and a board in hand.
+- **Joystick:** a pocket over its housing in the solid chin and a 6 mm hole its
+  stem rocks in; the stem stops 0.25 mm under the front face, so a printed cap goes
+  on it.
+- **Untested:** nothing is printed yet. The thread in the bosses, the north hook's
+  fit, the lever reach, the cell opening, the joystick cap and how loud the buzzer is
+  through its hole all need a print and a board in hand.
 
 ## Bring-up checks that need parts in hand
 
@@ -363,7 +448,7 @@ tints) and clear.
    - BOOT0 (PH3) is tied to GND: the ROM bootloader is entered through the option
      bytes (nSWBOOT0/nBOOT0) over SWD; PH3 must never be made an output. Recovery
      of a locked-up part is connect-under-reset on TP_NRST.
-   - The power button's BTN_N uses PA0's internal pull-up, kept through
+   - The power key's BTN_N (the joystick's centre press) uses PA0's internal pull-up, kept through
      Standby/Shutdown with PWR_PUCRA + APC (check in RM0456 at bring-up).
    - Camera XCLK is TIM3_CH2 PWM on PB5 at 160/8 = 20 MHz (the OV2640 wants a
      45–55 % duty cycle, so no odd divider). Hold CAM_RST (PE0) low while CAM_EN
@@ -378,6 +463,21 @@ tints) and clear.
 9. **Device-bound PIN KDF** (research.md): measure the SAES rate keyed by the
    DHUK, pick the chain length for about one second, and confirm in our
    TrustZone/RDP configuration that software cannot read the DHUK.
+10. **AAA clips**: the pair's installed length (47–48 mm) is computed from the
+    drawings; fit a sample pair and a 44.5 mm cell (and a 42.9–46.5 mm 10440)
+    before the order. Check that the − clip's arms do not cut a cell's label.
+11. **Cell identification**: measure the + and − clip readings against a solid
+    metal dummy cell first (the clips' own resistance), then set the resting-voltage,
+    resistance-step and trial-charge thresholds on real NiMH, alkaline and lithium
+    cells in these clips (power-aaa.md). Until then, firmware should ask the user.
+12. **Boost**: rail ripple and transient at 0.9–1.5 V in and at full load; the
+    rail with a 10440 at 4.2 V (it must stay at 3.3 V) and when a cell is inserted;
+    the USB-to-cell handover dip (expected ~3.0 V for microseconds).
+13. **Reverse cell**: insert a cell backwards with and without USB: nothing may
+    warm, the rail must stay up on USB, and firmware should read the cell negative.
+14. **Charger**: confirm the charger stays off while the MCU is in reset, that its
+    TS NTC (on the back, under the cell) tracks the cell, and the charge time at 83
+    and 250 mA.
 
 ## Flow
 
