@@ -251,11 +251,11 @@ class Model:
         for x0, x1 in ((b.TFT_TAIL[0] - b.SLOT_MARGIN, b.TFT_TAIL[0] + b.TFT_TAIL[1] + b.SLOT_MARGIN),
                        (b.CTP_TAIL[0] - b.SLOT_MARGIN, b.CTP_TAIL[0] + b.CTP_TAIL[1] + b.SLOT_MARGIN)):
             self.forbidden.append((x0 - 0.3, b.SLOT_Y0 - 0.3, x1 + 0.3, b.SLOT_Y1 + 0.3))
-        self.forbidden += [(x - 2.2, y - 2.2, x + 2.2, y + 2.2) for x, y in b.HOLES]
+        self.forbidden += [(x - 2.2, y - 2.2, x + 2.2, y + 2.2) for x, y in b.HOLES.values()]
         # the antenna end as drawn from the placed module (newBoard's ANT_KEEPOUT is only the seed)
         self.ant_keepout = b.antenna_keepout(self.board)
         self.back_only = [box for _, box in b.footprint_keepouts(self.board)] + list(b.LABEL_SLOTS.values()) + \
-                         [(x - b.HOLE_RING, y - b.HOLE_RING, x + b.HOLE_RING, y + b.HOLE_RING) for x, y in b.HOLES]
+                         [(x - b.HOLE_RING, y - b.HOLE_RING, x + b.HOLE_RING, y + b.HOLE_RING) for x, y in b.HOLES.values()]
 
     def legal(self, part):
         box = nb._box(part.fp, TOUCH)

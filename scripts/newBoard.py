@@ -52,12 +52,19 @@ CTP_TAIL = (PANEL[0] + PANEL[2] - 1.90 - 7.00, 7.00)
 # back (each mm south costs a tail 2 mm), so both tails land as before.
 SLOT_Y0, SLOT_Y1 = PANEL_S + 3.0, PANEL_S + 4.6
 SLOT_MARGIN = 0.75                            # tail-to-slot clearance each side
+# Each tail comes off the panel's south edge and drops through the north half of its
+# slot. Front parts (the cell's clips) and the cell may stand over the slot's south
+# half, never over the tail's drop: north of SLOT_Y0 + TAIL_BEND + TAIL_CLR, across the
+# tail's width plus SLOT_MARGIN, is the tails' alone (scripts/checkFpc.py checks it).
+TAIL_BEND, TAIL_CLR = 0.8, 0.2
 # The north pair sits under the panel's corners and only locates the board on
 # pins in the back shell: with the panel straight on the board there is no room
-# for a boss there. The two screws go where the front half is solid: H3 in the
-# strip between the panel and the AAA cell (west of the TFT slot), H4 in the
+# for a boss there. The screw goes where the front half is solid: H4 in the
 # south-east corner. The south-west corner belongs to the radio antenna.
-HOLES = [(3.2, 3.2), (44.8, 3.2), (3.2, 63.0), (44.8, H - 3.2)]
+# H3 (3.2, 63.0), the second screw in the strip between the panel and the cell, is
+# out for now (2026-10-22): the cell's west clip moved north over its boss. Keyed by
+# reference so a removed hole does not renumber the others.
+HOLES = {"H1": (3.2, 3.2), "H2": (44.8, 3.2), "H4": (44.8, H - 3.2)}
 HOLE_RING = 2.6      # no parts within this of a hole centre: an M2 head is ~3.8 mm across
 # E73 antenna end, all layers: the module points it at the south edge, clear of the
 # AAA cell on the front (a metal can over a chip antenna detunes it); keepouts()
@@ -393,10 +400,10 @@ def legalize(board):
     for x0, x1 in ((TFT_TAIL[0] - SLOT_MARGIN, TFT_TAIL[0] + TFT_TAIL[1] + SLOT_MARGIN),
                    (CTP_TAIL[0] - SLOT_MARGIN, CTP_TAIL[0] + CTP_TAIL[1] + SLOT_MARGIN)):
         forbidden.append((x0 - 0.3, SLOT_Y0 - 0.3, x1 + 0.3, SLOT_Y1 + 0.3))
-    forbidden += [(x - 2.2, y - 2.2, x + 2.2, y + 2.2) for x, y in HOLES]
+    forbidden += [(x - 2.2, y - 2.2, x + 2.2, y + 2.2) for x, y in HOLES.values()]
     # Back-face-only keep-outs (the front face carries only the programming pads).
     back_only = [box for _, box in footprint_keepouts(board)] + list(LABEL_SLOTS.values()) + \
-        [(x - HOLE_RING, y - HOLE_RING, x + HOLE_RING, y + HOLE_RING) for x, y in HOLES]
+        [(x - HOLE_RING, y - HOLE_RING, x + HOLE_RING, y + HOLE_RING) for x, y in HOLES.values()]
     # Anchored parts first, wherever they appear in PLACE: a passive must never
     # be put where a connector lands later.
     placed = [(_side(fps[r]), _box(fps[r])) for r in PLACE if r in ANCHORED and r in fps]
@@ -571,10 +578,10 @@ def keepouts(board):
     sits on; GND fill is fine and is what pad 24 uses)."""
     for name, box in footprint_keepouts(board):
         rule_area(board, f"no parts: {name}", rect(*box), [pcbnew.B_Cu], footprints=True)
-    for i, (x, y) in enumerate(HOLES):
+    for ref, (x, y) in HOLES.items():
         ring = [(x + HOLE_RING * math.cos(math.radians(a)), y + HOLE_RING * math.sin(math.radians(a)))
                 for a in range(0, 360, 30)]
-        rule_area(board, f"no parts: hole H{i + 1}", ring, [pcbnew.B_Cu], footprints=True)
+        rule_area(board, f"no parts: hole {ref}", ring, [pcbnew.B_Cu], footprints=True)
     u11 = board.FindFootprintByReference("U11")
     xs = [pcbnew.ToMM(p.GetPosition().x) for p in u11.Pads()]
     ys = [pcbnew.ToMM(p.GetPosition().y) for p in u11.Pads()]
@@ -604,10 +611,10 @@ def antenna_keepout(board):
 def mounting_holes(board):
     io = pcbnew.PCB_IO_KICAD_SEXPR()
     lib = str(syncBoard.KICAD_LIBS / "MountingHole.pretty")
-    for i, (x, y) in enumerate(HOLES):
+    for ref, (x, y) in HOLES.items():
         fp = io.FootprintLoad(lib, "MountingHole_2.2mm_M2_Pad_Via")
         fp.SetFPID(pcbnew.LIB_ID("MountingHole", "MountingHole_2.2mm_M2_Pad_Via"))
-        fp.SetReference(f"H{i + 1}")
+        fp.SetReference(ref)
         fp.SetPosition(pcbnew.VECTOR2I_MM(x, y))
         fp.SetAttributes(fp.GetAttributes() | pcbnew.FP_BOARD_ONLY | pcbnew.FP_EXCLUDE_FROM_BOM
                          | pcbnew.FP_EXCLUDE_FROM_POS_FILES)

@@ -112,6 +112,28 @@ else:
 sys.path.insert(0, str(Path(__file__).parent))
 import newBoard as nb  # noqa: E402
 
+# The tails' drop on the front: from the panel's south edge into the north half of
+# each slot. No front part's body (its fab outline) and not the cell may reach into it.
+drop_s = nb.SLOT_Y0 + nb.TAIL_BEND + nb.TAIL_CLR
+for name, (tx0, tw) in (("TFT tail", nb.TFT_TAIL), ("touch tail", nb.CTP_TAIL)):
+    x0, x1 = tx0 - nb.SLOT_MARGIN, tx0 + tw + nb.SLOT_MARGIN
+    bodies = []
+    for f in board.GetFootprints():
+        if f.GetLayer() != pcbnew.F_Cu:
+            continue
+        fab = [g.GetBoundingBox() for g in f.GraphicalItems() if g.GetLayer() == pcbnew.F_Fab]
+        if fab:
+            bodies.append((f.GetReference(), min(pcbnew.ToMM(b.GetLeft()) for b in fab),
+                           min(pcbnew.ToMM(b.GetTop()) for b in fab), max(pcbnew.ToMM(b.GetRight()) for b in fab),
+                           max(pcbnew.ToMM(b.GetBottom()) for b in fab)))
+    if ant is not None:
+        bodies.append(("the cell", cx0, cy0, cx1, cy1))
+    for ref, bx0, by0, bx1, by1 in bodies:
+        expect(not (bx0 < x1 and x0 < bx1 and by0 < drop_s and nb.PANEL_S < by1),
+               f"{ref} (y {by0:.2f}..{by1:.2f}) stands in the {name}'s drop (y {nb.PANEL_S:.2f}..{drop_s:.2f}, "
+               f"x {x0:.1f}..{x1:.1f})")
+print(f"tails' drop y {nb.PANEL_S:.2f}..{drop_s:.2f}: clear of the front parts and the cell (north edge {cy0:.2f})")
+
 for ref, end_y, row in (("J_TFT", nb.TFT_END_Y, nb.TFT_ROW), ("J_CTP", nb.CTP_END_Y, nb.CTP_ROW)):
     row_y = pcbnew.ToMM(fp[ref].GetPosition().y) - row
     slack = end_y - row_y      # positive: the tail end would sit south of the row
