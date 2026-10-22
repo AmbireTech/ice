@@ -105,6 +105,14 @@ MIN_WEB = 0.6
 # just under the front face: a printed cap goes on it.
 JOY_REF, JOY_BODY, JOY_HOUSING_H, JOY_H, JOY_HOLE_D = "SW_JOY", 7.5, 2.23, 5.08, 6.0
 JOY_CLR = 0.3        # around the housing, and over it
+# Other parts on the front (proto 1 put power parts there, in the chin): each gets a
+# pocket in the bezel's solid chin, its fab outline plus FRONT_CLR, as deep as the part
+# plus FRONT_CLR; FRONT_SKIN is the least bezel left over a pocket.
+FRONT_CLR, FRONT_SKIN = 0.3, 0.8
+# Screws holding the front half (with the north hook and the pins). Two is the design;
+# one is allowed only while the west hole H3 is out (owner, 2026-10-22: the cell's west
+# clip moved north over its boss). Put back 2 with H3.
+MIN_SCREWS = 1
 # Newhaven NHD-2.4-240320AF-CSXP-CTP mechanical drawing (12/15/2023): outline
 # 42.80 x 59.91, overall 4.13 +/-0.30; viewing area 37.72 x 49.96, 2.54 in from
 # each side and 2.52 down from the top edge.
@@ -328,14 +336,18 @@ def fab_world(fp: dict) -> np.ndarray:
     back-side footprint's graphics already mirrored; world = at + R(-rot) local."""
     th = math.radians(fp["rot"])
     c, s = math.cos(th), math.sin(th)
-    out = []
+    local = []
     for ln in kids(fp["node"], "fp_line"):
-        if not kid(ln, "layer")[1].endswith(".Fab"):
-            continue
-        for k in ("start", "end"):
-            lx, ly = xy(kid(ln, k))
-            out.append((fp["x"] + lx * c + ly * s, fp["y"] - lx * s + ly * c))
-    return np.array(out)
+        if kid(ln, "layer")[1].endswith(".Fab"):
+            local += [xy(kid(ln, k)) for k in ("start", "end")]
+    for rc in kids(fp["node"], "fp_rect"):     # newer libraries draw the body as a rectangle
+        if kid(rc, "layer")[1].endswith(".Fab"):
+            (x0, y0), (x1, y1) = xy(kid(rc, "start")), xy(kid(rc, "end"))
+            local += [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
+    for pg in kids(fp["node"], "fp_poly"):
+        if kid(pg, "layer")[1].endswith(".Fab"):
+            local += [xy(p) for p in kids(kid(pg, "pts"), "xy")]
+    return np.array([(fp["x"] + lx * c + ly * s, fp["y"] - lx * s + ly * c) for lx, ly in local])
 
 
 # ───────────────────────────────────────────────────────────── parts geometry
@@ -638,8 +650,11 @@ def main():
     under_glass = lambda hx, hy: glass[0] - m_ < hx < glass[2] + m_ and glass[1] - m_ < hy < glass[3] + m_
     screw_holes = [(hx, hy) for hx, hy, _ in b["holes"] if not under_glass(hx, hy)]
     pin_holes = [(hx, hy) for hx, hy, _ in b["holes"] if under_glass(hx, hy)]
+    if len(screw_holes) < MIN_SCREWS:
+        raise SystemExit(f"only {len(screw_holes)} board hole(s) clear of the screen: the front half needs {MIN_SCREWS} screw(s)")
     if len(screw_holes) < 2:
-        raise SystemExit(f"only {len(screw_holes)} board hole(s) clear of the screen: the front half needs two screws")
+        report.append(f"ONE SCREW only (temporary, the west hole H3 is out): the front half rests on it, "
+                      f"the north hook and {len(pin_holes)} pins")
     for hx, hy, _ in b["holes"]:
         boss = Pos(hx, -hy, (z_floor_in + z_back) / 2) * Cylinder(STANDOFF_R, z_back - z_floor_in + 0.02)
         nearest = math.inf
@@ -748,6 +763,26 @@ def main():
         report.append(f"joystick at {joy['x']:.1f}, {joy['y']:.1f}: pocket {2 * h:.1f} mm square, a {JOY_HOLE_D} mm hole "
                       f"{web:.2f} mm from the cell opening; its stem stops {z_top - JOY_H:.2f} mm under the front face "
                       f"(a cap goes on it)")
+    front = sorted(ref for ref, f in b["fps"].items()
+                   if f["layer"] == "F.Cu" and not f["dnp"] and ref not in ("BT_N", "BT_P", JOY_REF)
+                   and not f["lib"].startswith(("TestPoint", "MountingHole")))
+    for ref in front:
+        if ref in parts:
+            h = parts[ref][:, 2].max() - T      # parts' z is 0 at the board's back face
+        elif ref in UNMODELLED_MAX_H:
+            h = UNMODELLED_MAX_H[ref]
+        else:
+            raise SystemExit(f"front part {ref} has no 3D model and no height bound")
+        if h + FRONT_CLR > z_top - FRONT_SKIN:
+            raise SystemExit(f"front part {ref} ({h:.2f} mm) leaves under {FRONT_SKIN} mm of bezel over it")
+        fw = fab_world(b["fps"][ref])
+        if fw.size == 0:
+            raise SystemExit(f"front part {ref} has no fab outline to size its pocket from")
+        x0, y0 = fw.min(0)[:2]
+        x1, y1 = fw.max(0)[:2]
+        bezel -= box(x0 - FRONT_CLR, y0 - FRONT_CLR, x1 + FRONT_CLR, y1 + FRONT_CLR, z_split - 1, h + FRONT_CLR)
+    if front:
+        report.append(f"front parts in pockets under the bezel's chin: {', '.join(front)}")
     cell = {"x": [round(cell_cx - 22.25, 3), round(cell_cx + 22.25, 3)], "y": round(cell_cy, 3),
             "z": round(CELL_BASE + CELL_D / 2, 3), "d": CELL_D, "clips": clips, "clipH": CLIP_H}
     report.append(f"AAA cell opening {cut[2] - cut[0]:.1f} x {cut[3] - cut[1]:.1f} mm over the clips, "
