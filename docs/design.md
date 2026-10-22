@@ -36,7 +36,7 @@ Proto 1 replaces it with one AAA cell of any chemistry, which makes the device
 | Camera | OV2640 24-pin DVP module, ~66° lens refocused to ~15 cm, on a Jushuo AFC07 FPC connector; AVDD 2.8 V / DVDD 1.3 V (fixed TLV70313) / DOVDD 3.3 V | connector JLC, module hand-fitted |
 | Power | One AAA cell (NiMH, lithium or alkaline; a 10440 Li-ion survives) in two SMT clips (MYOUNG MY-AAA-19-J / -20-J) → AO3416 reverse-cell blocker → LTC3539-2 boost to 3.3 V; USB-C → TLV62569P buck → TPS2116 picks USB first; BQ25172 NiMH charger, MCU-gated; soft latch on the joystick's centre press | all JLC (LTC3539-2: 2,400) |
 | Sound | Huaneng MLT-5020 magnetic transducer (5 × 5.5 × 2 mm, 75 dB at 10 cm), AO3416 low-side, LPTIM3 PWM | JLC |
-| Joystick | ALPS SKRHAAE010: four directions + centre push, 7.5 mm, on the front below the cell | JLC C202423 (521) |
+| Joystick | ALPS SKRHAAE010: four directions + centre push, 7.5 mm, on the front, centred below the cell | JLC C202423 (521) |
 
 Overlap with GridCore: USB-C and ESD, the display panel with its connector and
 backlight pump, the slide switch, the netlist → KiCad flow and every gate script.
@@ -351,9 +351,11 @@ NiMH cell. There is no charge light.
   A MEMS microspeaker needs a 15–30 V driver and none is stocked at JLC; the louder
   7.5 mm transducers have a 9 mm land that no free spot takes.
 - **Joystick**: an ALPS SKRHAAE010 (four directions and a centre push, 7.5 × 7.5 mm,
-  SMD, reflowed by JLC) on the front, below the cell and beside USB-C. The board grew
-  2 mm at the south for it: the cell's clips leave 9.6 mm to the edge, the land needs
-  8.6. Its stem stands through a hole in the case and stops 0.25 mm under the front
+  SMD, reflowed by JLC) on the front, centred below the cell. The board grew 2 mm at
+  the south for it. USB-C moved east of centre (its shell legs go through the board
+  where the joystick's land is), and the joystick sits 0.2 mm north of the radio
+  antenna's keep-out, as close under the cell as the land allows; the cell's clips
+  went 0.25 mm north, as far as the touch tail's slot lets them. Its stem stands through a hole in the case and stops 0.25 mm under the front
   face, so a printed cap goes on it. Every line between the chin and the MCU crosses
   one of the three narrow bridges beside the display slots, so the four directions
   share one ADC line: each switches its own resistor (15k/27k/47k/100k) from a node
@@ -404,7 +406,9 @@ purple (all transparent tints) and clear.
   by accident.
 - **Joystick:** a pocket over its housing in the solid chin and a 6 mm hole its
   stem rocks in; the stem stops 0.25 mm under the front face, so a printed cap goes
-  on it.
+  on it. Between the clips the cell opening is only the cell's width plus 0.3 mm,
+  which leaves 0.7 mm of bezel between it and the joystick hole; the build stops
+  if that strip gets under 0.6 mm.
 - **Untested:** nothing is printed yet. The thread in the bosses, the north hook's
   fit, the lever reach, the cell opening, the joystick cap and how loud the buzzer is
   through its hole all need a print and a board in hand.

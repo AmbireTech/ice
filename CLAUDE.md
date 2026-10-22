@@ -13,7 +13,7 @@ Ambire internals into GridCore's.
 ## State (2026-10-22)
 
 - Board `board/wallet.kicad_pcb` is **proto 1**: 48 x 87 mm, one AAA cell in two SMT
-  clips on the front face (no pouch), joystick (ALPS SKRHAAE010) on the front below the
+  clips on the front face (no pouch), joystick (ALPS SKRHAAE010) on the front, centred below the
   cell (its centre press is the power key; no side power button), LTC3539 boost,
   BQ25172 NiMH-only charger, buzzer in the north-east corner, radio antenna pointing
   south. The blocks the owner hand-routed north of the slots are kept; the chin was

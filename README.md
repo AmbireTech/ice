@@ -10,7 +10,7 @@ firmware starts from a fork of Trezor's.
 fitted). The board file is now **proto 1**: one AAA cell of any chemistry in
 clips on the front instead of the pouch (NiMH charged over USB only once
 identified as NiMH), a case 6.5 mm thinner with the cell and the camera standing
-out of it, a joystick below the cell, a buzzer, and the flame on the back. Why and
+out of it, a joystick centred below the cell, a buzzer, and the flame on the back. Why and
 how: [docs/power-aaa.md](docs/power-aaa.md). The firmware port has started on the
 fork (below), for proto 0.
 
