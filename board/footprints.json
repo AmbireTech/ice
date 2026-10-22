@@ -285,5 +285,8 @@
   "U6": "Package_DFN_QFN:Texas_UQFN-10_1.5x2mm_P0.5mm",
   "U7": "Package_TO_SOT_SMD:SOT-23-5",
   "U8": "Package_TO_SOT_SMD:SOT-23-6",
-  "U9": "Package_SO:VSSOP-8_2.3x2mm_P0.5mm"
+  "U9": "Package_SO:VSSOP-8_2.3x2mm_P0.5mm",
+  "C_BOOST2": "Capacitor_SMD:C_0805_2012Metric",
+  "C_FFB": "Capacitor_SMD:C_0402_1005Metric",
+  "R_PGB": "Resistor_SMD:R_0402_1005Metric"
 }

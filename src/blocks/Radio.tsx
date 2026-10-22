@@ -207,9 +207,11 @@ export const RadioBlock = () => (
     ))}
     {/* Factory programming of the radio (it is updated over UART afterwards). SWD
         needs no reset line on the nRF52840, so its RESET pad stays unconnected.
-        TP_RGND: a ground pad beside the others, so a probe or jig needs no lead
-        to the MCU's TP_GND 47 mm away (pre-order audit). */}
-    {[["TP_RSWDIO", "RADIO_SWDIO"], ["TP_RSWCLK", "RADIO_SWCLK"], ["TP_R3V3", "RADIO_3V3"], ["TP_RGND", "GND"]].map(([tp, net], i) => (
+        Only the two SWD lines get pads: the radio is flashed after the MCU, whose
+        firmware switches RADIO_3V3 on, and the jig takes GND and its 3.3 V reference
+        from the MCU's pads (TP_GND, TP_3V3). Proto 1 dropped the radio's own 3V3 and
+        GND pads to thin out the board's south strip. */}
+    {[["TP_RSWDIO", "RADIO_SWDIO"], ["TP_RSWCLK", "RADIO_SWCLK"]].map(([tp, net], i) => (
       <group key={tp}>
         <chip name={tp} footprint="pinrow1" pinLabels={{ pin1: "P" }} schX={12} schY={-28 + i} schSectionName={S} />
         <trace from={`.${tp} > .P`} to={`net.${net}`} />

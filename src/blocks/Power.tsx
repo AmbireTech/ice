@@ -112,11 +112,20 @@ export const PowerBlock = () => (
     <trace from=".C_USB3V3 > .pin1" to="net.V3V3_USB" width={W_PWR} />
     <trace from=".C_USB3V3 > .pin2" to="net.GND" width={W_PWR} />
     {/* PG (open drain, high at 95 % of Vout, low under 90 %) selects USB in the mux:
-        the cell takes over before the USB rail has sagged to 3.0 V. */}
-    <resistor name="R_PG" resistance="100k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C25741"] }}
+        the cell takes over before the USB rail has sagged to 3.0 V. PG's pull-up is a
+        divider from VBUS, not a resistor to V3V3_USB: PG goes high-impedance once VIN
+        falls under 1.4 V (SLVSDG1C Table 1, "Power Supply Removal"), and a pull-up to the
+        slower-decaying V3V3_USB would then lift PR1 over VREF (0.92-1.08 V) and switch the
+        mux back to the dead USB input, sagging V3V3 until it reset the MCU (schematic
+        review, 2026-10-22). 150k/100k: PR1 1.76 V at a 4.4 V VBUS, 0.56 V at 1.4 V. */}
+    <resistor name="R_PG" resistance="150k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C25755"] }}
       schX={-3} schY={12} schRotation="90deg" schSectionName={S} />
     <trace from=".R_PG > .pin1" to="net.USB_PG" />
-    <trace from=".R_PG > .pin2" to="net.V3V3_USB" />
+    <trace from=".R_PG > .pin2" to="net.VBUS" />
+    <resistor name="R_PGB" resistance="100k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C25741"] }}
+      schX={-2} schY={12} schRotation="90deg" schSectionName={S} />
+    <trace from=".R_PGB > .pin1" to="net.USB_PG" />
+    <trace from=".R_PGB > .pin2" to="net.GND" />
 
     {/* ---------------- Rail select (TPS2116) ---------------- */}
     {/* TPS2116DRL, SOT-583 (SLVSFG1A Table 5-1): 1 GND, 2/7 VOUT, 3 VIN1, 4 PR1, 5 MODE,
@@ -158,7 +167,7 @@ export const PowerBlock = () => (
     {/* Reverse cell: nothing stops a cell going in backwards, and the boost's VIN is
         rated to -0.3 V, so a reversed AAA would discharge through its internal diodes.
         AO3416 in the cell's low side: its body diode conducts a correctly inserted cell
-        from the first instant, the gate follows the cell (Vth 0.4-1.0 V) and, once the
+        from the first instant, the gate follows the cell (Vth 0.4-1.1 V) and, once the
         boost runs, the boost's own output through D_REVG (~2.7 V: ~25 mOhm). Reversed,
         the gate sits at or below the source and the body diode blocks. The boost output
         is used, not the 3.3 V rail: on USB the rail is up even with a reversed cell, and
@@ -261,6 +270,17 @@ export const PowerBlock = () => (
       schX={11} schY={10} schRotation="90deg" schSectionName={S} />
     <trace from=".C_BOOST > .pin1" to="net.V_BOOST" width={W_PWR} />
     <trace from=".C_BOOST > .pin2" to="net.GND" width={W_PWR} />
+    {/* The LTC3539's loop wants >= 22 uF of real output capacitance and a 33 pF
+        feedforward across the top divider resistor ("usually required", 35392fc
+        Output and Input Capacitor Selection); one 22 uF 0805 keeps ~11 uF at 3.3 V. */}
+    <capacitor name="C_BOOST2" capacitance="22uF" footprint="0805" supplierPartNumbers={{ jlcpcb: ["C45783"] }}
+      schX={12} schY={10} schRotation="90deg" schSectionName={S} />
+    <trace from=".C_BOOST2 > .pin1" to="net.V_BOOST" width={W_PWR} />
+    <trace from=".C_BOOST2 > .pin2" to="net.GND" width={W_PWR} />
+    <capacitor name="C_FFB" capacitance="33pF" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C1562"] }}
+      schX={10} schY={8} schRotation="90deg" schSectionName={S} />
+    <trace from=".C_FFB > .pin1" to="net.V_BOOST" />
+    <trace from=".C_FFB > .pin2" to="net.FB_BOOST" />
 
     {/* ---------------- Soft latch ---------------- */}
     {/* Power is the joystick's centre press, held: there is no separate power button.
@@ -308,7 +328,7 @@ export const PowerBlock = () => (
     <trace from=".R_EN > .pin1" to="net.PWR_EN" />
     <trace from=".R_EN > .pin2" to="net.GND" />
     {/* 1 uF x (1M || SHDN's internal 4M) = 0.8 s: from PWR_HOLD's ~3.0 V, SHDN stays over
-        0.88 V ~1 s through any MCU reset (watchdog, brown-out, update, SWD
+        0.88 V ~0.6-0.7 s (the 0402's ~0.5-0.7 uF at 3 V) through any MCU reset (watchdog, brown-out, update, SWD
         connect-under-reset). From a button press on a 1.2 V cell it holds ~0.25 s: the
         boardloader takes PWR_HOLD within milliseconds. Power-off = release PWR_HOLD and
         wait ~2 s. */}
@@ -417,7 +437,10 @@ export const PowerBlock = () => (
     <resistor name="R_CHGOFF" resistance="100k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C25741"] }}
       schX={-9} schY={-4} schRotation="90deg" schSectionName={S} />
     <trace from=".R_CHGOFF > .pin1" to="net.CHG_OFF" />
-    <trace from=".R_CHGOFF > .pin2" to="net.V3V3" />
+    {/* to the charger's own input, not V3V3: the hold is on whenever the charger has
+        power, also in the window after a USB plug-in before V3V3 comes up. PB0 is an FT
+        pin, so 3.3 V through 100k into an unpowered MCU is within its rating. */}
+    <trace from=".R_CHGOFF > .pin2" to="net.V3V3_USB" />
     {/* 1 % parts (SLUSDY5: +-1 %, <= 200 ppm/C). */}
     <resistor name="R_TMR" resistance="36k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C43676"] }}
       schX={-11} schY={-4} schRotation="90deg" schSectionName={S} />
@@ -488,7 +511,7 @@ export const PowerBlock = () => (
         reads it as BTN_N. */}
     <chip name="SW_JOY" footprint="pinrow8" manufacturerPartNumber="SKRHAAE010"
       supplierPartNumbers={{ jlcpcb: ["C202423"] }}
-      pinLabels={{ pin1: "A", pin2: "CEN", pin3: "C", pin4: "D", pin5: "COM", pin6: "B", pin7: "MP1", pin8: "MP2" }}
+      pinLabels={{ pin1: "A", pin2: "CEN", pin3: "C", pin4: "B", pin5: "COM", pin6: "D", pin7: "MP1", pin8: "MP2" }}
       schX={2} schY={20} schSectionName={S} />
     <trace from=".SW_JOY > .CEN" to="net.JOY_CEN" />
     <trace from=".SW_JOY > .COM" to="net.GND" />

@@ -882,7 +882,7 @@
  },
  "SW_JOY": {
   "part": "SKRHAAE010",
-  "source": "LCSC C202423 symbol: 1 A, 2 CEN, 3 C, 4 D, 5 COM, 6 B, 7/8 mounting",
+  "source": "ALPS SKRH catalog, Drawing No.1 circuit diagram: 1 A, 2 Center, 3 C, 4 B, 5 Common, 6 D, 7/8 mounting (LCSC's C202423 symbol swaps B and D)",
   "pins": {
    "1": [
     "A",
@@ -897,16 +897,16 @@
     "JOY_C"
    ],
    "4": [
-    "D",
-    "JOY_D"
+    "B",
+    "JOY_B"
    ],
    "5": [
     "COM",
     "GND"
    ],
    "6": [
-    "B",
-    "JOY_B"
+    "D",
+    "JOY_D"
    ],
    "7": [
     "mount",

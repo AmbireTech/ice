@@ -63,7 +63,8 @@ export const McuBlock = () => (
 
     {/* Decoupling per DS13086 Rev 8 Figure 25 (STM32U585xQ): VDD n x 100 nF + 10 uF;
         VDDA 100 nF + 1 uF, shared with VREF+ (pins 20/21 are neighbours on one net; the
-        ADC is unused); VDDUSB 100 nF; VDD11 2 x 2.2 uF (4.7 uF total typ., 3.9.1), one at
+        ADC reads the cell, the joystick and the charger's NTC against VREF+ = V3V3, which is
+        3.21-3.45 V depending on the source: cell readings are calibrated with VREFINT); VDDUSB 100 nF; VDD11 2 x 2.2 uF (4.7 uF total typ., 3.9.1), one at
         each VDD11 pin, without the optional 100 nF. VBAT on VDD keeps its 100 nF. */}
     {VDD.map((p, i) => cap(`C_VDD${i + 1}`, "100nF", "V3V3", "C1525", "0402", -4 + i, 6))}
     {cap("C_VDDB", "10uF", "V3V3", "C19702", "0603", 2, 6)}
