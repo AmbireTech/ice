@@ -32,7 +32,7 @@ npm install
 KICAD_PY=/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3
 
 # netlist
-npx tsci export index.circuit.tsx -f circuit-json -o board/netlist.circuit.json
+scripts/exportNetlist.sh                 # tsci export -> board/netlist.circuit.json
 python3 scripts/checkNets.py             # every named net reaches two pads
 python3 scripts/checkMcuAf.py            # every MCU signal is an alternate function ST lists for that pin
 python3 scripts/jlcStock.py              # live JLC stock for every part number

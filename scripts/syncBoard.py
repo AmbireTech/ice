@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Push the tscircuit netlist into board/wallet.kicad_pcb. Placement and copper are never touched.
 
-    npx tsci export index.circuit.tsx -f circuit-json -o board/netlist.circuit.json
+    scripts/exportNetlist.sh
     $KICAD_PY scripts/syncBoard.py            # dry run: prints what would change
     $KICAD_PY scripts/syncBoard.py --apply    # writes the board (close it in KiCad first)
     $KICAD_PY scripts/syncBoard.py --apply --refresh U2,J1   # also re-instantiate these from their library
