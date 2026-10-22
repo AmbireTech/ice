@@ -1,0 +1,124 @@
+(footprint "L_Sunlord_WPN4020"
+	(version 20260206)
+	(generator "pcbnew")
+	(generator_version "10.0")
+	(layer "F.Cu")
+	(descr "4 x 4 x 2 mm shielded power inductor, WPN4020H2R2MT (JLC C98361): EasyEDA's land (IND-SMD_L4.0-W4.0), pads 1.6 x 3.5 at +-1.6 mm")
+	(tags "inductor 4020")
+	(property "Reference" "REF**"
+		(at 0 -3.2 0)
+		(layer "F.SilkS")
+		(uuid "4b75b677-d9d5-4aca-9544-138d3eabd96e")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "L_Sunlord_WPN4020"
+		(at 0 3.2 0)
+		(layer "F.Fab")
+		(uuid "953455e0-9dd3-4e52-9062-d8fbc15ced73")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr smd)
+	(fp_line
+		(start -2 -2)
+		(end 2 -2)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "c98999d5-e899-4cb6-89fd-a360fc553182")
+	)
+	(fp_line
+		(start 2 -2)
+		(end 2 2)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "90ea2dcb-89a9-4456-9ca1-9c6fd0684fbf")
+	)
+	(fp_line
+		(start 2 2)
+		(end -2 2)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "a836d9d8-f2ce-442a-97f2-052008c8203b")
+	)
+	(fp_line
+		(start -2 2)
+		(end -2 -2)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "49c52af7-fa30-438c-bf5d-0cb7a891e1dd")
+	)
+	(fp_line
+		(start -2.65 -2.25)
+		(end 2.65 -2.25)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "6bf1ffc8-fdd3-416e-a6fc-5d322fff4419")
+	)
+	(fp_line
+		(start 2.65 -2.25)
+		(end 2.65 2.25)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "76ed8bdf-2776-48f7-ae6d-8a34fbd02319")
+	)
+	(fp_line
+		(start 2.65 2.25)
+		(end -2.65 2.25)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "a800e05a-5d15-4e9b-862f-a6766ab9b15c")
+	)
+	(fp_line
+		(start -2.65 2.25)
+		(end -2.65 -2.25)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "f09d5c82-1cb7-40fd-bddd-790c2c185688")
+	)
+	(pad "1" smd rect
+		(at -1.6 0)
+		(size 1.6 3.5)
+		(layers "F.Cu" "F.Paste" "F.Mask")
+		(uuid "7dcffc42-7242-4510-abe2-9ddea3aee750")
+	)
+	(pad "2" smd rect
+		(at 1.6 0)
+		(size 1.6 3.5)
+		(layers "F.Cu" "F.Paste" "F.Mask")
+		(uuid "ebce9f25-a866-4ade-b7ff-8b2ac32f8158")
+	)
+	(embedded_fonts no)
+)

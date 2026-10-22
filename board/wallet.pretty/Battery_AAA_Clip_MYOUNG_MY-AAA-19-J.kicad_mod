@@ -1,0 +1,168 @@
+(footprint "Battery_AAA_Clip_MYOUNG_MY-AAA-19-J"
+	(version 20260206)
+	(generator "pcbnew")
+	(generator_version "10.0")
+	(layer "F.Cu")
+	(descr "AAA negative clip (spring), MYOUNG MY-AAA-19-J (JLC C6937104): 10 x 7 mm base, arms grip the cell body (11 mm span, 10.46 mm tall). Pad 9 x 5, the maker's and EasyEDA's land; the pair's pads sit 28 mm apart (inner edges), so the two bases span 47 mm. Origin = base centre.")
+	(tags "battery AAA clip SMT")
+	(property "Reference" "REF**"
+		(at 0 -6.6 0)
+		(layer "F.SilkS")
+		(uuid "ed8b5a04-f48a-4ecd-babe-59943e0059e6")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "Battery_AAA_Clip_MYOUNG_MY-AAA-19-J"
+		(at 0 6.6 0)
+		(layer "F.Fab")
+		(uuid "71678126-e6d2-4d29-9f1e-499427d3d1ce")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr smd)
+	(fp_line
+		(start -5.0 -3.5)
+		(end 5.0 -3.5)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "bb686c7e-f33d-48ff-9f39-c18a7053fe7d")
+	)
+	(fp_line
+		(start 5.0 -3.5)
+		(end 5.0 3.5)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "23e97eff-c567-45f1-9c37-cd614920d1cd")
+	)
+	(fp_line
+		(start 5.0 3.5)
+		(end -5.0 3.5)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "e9fa79a4-f248-457e-b62e-af2b5a297e69")
+	)
+	(fp_line
+		(start -5.0 3.5)
+		(end -5.0 -3.5)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "557100e8-803a-4ebb-b6e0-ae9890bc265a")
+	)
+	(fp_line
+		(start -5.0 -5.5)
+		(end 5.0 -5.5)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "babdc7e2-0ef3-4447-8b0c-a57a06acccf2")
+	)
+	(fp_line
+		(start 5.0 -5.5)
+		(end 5.0 5.5)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "d3e044a7-4991-422a-b834-772681ad0c21")
+	)
+	(fp_line
+		(start 5.0 5.5)
+		(end -5.0 5.5)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "fcbaecb2-dc94-4abd-88e0-803c28ec4f2c")
+	)
+	(fp_line
+		(start -5.0 5.5)
+		(end -5.0 -5.5)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "8a646522-164c-47e8-a9ff-bd700ec5ec08")
+	)
+	(fp_line
+		(start -5.25 -5.9)
+		(end 5.25 -5.9)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "904dc8fd-1e3c-4f27-8603-5ac4b4c66f60")
+	)
+	(fp_line
+		(start 5.25 -5.9)
+		(end 5.25 5.9)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "b213ebbd-574a-40aa-8e9b-73b5248bb03b")
+	)
+	(fp_line
+		(start 5.25 5.9)
+		(end -5.25 5.9)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "ee703b88-1481-46ed-bb71-348dc1034926")
+	)
+	(fp_line
+		(start -5.25 5.9)
+		(end -5.25 -5.9)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "9694177a-357e-4472-82d1-5ba4cede45b1")
+	)
+	(fp_line
+		(start -4.6 -2.0)
+		(end -4.6 2.0)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "ab0877f6-7fc6-428c-a1ff-a72ac0468be7")
+	)
+	(pad "1" smd rect
+		(at 0 0)
+		(size 9 5)
+		(layers "F.Cu" "F.Paste" "F.Mask")
+		(uuid "47582e2d-bb0a-4015-a215-f2fb5c2dd926")
+	)
+	(embedded_fonts no)
+)

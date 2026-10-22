@@ -89,10 +89,13 @@ export const DisplayBlock = () => (
 
     {/* Backlight: 8 LEDs common anode (panel 80-200 mA). R_BLSET 6.8k gives
         260 x 0.6 V / 6.8k = 23 mA per sink x 5 = ~115 mA at full PWM; 4.87k gives
-        the panel's 160 mA typical. TPS60230 1x/1.5x pump from
-        SYS, the Nano's circuit (SLVS516A Terminal Functions: 1 ISET, 2-6 D5..D1,
-        7 PGND, 8 VOUT, 9 C2+, 10 C1+, 11 C1-, 12 C2-, 13 VIN, 14 GND, 15 EN1,
-        16 EN2, 17 pad). EN1/EN2 on the MCU's TIM1_CH1 PWM. */}
+        the panel's 160 mA typical. TPS60230 1x/1.5x pump, the Nano's circuit
+        (SLVS516A Terminal Functions: 1 ISET, 2-6 D5..D1, 7 PGND, 8 VOUT, 9 C2+,
+        10 C1+, 11 C1-, 12 C2-, 13 VIN, 14 GND, 15 EN1, 16 EN2, 17 pad). EN1/EN2 on
+        the MCU's TIM1_CH1 PWM. Fed from V3V3: with one AAA cell there is no
+        battery-level rail. 3.3 V is too close to the LEDs' ~3.1 V for the 1x mode at
+        full current, so expect the 1.5x mode and ~1.5x the LED current from the rail
+        (~170 mA at full brightness): the biggest load on the cell; firmware dims. */}
     <chip name="U13" footprint="pinrow17"
       manufacturerPartNumber="TPS60230RGTR" supplierPartNumbers={{ jlcpcb: ["C1848364"] }}
       pinLabels={{ pin1: "ISET", pin2: "D5", pin3: "D4", pin4: "D3", pin5: "D2", pin6: "D1", pin7: "PGND", pin8: "VOUT",
@@ -102,7 +105,7 @@ export const DisplayBlock = () => (
       <trace key={d} from={`.U13 > .${d}`} to="net.BL_K" width={W_PWR_LITE} />
     ))}
     <trace from=".U13 > .VOUT" to="net.BL_A" width={W_PWR_LITE} />
-    <trace from=".U13 > .VIN" to="net.SYS" width={W_PWR_LITE} />
+    <trace from=".U13 > .VIN" to="net.V3V3" width={W_PWR_LITE} />
     <trace from=".U13 > .PGND" to="net.GND" width={W_PWR_LITE} />
     <trace from=".U13 > .GND" to="net.GND" />
     <trace from=".U13 > .EP" to="net.GND" />
@@ -128,7 +131,7 @@ export const DisplayBlock = () => (
     <trace from=".R_BLEN > .pin2" to="net.BL_EN" />
     <capacitor name="C_BLIN" capacitance="1uF" footprint="0603" supplierPartNumbers={{ jlcpcb: ["C15849"] }}
       schX={12} schY={-10} schRotation="90deg" schSectionName={S} />
-    <trace from=".C_BLIN > .pin1" to="net.SYS" width={W_PWR_LITE} />
+    <trace from=".C_BLIN > .pin1" to="net.V3V3" width={W_PWR_LITE} />
     <trace from=".C_BLIN > .pin2" to="net.GND" width={W_PWR_LITE} />
     <capacitor name="C_BLOUT" capacitance="1uF" footprint="0603" supplierPartNumbers={{ jlcpcb: ["C15849"] }}
       schX={13} schY={-10} schRotation="90deg" schSectionName={S} />

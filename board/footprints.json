@@ -1,5 +1,7 @@
 {
   "_comment": "Footprint per reference; 'wallet:' = board/wallet.pretty, anything else is KiCad's stock library. An entry with 'pads' maps netlist pad names to footprint pad names (one to many). Passives follow their netlist size. J_CAM pad = Ai-Thinker ESP32-CAM pin; if the module in hand is numbered from the other end, change this map to pad = 25 - pin (docs/design.md).",
+  "BT_N": "wallet:Battery_AAA_Clip_MYOUNG_MY-AAA-19-J",
+  "BT_P": "wallet:Battery_AAA_Clip_MYOUNG_MY-AAA-20-J",
   "C_3V3": "Capacitor_SMD:C_0805_2012Metric",
   "C_AVIN": "Capacitor_SMD:C_0402_1005Metric",
   "C_AVOUT": "Capacitor_SMD:C_0402_1005Metric",
@@ -8,22 +10,29 @@
   "C_BLF2": "Capacitor_SMD:C_0402_1005Metric",
   "C_BLIN": "Capacitor_SMD:C_0603_1608Metric",
   "C_BLOUT": "Capacitor_SMD:C_0603_1608Metric",
+  "C_BOOST": "Capacitor_SMD:C_0805_2012Metric",
+  "C_BUZ": "Capacitor_SMD:C_0603_1608Metric",
+  "C_CHGIN": "Capacitor_SMD:C_0402_1005Metric",
+  "C_CNS": "Capacitor_SMD:C_0402_1005Metric",
+  "C_CS": "Capacitor_SMD:C_0402_1005Metric",
   "C_DOVDD": "Capacitor_SMD:C_0402_1005Metric",
   "C_DVOUT": "Capacitor_SMD:C_0402_1005Metric",
-  "C_GAUGE": "Capacitor_SMD:C_0402_1005Metric",
-  "C_IN_BUCK": "Capacitor_SMD:C_0805_2012Metric",
+  "C_EN": "Capacitor_SMD:C_0402_1005Metric",
+  "C_IN_BOOST": "Capacitor_SMD:C_0805_2012Metric",
   "C_NOR": "Capacitor_SMD:C_0402_1005Metric",
   "C_NRST": "Capacitor_SMD:C_0402_1005Metric",
+  "C_OPT": "Capacitor_SMD:C_0402_1005Metric",
   "C_RADIO1": "Capacitor_SMD:C_0603_1608Metric",
   "C_RADIO2": "Capacitor_SMD:C_0402_1005Metric",
+  "C_RCT": "Capacitor_SMD:C_0402_1005Metric",
   "C_RIN": "Capacitor_SMD:C_0402_1005Metric",
   "C_SEIN": "Capacitor_SMD:C_0402_1005Metric",
   "C_SEVCC": "Capacitor_SMD:C_0402_1005Metric",
-  "C_SYS": "Capacitor_SMD:C_0805_2012Metric",
   "C_TFT1": "Capacitor_SMD:C_0402_1005Metric",
   "C_TFT2": "Capacitor_SMD:C_0402_1005Metric",
   "C_U9A": "Capacitor_SMD:C_0402_1005Metric",
   "C_U9B": "Capacitor_SMD:C_0402_1005Metric",
+  "C_USB3V3": "Capacitor_SMD:C_0805_2012Metric",
   "C_USBSW": "Capacitor_SMD:C_0402_1005Metric",
   "C_VBAT": "Capacitor_SMD:C_0402_1005Metric",
   "C_VBUS": "Capacitor_SMD:C_0603_1608Metric",
@@ -38,9 +47,11 @@
   "C_VDDA2": "Capacitor_SMD:C_0402_1005Metric",
   "C_VDDB": "Capacitor_SMD:C_0603_1608Metric",
   "C_VUSB": "Capacitor_SMD:C_0402_1005Metric",
+  "D_BUZ": "Diode_SMD:D_SOD-323",
   "D_ESD": "Package_TO_SOT_SMD:SOT-23-6",
   "D_OR": "Package_TO_SOT_SMD:SOT-23",
   "D_RADIO": "LED_SMD:LED_0603_1608Metric",
+  "D_REVG": "Diode_SMD:D_SOD-523",
   "J1": {
     "fp": "wallet:USB_C_Receptacle_HRO_TYPE-C-31-M-12_BoardEdge",
     "pads": {
@@ -86,23 +97,6 @@
       ],
       "13": [
         "SH"
-      ]
-    }
-  },
-  "J_BAT": {
-    "fp": "Connector_JST:JST_PH_S2B-PH-SM4-TB_1x02-1MP_P2.00mm_Horizontal",
-    "pads": {
-      "1": [
-        "1"
-      ],
-      "2": [
-        "2"
-      ],
-      "3": [
-        "MP"
-      ],
-      "4": [
-        "MP"
       ]
     }
   },
@@ -191,26 +185,48 @@
   },
   "J_CTP": "wallet:FPC_HC-FPC-1.0-6P-CSH25",
   "J_TFT": "wallet:Molex_54132-4062",
-  "L_BUCK": "Inductor_SMD:L_Murata_DFE201610P",
+  "LS1": "wallet:Buzzer_KELIKING_KLJ-7525_7.5x7.5mm",
+  "L_BOOST": "wallet:L_Sunlord_WPN4020",
+  "L_BUCK": "Inductor_SMD:L_Cenker_CKCS201610",
   "Q_BTN": "Package_TO_SOT_SMD:SOT-23",
+  "Q_BUZ": "Package_TO_SOT_SMD:SOT-23",
+  "Q_CHGHI": "Package_TO_SOT_SMD:SOT-23",
+  "Q_CHGOFF": "Package_TO_SOT_SMD:SOT-23",
+  "Q_REV": "Package_TO_SOT_SMD:SOT-23",
+  "RT_CELL": "Resistor_SMD:R_0402_1005Metric",
+  "RT_CHG": "Resistor_SMD:R_0402_1005Metric",
   "R_AIRPU": "Resistor_SMD:R_0402_1005Metric",
   "R_AIRS": "Resistor_SMD:R_0402_1005Metric",
+  "R_AIRSER": "Resistor_SMD:R_0402_1005Metric",
   "R_BLEN": "Resistor_SMD:R_0402_1005Metric",
   "R_BLPD": "Resistor_SMD:R_0402_1005Metric",
   "R_BLSET": "Resistor_SMD:R_0402_1005Metric",
   "R_BTN": "Resistor_SMD:R_0402_1005Metric",
+  "R_BTNB": "Resistor_SMD:R_0402_1005Metric",
+  "R_BUZG": "Resistor_SMD:R_0402_1005Metric",
+  "R_BUZPD": "Resistor_SMD:R_0402_1005Metric",
   "R_CAMEN": "Resistor_SMD:R_0402_1005Metric",
   "R_CC1": "Resistor_SMD:R_0402_1005Metric",
   "R_CC2": "Resistor_SMD:R_0402_1005Metric",
-  "R_CE": "Resistor_SMD:R_0402_1005Metric",
+  "R_CHGHI": "Resistor_SMD:R_0402_1005Metric",
+  "R_CHGOFF": "Resistor_SMD:R_0402_1005Metric",
+  "R_CNS": "Resistor_SMD:R_0402_1005Metric",
+  "R_CS1": "Resistor_SMD:R_0402_1005Metric",
+  "R_CS2": "Resistor_SMD:R_0402_1005Metric",
   "R_CSCL": "Resistor_SMD:R_0402_1005Metric",
   "R_CSDA": "Resistor_SMD:R_0402_1005Metric",
   "R_EN": "Resistor_SMD:R_0402_1005Metric",
   "R_FB1": "Resistor_SMD:R_0402_1005Metric",
   "R_FB2": "Resistor_SMD:R_0402_1005Metric",
+  "R_FBU1": "Resistor_SMD:R_0402_1005Metric",
+  "R_FBU2": "Resistor_SMD:R_0402_1005Metric",
   "R_HOLD": "Resistor_SMD:R_0402_1005Metric",
-  "R_ILIM": "Resistor_SMD:R_0402_1005Metric",
   "R_ISET": "Resistor_SMD:R_0402_1005Metric",
+  "R_ISETH": "Resistor_SMD:R_0402_1005Metric",
+  "R_NTCB": "Resistor_SMD:R_0402_1005Metric",
+  "R_OPTRST": "Resistor_SMD:R_0402_1005Metric",
+  "R_PG": "Resistor_SMD:R_0402_1005Metric",
+  "R_REVG": "Resistor_SMD:R_0402_1005Metric",
   "R_RLED": "Resistor_SMD:R_0402_1005Metric",
   "R_ROFF": "Resistor_SMD:R_0402_1005Metric",
   "R_SCL": "Resistor_SMD:R_0402_1005Metric",
@@ -218,11 +234,67 @@
   "R_SEENA": "Resistor_SMD:R_0402_1005Metric",
   "R_SESCL": "Resistor_SMD:R_0402_1005Metric",
   "R_SESDA": "Resistor_SMD:R_0402_1005Metric",
-  "R_STAT1": "Resistor_SMD:R_0402_1005Metric",
-  "R_STAT2": "Resistor_SMD:R_0402_1005Metric",
-  "R_TS": "Resistor_SMD:R_0402_1005Metric",
+  "R_STAT": "Resistor_SMD:R_0402_1005Metric",
+  "R_TMR": "Resistor_SMD:R_0402_1005Metric",
   "R_VB1": "Resistor_SMD:R_0402_1005Metric",
   "R_VB2": "Resistor_SMD:R_0402_1005Metric",
+  "R_VSET": "Resistor_SMD:R_0402_1005Metric",
+  "SW_1": {
+    "fp": "wallet:SW_Alps_SKRTLAE010_HoleClear",
+    "pads": {
+      "1": [
+        "1"
+      ],
+      "2": [
+        "2"
+      ],
+      "3": [
+        "MP"
+      ]
+    }
+  },
+  "SW_2": {
+    "fp": "wallet:SW_Alps_SKRTLAE010_HoleClear",
+    "pads": {
+      "1": [
+        "1"
+      ],
+      "2": [
+        "2"
+      ],
+      "3": [
+        "MP"
+      ]
+    }
+  },
+  "SW_3": {
+    "fp": "wallet:SW_Alps_SKRTLAE010_HoleClear",
+    "pads": {
+      "1": [
+        "1"
+      ],
+      "2": [
+        "2"
+      ],
+      "3": [
+        "MP"
+      ]
+    }
+  },
+  "SW_4": {
+    "fp": "wallet:SW_Alps_SKRTLAE010_HoleClear",
+    "pads": {
+      "1": [
+        "1"
+      ],
+      "2": [
+        "2"
+      ],
+      "3": [
+        "MP"
+      ]
+    }
+  },
   "SW_AIR": {
     "fp": "Button_Switch_SMD:SW_SPDT_Shouhan_MSK12C02",
     "pads": {
@@ -258,28 +330,24 @@
   "TP_GND": "TestPoint:TestPoint_Pad_D1.0mm",
   "TP_NRST": "TestPoint:TestPoint_Pad_D1.0mm",
   "TP_R3V3": "TestPoint:TestPoint_Pad_D1.0mm",
+  "TP_RGND": "TestPoint:TestPoint_Pad_D1.0mm",
   "TP_RSWCLK": "TestPoint:TestPoint_Pad_D1.0mm",
   "TP_RSWDIO": "TestPoint:TestPoint_Pad_D1.0mm",
   "TP_SWCLK": "TestPoint:TestPoint_Pad_D1.0mm",
   "TP_SWDIO": "TestPoint:TestPoint_Pad_D1.0mm",
-  "U1": "wallet:Texas_DLH0010A_WSON-10_2.2x2mm_P0.4mm",
+  "U1": "Package_SON:WSON-8-1EP_2x2mm_P0.5mm_EP0.9x1.6mm",
+  "U10": "Package_TO_SOT_SMD:SOT-583-8",
   "U11": "wallet:Ebyte_E73-2G4M08S1C",
   "U12": "Package_TO_SOT_SMD:SOT-23-5",
   "U13": "Package_DFN_QFN:VQFN-16-1EP_3x3mm_P0.5mm_EP1.45x1.45mm",
   "U14": "Package_TO_SOT_SMD:SOT-23-5",
-  "U15": "Package_DFN_QFN:TDFN-8-1EP_2x2mm_P0.5mm_EP0.8x1.2mm",
-  "U2": "wallet:Texas_DLA0010A_VSON-HR-10",
+  "U16": "Package_DFN_QFN:DFN-10-1EP_3x3mm_P0.5mm_EP1.7x2.5mm",
+  "U2": "wallet:LT_DCB8_DFN-8-1EP_2x3mm_P0.45mm",
+  "U3": "Package_TO_SOT_SMD:SOT-23-6",
   "U4": "Package_QFP:LQFP-100_14x14mm_P0.5mm",
   "U5": "wallet:NXP_SOT1969-1_HX2QFN-20_3x3mm_P0.4mm",
   "U6": "Package_DFN_QFN:Texas_UQFN-10_1.5x2mm_P0.5mm",
   "U7": "Package_TO_SOT_SMD:SOT-23-5",
   "U8": "Package_TO_SOT_SMD:SOT-23-6",
-  "U9": "Package_SO:VSSOP-8_2.3x2mm_P0.5mm",
-  "R_AIRSER": "Resistor_SMD:R_0402_1005Metric",
-  "C_EN": "Capacitor_SMD:C_0402_1005Metric",
-  "C_RCT": "Capacitor_SMD:C_0402_1005Metric",
-  "U16": "Package_DFN_QFN:DFN-10-1EP_3x3mm_P0.5mm_EP1.7x2.5mm",
-  "C_OPT": "Capacitor_SMD:C_0402_1005Metric",
-  "R_OPTRST": "Resistor_SMD:R_0402_1005Metric",
-  "TP_RGND": "TestPoint:TestPoint_Pad_D1.0mm"
+  "U9": "Package_SO:VSSOP-8_2.3x2mm_P0.5mm"
 }

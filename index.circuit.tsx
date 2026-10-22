@@ -20,8 +20,9 @@ export default () => (
   <board width="50mm" height="86mm" routingDisabled>
     <net name="GND" />
     <net name="V3V3" />
-    <net name="SYS" />
     <net name="BAT" />
+    <net name="V_BOOST" />
+    <net name="V3V3_USB" />
     <net name="VBUS" />
     <net name="AIRGAP" />
     <net name="RADIO_3V3" />
