@@ -354,11 +354,18 @@ place("TP_R3V3", 15.10, 81.40, 0, TOP)
 
 NETCLASSES = [
     # name, track, clearance, via dia, via drill, nets. A class width is where a
-    # track starts; widen power runs by hand where the current flows. GND is poured.
+    # track starts (KiCad's default when routing that net); GND is poured, V3V3 is
+    # the In1 plane. humanizedKicadAutoRouter treats only "Power" and "Rail" as power.
     ("Default", 0.15, 0.15, 0.45, 0.25, []),
-    ("Power", 0.40, 0.15, 0.6, 0.3, ["VBUS", "BAT", "BAT_N", "V3V3", "V3V3_USB", "V_BOOST", "SW_BOOST",
-                                     "SW_USB"]),
-    ("Rail", 0.25, 0.15, 0.45, 0.25, ["RADIO_3V3", "VDD11", "SE_VCC", "CAM_AVDD",
+    # The cell path: at 1.0 V the cell delivers ~1 A for a busy device (camera, backlight,
+    # radio), and the boost's switch node peaks higher. Every 10 mOhm here costs 1 % of
+    # the cell's voltage: short, wide, two vias per layer change.
+    ("Power", 0.80, 0.15, 0.6, 0.3, ["BAT", "BAT_N", "SW_BOOST"]),
+    # The 3.3-5 V rails, each <= 0.5 A: USB in, the USB buck's switch node and output,
+    # the boost's output, and the 3.3 V plane's fanouts (0.4, capped at the pad's width).
+    ("Rail", 0.40, 0.15, 0.6, 0.3, ["VBUS", "SW_USB", "V3V3_USB", "V_BOOST", "V3V3"]),
+    # Small local supplies, tens of mA.
+    ("Lite", 0.25, 0.15, 0.45, 0.25, ["RADIO_3V3", "VDD11", "VBAT_RTC", "SE_VCC", "CAM_AVDD",
                                       "CAM_DVDD", "BL_A", "BL_K", "BUZ_SW"]),
     ("USB", 0.20, 0.15, 0.45, 0.25, ["USB_DP", "USB_DN", "USB_MCU_DP", "USB_MCU_DN"]),
 ]
@@ -662,10 +669,8 @@ def artwork(board):
     text(board, "Ambire signer · proto 0", 13.0, H - 1.6, pcbnew.B_SilkS, 0.7, 0.15)
 
 
-def write_project():
-    tmpl = HERE.parent / "nano/board/nano.kicad_pro"
-    pro = json.load(open(PRO if PRO.exists() else tmpl))
-    pro["meta"]["filename"] = PRO.name
+def write_netclasses(pro):
+    """NETCLASSES into a loaded .kicad_pro (dict): classes, net patterns, width presets."""
     ns = pro["net_settings"]
     base = dict(ns["classes"][0])
     classes, patterns = [], []
@@ -679,6 +684,17 @@ def write_project():
     ns["netclass_patterns"] = patterns
     ns.pop("netclass_assignments", None)
     ds = pro["board"]["design_settings"]
+    ds["track_widths"] = [0.0, 0.15, 0.2, 0.25, 0.4, 0.6, 0.8, 1.0]
+    ds["via_dimensions"] = [{"diameter": 0.0, "drill": 0.0}, {"diameter": 0.45, "drill": 0.25},
+                            {"diameter": 0.6, "drill": 0.3}]
+
+
+def write_project():
+    tmpl = HERE.parent / "nano/board/nano.kicad_pro"
+    pro = json.load(open(PRO if PRO.exists() else tmpl))
+    pro["meta"]["filename"] = PRO.name
+    write_netclasses(pro)
+    ds = pro["board"]["design_settings"]
     # JLC 4-layer standard capability: 0.09 mm track/space, 0.2 mm drill, 0.45 mm via.
     ds["rules"].update(min_clearance=0.1, min_track_width=0.1, min_via_diameter=0.45,
                        min_through_hole_diameter=0.2, min_hole_to_hole=0.25,
@@ -686,9 +702,6 @@ def write_project():
                        min_text_height=0.7, min_text_thickness=0.1)
     ds["rule_severities"].update(silk_over_copper="warning", text_height="warning", text_thickness="warning",
                                  starved_thermal="warning")
-    ds["track_widths"] = [0.0, 0.15, 0.2, 0.25, 0.4, 0.6]
-    ds["via_dimensions"] = [{"diameter": 0.0, "drill": 0.0}, {"diameter": 0.45, "drill": 0.25},
-                            {"diameter": 0.6, "drill": 0.3}]
     json.dump(pro, open(PRO, "w"), indent=2)
     (HERE / "board/wallet.kicad_dru").write_text(
         "(version 1)\n\n"

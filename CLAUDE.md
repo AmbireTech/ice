@@ -94,8 +94,10 @@ Ambire internals into GridCore's.
   pull-ups and series parts inline between source and destination. Judge routability
   with a trial route (`trialRoute.sh` / `routeGauge.py`), never with spacing or
   crossing proxies — those disagreed with the router.
-- The front (F.Cu side) of the device stays incognito: every part and the art live on the
-  back; only the mounting holes and the SWD/test pads (MCU and radio) are on the front.
+- Under the screen the front (F.Cu) is bare: the panel sits on it. Assembly is double-sided
+  since proto 1 (owner, 2026-10-22): in the chin the front carries the cell clips, the
+  joystick, the radio's SWD pads and power parts that thin out the back (the USB buck and
+  the power mux), each in a pocket under the bezel. The art lives on the back.
 
 ## Traps
 
