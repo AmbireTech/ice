@@ -228,12 +228,12 @@ def main():
             keep = os.environ.get("SILKFLAME_KEEP")
             if keep:
                 shutil.copy(copy, keep)
-            print("dry run: board/wallet.kicad_pcb untouched (--apply installs it)" + (f"; copy kept at {keep}" if keep else ""))
+            print(f"dry run: {BOARD} untouched (--apply installs it)" + (f"; copy kept at {keep}" if keep else ""))
             return
         if md5(BOARD) != before:
-            raise SystemExit("board/wallet.kicad_pcb changed while this ran (KiCad open?): not installed")
+            raise SystemExit(f"{BOARD} changed while this ran (KiCad open?): not installed")
         shutil.copy(copy, BOARD)
-        print("installed board/wallet.kicad_pcb")
+        print(f"installed {BOARD}")
 
 
 if __name__ == "__main__":

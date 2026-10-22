@@ -14,8 +14,9 @@ PASS  JLC stock for 10 boards: 64 lines, all ok
 NOTE  out of stock, to DNP in JLC's order UI: C1518668 SLS32AIA010MKUSON10XTMA2 (U16)
 NOTE  check by eye in JLC's placement preview: BT_N, BT_P, D_BUZ, D_RADIO, J1, J_CAM, J_CTP, J_TFT, LS1, RT_CHG, SW_AIR, SW_JOY, U1, U10, U11, U13, U16, U2, U4, U5, U6
 NOTE  assembly side in JLC's order form: choose both sides: 129 bottom + 3 top (BT_N, BT_P, SW_JOY)
-PASS  drill census: board holes vs drill files: 616 on the board, 616 in the files
+PASS  drill census: board holes vs drill files: 628 on the board, 628 in the files
 PASS  smallest drill (JLC charges extra below 0.25 mm): 0.25 mm
+PASS  copper zones span the board outline: every plane and pour reaches the 48.0 x 87.0 mm outline
 PASS  PCBWay BOM / centroid: same parts as the JLC set, every line has manufacturer + MPN: 132 refs
 PASS  PCBWay fab zip: Gerbers + drills + print image (outline-sized, 1200 DPI, transparent = no ink) + positioning image: 15 files, print 2268x4110 px RGBA vs outline 2268x4110
 NOTE  sourcing: JLC/LCSC flags as not buyable: C1518668 SLS32AIA010MKUSON10XTMA2: This product is no longer manufactured.

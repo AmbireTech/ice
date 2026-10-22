@@ -107,6 +107,22 @@ def main():
             + len(re.findall(r"(?m)^M15$", drl)))                       # slots, route form (KiCad's oval holes)
     report(hits == len(holes), "drill census: board holes vs drill files", f"{len(holes)} on the board, {hits} in the files")
     report(min(holes) / 1e6 >= 0.25, "smallest drill (JLC charges extra below 0.25 mm)", f"{min(holes) / 1e6:.2f} mm")
+    # The planes and pours must span the whole outline: when the board grew 85 -> 87 mm
+    # (2026-10-22) the zones kept their old outlines and the last 2 mm had no planes,
+    # which DRC cannot see as long as nothing there needs them.
+    edge = board.GetBoardEdgesBoundingBox()
+    short = []
+    for z in board.Zones():
+        if z.GetIsRuleArea():
+            continue
+        zb = z.GetBoundingBox()
+        gap = max(zb.GetX() - edge.GetX(), zb.GetY() - edge.GetY(), edge.GetRight() - zb.GetRight(),
+                  edge.GetBottom() - zb.GetBottom()) / 1e6
+        if gap > 0.1:
+            short.append(f"{z.GetNetname()} on {'/'.join(board.GetLayerName(l) for l in z.GetLayerSet().Seq())} "
+                         f"stops {gap:.2f} mm short")
+    report(not short, "copper zones span the board outline", "; ".join(short) or
+           f"every plane and pour reaches the {(edge.GetWidth()) / 1e6:.1f} x {(edge.GetHeight()) / 1e6:.1f} mm outline")
 
     # ---- PCBWay set (production/build_pcbway.py)
     pw = os.path.join(order, "pcbway")
