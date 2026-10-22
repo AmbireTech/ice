@@ -12,7 +12,7 @@ const S = "Power"
  *                                       \-> BQ25172 --+-> BAT (NiMH only, MCU-gated)
  *   AAA: BAT -> LTC3539-2 boost, SHDN = soft latch -> V_BOOST --VIN2--+
  *        BAT_N -> AO3416 (reverse-cell blocker) -> GND
- *   cell voltage at both clips and two NTCs (charger TS, MCU) -> MCU ADC
+ *   cell voltage at both clips and the charger's NTC (TS) -> MCU ADC
  *
  * The backlight pump and everything else run from V3V3; there is no battery
  * gauge (a Li-ion gauge cannot read a NiMH or alkaline cell): firmware reads the
@@ -159,7 +159,7 @@ export const PowerBlock = () => (
         rated to -0.3 V, so a reversed AAA would discharge through its internal diodes.
         AO3416 in the cell's low side: its body diode conducts a correctly inserted cell
         from the first instant, the gate follows the cell (Vth 0.4-1.0 V) and, once the
-        boost runs, the boost's own output through D_REVG (~3 V: ~25 mOhm). Reversed,
+        boost runs, the boost's own output through D_REVG (~2.7 V: ~25 mOhm). Reversed,
         the gate sits at or below the source and the body diode blocks. The boost output
         is used, not the 3.3 V rail: on USB the rail is up even with a reversed cell, and
         driving the gate from it would connect that cell. While the boost runs, R_REVG
@@ -177,12 +177,16 @@ export const PowerBlock = () => (
       schX={-16} schY={2} schRotation="90deg" schSectionName={S} />
     <trace from=".R_REVG > .pin1" to="net.BAT" />
     <trace from=".R_REVG > .pin2" to="net.REV_G" />
-    <chip name="D_REVG" footprint="pinrow2"
-      manufacturerPartNumber="RB521S30T1G" supplierPartNumbers={{ jlcpcb: ["C145179"] }}
-      pinLabels={{ pin1: "K", pin2: "A" }}
+    {/* BAS116 (SOT-23: 1 anode, 2 n.c., 3 cathode), not a Schottky: its reverse leakage
+        is picoamps, where an RB521S30 leaks ~0.5 uA from the cell into the boost output
+        while the board is off, and ~25x that when warm. */}
+    <chip name="D_REVG" footprint="sot23"
+      manufacturerPartNumber="BAS116,215" supplierPartNumbers={{ jlcpcb: ["C48502"] }}
+      pinLabels={{ pin1: "A", pin2: "NC", pin3: "K" }}
       schX={-16} schY={0} schSectionName={S} />
     <trace from=".D_REVG > .A" to="net.V_BOOST" />
     <trace from=".D_REVG > .K" to="net.REV_G" />
+    <trace from=".D_REVG > .NC" to="net.NC_REVG" />
 
     {/* Cell voltage at the + clip (route its own trace from the clip pad: no load
         current in it) and at the - clip, so firmware reads the cell itself, not the
@@ -259,20 +263,34 @@ export const PowerBlock = () => (
     <trace from=".C_BOOST > .pin2" to="net.GND" width={W_PWR} />
 
     {/* ---------------- Soft latch ---------------- */}
-    {/* The power button pulls the boost's SHDN up to the cell through one diode of a
-        BAT54C; the MCU holds it through the other (PWR_HOLD) and lets go to power off.
-        SHDN's guaranteed high is 0.88 V: the button starts the board from a cell resting
-        at >= ~1.05 V (the BAT54's ~0.1 V at microamps), well below where firmware calls
-        a NiMH or alkaline cell empty. An NPN (not a FET: it must switch from a 0.9 V
-        cell) turns the button into BTN_N for the MCU, so the cell (up to 4.2 V) never
-        touches an MCU pin, and an unpowered MCU is never back-fed through a GPIO. */}
-    <chip name="SW_PWR" footprint="pinrow3"
-      manufacturerPartNumber="SKRTLAE010" supplierPartNumbers={{ jlcpcb: ["C110293"] }}
-      pinLabels={{ pin1: "A", pin2: "B", pin3: "MP" }}
+    {/* Power is the joystick's centre press, held: there is no separate power button.
+        The press grounds JOY_CEN, which turns on Q_PWRJ, a PNP from the cell into BTN;
+        BTN pulls the boost's SHDN up to the cell through one diode of a BAT54C; the MCU
+        holds it through the other (PWR_HOLD) and lets go to power off. SHDN's guaranteed
+        high is 0.88 V: the board starts from a cell resting at >= ~1.05 V, well below
+        where firmware calls a NiMH or alkaline cell empty. An NPN (not a FET: it must
+        switch from a 0.9 V cell) turns BTN into BTN_N for the MCU, which is therefore
+        also the centre press while running (short press = select, hold = power off).
+        The cell (up to 4.2 V) never touches an MCU pin, and an unpowered MCU is never
+        back-fed through a GPIO. Off, nothing here draws more than nanoamps. */}
+    <chip name="Q_PWRJ" footprint="sot23"
+      manufacturerPartNumber="MMBT3906" supplierPartNumbers={{ jlcpcb: ["C2143"] }}
+      pinLabels={{ pin1: "B", pin2: "E", pin3: "C" }}
       schX={-2} schY={14} schSectionName={S} />
-    <trace from=".SW_PWR > .A" to="net.BAT" width={W_PWR_LITE} />
-    <trace from=".SW_PWR > .B" to="net.BTN" width={W_PWR_LITE} />
-    <trace from=".SW_PWR > .MP" to="net.GND" />
+    <trace from=".Q_PWRJ > .E" to="net.BAT" width={W_PWR_LITE} />
+    <trace from=".Q_PWRJ > .C" to="net.BTN" width={W_PWR_LITE} />
+    <trace from=".Q_PWRJ > .B" to="net.PWRJ_B" />
+    {/* 1M base-emitter: off unless pressed, and dirt across the contact (> ~5 Mohm)
+        cannot turn it on; 100k to the contact: ~4 uA of base current from a 1.0 V cell,
+        enough for ~200 uA of collector current into BTN and the 1 uF on SHDN. */}
+    <resistor name="R_PWRJBE" resistance="1M" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C26083"] }}
+      schX={-3} schY={12} schRotation="90deg" schSectionName={S} />
+    <trace from=".R_PWRJBE > .pin1" to="net.BAT" />
+    <trace from=".R_PWRJBE > .pin2" to="net.PWRJ_B" />
+    <resistor name="R_PWRJB" resistance="100k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C25741"] }}
+      schX={-1} schY={12} schRotation="90deg" schSectionName={S} />
+    <trace from=".R_PWRJB > .pin1" to="net.PWRJ_B" />
+    <trace from=".R_PWRJB > .pin2" to="net.JOY_CEN" />
     <resistor name="R_BTN" resistance="100k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C25741"] }}
       schX={0} schY={14} schRotation="90deg" schSectionName={S} />
     <trace from=".R_BTN > .pin1" to="net.BTN" />
@@ -298,7 +316,7 @@ export const PowerBlock = () => (
       schX={5} schY={14} schRotation="90deg" schSectionName={S} />
     <trace from=".C_EN > .pin1" to="net.PWR_EN" />
     <trace from=".C_EN > .pin2" to="net.GND" />
-    {/* Button -> BTN_N (active low) for the MCU's WKUP1 pin: ~5 uA of base current from a
+    {/* BTN -> BTN_N (active low) for the MCU's WKUP1 pin: ~5 uA of base current from a
         0.9 V cell sinks far more than PA0's pull-up sources. */}
     <chip name="Q_BTN" footprint="sot23"
       manufacturerPartNumber="MMBT3904" supplierPartNumbers={{ jlcpcb: ["C20526"] }}
@@ -327,8 +345,8 @@ export const PowerBlock = () => (
         250 mA it dissipates (3.3 - 1.4) x 0.25 = 0.48 W instead of 0.9 W.
         The MCU decides whether a cell is NiMH (resting voltage, internal resistance
         from an 83 -> 250 mA step, a timed trial) and terminates on the cell's own signs
-        (zero/negative dV, dT/dt); the IC is the hardware backstop:
-          - TS held low by Q_CHGOFF (gate pulled up) = charging OFF by default, and off
+        (zero/negative dV, dT/dt from the TS node); the IC is the hardware backstop:
+          - TS held low by Q_CHG's FET B (gate pulled up) = charging OFF by default, and off
             again whenever the MCU is in reset or unpowered; the MCU enables it by
             driving CHG_OFF low;
           - TS's own NTC on the cell: suspends outside 0-45 C;
@@ -361,7 +379,7 @@ export const PowerBlock = () => (
     {/* ICHG = 300 A*Ohm / RISET. 3.6k alone = 83 mA, ~0.1 C: pre-qualification of a
         deeply discharged cell, the resistance test's low step, and the standard charge
         Panasonic rates eneloop with (0.1 C for 15-16 h, which an LSD NiMH tolerates as
-        overcharge). With 1.8k switched in parallel by CHG_HI, 1.2k = 250 mA (~0.3 C),
+        overcharge). With 1.8k switched in parallel by Q_CHG's FET A (CHG_HI), 1.2k = 250 mA (~0.3 C),
         the faster charge that firmware ends on the cell's signs, with the 4 h timer
         and the 45 C NTC behind it. ISET is live: a change applies at once. */}
     <resistor name="R_ISET" resistance="3.6k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C25891"] }}
@@ -372,29 +390,30 @@ export const PowerBlock = () => (
       schX={-5} schY={0} schRotation="90deg" schSectionName={S} />
     <trace from=".R_ISETH > .pin1" to="net.CHG_ISET" />
     <trace from=".R_ISETH > .pin2" to="net.CHG_ISETH" />
-    <chip name="Q_CHGHI" footprint="sot23"
-      manufacturerPartNumber="2N7002" supplierPartNumbers={{ jlcpcb: ["C8545"] }}
-      pinLabels={{ pin1: "G", pin2: "S", pin3: "D" }}
+    {/* Both charger switches in one dual 2N7002 (SOT-363; pins per the LCSC symbol:
+        FET A 1 S, 2 G, 6 D = the 250 mA step; FET B 4 S, 5 G, 3 D = TS hold). */}
+    <chip name="Q_CHG" footprint="pinrow6"
+      manufacturerPartNumber="2N7002DW-7-F" supplierPartNumbers={{ jlcpcb: ["C83571"] }}
+      pinLabels={{ pin1: "S_A", pin2: "G_A", pin3: "D_B", pin4: "S_B", pin5: "G_B", pin6: "D_A" }}
       schX={-4} schY={-2} schSectionName={S} />
-    <trace from=".Q_CHGHI > .D" to="net.CHG_ISETH" />
-    <trace from=".Q_CHGHI > .S" to="net.GND" />
-    <trace from=".Q_CHGHI > .G" to="net.CHG_HI" />
+    <trace from=".Q_CHG > .D_A" to="net.CHG_ISETH" />
+    <trace from=".Q_CHG > .S_A" to="net.GND" />
+    <trace from=".Q_CHG > .G_A" to="net.CHG_HI" />
     <resistor name="R_CHGHI" resistance="100k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C25741"] }}
       schX={-3} schY={-2} schRotation="90deg" schSectionName={S} />
     <trace from=".R_CHGHI > .pin1" to="net.CHG_HI" />
     <trace from=".R_CHGHI > .pin2" to="net.GND" />
-    {/* TS: 10k NTC (B 3380) touching the cell's heat path; ITS 38 uA trips at ~0 and ~45 C. */}
+    {/* TS: 10k NTC (B 3380) on the back under the cell; ITS 38 uA trips at ~0 and ~45 C.
+        The MCU reads the same node (CHG_TS, an ADC pin in analog mode: high impedance, so
+        the charger's own limits are untouched) for its dT/dt termination: while charging,
+        the 38 uA bias makes V_TS = 38 uA x R_NTC. */}
     <resistor name="RT_CHG" resistance="10k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C77131"] }}
       schX={-7} schY={-2} schRotation="90deg" schSectionName={S} />
     <trace from=".RT_CHG > .pin1" to="net.CHG_TS" />
     <trace from=".RT_CHG > .pin2" to="net.GND" />
-    <chip name="Q_CHGOFF" footprint="sot23"
-      manufacturerPartNumber="2N7002" supplierPartNumbers={{ jlcpcb: ["C8545"] }}
-      pinLabels={{ pin1: "G", pin2: "S", pin3: "D" }}
-      schX={-8} schY={-4} schSectionName={S} />
-    <trace from=".Q_CHGOFF > .D" to="net.CHG_TS" />
-    <trace from=".Q_CHGOFF > .S" to="net.GND" />
-    <trace from=".Q_CHGOFF > .G" to="net.CHG_OFF" />
+    <trace from=".Q_CHG > .D_B" to="net.CHG_TS" />
+    <trace from=".Q_CHG > .S_B" to="net.GND" />
+    <trace from=".Q_CHG > .G_B" to="net.CHG_OFF" />
     <resistor name="R_CHGOFF" resistance="100k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C25741"] }}
       schX={-9} schY={-4} schRotation="90deg" schSectionName={S} />
     <trace from=".R_CHGOFF > .pin1" to="net.CHG_OFF" />
@@ -413,29 +432,23 @@ export const PowerBlock = () => (
       schX={-5} schY={4} schRotation="90deg" schSectionName={S} />
     <trace from=".R_STAT > .pin1" to="net.CHG_STAT" />
     <trace from=".R_STAT > .pin2" to="net.V3V3" />
-    {/* The MCU's own cell thermometer (dT/dt termination), independent of the charger's. */}
-    <resistor name="RT_CELL" resistance="10k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C77131"] }}
-      schX={-13} schY={-6} schRotation="90deg" schSectionName={S} />
-    <trace from=".RT_CELL > .pin1" to="net.CELL_NTC" />
-    <trace from=".RT_CELL > .pin2" to="net.GND" />
-    <resistor name="R_NTCB" resistance="10k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C25744"] }}
-      schX={-14} schY={-6} schRotation="90deg" schSectionName={S} />
-    <trace from=".R_NTCB > .pin1" to="net.V3V3" />
-    <trace from=".R_NTCB > .pin2" to="net.CELL_NTC" />
+
 
     {/* ---------------- Buzzer ---------------- */}
-    {/* KELIKING KLJ-7525-3627: magnetic transducer, 7.5 x 7.5 x 2.5 mm, side sound port,
-        2.73 kHz, 85 dB at 10 cm, 16 Ohm, 90 mA at 3.6 Vp-p (pad 1 +, pad 2 -, pads 3/4
-        mechanical). Low side switched by an AO3416 from a timer PWM at 50 % duty; the
-        1N4148WS takes the coil's flyback. */}
-    <chip name="LS1" footprint="pinrow4"
-      pinLabels={{ pin1: "P", pin2: "N", pin3: "MP1", pin4: "MP2" }}
-      manufacturerPartNumber="KLJ-7525-3627" supplierPartNumbers={{ jlcpcb: ["C189208"] }}
+    {/* Huaneng MLT-5020: magnetic transducer, 5.0 x 5.5 x 2.0 mm, sound port on top
+        (it faces the back of the case: a hole there), 4 kHz, 75 dB at 10 cm, 12 Ohm,
+        2-4 Vo-p, 100 mA max (pad 1 +, pad 2 -, pad 3 not connected), in the board's
+        north-east corner. The 7.5 mm KLJ-7525 (85 dB) did not fit there: its land
+        is 9 mm square and the corner between hole H2 and the touch I2C is 8.6 mm.
+        Low side switched by an AO3416 from a timer PWM at 50 % duty (LPTIM3: TIM3
+        already clocks the camera); the 1N4148WS takes the coil's flyback. */}
+    <chip name="LS1" footprint="pinrow3"
+      pinLabels={{ pin1: "P", pin2: "N", pin3: "NC" }}
+      manufacturerPartNumber="MLT-5020" supplierPartNumbers={{ jlcpcb: ["C94598"] }}
       schX={10} schY={2} schSectionName={S} />
     <trace from=".LS1 > .P" to="net.V3V3" width={W_PWR_LITE} />
     <trace from=".LS1 > .N" to="net.BUZ_SW" width={W_PWR_LITE} />
-    <trace from=".LS1 > .MP1" to="net.NC_BUZ_MP1" />
-    <trace from=".LS1 > .MP2" to="net.NC_BUZ_MP2" />
+    <trace from=".LS1 > .NC" to="net.NC_BUZ" />
     <chip name="Q_BUZ" footprint="sot23"
       manufacturerPartNumber="AO3416" supplierPartNumbers={{ jlcpcb: ["C43307"] }}
       pinLabels={{ pin1: "G", pin2: "S", pin3: "D" }}
@@ -462,19 +475,38 @@ export const PowerBlock = () => (
     <trace from=".C_BUZ > .pin1" to="net.V3V3" />
     <trace from=".C_BUZ > .pin2" to="net.GND" />
 
-    {/* ---------------- Edge buttons (optional, not fitted) ---------------- */}
-    {/* Four side-push buttons on the board edges, the power button's part, for a
-        game-console style of input. No JLC number = not fitted (DNP); the lands are
-        there, and each line idles on the MCU's internal pull-up. */}
-    {[["SW_1", "BTN_1"], ["SW_2", "BTN_2"], ["SW_3", "BTN_3"], ["SW_4", "BTN_4"]].map(([sw, net], i) => (
-      <group key={sw}>
-        <chip name={sw} footprint="pinrow3" manufacturerPartNumber="SKRTLAE010"
-          pinLabels={{ pin1: "A", pin2: "B", pin3: "MP" }}
-          schX={-2 + 2 * i} schY={20} schSectionName={S} />
-        <trace from={`.${sw} > .A`} to={`net.${net}`} />
-        <trace from={`.${sw} > .B`} to="net.GND" />
-        <trace from={`.${sw} > .MP`} to="net.GND" />
+    {/* ---------------- Joystick ---------------- */}
+    {/* ALPS SKRHAAE010: four directions + centre push, 7.5 x 7.5 x 5.1 mm, SMD (reflowed
+        by JLC on the front face, below the cell, its stem through the case). Pins (LCSC
+        symbol): 1 A, 2 push (CEN), 3 C, 4 D, 5 common, 6 B, 7/8 mounting; common to GND.
+        Every line between the chin and the MCU crosses one of three narrow bridges beside
+        the display slots, so the four directions share ONE line: each switches its own
+        resistor (15k/27k/47k/100k) from JOY_DIR, pulled up by 15k, to GND, and the MCU's
+        ADC (referenced to the same 3.3 V: ratiometric) tells every single direction and
+        every pair apart: 110 mV between neighbours, 39 mV of margin with all 1 % parts
+        at their limits. The centre press is the power key (Soft latch, above): the MCU
+        reads it as BTN_N. */}
+    <chip name="SW_JOY" footprint="pinrow8" manufacturerPartNumber="SKRHAAE010"
+      supplierPartNumbers={{ jlcpcb: ["C202423"] }}
+      pinLabels={{ pin1: "A", pin2: "CEN", pin3: "C", pin4: "D", pin5: "COM", pin6: "B", pin7: "MP1", pin8: "MP2" }}
+      schX={2} schY={20} schSectionName={S} />
+    <trace from=".SW_JOY > .CEN" to="net.JOY_CEN" />
+    <trace from=".SW_JOY > .COM" to="net.GND" />
+    <trace from=".SW_JOY > .MP1" to="net.GND" />
+    <trace from=".SW_JOY > .MP2" to="net.GND" />
+    {[["A", "R_JA", "15k", "C25756"], ["B", "R_JB", "27k", "C25771"], ["C", "R_JC", "47k", "C25792"],
+      ["D", "R_JD", "100k", "C25741"]].map(([pin, r, v, jlc], i) => (
+      <group key={r}>
+        <trace from={`.SW_JOY > .${pin}`} to={`net.JOY_${pin}`} />
+        <resistor name={r} resistance={v} footprint="0402" supplierPartNumbers={{ jlcpcb: [jlc] }}
+          schX={4 + i} schY={22} schRotation="90deg" schSectionName={S} />
+        <trace from={`.${r} > .pin1`} to="net.JOY_DIR" />
+        <trace from={`.${r} > .pin2`} to={`net.JOY_${pin}`} />
       </group>
     ))}
+    <resistor name="R_JPU" resistance="15k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C25756"] }}
+      schX={8} schY={22} schRotation="90deg" schSectionName={S} />
+    <trace from=".R_JPU > .pin1" to="net.V3V3" />
+    <trace from=".R_JPU > .pin2" to="net.JOY_DIR" />
   </group>
 )

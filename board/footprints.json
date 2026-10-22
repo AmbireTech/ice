@@ -51,7 +51,7 @@
   "D_ESD": "Package_TO_SOT_SMD:SOT-23-6",
   "D_OR": "Package_TO_SOT_SMD:SOT-23",
   "D_RADIO": "LED_SMD:LED_0603_1608Metric",
-  "D_REVG": "Diode_SMD:D_SOD-523",
+  "D_REVG": "Package_TO_SOT_SMD:SOT-23",
   "J1": {
     "fp": "wallet:USB_C_Receptacle_HRO_TYPE-C-31-M-12_BoardEdge",
     "pads": {
@@ -185,15 +185,14 @@
   },
   "J_CTP": "wallet:FPC_HC-FPC-1.0-6P-CSH25",
   "J_TFT": "wallet:Molex_54132-4062",
-  "LS1": "wallet:Buzzer_KELIKING_KLJ-7525_7.5x7.5mm",
+  "LS1": "wallet:Buzzer_Huaneng_MLT-5020_5x5.5mm",
   "L_BOOST": "wallet:L_Sunlord_WPN4020",
   "L_BUCK": "Inductor_SMD:L_Cenker_CKCS201610",
   "Q_BTN": "Package_TO_SOT_SMD:SOT-23",
   "Q_BUZ": "Package_TO_SOT_SMD:SOT-23",
-  "Q_CHGHI": "Package_TO_SOT_SMD:SOT-23",
-  "Q_CHGOFF": "Package_TO_SOT_SMD:SOT-23",
+  "Q_CHG": "Package_TO_SOT_SMD:SOT-363_SC-70-6",
+  "Q_PWRJ": "Package_TO_SOT_SMD:SOT-23",
   "Q_REV": "Package_TO_SOT_SMD:SOT-23",
-  "RT_CELL": "Resistor_SMD:R_0402_1005Metric",
   "RT_CHG": "Resistor_SMD:R_0402_1005Metric",
   "R_AIRPU": "Resistor_SMD:R_0402_1005Metric",
   "R_AIRS": "Resistor_SMD:R_0402_1005Metric",
@@ -223,9 +222,15 @@
   "R_HOLD": "Resistor_SMD:R_0402_1005Metric",
   "R_ISET": "Resistor_SMD:R_0402_1005Metric",
   "R_ISETH": "Resistor_SMD:R_0402_1005Metric",
-  "R_NTCB": "Resistor_SMD:R_0402_1005Metric",
+  "R_JA": "Resistor_SMD:R_0402_1005Metric",
+  "R_JB": "Resistor_SMD:R_0402_1005Metric",
+  "R_JC": "Resistor_SMD:R_0402_1005Metric",
+  "R_JD": "Resistor_SMD:R_0402_1005Metric",
+  "R_JPU": "Resistor_SMD:R_0402_1005Metric",
   "R_OPTRST": "Resistor_SMD:R_0402_1005Metric",
   "R_PG": "Resistor_SMD:R_0402_1005Metric",
+  "R_PWRJB": "Resistor_SMD:R_0402_1005Metric",
+  "R_PWRJBE": "Resistor_SMD:R_0402_1005Metric",
   "R_REVG": "Resistor_SMD:R_0402_1005Metric",
   "R_RLED": "Resistor_SMD:R_0402_1005Metric",
   "R_ROFF": "Resistor_SMD:R_0402_1005Metric",
@@ -239,62 +244,6 @@
   "R_VB1": "Resistor_SMD:R_0402_1005Metric",
   "R_VB2": "Resistor_SMD:R_0402_1005Metric",
   "R_VSET": "Resistor_SMD:R_0402_1005Metric",
-  "SW_1": {
-    "fp": "wallet:SW_Alps_SKRTLAE010_HoleClear",
-    "pads": {
-      "1": [
-        "1"
-      ],
-      "2": [
-        "2"
-      ],
-      "3": [
-        "MP"
-      ]
-    }
-  },
-  "SW_2": {
-    "fp": "wallet:SW_Alps_SKRTLAE010_HoleClear",
-    "pads": {
-      "1": [
-        "1"
-      ],
-      "2": [
-        "2"
-      ],
-      "3": [
-        "MP"
-      ]
-    }
-  },
-  "SW_3": {
-    "fp": "wallet:SW_Alps_SKRTLAE010_HoleClear",
-    "pads": {
-      "1": [
-        "1"
-      ],
-      "2": [
-        "2"
-      ],
-      "3": [
-        "MP"
-      ]
-    }
-  },
-  "SW_4": {
-    "fp": "wallet:SW_Alps_SKRTLAE010_HoleClear",
-    "pads": {
-      "1": [
-        "1"
-      ],
-      "2": [
-        "2"
-      ],
-      "3": [
-        "MP"
-      ]
-    }
-  },
   "SW_AIR": {
     "fp": "Button_Switch_SMD:SW_SPDT_Shouhan_MSK12C02",
     "pads": {
@@ -312,20 +261,7 @@
       ]
     }
   },
-  "SW_PWR": {
-    "fp": "wallet:SW_Alps_SKRTLAE010_HoleClear",
-    "pads": {
-      "1": [
-        "1"
-      ],
-      "2": [
-        "2"
-      ],
-      "3": [
-        "MP"
-      ]
-    }
-  },
+  "SW_JOY": "wallet:SW_ALPS_SKRHAAE010",
   "TP_3V3": "TestPoint:TestPoint_Pad_D1.0mm",
   "TP_GND": "TestPoint:TestPoint_Pad_D1.0mm",
   "TP_NRST": "TestPoint:TestPoint_Pad_D1.0mm",

@@ -1,5 +1,5 @@
 {
-  "_comment": "STM32U585VIT6Q signal pins: pin label -> [net, the ST signal the firmware muxes onto it, or GPIO/ANALOG]. Chosen so each bus leaves the package on the side facing its destination (MCU flipped + 180 deg on the back face: pins 1-25 east, 26-50 south, 51-75 west, 76-100 north): display SPI south toward J_TFT, touch/gauge I2C3 + touch INT/RST east toward J_CTP and the gauge, camera DCMI/SCCB (I2C2) north/west toward J_CAM, ordered on the north side as J_CAM orders them (XCLK from TIM3_CH2 PWM, RST east of VSYNC), secure elements (SE050 + OPTIGA, one I2C4 bus, each its own reset) west, radio USART3 (PB10/PB11) and RADIO_OFF at the south-west corner, around the corner from the radio gate west of the package (USART1 on PA9/PA10 trial-routed worse: two more west-side pins in the camera bus's escape); VBUS sensed on a plain GPIO (the USB stack's hardware VBUS sensing is off), button east. The cell, its charger and the buzzer sit in the chin, so their lines (cell voltage at both clips and the cell's NTC on ADC1, the charger's enable/current/status, the buzzer's TIM16 PWM) leave from the south side; the four optional edge buttons from the east. Mcu.tsx draws the traces from this table and scripts/checkMcuAf.py fails unless every signal is listed for that pin in ST's own pin database.",
+  "_comment": "STM32U585VIT6Q signal pins: pin label -> [net, the ST signal the firmware muxes onto it, or GPIO/ANALOG]. Chosen so each bus leaves the package on the side facing its destination (MCU flipped + 180 deg on the back face: pins 1-25 east, 26-50 south, 51-75 west, 76-100 north): display SPI south toward J_TFT, touch/gauge I2C3 + touch INT/RST east toward J_CTP and the gauge, camera DCMI/SCCB (I2C2) north/west toward J_CAM, ordered on the north side as J_CAM orders them (XCLK from TIM3_CH2 PWM, RST east of VSYNC), secure elements (SE050 + OPTIGA, one I2C4 bus, each its own reset) west, radio USART3 (PB10/PB11) and RADIO_OFF at the south-west corner, around the corner from the radio gate west of the package (USART1 on PA9/PA10 trial-routed worse: two more west-side pins in the camera bus's escape); VBUS sensed on a plain GPIO (the USB stack's hardware VBUS sensing is off), button east. The cell, its charger and the buzzer sit in the chin, so their lines (cell voltage at both clips and the charger's NTC node on ADC1, the charger's enable/current/status) leave from the south side; the buzzer (north-east corner, LPTIM3_CH1 PWM: TIM3 is the camera clock) from the east; the joystick's four directions (in the chin) on one ADC input (a resistor ladder) at the south-east corner, up the east edge strip; its centre press is the power key and reaches the MCU as BTN_N. Mcu.tsx draws the traces from this table and scripts/checkMcuAf.py fails unless every signal is listed for that pin in ST's own pin database.",
   "PE9": [
     "TFT_BL",
     "TIM1_CH1"
@@ -176,14 +176,6 @@
     "CELL_N_SENSE",
     "ADC1_IN10"
   ],
-  "PA6": [
-    "BUZZER",
-    "TIM16_CH1"
-  ],
-  "PA7": [
-    "CELL_NTC",
-    "ADC1_IN12"
-  ],
   "PB0": [
     "CHG_OFF",
     "GPIO"
@@ -196,20 +188,16 @@
     "CHG_STAT",
     "GPIO"
   ],
-  "PE4": [
-    "BTN_1",
-    "GPIO"
-  ],
-  "PE6": [
-    "BTN_2",
-    "GPIO"
-  ],
-  "PC13": [
-    "BTN_3",
-    "GPIO"
-  ],
   "PC3": [
-    "BTN_4",
-    "GPIO"
+    "BUZZER",
+    "LPTIM3_CH1"
+  ],
+  "PA7": [
+    "CHG_TS",
+    "ADC1_IN12"
+  ],
+  "PA2": [
+    "JOY_DIR",
+    "ADC1_IN7"
   ]
 }

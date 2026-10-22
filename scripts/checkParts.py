@@ -69,14 +69,15 @@ MULT = {"p": 1e-12, "n": 1e-9, "u": 1e-6, "µ": 1e-6, "m": 1e-3,
 WAIVED_LAND = {
     "U8": "IPC-nominal SOT-23-6 against the vendor's longer reflow land; same 6 pads, same 0.95 mm pitch",
     "D_OR": "IPC-nominal SOT-23 against the vendor's longer reflow land; same 3 pads, same pitch",
-    "L_BUCK": "Murata's DFE2016 land (KiCad L_Murata_DFE201610P) for a DFE201612 part, as on the GridCore Nano",
-    "L_SMPS": "Murata's DFE2016 land (KiCad L_Murata_DFE201610P) for a DFE201612 part, as on the GridCore Nano",
     "J1": "KiCad's HRO TYPE-C-31-M-12 land, the one the GridCore Nano uses; its shield legs are split "
           "into more pads than EasyEDA's",
     "U5": "land drawn from NXP's SOT1969-1 package information (98ASA01228D Fig. 3-6), the vendor's own "
           "recommended footprint; EasyEDA's is a third-party copy",
-    "U1": "TI's own DLH0010A land (BQ25185 data sheet, example board layout 4226298/A: pad columns (2.1) "
-          "outer edge to outer edge, 0.1 mm to the exposed pad); EasyEDA's is a generic longer-toe land",
+    "Q_REV": "IPC-nominal SOT-23 against the vendor's longer reflow land; same 3 pads, same pitch",
+    "Q_BUZ": "IPC-nominal SOT-23 against the vendor's longer reflow land; same 3 pads, same pitch",
+    "D_REVG": "IPC-nominal SOT-23 against the vendor's longer reflow land; same 3 pads, same pitch",
+    "L_BUCK": "Cenker's own CKCS201610 land (KiCad L_Cenker_CKCS201610) for this Cenker CKCSA201610 part: "
+              "2016 metric, JLC's 0806",
     "J_CAM": "KiCad's Jushuo AFC07-S24FCA-00 land for this exact part: same 24 pads at 0.5 mm and the same "
              "14.8 mm width; the depth differs by the mounting-tab position",
 }
