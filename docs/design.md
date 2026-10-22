@@ -156,8 +156,10 @@ touch flex is merged into the TFT flex.
 - **The chin** (south of the slots) holds the AAA cell on the front, across the
   board (the clips' bases span 47 mm of the 48), and on the back USB-C (mouth
   south), the radio module, the boost, the charger and the joystick's resistor
-  ladder. Moving the USB buck and the mux to the front cut the human router's trial
-  route of the chin from 840 to 726 mm of copper, with no detours left.
+  ladder. With the USB buck and the mux on the front (and the schematic review's four
+  extra parts in), the human router's trial route of the chin needs 71 signal vias
+  instead of 82 and 809 mm of copper instead of 840, with nothing left unconnected
+  (1 before). The same move without the extra parts scored 726 mm and no detours.
 - **Trace widths** come from the net classes (KiCad's default when routing a net):
   the **cell path at 0.8 mm** (BAT, BAT_N, SW_BOOST: ~1 A from a 1.0 V cell, every
   10 mΩ is 1 % of its voltage; two vias per layer change), the 3.3–5 V rails at
