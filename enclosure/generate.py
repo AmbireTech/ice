@@ -94,7 +94,11 @@ FOAM_T = 0.3          # foam tape under the screen, on the board (newBoard.py bu
 # eneloop BK-4MCCE all 10.1-10.5), resting on the clip bases.
 CELL_D, CELL_BASE = 10.5, 0.25
 CLIP_H = 10.46
-CELL_CLR = 0.4        # opening around the clips' courtyards
+CELL_CLR = 0.4        # opening around the clips' outlines
+CELL_BODY_CLR = 0.3   # opening around the cell itself, between the clips
+# The thinnest strip of bezel the case may leave between two openings in its front
+# (the cell opening and the joystick hole): below this a resin print breaks there.
+MIN_WEB = 0.6
 # The joystick (ALPS SKRHAAE010, 7.5 x 7.5 mm housing 2.23 mm tall, a 3 mm stem to
 # 5.08 mm: EasyEDA's model) on the front, below the cell: a pocket over its housing in
 # the bezel's solid chin, and a hole wide enough for the stem to rock. The stem stops
@@ -714,7 +718,15 @@ def main():
         clips.append([round(v, 3) for v in (*fw.min(0), *fw.max(0))])
     cut = (max(min(c[0] for c in clips) - CELL_CLR, -GAP), min(c[1] for c in clips) - CELL_CLR,
            min(max(c[2] for c in clips) + CELL_CLR, W + GAP), max(c[3] for c in clips) + CELL_CLR)
-    cell_hole = box(*cut, z_split - 1, z_top + 1)
+    # full height over the clips; between them only the cell's own width, so the bezel
+    # keeps as much of the chin as the cell allows
+    cell_cy = sum((c[1] + c[3]) / 2 for c in clips) / 2
+    cell_cx = sum((c[0] + c[2]) / 2 for c in clips) / 2
+    clip_cuts = [(max(c[0] - CELL_CLR, -GAP), c[1] - CELL_CLR, min(c[2] + CELL_CLR, W + GAP), c[3] + CELL_CLR) for c in clips]
+    body_cut = (cut[0], cell_cy - CELL_D / 2 - CELL_BODY_CLR, cut[2], cell_cy + CELL_D / 2 + CELL_BODY_CLR)
+    cell_hole = box(*body_cut, z_split - 1, z_top + 1)
+    for cc in clip_cuts:
+        cell_hole += box(*cc, z_split - 1, z_top + 1)
     bezel += rr_prism(*in_o[:4], in_o[4], z_split, z_lip + 0.01) - open_ - cell_hole
     bezel -= cell_hole
     joy = b["fps"].get(JOY_REF)
@@ -728,13 +740,18 @@ def main():
             raise SystemExit("no room for the joystick's housing under the bezel's front skin")
         bezel -= box(*joy_box, z_split - 1, JOY_HOUSING_H + JOY_CLR)
         bezel -= Pos(joy["x"], -joy["y"], (z_split + z_top) / 2 + 0.5) * Cylinder(JOY_HOLE_D / 2, z_top - z_split + 2)
-        report.append(f"joystick at {joy['x']:.1f}, {joy['y']:.1f}: pocket {2 * h:.1f} mm square, a {JOY_HOLE_D} mm hole; "
-                      f"its stem stops {z_top - JOY_H:.2f} mm under the front face (a cap goes on it)")
-    cell_cy = sum((c[1] + c[3]) / 2 for c in clips) / 2
-    cell_cx = sum((c[0] + c[2]) / 2 for c in clips) / 2
+        r = JOY_HOLE_D / 2
+        web = min(math.hypot(max(o0 - joy["x"], 0, joy["x"] - o1), max(p0 - joy["y"], 0, joy["y"] - p1)) - r
+                  for o0, p0, o1, p1 in [body_cut] + clip_cuts)
+        if web < MIN_WEB:
+            raise SystemExit(f"the joystick hole leaves {web:.2f} mm of bezel to the cell opening, under {MIN_WEB}")
+        report.append(f"joystick at {joy['x']:.1f}, {joy['y']:.1f}: pocket {2 * h:.1f} mm square, a {JOY_HOLE_D} mm hole "
+                      f"{web:.2f} mm from the cell opening; its stem stops {z_top - JOY_H:.2f} mm under the front face "
+                      f"(a cap goes on it)")
     cell = {"x": [round(cell_cx - 22.25, 3), round(cell_cx + 22.25, 3)], "y": round(cell_cy, 3),
             "z": round(CELL_BASE + CELL_D / 2, 3), "d": CELL_D, "clips": clips, "clipH": CLIP_H}
-    report.append(f"AAA cell opening {cut[2] - cut[0]:.1f} x {cut[3] - cut[1]:.1f} mm; the cell stands "
+    report.append(f"AAA cell opening {cut[2] - cut[0]:.1f} x {cut[3] - cut[1]:.1f} mm over the clips, "
+                  f"{body_cut[3] - body_cut[1]:.1f} mm between them; the cell stands "
                   f"{CELL_BASE + CELL_D - z_top:.1f} mm proud of the front, its clips {CLIP_H - z_top:.1f} mm")
 
     # Screw bosses: the chin is solid from the board up to the front skin there; the
