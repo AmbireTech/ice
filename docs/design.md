@@ -282,8 +282,9 @@ device off, the cell charges and nothing else runs; there is no charge light.
 
 A two-part case: a back **shell** with the walls up to the board's front face,
 and a front **bezel** with the display window whose skirt laps over a tongue on
-the shell. Four screws from the back hold the whole stack. Target plastic:
-translucent purple.
+the shell. Four screws from the back hold the whole stack. Plastic: always
+see-through, in four colours: ice blue, orange and purple (all transparent
+tints) and clear.
 
 - **Built from the board, not typed in.** The generator reads the outline, slots,
   mounting holes, camera keep-out and the power button's land from the board
