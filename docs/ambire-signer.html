@@ -314,8 +314,6 @@ footer svg { width: 18px; height: 27px; color: var(--violet); }
           <fieldset>
             <legend>Case</legend>
             <div class="seg" id="cases">
-              <button type="button" data-case="ice" aria-pressed="false">Ice blue</button>
-              <button type="button" data-case="orange" aria-pressed="false">Orange</button>
               <button type="button" data-case="purple" aria-pressed="true">Purple</button>
               <button type="button" data-case="clear" aria-pressed="false">Clear</button>
               <button type="button" data-case="none" aria-pressed="false">None, I'll print it</button>
@@ -549,10 +547,7 @@ function fail(what, error) {
   msg.hidden = false;
 }
 
-// Every case is see-through: three transparent tints and clear.
 const CASE = {
-  ice: { color: 0xd6f1ff, attenuationColor: 0x5cc8ff, attenuationDistance: 8, roughness: 0.15, transmission: 0.96 },
-  orange: { color: 0xffd2a8, attenuationColor: 0xff6a00, attenuationDistance: 6, roughness: 0.2, transmission: 0.95 },
   purple: { color: 0xcdb2ff, attenuationColor: 0x6a2cff, attenuationDistance: 6, roughness: 0.2, transmission: 0.95 },
   clear: { color: 0xffffff, attenuationColor: 0xffffff, attenuationDistance: Infinity, roughness: 0.04, transmission: 0.98 },
 };
