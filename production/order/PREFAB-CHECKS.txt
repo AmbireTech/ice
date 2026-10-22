@@ -1,22 +1,23 @@
 Ambire signer pre-fab checks
 PASS  KiCad DRC as saved: 0 violations [], 0 unconnected
 PASS  KiCad DRC after a zone refill: 0 violations [], 0 unconnected
-PASS  nets: every named net reaches two pads: 98 nets, 447 pad connections: ok
-PASS  MCU pins vs ST's alternate functions: 45 assignments checked against ST's pin database and the exported netlist: ok
+PASS  nets: every named net reaches two pads: 120 nets, 529 pad connections: ok
+PASS  MCU pins vs ST's alternate functions: 50 assignments checked against ST's pin database and the exported netlist: ok
 PASS  board matches the netlist: board already matches the netlist
-PASS  IC pads vs datasheet pin tables: 17 parts checked against their datasheet pin tables: ok
+PASS  IC pads vs datasheet pin tables: 25 parts checked against their datasheet pin tables: ok
 PASS  flex connectors: orientation, tail slack: connector orientation: ok
 PASS  lands vs JLC's land for each part:     ? U8 (C2681320): land differs from the vendor's - waived: IPC-nominal SOT-23-6 against the vendor's longer reflow land; same 6 pads, same 0.95 mm pitch
 PASS  no stale copper: 0 stale item(s): clean
 PASS  no GND pad-to-via ties beyond the kept ones: none
-PASS  BOM / placement parity, every part has an LCSC number: BOM refs 99 in 47 lines; CPL rows 99
-PASS  JLC stock for 10 boards: 47 lines, all ok
+PASS  BOM / placement parity, every part has an LCSC number: BOM refs 132 in 64 lines; CPL rows 132
+PASS  JLC stock for 10 boards: 64 lines, all ok
 NOTE  out of stock, to DNP in JLC's order UI: C1518668 SLS32AIA010MKUSON10XTMA2 (U16)
-NOTE  check by eye in JLC's placement preview: D_RADIO, J1, J_CAM, J_CTP, J_TFT, SW_AIR, SW_PWR, U1, U11, U13, U15, U16, U2, U4, U5, U6
-PASS  drill census: board holes vs drill files: 452 on the board, 452 in the files
+NOTE  check by eye in JLC's placement preview: BT_N, BT_P, D_BUZ, D_RADIO, J1, J_CAM, J_CTP, J_TFT, LS1, RT_CHG, SW_AIR, SW_JOY, U1, U10, U11, U13, U16, U2, U4, U5, U6
+NOTE  assembly side in JLC's order form: choose both sides: 129 bottom + 3 top (BT_N, BT_P, SW_JOY)
+PASS  drill census: board holes vs drill files: 616 on the board, 616 in the files
 PASS  smallest drill (JLC charges extra below 0.25 mm): 0.25 mm
-PASS  PCBWay BOM / centroid: same parts as the JLC set, every line has manufacturer + MPN: 99 refs
-PASS  PCBWay fab zip: Gerbers + drills + print image (outline-sized, 1200 DPI, transparent = no ink) + positioning image: 15 files, print 2268x4016 px RGBA vs outline 2268x4016
+PASS  PCBWay BOM / centroid: same parts as the JLC set, every line has manufacturer + MPN: 132 refs
+PASS  PCBWay fab zip: Gerbers + drills + print image (outline-sized, 1200 DPI, transparent = no ink) + positioning image: 15 files, print 2268x4110 px RGBA vs outline 2268x4110
 NOTE  sourcing: JLC/LCSC flags as not buyable: C1518668 SLS32AIA010MKUSON10XTMA2: This product is no longer manufactured.
 NOTE  colour print: not built (COLOUR=1); JLC rejects non-EasyEDA colour files
 

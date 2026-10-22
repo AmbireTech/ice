@@ -26,7 +26,7 @@ DEPRIORITIZED = {"C1518668": "OPTIGA Trust M V3: sourcing deprioritized (known 0
 HAND_FIT = [
     ("PANEL", "NHD-2.4-240320AF-CSXP-CTP", "Newhaven 2.4in IPS 240x320 + CTP; tails into J_TFT (Molex 54132-4062) and J_CTP (6P 1.0 mm FPC)"),
     ("CAMERA", "OV2640 24-pin DVP module", "~66 deg lens refocused to ~15 cm; flex into J_CAM (Jushuo AFC07-S24FCA-00)"),
-    ("CELL", "1S LiPo pouch ~500 mAh", "lead into J_BAT (JST S2B-PH-SM4-TB); pack polarity must match the side-entry header"),
+    ("CELL", "one AAA cell (NiMH, alkaline or lithium primary)", "snapped into the front clips BT_N/BT_P (MYOUNG MY-AAA-19-J / -20-J); + end at BT_P"),
 ]
 
 # Polarity-free two-terminal chips: JLC and KiCad share the 0-degree reference, no correction exists or is needed.

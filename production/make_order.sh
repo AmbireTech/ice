@@ -11,7 +11,7 @@
 # order/jlc-plain/wallet_gerbers.zip      the same board with ordinary white silkscreen
 # order/pcbway/                          PCBWay: fab zip with the UV back print + positioning image,
 #                                         turnkey BOM, centroid, ORDER-NOTES.txt (production/build_pcbway.py)
-# order/wallet_bom-jlc.csv, order/wallet_positions-jlc.csv   assembly (bottom side), same for both
+# order/wallet_bom-jlc.csv, order/wallet_positions-jlc.csv   assembly (both sides: the cell clips and the joystick on top), same for both
 #
 # Needs: KiCad 10, rsvg-convert, Pillow, cryptography, and TransJLC 0.4.0 on PATH
 # (cargo install TransJLC --version 0.4.0, or TRANSJLC=/path/to/TransJLC) for the

@@ -1,8 +1,8 @@
-Ambire signer proto 0 - PCBWay order notes
+Ambire signer proto 1 - PCBWay order notes
 ==========================================
 
 PCB (upload wallet_pcbway_fab.zip)
-  Layers 4 | 48.00 x 85.00 mm | thickness 1.0 mm | FR-4 | qty 10
+  Layers 4 | 48.0 x 87.0 mm | thickness 1.0 mm | FR-4 | qty 10
   Surface finish: ENIG
   Solder mask: white (both sides) | silkscreen: white
   Special: full-colour UV printing on the BOTTOM side only (matte, the default)
@@ -12,18 +12,18 @@ PCB (upload wallet_pcbway_fab.zip)
 
 Tell PCBWay in the order remark
   "Full-colour UV print on the bottom side from wallet_bottom_UV_print_1200dpi.png
-   (in the zip). The image covers the board outline exactly (48 x 85 mm), viewed
+   (in the zip). The image covers the board outline exactly (48.0 x 87.0 mm), viewed
    from the bottom, not mirrored; see wallet_UV_positioning.png. Transparent =
    no ink. Print the bottom white silkscreen Gerber as usual; the image already
    leaves pads and holes clear. Top side: normal white silkscreen, no UV print."
 
-Assembly (turnkey, bottom side only, 99 placements, 47 BOM lines)
+Assembly (turnkey, both sides: 129 bottom + 3 top (BT_N, BT_P, SW_JOY), 132 placements, 64 BOM lines)
   BOM:      wallet_bom-pcbway.csv  (manufacturer + MPN; LCSC code as distributor PN)
   Centroid: wallet_centroid-pcbway.csv  (mm, origin = outline bottom-left, as the
-            Gerbers; Layer = Bottom; rotation in KiCad's convention, parts on the
+            Gerbers; Layer column per part; rotation in KiCad's convention, parts on the
             bottom given as seen from the top; please check orientation against
             the Gerbers / pin-1 marks)
-  Not assembled (fitted by hand): PANEL (NHD-2.4-240320AF-CSXP-CTP); CAMERA (OV2640 24-pin DVP module); CELL (1S LiPo pouch ~500 mAh)
+  Not assembled (fitted by hand): PANEL (NHD-2.4-240320AF-CSXP-CTP); CAMERA (OV2640 24-pin DVP module); CELL (one AAA cell (NiMH, alkaline or lithium primary))
 
 Sourcing warning
   U16 SLS32AIA010MKUSON10XTMA2: JLC/LCSC says "This product is no longer manufactured."

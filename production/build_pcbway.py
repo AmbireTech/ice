@@ -73,7 +73,7 @@ def positioning_image(path, print_img):
     d = ImageDraw.Draw(sheet)
     big, small = ImageFont.truetype(FONT, 46), ImageFont.truetype(FONT, 30)
     d.text((m, 30), "BOTTOM side, viewed from the bottom (as printed, not mirrored)", font=big, fill="black")
-    d.text((m, 100), f"Print image = the board outline exactly: 48.00 x 85.00 mm, 1200 DPI ({W} x {H} px).", font=small, fill="black")
+    d.text((m, 100), f"Print image = the board outline exactly: {W * 25.4 / 1200:.2f} x {H * 25.4 / 1200:.2f} mm, 1200 DPI ({W} x {H} px).", font=small, fill="black")
     d.text((m, 145), "Transparent pixels = no ink (white solder mask shows). Pads, holes and the camera window are kept clear.", font=small, fill="black")
     d.text((m, 190), "Top side: no colour print (normal white silkscreen only).", font=small, fill="black")
     d.text((m, head - 60), "Board bottom layers (outline, mask openings, parts)", font=small, fill="#444")
@@ -127,11 +127,11 @@ def bom_and_centroid(order, src, out):
     return rows, refs_all, cen, notes
 
 
-NOTES = """Ambire signer proto 0 - PCBWay order notes
+NOTES = """Ambire signer proto 1 - PCBWay order notes
 ==========================================
 
 PCB (upload wallet_pcbway_fab.zip)
-  Layers 4 | 48.00 x 85.00 mm | thickness 1.0 mm | FR-4 | qty {boards}
+  Layers 4 | {w:.1f} x {h:.1f} mm | thickness 1.0 mm | FR-4 | qty {boards}
   Surface finish: ENIG
   Solder mask: white (both sides) | silkscreen: white
   Special: full-colour UV printing on the BOTTOM side only (matte, the default)
@@ -141,19 +141,30 @@ PCB (upload wallet_pcbway_fab.zip)
 
 Tell PCBWay in the order remark
   "Full-colour UV print on the bottom side from wallet_bottom_UV_print_1200dpi.png
-   (in the zip). The image covers the board outline exactly (48 x 85 mm), viewed
+   (in the zip). The image covers the board outline exactly ({w:.1f} x {h:.1f} mm), viewed
    from the bottom, not mirrored; see wallet_UV_positioning.png. Transparent =
    no ink. Print the bottom white silkscreen Gerber as usual; the image already
    leaves pads and holes clear. Top side: normal white silkscreen, no UV print."
 
-Assembly (turnkey, bottom side only, {parts} placements, {lines} BOM lines)
+Assembly (turnkey, {sides}, {parts} placements, {lines} BOM lines)
   BOM:      wallet_bom-pcbway.csv  (manufacturer + MPN; LCSC code as distributor PN)
   Centroid: wallet_centroid-pcbway.csv  (mm, origin = outline bottom-left, as the
-            Gerbers; Layer = Bottom; rotation in KiCad's convention, parts on the
+            Gerbers; Layer column per part; rotation in KiCad's convention, parts on the
             bottom given as seen from the top; please check orientation against
             the Gerbers / pin-1 marks)
   Not assembled (fitted by hand): {handfit}
 {eol}"""
+
+
+def sides_text(cen):
+    """'both sides: 125 bottom + 7 top (BT_N, ...)', or the one side all parts are on."""
+    top = [c["Designator"] for c in cen if c["Layer"] == "Top"]
+    bottom = len(cen) - len(top)
+    if not top:
+        return "bottom side only"
+    if not bottom:
+        return "top side only"
+    return f"both sides: {bottom} bottom + {len(top)} top ({', '.join(top)})"
 
 
 def main():
@@ -174,7 +185,8 @@ def main():
     eol_txt = ("\nSourcing warning\n" + "\n".join("  " + n for n in eol) + "\n  Confirm availability with PCBWay or "
                "DNP these and fit later.\n") if eol else ""
     open(os.path.join(out, "ORDER-NOTES.txt"), "w").write(NOTES.format(
-        boards=BOARDS, parts=len(cen), lines=len(rows), eol=eol_txt,
+        boards=BOARDS, parts=len(cen), lines=len(rows), eol=eol_txt, sides=sides_text(cen),
+        w=img.width * 25.4 / 1200, h=img.height * 25.4 / 1200,
         handfit="; ".join(f"{a} ({b})" for a, b, _ in jlc.HAND_FIT)))
     shutil.rmtree(src)
     print(f"pcbway: {len(gerbers)} fab files + print + positioning -> {z}; BOM {len(rows)} lines / {len(refs)} refs; "

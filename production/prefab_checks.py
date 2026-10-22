@@ -88,6 +88,11 @@ def main():
     rot = list(csv.DictReader(open(os.path.join(order, "jlc-plain/work/rotation-review.csv"))))
     eye = [r["Designator"] for r in rot if "eye" in r.get("Status", "").lower()]
     report(None, "check by eye in JLC's placement preview", ", ".join(x for x in eye if x))
+    cpl = list(csv.DictReader(open(os.path.join(order, "wallet_positions-jlc.csv"))))
+    top = [r["Designator"] for r in cpl if r["Layer"] == "Top"]
+    if top and len(top) < len(cpl):
+        report(None, "assembly side in JLC's order form: choose both sides",
+               f"{len(cpl) - len(top)} bottom + {len(top)} top ({', '.join(top)})")
 
     # ---- fabrication
     board = pcbnew.LoadBoard(BOARD)
