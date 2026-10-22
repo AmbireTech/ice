@@ -37,7 +37,7 @@ import pcbnew
 HERE = Path(__file__).resolve().parent.parent
 HR = Path(os.environ.get("HUMAN_ROUTER", HERE.parent.parent / "tools/humanRouter"))
 CRAFT = HERE.parent / "carrier/.tools/audit_craft.py"
-CHIPS = ["U1", "U2", "U4", "U5", "U6", "U7", "U8", "U9", "U12", "U13", "U14", "U15"]
+CHIPS = ["U1", "U2", "U3", "U4", "U5", "U6", "U7", "U8", "U9", "U10", "U12", "U13", "U14"]
 OWNER_KNOBS = ["fanoutParts=none"]
 
 

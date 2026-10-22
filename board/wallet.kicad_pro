@@ -602,10 +602,6 @@
       },
       {
         "netclass": "Power",
-        "pattern": "SYS"
-      },
-      {
-        "netclass": "Power",
         "pattern": "BAT"
       },
       {
@@ -614,11 +610,23 @@
       },
       {
         "netclass": "Power",
-        "pattern": "L1_3V3"
+        "pattern": "BAT_N"
       },
       {
         "netclass": "Power",
-        "pattern": "L2_3V3"
+        "pattern": "V3V3_USB"
+      },
+      {
+        "netclass": "Power",
+        "pattern": "V_BOOST"
+      },
+      {
+        "netclass": "Power",
+        "pattern": "SW_BOOST"
+      },
+      {
+        "netclass": "Power",
+        "pattern": "SW_USB"
       },
       {
         "netclass": "Rail",
@@ -651,6 +659,10 @@
       {
         "netclass": "Rail",
         "pattern": "BL_K"
+      },
+      {
+        "netclass": "Rail",
+        "pattern": "BUZ_SW"
       },
       {
         "netclass": "USB",

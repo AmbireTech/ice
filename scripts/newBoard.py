@@ -40,37 +40,47 @@ import syncBoard  # noqa: E402
 HERE = Path(__file__).resolve().parent.parent
 PRO = HERE / "board/wallet.kicad_pro"
 
-# 85 tall since the routing pass: the chin got 3 mm so the buck-boost, charger
-# and USB parts keep routing gaps between the module, USB-C and the cell connector.
-W, H, R = 48.0, 85.0, 4.0
+# 87 tall: the routing pass gave the chin 3 mm (proto 0, 85), and proto 1 another 2
+# for the joystick below the AAA cell, beside USB-C.
+W, H, R = 48.0, 87.0, 4.0
 PANEL = (2.6, 1.0, 42.80, 59.91)              # x, y, w, h (Newhaven rev 4 drawing)
 PANEL_S = PANEL[1] + PANEL[3]                 # 60.91: the panel's south edge
 TFT_TAIL = (PANEL[0] + 9.25, 20.50)           # x of the tail's west edge, width
 CTP_TAIL = (PANEL[0] + PANEL[2] - 1.90 - 7.00, 7.00)
-SLOT_Y0, SLOT_Y1 = PANEL_S + 1.0, PANEL_S + 2.6   # 1.6 mm wide slots
+# 1.6 mm wide slots, 3.0 mm south of the panel: with no battery between the panel and
+# the board the tails drop 4 mm less, and the slots moved 2 mm south take that length
+# back (each mm south costs a tail 2 mm), so both tails land as before.
+SLOT_Y0, SLOT_Y1 = PANEL_S + 3.0, PANEL_S + 4.6
 SLOT_MARGIN = 0.75                            # tail-to-slot clearance each side
-# The south-west corner belongs to the radio antenna, so the west pair sits at
-# the panel's corners instead of the board's.
-HOLES = [(3.2, 3.2), (44.8, 3.2), (3.2, 59.3), (44.8, H - 3.2)]
+# The north pair sits under the panel's corners and only locates the board on
+# pins in the back shell: with the panel straight on the board there is no room
+# for a boss there. The two screws go where the front half is solid: H3 in the
+# strip between the panel and the AAA cell (west of the TFT slot), H4 in the
+# south-east corner. The south-west corner belongs to the radio antenna.
+HOLES = [(3.2, 3.2), (44.8, 3.2), (3.2, 63.0), (44.8, H - 3.2)]
 HOLE_RING = 2.6      # no parts within this of a hole centre: an M2 head is ~3.8 mm across
-ANT_KEEPOUT = (0.0, SLOT_Y1, 3.7, H)          # E73 antenna end up to its first pad row, all layers
+# E73 antenna end, all layers: the module points it at the south edge, clear of the
+# AAA cell on the front (a metal can over a chip antenna detunes it); keepouts()
+# redraws it from the placed module, this is the seed.
+ANT_KEEPOUT = (0.0, H - 3.7, 20.0, H)
 
 # Tail length budget (Newhaven rev 4 drawing: TFT tail 30.00 and touch tail 55.85
 # below the panel outline). Each tail runs in-plane to the slot, drops through
-# the cell + board, and runs north on the back face until its stiffened end sits
+# the foam + board, and runs north on the back face until its stiffened end sits
 # over the connector's contact row. The touch flex leaves from the touch glass,
 # which sits on top of the TFT, so it drops further. scripts/checkFpc.py checks
-# the placed connectors against this budget.
-CELL_T, ADHESIVE_T, BOARD_T = 4.0, 0.3, 1.0   # pouch (e.g. 403040), foam tape, PCB
+# the placed connectors against this budget. The panel sits on foam tape straight
+# on the board's front face (the cell is an AAA in the chin, not under the panel).
+ADHESIVE_T, BOARD_T = 0.3, 1.0                # foam tape, PCB
 TFT_LEN, CTP_LEN = 30.00, 55.85
 CTP_ABOVE_TFT = 2.55 + 0.175                  # TFT module + adhesive under the touch glass
 SLOT_C = (SLOT_Y0 + SLOT_Y1) / 2
-TFT_DROP = CELL_T + ADHESIVE_T + BOARD_T
+TFT_DROP = ADHESIVE_T + BOARD_T
 CTP_DROP = TFT_DROP + CTP_ABOVE_TFT
 TFT_END_Y = SLOT_C - (TFT_LEN - (SLOT_C - PANEL_S) - TFT_DROP)
 CTP_END_Y = SLOT_C - (CTP_LEN - (SLOT_C - PANEL_S) - CTP_DROP)
 TFT_ROW, CTP_ROW = 1.35, 1.05                 # connector origin to its contact row (north of origin)
-CTP_SLACK = 1.5      # mm of touch tail slack: a nominal-length tail landing exactly on the row left no margin for cell/tail tolerance (pre-order audit)
+CTP_SLACK = 1.5      # mm of touch tail slack: a nominal-length tail landing exactly on the row left no margin for stack/tail tolerance (pre-order audit)
 TFT_SLACK = 2.5      # mm of TFT tail left as a gentle bow, buying a 4.6 mm routing channel south of the MCU (checkFpc allows 3)
 GAP = 0.5            # free board kept between courtyards: a via, or two 0.15 mm tracks
 OPT_RADIUS = 7.0     # how far the ratsnest pass may move a part from its seed (mm)
@@ -78,7 +88,6 @@ OPT_RADIUS = 7.0     # how far the ratsnest pass may move a part from its seed (
 # into one, and legalize() never puts a part there). What lies over each:
 #   display tails  the two flex tails run flat over the back face from slot to connector
 #   camera         the module head (lens out through the case) and its flex to J_CAM
-#   UV artwork     the full-colour brand panel
 #   holes          screw heads / bosses, 3 mm round each mounting hole
 CAMERA_HEAD = (4.0, 4.5, 12.5, 13.0)
 # The camera tail runs from the head's east edge into J_CAM. Stock OV2640 modules
@@ -96,7 +105,6 @@ CAM_END_DX = 0.65
 # Bare board kept east of J_CAM's contacts so all 24 lines can fan in (a via
 # column or two and the tracks between them): no parts there.
 CAM_FANIN = 3.1
-UV_PANEL = (34.0, 4.5, 46.0, 13.5)
 # Room kept for printed labels that name a part (the UV art restyles them in
 # place): the placer and the ratsnest pass treat these as occupied. Not KiCad
 # rule areas; they only stop the generator from filling the spot.
@@ -117,25 +125,17 @@ def style_text(fp, side):
             t.SetVisible(False)
 
 
-# The mated JST-PH plug (PHR-2) and its lead west of J_BAT's mouth: about 6 mm wide
-# and ~7 mm out from the header (*estimate*, check against the cell's lead).
-PLUG_MM, PLUG_W = 7.0, 6.0
-
-
 def footprint_keepouts(board):
     """The keep-out boxes, starting where each placed connector's courtyard ends,
     so a connector never sits in its own tail's keep-out."""
     fp = board.FindFootprintByReference
-    tft, ctp, cam, bat = (_box(fp(r)) for r in ("J_TFT", "J_CTP", "J_CAM", "J_BAT"))
-    bat_y = sum(pcbnew.ToMM(p.GetPosition().y) for p in fp("J_BAT").Pads() if p.GetNumber() in ("1", "2")) / 2
+    cam = _box(fp("J_CAM"))
     # The display tails are NOT keep-outs: low parts (passives, SOT/QFN ICs) may
     # sit under the flex; scripts/checkFpc.py fails a tall part in a corridor.
     return [
         ("Camera module", CAMERA_HEAD),
         ("Camera flex", (CAMERA_HEAD[2], 2.2, cam[0] - 0.1, 15.3)),
         ("Camera fan-in", (cam[2], 0.3, cam[2] + CAM_FANIN, 15.5)),
-        ("UV artwork", UV_PANEL),
-        ("Battery plug", (bat[0] - PLUG_MM, bat_y - PLUG_W / 2, bat[0], bat_y + PLUG_W / 2)),
     ]
 
 TOP, BOT = "top", "bottom"
@@ -211,9 +211,6 @@ place("C_RIN", 1.5, 19.1, 90)
 place("C_RCT", 3.0, 19.1, 90)
 place("C_NOR", 6.3, 19.1, 90)
 place("R_ROFF", 7.8, 19.1, 90)
-place("U9", 3.1, 22.6, 0)                      # TX buffer
-place("C_U9A", 1.5, 26.0, 90)
-place("C_U9B", 3.0, 26.0, 90)
 
 # ── Camera, north-west: module glued lens-out, tail east into J_CAM ─────────
 place("J_CAM", 19.6, 9.0, 90)
@@ -248,7 +245,7 @@ place("R_BLSET", BX + 3.6, BY - 1.2, 90)
 place("R_BLPD", BX + 3.6, BY + 1.4, 90)
 place("R_BLEN", BX + 3.6, BY + 4.0, 90)
 
-# ── Airgap switch + radio LED on the west edge; power button on the east ────
+# ── Airgap switch + radio LED on the west edge; the soft latch on the east ──
 place("SW_AIR", 1.75, 51.0, 90)
 place("R_AIRPU", 6.0, 48.6, 90)
 place("R_AIRSER", 6.0, 51.4, 90)
@@ -256,9 +253,6 @@ place("R_AIRS", 7.6, 48.6, 90)
 # The radio's light sits by the radio, directly under the south-west hole: in
 # the 1.6 mm strip between the screw-head ring and the antenna keep-out, so the
 # west bridge into the chin (x 6.5 to the slot) stays open for routing.
-place("D_RADIO", 2.15, 62.7, 0)
-place("R_RLED", 5.0, 62.7, 0)
-place("SW_PWR", 46.0, 40.0, -90)
 # East strip, between the touch connector (to y 22.75) and the button: the soft
 # latch. Below the button: its sense FET, then the battery gauge.
 place("C_EN", 45.8, 24.5, 90)
@@ -268,61 +262,104 @@ place("R_HOLD", 45.8, 34.1, 90)
 place("R_BTN", 45.8, 44.3, 90)
 place("Q_BTN", 45.6, 47.6, 90)
 
-# ── Chin: radio module (antenna west), USB, power ──────────────────────────
-place("U11", 11.3, 74.3, 90)
-# Module decoupling at its VDD pad (19) and USB-C's CC pull-downs claim their
-# spots first, in the strip between the module and the receptacle.
-place("C_RADIO1", 21.0, 75.0, 90)
-place("C_RADIO2", 21.0, 71.2, 90)
-place("R_CC2", 21.0, 78.6, 90)
-place("R_CC1", 21.0, 81.2, 90)
-for i, tp in enumerate(["TP_RSWDIO", "TP_RSWCLK", "TP_R3V3"]):
-    place(tp, 7.0 + i * 2.54, 78.0, 0, TOP)
-place("J1", 27.4, H - 3.6, 180)
-# Row of charger set/status resistors under the slot, USB protection row below.
-PX, PY = 35.2, 66.4
-place("U1", PX, PY)
-for i, ref in enumerate(["R_ILIM", "R_ISET", "R_TS", "R_CE", "R_STAT1", "R_STAT2"]):
-    place(ref, 22.8 + i * 1.55, 65.8, 90)
-place("C_VBUS", 32.2, 66.0, 90)
-place("D_ESD", 24.6, 69.6, 0)
-place("U6", 29.0, 69.6, 0)
-place("C_USBSW", 31.4, 69.6, 90)
-place("R_VB1", 23.6, 74.0, 90)
-place("R_VB2", 25.1, 74.0, 90)
-place("C_SYS", 35.2, 70.2, 0)
-# Out of J_BAT's plug strip, beside the connector's BAT pin (owner's placement).
-place("C_BAT", 46.67, 75.11, -90)
-# Mouth inboard (west), pins at the edge: an outward mouth put the mated plug
-# through the enclosure wall (owner, 2026-10-17). The plug lies flat west of the
-# mouth over copper but not over parts: footprint_keepouts() keeps that strip.
-place("J_BAT", 43.0, 68.6, 90)
-# Buck-boost between USB-C, the cell connector and the corner hole.
-place("U2", 37.6, 77.6, 0)
-place("C_IN_BUCK", 34.4, 77.6, 90)
-place("L_BUCK", 41.0, 75.2, 90)
-place("C_3V3", 38.0, 81.0, 0)
-place("R_FB1", 34.8, 81.4, 0)
-place("R_FB2", 34.8, 83.0, 0)
-# Battery gauge in the east strip beside the touch slot: it needs only the cell
-# (BAT, a few uA) and the I2C bus.
-place("U15", 45.8, 56.4, 90)
-place("C_GAUGE", 45.8, 59.4, 90)
+# ── Chin and proto 1 additions: seeded from the routed board (2026-10-22) ──
+# Chin. Radio module, antenna south at the board edge clear of the AAA cell; its UART translator on the west bridge.
+place("U11", 12.50, 75.90, 180)
+place("U9", 8.30, 61.10, 0)
+place("C_U9A", 6.97, 58.80, 90)
+place("C_U9B", 9.72, 58.80, 90)
+place("C_RADIO1", 21.10, 69.70, 90)
+place("C_RADIO2", 21.30, 66.55, 0)
+place("D_RADIO", 2.40, 78.30, 90)
+place("R_RLED", 2.40, 81.60, 90)
+# USB-C, its CC pull-downs, ESD, VBUS sense and the USB data switch.
+place("J1", 27.40, 83.40, 180)
+place("R_CC1", 28.62, 76.98, 90)
+place("R_CC2", 25.66, 76.87, 90)
+place("D_ESD", 25.70, 70.30, 0)
+place("C_VBUS", 36.41, 79.91, 0)
+place("R_VB1", 23.30, 77.50, 180)
+place("R_VB2", 23.30, 74.40, 0)
+place("U6", 23.80, 67.25, -90)
+place("C_USBSW", 22.80, 69.50, -90)
+# The AAA cell's clips on the front, across the chin; the reverse-cell FET and its gate diode at the - clip.
+place("BT_N", 5.50, 71.80, 0, TOP)
+place("BT_P", 42.50, 71.80, 180, TOP)
+place("Q_REV", 2.50, 67.90, 180)
+place("D_REVG", 2.50, 73.00, 90)
+place("R_CNS", 6.53, 63.41, 90)
+place("C_CNS", 9.53, 62.91, 180)
+# Boost under the + clip, with the cell sense divider.
+place("U2", 41.60, 70.40, 0)
+place("L_BOOST", 45.26, 68.61, 90)
+place("C_IN_BOOST", 38.51, 69.11, 180)
+place("C_BOOST", 38.51, 71.86, 180)
+place("R_FB1", 40.01, 73.86, 90)
+place("R_FB2", 37.51, 73.61, 0)
+place("R_REVG", 33.76, 68.36, 0)
+place("R_CS1", 37.51, 67.11, 90)
+place("R_CS2", 38.76, 67.11, 90)
+place("C_CS", 36.01, 66.61, 0)
+# NiMH charger in the middle of the chin, its NTC under the cell; its dual FET beside the MCU, north of the slots.
+place("U1", 30.40, 69.40, 90)
+place("C_CHGIN", 31.85, 72.00, -90)
+place("C_BAT", 33.60, 70.00, 0)
+place("R_ISET", 36.10, 68.25, 90)
+place("R_ISETH", 34.10, 71.75, 0)
+place("R_TMR", 26.86, 72.75, 0)
+place("R_VSET", 29.36, 66.50, 0)
+place("R_STAT", 26.11, 60.50, 0)
+place("RT_CHG", 29.25, 71.90, 180)
+place("Q_CHG", 17.00, 60.20, -90)
+place("R_CHGHI", 18.61, 52.95, 90)
+place("R_CHGOFF", 17.86, 57.95, 0)
+# USB buck and the rail mux, between USB-C and the south-east hole.
+place("U3", 36.40, 83.00, -90)
+place("L_BUCK", 39.91, 82.41, 0)
+place("C_USB3V3", 37.16, 77.91, 180)
+place("R_FBU1", 33.41, 80.91, 90)
+place("R_FBU2", 33.91, 84.66, 90)
+place("R_PG", 37.91, 85.66, 0)
+place("U10", 40.30, 79.60, 90)
+place("C_3V3", 43.45, 78.73, 0)
+# Joystick on the front below the cell; its resistor ladder and the power-key PNP on the back.
+place("SW_JOY", 37.40, 82.15, 0, TOP)
+place("R_JA", 29.05, 74.31, 0)
+place("R_JB", 34.80, 76.06, 90)
+place("R_JC", 35.55, 85.81, 0)
+place("R_JD", 36.80, 74.81, 0)
+place("R_JPU", 30.80, 73.31, 90)
+place("Q_PWRJ", 43.50, 75.00, 90)
+place("R_PWRJBE", 46.01, 73.53, 90)
+place("R_PWRJB", 42.76, 80.28, 0)
+# Buzzer in the north-east corner (the old UV-artwork panel).
+place("LS1", 39.00, 9.80, -90)
+place("Q_BUZ", 43.95, 11.36, 90)
+place("R_BUZG", 43.70, 15.86, 0)
+place("R_BUZPD", 42.20, 13.86, 0)
+place("D_BUZ", 43.20, 7.61, 90)
+place("C_BUZ", 32.45, 7.86, 0)
+place("TP_RSWDIO", 7.00, 81.40, 0, TOP)
+place("TP_RSWCLK", 9.70, 81.40, 0, TOP)
+place("TP_RGND", 12.40, 81.40, 0, TOP)
+place("TP_R3V3", 15.10, 81.40, 0, TOP)
+
 
 NETCLASSES = [
     # name, track, clearance, via dia, via drill, nets. A class width is where a
     # track starts; widen power runs by hand where the current flows. GND is poured.
     ("Default", 0.15, 0.15, 0.45, 0.25, []),
-    ("Power", 0.40, 0.15, 0.6, 0.3, ["VBUS", "SYS", "BAT", "V3V3", "L1_3V3", "L2_3V3"]),
+    ("Power", 0.40, 0.15, 0.6, 0.3, ["VBUS", "BAT", "BAT_N", "V3V3", "V3V3_USB", "V_BOOST", "SW_BOOST",
+                                     "SW_USB"]),
     ("Rail", 0.25, 0.15, 0.45, 0.25, ["RADIO_3V3", "VDD11", "SE_VCC", "CAM_AVDD",
-                                      "CAM_DVDD", "BL_A", "BL_K"]),
+                                      "CAM_DVDD", "BL_A", "BL_K", "BUZ_SW"]),
     ("USB", 0.20, 0.15, 0.45, 0.25, ["USB_DP", "USB_DN", "USB_MCU_DP", "USB_MCU_DN"]),
 ]
 
 
 # Parts that stay exactly where they are put; everything else may be nudged by
 # legalize() to the nearest spot where its courtyard is clear.
-ANCHORED = {"U4", "U5", "U11", "U13", "J1", "J_BAT", "J_TFT", "J_CTP", "J_CAM", "SW_AIR", "SW_PWR", "U1", "U2"}
+ANCHORED = {"U4", "U5", "U11", "U13", "J1", "J_TFT", "J_CTP", "J_CAM", "SW_AIR", "U1", "U2", "BT_N", "BT_P", "SW_JOY"}
 
 
 def _side(fp):
@@ -543,6 +580,25 @@ def keepouts(board):
     ys = [pcbnew.ToMM(p.GetPosition().y) for p in u11.Pads()]
     rule_area(board, "no tracks/vias: under the radio module",
               rect(min(xs) + 1.3, min(ys) + 1.3, max(xs) - 1.3, max(ys) - 1.3), [pcbnew.B_Cu], tracks=True, vias=True)
+    keepout(board, *antenna_keepout(board), "E73 antenna")
+
+
+def antenna_keepout(board):
+    """No copper on any layer from the E73's antenna-end pad row (pads 1/43) to the
+    board edge the antenna faces, over the module's width plus 1.5 mm each side."""
+    u11 = board.FindFootprintByReference("U11")
+    mm = pcbnew.ToMM
+    pads = {p.GetNumber(): (mm(p.GetPosition().x), mm(p.GetPosition().y)) for p in u11.Pads()}
+    xs = [x for x, _ in pads.values()]
+    ys = [y for _, y in pads.values()]
+    ax = (pads["1"][0] + pads["43"][0]) / 2 - (pads["11"][0] + pads["25"][0]) / 2
+    ay = (pads["1"][1] + pads["43"][1]) / 2 - (pads["11"][1] + pads["25"][1]) / 2
+    row = 0.6   # half the antenna-end pads' length
+    if abs(ay) > abs(ax):
+        x0, x1 = max(min(xs) - 1.5, 0.0), min(max(xs) + 1.5, W)
+        return (x0, pads["1"][1] + row, x1, H) if ay > 0 else (x0, 0.0, x1, pads["1"][1] - row)
+    y0, y1 = max(min(ys) - 1.5, 0.0), min(max(ys) + 1.5, H)
+    return (pads["1"][0] + row, y0, W, y1) if ax > 0 else (0.0, y0, pads["1"][0] - row, y1)
 
 
 def mounting_holes(board):
@@ -587,7 +643,7 @@ def artwork(board):
     text(board, "QR CAMERA", 9.0, 2.6, pcbnew.B_SilkS, 0.8, 0.15)
     # Antenna keep-out marker.
     ax0, ay0, ax1, ay1 = ANT_KEEPOUT
-    text(board, "ANT", (ax0 + ax1) / 2 + 0.6, (ay0 + ay1) / 2, pcbnew.B_SilkS, 0.8, 0.15, 90)
+    text(board, "ANT", (ax0 + ax1) / 2, (ay0 + ay1) / 2, pcbnew.B_SilkS, 0.8, 0.15)
     # Switch and light legends: the two things a user must be able to read.
     # Which lever end is AIRGAP is a bring-up check (docs/design.md), so the
     # legend names the switch, not a position.
@@ -595,9 +651,6 @@ def artwork(board):
     text(board, "RADIO", 2.6, 64.4, pcbnew.B_SilkS, 0.8, 0.15)
     lx0, ly0, lx1, ly1 = LABEL_SLOTS["SECURE ELEMENT"]
     text(board, "SECURE ELEMENT", (lx0 + lx1) / 2, (ly0 + ly1) / 2, pcbnew.B_SilkS, 0.8, 0.15)
-    # Brand: placeholder for the full-colour UV-printed Ambire artwork.
-    drawing(board, 34.0, 4.5, 46.0, 13.5, pcbnew.Dwgs_User)
-    text(board, "UV ARTWORK", (UV_PANEL[0] + UV_PANEL[2]) / 2, 12.6, pcbnew.Dwgs_User, 0.6, 0.08)
     text(board, "AMBIRE", 40.0, 9.0, pcbnew.B_SilkS, 2.0, 0.3)
     text(board, "Ambire signer · proto 0", 13.0, H - 1.6, pcbnew.B_SilkS, 0.7, 0.15)
 
@@ -689,7 +742,6 @@ def main():
     for layer in (pcbnew.F_Cu, pcbnew.In2_Cu, pcbnew.B_Cu):
         gnd_pour(board, layer)
     gnd_pour(board, pcbnew.In1_Cu, "V3V3")
-    keepout(board, *ANT_KEEPOUT, "E73 antenna")
     keepouts(board)
     artwork(board)
 

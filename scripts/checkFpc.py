@@ -14,7 +14,8 @@ the display stays dark. The rules here are the conclusions of docs/design.md
     the panel's west end seen from the front.
   - J_CTP: touch pin 1 (pad 1) is the WEST-most signal pad.
   - J_CAM opens WEST toward the camera; J1 (USB-C) and the airgap switch lever face
-    the board edge they sit on; the E73 antenna end is WEST, inside its keep-out.
+    the board edge they sit on; the E73 antenna end is SOUTH, at the board edge,
+    clear of the AAA cell on the front.
 """
 import sys
 from pathlib import Path
@@ -75,13 +76,35 @@ expect(sy < pcbnew.ToMM(fp["J1"].GetPosition().y), "J1's contact row must be nor
 tx, _ = centre(pads(fp["SW_AIR"], {"1", "2", "3"}))
 expect(tx > pcbnew.ToMM(fp["SW_AIR"].GetPosition().x), "SW_AIR terminals must be east of the body (lever out of the west edge)")
 
-# Power button plunger (the land's MP side) out of the east edge.
-expect(facing(fp["SW_PWR"], {"1", "2"}, {"MP"}) == "east", "SW_PWR plunger must face the east edge")
 
-# E73: the pad-free antenna end (beyond pad 1/43's row) is west of the pad field.
-ex, _ = centre(pads(fp["U11"], {"1", "43"}))
-fx, _ = centre(pads(fp["U11"], {"11", "25"}))
-expect(ex < fx, "U11 antenna end must be west (pads 1/43 nearer the west edge than 11/25)")
+# E73: the pad-free antenna end (beyond pad 1/43's row) is south of the pad field.
+_, ey = centre(pads(fp["U11"], {"1", "43"}))
+_, fy = centre(pads(fp["U11"], {"11", "25"}))
+expect(ey > fy, "U11 antenna end must be south (pads 1/43 nearer the south edge than 11/25)")
+
+# The AAA cell lies across the front between its clips; its metal can must not
+# sit over the antenna keep-out on the other side of the board. The cell is
+# 10.5 mm across, centred on the clips' pads (MY-AAA-19-J/20-J).
+CELL_R = 10.5 / 2 + 0.25
+ant = next((z for z in board.Zones() if z.GetIsRuleArea() and z.GetZoneName() == "E73 antenna"), None)
+if ant is None:
+    errors.append("no 'E73 antenna' rule area on the board (scripts/refreshKeepouts.py draws it)")
+else:
+    ab = ant.GetBoundingBox()
+    ax0, ay0, ax1, ay1 = (pcbnew.ToMM(v) for v in (ab.GetLeft(), ab.GetTop(), ab.GetRight(), ab.GetBottom()))
+    (nx, ny), (px, py) = centre(list(fp["BT_N"].Pads())), centre(list(fp["BT_P"].Pads()))
+    expect(fp["BT_N"].GetLayer() == pcbnew.F_Cu and fp["BT_P"].GetLayer() == pcbnew.F_Cu,
+           "the cell clips BT_N/BT_P must be on the front face")
+    cy0, cy1 = min(ny, py) - CELL_R, max(ny, py) + CELL_R
+    cx0, cx1 = min(nx, px), max(nx, px)
+    expect(not (cx0 < ax1 and ax0 < cx1 and cy0 < ay1 and ay0 < cy1),
+           f"the cell (y {cy0:.1f}..{cy1:.1f}) lies over the antenna keep-out (y {ay0:.1f}..{ay1:.1f})")
+    print(f"cell y {cy0:.1f}..{cy1:.1f}, antenna keep-out y {ay0:.1f}..{ay1:.1f}: {max(ay0 - cy1, cy0 - ay1):.1f} mm apart")
+    # The charger's NTC must sit under the cell (on the back, through the board): its
+    # 0-45 C cut-off and the MCU's dT/dt both read the cell's temperature through it.
+    tx, ty = centre(list(fp["RT_CHG"].Pads()))
+    expect(cx0 < tx < cx1 and ny - 10.5 / 2 < ty < ny + 10.5 / 2,
+           f"RT_CHG at ({tx:.1f}, {ty:.1f}) is not under the cell (x {cx0:.1f}..{cx1:.1f}, y {cy0:.1f}..{cy1:.1f})")
 
 # Tail length: where each placed connector's contact row is against where the
 # tail's end lands (newBoard.py's budget). Short = the tail cannot reach; more

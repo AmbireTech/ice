@@ -3,6 +3,7 @@
 
     $KICAD_PY scripts/silkFlame.py             # dry run: writes a copy, runs DRC on it, reports
     $KICAD_PY scripts/silkFlame.py --apply     # installs the copy over board/wallet.kicad_pcb (close KiCad first)
+    SILKFLAME_BOARD=copy.kicad_pcb ...         # work on a copy instead (--apply then writes the copy)
 
 The flame (art/flame.py, the same geometry the concept page draws) spans the back: one
 ink, with a hairline of bare board between facets so the faceting still shows. It is cut
@@ -26,7 +27,7 @@ from pathlib import Path
 import pcbnew
 
 HERE = Path(__file__).resolve().parent.parent
-BOARD = HERE / "board/wallet.kicad_pcb"
+BOARD = Path(os.environ.get("SILKFLAME_BOARD", HERE / "board/wallet.kicad_pcb"))   # a copy for trials
 sys.path.insert(0, str(HERE / "art"))
 import flame  # noqa: E402  (art/flame.py)
 
@@ -72,7 +73,7 @@ def flame_ink(board_w, board_h) -> pcbnew.SHAPE_POLY_SET:
     return ink, at
 
 
-def keepouts(board) -> pcbnew.SHAPE_POLY_SET:
+def keepouts(board, drawings) -> pcbnew.SHAPE_POLY_SET:
     k = pcbnew.SHAPE_POLY_SET()
     for fp in board.GetFootprints():
         for pad in fp.Pads():
@@ -86,7 +87,7 @@ def keepouts(board) -> pcbnew.SHAPE_POLY_SET:
     for t in board.GetTracks():
         if t.Type() == pcbnew.PCB_VIA_T:   # tented, but no ink over the drilled hole
             k.AddOutline(_circle(t.GetPosition(), t.GetDrillValue() // 2 + MM(JLC_PAD_CLEAR)))
-    for d in board.GetDrawings():
+    for d in drawings:
         if d.GetLayer() != pcbnew.B_SilkS:
             continue
         if isinstance(d, pcbnew.PCB_TEXT):
@@ -161,24 +162,29 @@ def main():
     bb = board.GetBoardEdgesBoundingBox()
     w, h = pcbnew.ToMM(bb.GetWidth()), pcbnew.ToMM(bb.GetHeight())
 
-    # a rerun replaces the flame
+    # pcbnew (10.0) hands back a broken Drawings() wrapper after any Remove(), and a
+    # removed item must not be touched again: sort the drawings out first, remove after.
+    flame_items, removed, kept = [], [], []
     for g in list(board.Groups()):
         if g.GetName() == GROUP:
-            for item in list(g.GetItems()):
-                board.Remove(item)
-            board.Remove(g)
-    removed = []
-    for d in list(board.GetDrawings()):
+            flame_items += [g] + list(g.GetItems())
+    flame_ids = {i.m_Uuid.AsString() for i in flame_items}
+    for d in board.GetDrawings():
         if isinstance(d, pcbnew.PCB_TEXT) and d.GetText() in REMOVE_TEXTS:
-            removed.append(d.GetText())
-            board.Remove(d)
+            removed.append(d)
+        elif d.m_Uuid.AsString() not in flame_ids:
+            kept.append(d)
+    # a rerun replaces the flame; the wordmark texts go
+    for item in flame_items + removed:
+        board.Remove(item)
+    removed = [d.GetText() for d in removed]
 
     ink, at = flame_ink(round(w, 3), round(h, 3))
     area_full = ink.Area()
     inside = outline.CloneDropTriangulation()
     inside.Inflate(-MM(EDGE_CLEAR), pcbnew.CORNER_STRATEGY_ROUND_ALL_CORNERS, MAX_ERR)
     ink.BooleanIntersection(inside)
-    ink.BooleanSubtract(keepouts(board))
+    ink.BooleanSubtract(keepouts(board, kept))
     ink.Fracture()
 
     group = pcbnew.PCB_GROUP(board)

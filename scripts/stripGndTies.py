@@ -8,13 +8,13 @@ right beside it is clutter -- the outer pour takes the pad and stitching vias ti
 the pour to the In2 plane. A tie is a piece of GND tracks and vias (joined where
 an end touches copper) that reaches a GND pad and is at most TIE_MM of track.
 Kept, because the part asks for a short path to the plane:
-  - the TPS63802 buck-boost's ground and its input/output caps (switching loop);
+  - the LTC3539 boost's grounds and its input/output caps, and the TLV62569 USB
+    buck's ground and its caps (switching loops);
+  - the AO3416 reverse-cell FET's source: the whole cell current returns there;
   - the TPS60230 backlight charge pump (switching, exposed pad);
-  - the BQ25185 charger's exposed pad (heat while charging);
+  - the BQ25172 charger's exposed pad (heat while charging);
   - the E73 radio module's ground pads (RF ground);
-  - the USBLC6 ESD clamp's ground (surge current);
-  - C_USBSW / R_FB2 in the buck-boost corner: the owner's tie, without it the
-    pour is cut off there (2026-10-17).
+  - the USBLC6 ESD clamp's ground (surge current).
 Afterwards the board is left with pads the pour may not reach and pour pieces
 without vias: run humanRouter with `--keep-copper --nets GND --knob
 fanoutParts=none`, which stitches and joins those pads to the pour.
@@ -27,8 +27,8 @@ import pcbnew
 
 NM = 1e6
 TIE_MM = 4.5
-KEEP = {"U2.2", "C_IN_BUCK.2", "C_3V3.2", "U13.7", "U13.14", "U13.17", "U1.5", "U1.11",
-        "U11.5", "U11.21", "D_ESD.2", "C_USBSW.2", "R_FB2.2"}
+KEEP = {"U2.2", "U2.3", "U2.9", "C_IN_BOOST.2", "C_BOOST.2", "U3.2", "C_USB3V3.2", "C_VBUS.2",
+        "Q_REV.2", "U13.7", "U13.14", "U13.17", "U1.4", "U1.9", "U11.5", "U11.21", "U11.24", "D_ESD.2"}
 
 
 def touches(t, p):
