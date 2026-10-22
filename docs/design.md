@@ -146,13 +146,23 @@ touch flex is merged into the TFT flex.
   unbroken. `board/wallet.kicad_dru` enforces both (In2: GND only; In1: 3.3 V
   only). The MCU's 1.1 V core link (pin 49 to pin 98) runs on the back copper
   under the package, inside its pin ring.
-- **All parts on the back face (B.Cu)**, except the AAA cell's two clips. The
-  front face carries the panel, the clips, and the **programming pads** (MCU SWD
-  under the panel, radio SWD just south of the cell). They are reachable by pogo
-  pins before assembly.
+- **Parts on both faces** (double-sided assembly since proto 1). Under the screen
+  the front is bare: the panel sits on it. The front's chin carries the AAA cell's
+  two clips, the joystick, the radio's two SWD pads, and the **USB power path**: the
+  TLV62569P buck between USB-C's shell legs, right over VBUS, and the TPS2116 mux
+  beside it, each part in a pocket under the bezel. Everything else is on the back.
+  The **programming pads** (MCU SWD under the panel, radio SWD south of the cell) are
+  reachable by pogo pins before assembly.
 - **The chin** (south of the slots) holds the AAA cell on the front, across the
   board (the clips' bases span 47 mm of the 48), and on the back USB-C (mouth
-  south), the radio module, the boost, the charger and the USB buck.
+  south), the radio module, the boost, the charger and the joystick's resistor
+  ladder. Moving the USB buck and the mux to the front cut the human router's trial
+  route of the chin from 840 to 726 mm of copper, with no detours left.
+- **Trace widths** come from the net classes (KiCad's default when routing a net):
+  the **cell path at 0.8 mm** (BAT, BAT_N, SW_BOOST: ~1 A from a 1.0 V cell, every
+  10 mΩ is 1 % of its voltage; two vias per layer change), the 3.3–5 V rails at
+  0.4 mm (VBUS, SW_USB, V3V3_USB, V_BOOST, the 3.3 V plane's fanouts), small supplies
+  at 0.25, the USB pair at 0.2, signals at 0.15.
 - **The radio's antenna points south**, at the board edge in the south-west corner,
   with a copper keep-out on every layer. Proto 0's antenna pointed west from a
   module across the chin; with a metal cell over the chin's front that would have
@@ -166,10 +176,11 @@ touch flex is merged into the TFT flex.
   time across power-off (a Safe transaction carries no timestamp; the PIN retry
   counter lives in the SE050). USB runs on the internal 48 MHz oscillator trimmed
   from the USB frames, timeouts on the internal 32 kHz one.
-- Four M2 holes: two at the north corners (under the panel: locating pins in the
-  case), one in the strip between the panel and the cell west of the TFT slot, and
-  one in the south-east corner: the two screws. The south-west corner belongs to the
-  antenna.
+- Three M2 holes: two at the north corners (under the panel: locating pins in the
+  case) and one in the south-east corner, the screw. The fourth, west of the TFT slot
+  between the panel and the cell, is out for now: the cell's west clip moved north
+  over its boss to free the chin for the joystick. The south-west corner belongs to
+  the antenna.
 - **The front is incognito.** No brand mark on the front (bezel, chin or case): a
   signer should not advertise what it is. The brand lives only on the back, behind
   the case.
@@ -305,12 +316,15 @@ Why these parts, which cells and how long they last: [power-aaa.md](power-aaa.md
   chemistry's own cut-off (NiMH or alkaline ~1.0 V under load, Li-ion 3.0 V).
 - **A reversed cell** is blocked by an AO3416 in the cell's low side: its body
   diode conducts a correctly inserted cell from the first instant, its gate follows
-  the cell (threshold 0.4–1.0 V) and then the boost's own output (~3 V, ~25 mΩ).
+  the cell (threshold 0.4–1.1 V) and then the boost's own output (~3 V, ~25 mΩ).
   Driving the gate from the 3.3 V rail instead would connect a reversed cell
   whenever USB is plugged in.
 - **USB powers the board**, and the TPS2116 hands over to the cell (switching on
   the buck's power-good, at 90 % of 3.3 V) without a gap when the cable comes out,
-  as long as firmware holds the boost on.
+  as long as firmware holds the boost on. Power-good's pull-up is a 150k/100k divider
+  from VBUS: the buck lets go of power-good once VBUS is under 1.4 V, and a pull-up to
+  the buck's slower-decaying output would then switch the TPS2116 back to the dead USB
+  input and sag the rail.
 - **The charger is NiMH-only and off by default.** The BQ25172 charges constant
   current only, never starts on a cell resting above ~1.33 V, stops above 1.65–
   1.75 V, has a 4 h safety timer and its own NTC on the cell (0–45 °C). A transistor
@@ -320,7 +334,8 @@ Why these parts, which cells and how long they last: [power-aaa.md](power-aaa.md
   rail, not VBUS, so it dissipates 0.48 W at 250 mA instead of 0.9 W.
 - **The MCU reads the cell** at the + clip (1M/1M, its own trace from the clip pad)
   and at the − clip (so the reverse FET is not part of the reading), and its
-  temperature on a second NTC. No battery gauge: the MAX17048 was a Li-ion gauge.
+  temperature through the charger's NTC (`CHG_TS`), which is biased only while USB is
+  in: there is no cell temperature on battery. No battery gauge: the MAX17048 was a Li-ion gauge.
 - **The backlight pump runs from V3V3**: with one AAA there is no battery-level
   rail. 3.3 V is too close to the LEDs' ~3.1 V for the pump's 1x mode at full
   current, so expect ~1.5× the LED current at full brightness: the biggest load.
@@ -332,12 +347,13 @@ which turns on a PNP (MMBT3906, 1M base-emitter, 100k to the contact) from the c
 into `BTN`; `BTN` pulls the LTC3539's SHDN up to the cell through one diode of a
 BAT54C; the MCU holds it through the other (`PWR_HOLD`). SHDN's guaranteed high is
 0.88 V, so the button starts the board from a cell resting at ≥ ~1.05 V. 1 µF on
-SHDN with 1M (and the pin's own 4M) pulling it down keeps the boost on ~1 s through
+SHDN with 1M (and the pin's own 4M) pulling it down keeps the boost on ~0.6–0.7 s (the
+0402 1 µF keeps ~0.5–0.7 µF at 3 V) through
 any MCU reset (watchdog, brown-out, firmware update, debugger); from a button press
 on a 1.2 V cell it holds ~0.25 s, which the boardloader beats by far. An NPN, not a
 FET (it must switch from a 0.9 V cell), turns `BTN` into `BTN_N`, so while running the
 MCU reads the same centre press (a short press selects, a hold powers off). Off,
-the board draws ~1.3–2.3 µA from the cell, less than the cell's own self-discharge
+the board draws ~1 µA from the cell (≤ 2.5 µA at datasheet maxima), less than the cell's own self-discharge
 (power-aaa.md#standby-off-is-the-resting-state). There is no side power button. Firmware
 powers off by releasing `PWR_HOLD` and waiting ~2 s. With USB plugged in the board
 is powered whatever the latch says; firmware keeps the screen dark and charges a
@@ -387,14 +403,14 @@ purple (all transparent tints) and clear.
   bezel's chin, 5.4 mm proud of the front).
 - **Fastening:** the screen sits straight on the board, so the two holes under its
   corners have no room for a boss: the shell's standoffs carry **locating pins**
-  there. The two **screws** (M2×8 pan head from the back, flush in counterbores)
-  go into the bezel's solid chin at the holes clear of the screen, 3.5 mm of thread
+  there. The **screw** (M2×8 pan head from the back, flush in a counterbore; one since
+  the west hole went) goes into the bezel's solid chin at the south-east hole, 3.5 mm of thread
   (the generator refuses less than 2.5). The north edge is held by a **hook**: a
   30 mm ridge inside the bezel's skirt that drops into a groove in the shell's
   tongue.
 - **Assembly:** screen onto the board on foam tape, ribbons through the slots into
   their connectors; board into the shell onto the pins and standoffs; bezel hooked
-  in at the north and swung down; two screws; the cell into its clips from the
+  in at the north and swung down; the screw; the cell into its clips from the
   front.
 - **Standoff at the camera corner** is notched for the camera head; the pin there
   passes 0.53 mm from the head.
@@ -482,6 +498,16 @@ purple (all transparent tints) and clear.
 14. **Charger**: confirm the charger stays off while the MCU is in reset, that its
     TS NTC (on the back, under the cell) tracks the cell, and the charge time at 83
     and 250 mA.
+15. **USB unplug handover**: scope V3V3 for 1 s after pulling the cable, with the
+    boost held on: it must not dip (power-good's pull-up comes from VBUS for this).
+16. **Start-up from a low cell**: start from 1.05 V with several AO3416s; the FET's
+    threshold reaches 1.1 V, and start-up current partly through its body diode can
+    pull the boost's input under 0.88 V. A FET with a lower threshold fixes it.
+17. **Programming order**: the radio is flashed after the MCU (the MCU's firmware
+    switches RADIO_3V3 on; the jig takes GND and 3.3 V from the MCU's pads), so the
+    radio's own SWD pads are only SWDIO and SWCLK.
+18. **Joystick directions**: the ALPS drawing's A/B/C/D (pins 1/4/3/6) are the
+    netlist's; LCSC's symbol swaps B and D. Confirm each direction's ADC code.
 
 ## Flow
 

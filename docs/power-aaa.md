@@ -57,11 +57,13 @@ current (~170 mA). Firmware dimming is the biggest runtime lever there is.
   the 3.3 V rail (the STM32U585's absolute maximum is 4.0 V). Nothing has to trip,
   so no threshold has to be right. $3.33, one source (ADI), 2,400 at JLC.
 - **USB: TLV62569P buck to 3.3 V**, and a **TPS2116** that picks USB first and the
-  boosted cell otherwise, switching on the buck's power-good. Both sit at 3.3 V; the
-  TPS2116 blocks reverse current into either.
+  boosted cell otherwise, switching on the buck's power-good, whose pull-up is a
+  divider from VBUS (a pull-up to the buck's own output would switch the TPS2116 back
+  to the dead USB input after an unplug). Both sit at 3.3 V; the TPS2116 blocks
+  reverse current into either.
 - **Reverse cell: AO3416 in the cell's low side.** A clip does not stop a cell
   going in backwards, and the boost's input is rated to −0.3 V. The FET's gate
-  follows the cell for start-up (its threshold is 0.4–1.0 V) and then the boost's
+  follows the cell for start-up (its threshold is 0.4–1.1 V; start-up at 1.05 V is a bench check) and then the boost's
   output (~3 V, ~25 mΩ).
 - **Charger: BQ25172**, NiMH-only, from the USB 3.3 V rail (0.48 W at 250 mA
   instead of 0.9 W from 5 V). Off by default: a transistor holds its TS pin low
@@ -111,10 +113,11 @@ which is why the fast rate leans on temperature and the timer.
 
 ## Standby: off is the resting state
 
-**Off** (the boost shut down), the board draws about 1.3–2.3 µA from the cell: the
-1M/1M sense divider (~0.6 µA), the charger's output leakage (0.35 µA typ), the boost
-in shutdown (0.01 µA typ), and the reverse-FET gate network into the boost's output
-divider (~0.3–0.5 µA). The joystick's power-on transistor adds nanoamps. That would
+**Off** (the boost shut down), the board draws about 1 µA from a 1.2 V cell (≤ 2.5 µA
+at datasheet maxima; ~3.5 µA with a 3.7 V 10440, whose sense divider alone takes
+2.1 µA): the 1M/1M sense divider (~0.6 µA), the charger's quiescent draw on its output
+(0.35 µA typ), the boost in shutdown (0.01 µA typ). The reverse-FET gate's diode from
+the boost's output leaks picoamps, the joystick's power-on transistor nanoamps. That would
 take more than 35 years to empty any of these cells, so off is limited by the cell's
 own self-discharge (standard eneloop: 70 % left after 10 years, ~2.6 µA average;
 eneloop pro ~16 µA in year one; L92 25-year shelf life) — not by the board.
