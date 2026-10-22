@@ -1,5 +1,5 @@
 #!/bin/zsh
-# The concept page's hero image (docs/brand/signer.webp): the page's own 3D model,
+# The /v2/ concept page's hero image (docs/v2/brand/signer.webp): the page's own 3D model,
 # rendered alone on a transparent background by headless Chrome. Rerun after
 # enclosure/generate.py changes the model.
 #
@@ -12,7 +12,7 @@ SCHEME=${1:-1}
 CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 TMP=$(mktemp -d)
 PORT=8799
-trap 'kill $SERVER 2>/dev/null; rm -f docs/_hero.html; rm -rf "$TMP"' EXIT
+trap 'kill $SERVER 2>/dev/null; rm -f docs/v2/_hero.html; rm -rf "$TMP"' EXIT
 
 sed -e 's#</style>#html,body{background:transparent!important;padding:0!important;margin:0} body::after{display:none!important} .hero,.closer,footer,main>section:not(\#configure),\#configure .head,.config,figcaption,.onstage{display:none!important} .build{display:block} .stage{position:fixed!important;inset:0;border:0!important;border-radius:0!important;aspect-ratio:auto!important;background:transparent!important}</style>#' \
   -e 's#new THREE.WebGLRenderer({ antialias: true })#new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true })#' \
@@ -20,10 +20,10 @@ sed -e 's#</style>#html,body{background:transparent!important;padding:0!importan
   -e 's#controls.autoRotate = true;#controls.autoRotate = false;#' \
   -e 's#camera.position.set(120, 70, -235);#camera.position.set(95, 55, -200);#' \
   -e "s#setScheme(d.schemes\[0\]);#setScheme(d.schemes[$SCHEME]);#" \
-  -e 's#^<title>#<meta charset=utf-8><title>#' docs/ambire-signer.html > docs/_hero.html
-grep -q 'alpha: true' docs/_hero.html || { echo "page changed: the hero patch no longer applies" >&2; exit 1; }
+  -e 's#^<title>#<meta charset=utf-8><title>#' docs/v2/index.html > docs/v2/_hero.html
+grep -q 'alpha: true' docs/v2/_hero.html || { echo "page changed: the hero patch no longer applies" >&2; exit 1; }
 
-python3 -m http.server $PORT --directory docs >/dev/null 2>&1 &
+python3 -m http.server $PORT --directory docs/v2 >/dev/null 2>&1 &
 SERVER=$!
 sleep 1
 "$CHROME" --headless=new --enable-unsafe-swiftshader --use-angle=swiftshader --hide-scrollbars \
@@ -34,7 +34,7 @@ for i in {1..60}; do grep -q "bytes written" "$TMP/chrome.log" && break; sleep 1
 kill $CHROME_PID 2>/dev/null || true
 [[ -s "$TMP/hero.png" ]] || { echo "no screenshot; Chrome log: $TMP/chrome.log" >&2; cat "$TMP/chrome.log" >&2; exit 1; }
 
-python3 - "$TMP/hero.png" docs/brand/signer.webp <<'EOF'
+python3 - "$TMP/hero.png" docs/v2/brand/signer.webp <<'EOF'
 import sys
 from PIL import Image
 im = Image.open(sys.argv[1]).convert("RGBA")
