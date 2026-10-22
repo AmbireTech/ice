@@ -82,7 +82,7 @@ svg { display: block; width: 100%; height: auto; }
 .btn:focus-visible { outline: 2px solid var(--volt); outline-offset: 3px; }
 .hero-shot { position: relative; display: grid; place-items: center; }
 .hero-shot img { width: min(100%, 520px); height: auto; filter: drop-shadow(0 40px 60px rgba(0, 0, 0, .55)); }
-.hero-shot::before { content: ""; position: absolute; width: 70%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, rgba(175, 80, 255, .35), rgba(96, 0, 255, 0) 70%); filter: blur(10px); }
+.hero-shot::before { content: ""; position: absolute; width: 70%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, rgba(61, 141, 255, .38), rgba(31, 79, 214, 0) 70%); filter: blur(10px); }
 
 /* why it matters */
 .losses { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
@@ -234,7 +234,7 @@ footer svg { width: 18px; height: 27px; color: var(--violet); }
           <a class="btn ghost" href="#configure" data-open-diy>Build it yourself</a>
         </div>
       </div>
-      <div class="hero-shot"><img src="brand/signer.webp" alt="Ambire Signer in its translucent purple case, with the flame printed on the board inside" width="716" height="1167"></div>
+      <div class="hero-shot"><img src="brand/signer.webp" alt="Ambire Signer in its see-through ice blue case, with the purple flame printed on the black board inside" width="716" height="1167"></div>
     </div>
   </header>
 
@@ -314,9 +314,9 @@ footer svg { width: 18px; height: 27px; color: var(--violet); }
           <fieldset>
             <legend>Case</legend>
             <div class="seg" id="cases">
-              <button type="button" data-case="ice" aria-pressed="false">Ice blue</button>
+              <button type="button" data-case="ice" aria-pressed="true">Ice blue</button>
               <button type="button" data-case="orange" aria-pressed="false">Orange</button>
-              <button type="button" data-case="purple" aria-pressed="true">Purple</button>
+              <button type="button" data-case="purple" aria-pressed="false">Purple</button>
               <button type="button" data-case="clear" aria-pressed="false">Clear</button>
               <button type="button" data-case="none" aria-pressed="false">None, I'll print it</button>
             </div>
@@ -554,16 +554,22 @@ function fail(what, error) {
   msg.hidden = false;
 }
 
-// Every case is see-through: three transparent tints and clear.
+// Every case is see-through: three transparent tints and clear. glow = the stage's light
+// behind the device; edge = the glow along the case's edges (Fresnel: brightest where
+// the surface turns away from the viewer), and its strength.
 const CASE = {
-  ice: { color: 0xd6f1ff, attenuationColor: 0x5cc8ff, attenuationDistance: 8, roughness: 0.15, transmission: 0.96 },
-  orange: { color: 0xffd2a8, attenuationColor: 0xff6a00, attenuationDistance: 6, roughness: 0.2, transmission: 0.95 },
-  purple: { color: 0xcdb2ff, attenuationColor: 0x6a2cff, attenuationDistance: 6, roughness: 0.2, transmission: 0.95 },
-  clear: { color: 0xffffff, attenuationColor: 0xffffff, attenuationDistance: Infinity, roughness: 0.04, transmission: 0.98 },
+  ice: { color: 0x84baff, attenuationColor: 0x2f7dff, attenuationDistance: 5, roughness: 0.1, transmission: 0.95,
+    glow: ["#1d47c8", "#0d1a62", "#060a24"], edge: 0x3d8dff, edgeGlow: 2.4 },
+  orange: { color: 0xffd2a8, attenuationColor: 0xff6a00, attenuationDistance: 6, roughness: 0.2, transmission: 0.95,
+    glow: ["#8a3a12", "#3a1a10", "#0f1016"], edge: 0xff8a3a, edgeGlow: 0.8 },
+  purple: { color: 0xcdb2ff, attenuationColor: 0x6a2cff, attenuationDistance: 6, roughness: 0.2, transmission: 0.95,
+    glow: ["#3a1a8a", "#1b1240", "#0f1016"], edge: 0x8a5cff, edgeGlow: 0.8 },
+  clear: { color: 0xffffff, attenuationColor: 0xffffff, attenuationDistance: Infinity, roughness: 0.04, transmission: 0.98,
+    glow: ["#2a2d44", "#15161f", "#0f1016"], edge: 0xc8d4ff, edgeGlow: 0.4 },
 };
 // Take apart: the stack opens along Z, the front half lifts out above it with its inside
 // (bosses, screen fills, chin) facing the viewer, the screws back out of the shell.
-const EXPLODE = { bezel: [0, 104, -26], panel: [0, 0, 24], cell: [0, 0, 12], board: [0, 0, 0], shell: [0, 0, -20], screws: [0, 0, -44] };
+const EXPLODE = { bezel: [0, 104, -26], panel: [0, 0, 24], board: [0, 0, 0], shell: [0, 0, -20], screws: [0, 0, -44] };
 const APART_CENTRE = [0, 48, 0];   // the camera re-centres between the stack and the front half
 const APART_SOLIDITY = 0.45;
 const APART_ZOOM = 1.05;           // the camera backs off this much more while apart       // apart, the case is less see-through so its bosses and fills read
@@ -638,14 +644,14 @@ function flameTexture(flame, scheme) {
   return t;
 }
 
-// The stage behind the model: a soft brand-purple glow fading to the stage colour.
-function glowTexture(edge) {
+// The stage behind the model: a soft glow in the case's colour, fading to the edge colour.
+function glowTexture([centre, mid, edge]) {
   const c = document.createElement("canvas");
   c.width = c.height = 512;
   const x = c.getContext("2d");
   const g = x.createRadialGradient(256, 230, 10, 256, 256, 360);
-  g.addColorStop(0, "#3a1a8a");
-  g.addColorStop(0.45, "#1b1240");
+  g.addColorStop(0, centre);
+  g.addColorStop(0.45, mid);
   g.addColorStop(1, edge);
   x.fillStyle = g;
   x.fillRect(0, 0, 512, 512);
@@ -788,7 +794,7 @@ async function main() {
   stage.prepend(renderer.domElement);
 
   const scene = new THREE.Scene();
-  scene.background = glowTexture(getComputedStyle(stage).getPropertyValue("--stage").trim() || "#0f1016");
+  scene.background = glowTexture(CASE.ice.glow);
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(renderer), 0.04).texture;
   const key = new THREE.DirectionalLight(0xffffff, 1.4);
@@ -801,6 +807,15 @@ async function main() {
   scene.add(device);
 
   const caseMat = new THREE.MeshPhysicalMaterial({ thickness: 1.8, ior: 1.5, metalness: 0, envMapIntensity: 0.55 });
+  const edge = { color: { value: new THREE.Color() }, strength: { value: 0 } };
+  caseMat.onBeforeCompile = (shader) => {
+    shader.uniforms.edgeColor = edge.color;
+    shader.uniforms.edgeStrength = edge.strength;
+    shader.fragmentShader = "uniform vec3 edgeColor;\nuniform float edgeStrength;\n" + shader.fragmentShader.replace(
+      "#include <emissivemap_fragment>",
+      "#include <emissivemap_fragment>\n" +
+      "totalEmissiveRadiance += edgeColor * edgeStrength * pow(1.0 - abs(dot(normal, normalize(vViewPosition))), 2.5);");
+  };
   const maskMat = new THREE.MeshStandardMaterial({ roughness: 0.5, flatShading: true });
   const flameMat = new THREE.MeshStandardMaterial({ roughness: 0.6, alphaTest: 0.5, side: THREE.DoubleSide });
 
@@ -841,24 +856,6 @@ async function main() {
   const screen = new THREE.Mesh(new THREE.PlaneGeometry(vx1 - vx0, vy1 - vy0), new THREE.MeshBasicMaterial({ map: screenTexture(vx1 - vx0, vy1 - vy0), toneMapped: false }));
   screen.position.set((vx0 + vx1) / 2, -(vy0 + vy1) / 2, z.panel[1] + 0.02);
   panel.add(screen);
-  // The AAA cell across the chin on the board's front, in its two clips; it stands out of the case.
-  const c = d.cell;
-  const cell = new THREE.Group();
-  const can = new THREE.Mesh(new THREE.CylinderGeometry(c.d / 2, c.d / 2, c.x[1] - c.x[0], 48),
-    new THREE.MeshStandardMaterial({ color: 0x1d6b4f, roughness: 0.35, metalness: 0.2 }));
-  can.rotation.z = Math.PI / 2;
-  can.position.set((c.x[0] + c.x[1]) / 2, -c.y, c.z);
-  cell.add(can);
-  const clipMat = new THREE.MeshStandardMaterial({ color: 0xc9ccd2, roughness: 0.3, metalness: 0.9 });
-  // Each clip: a thin steel base, an end wall on the outside, and two arms that hug the cell.
-  const t = 0.3, mid = (c.x[0] + c.x[1]) / 2;
-  for (const [x0, y0, x1, y1] of c.clips) {
-    const ym = (y0 + y1) / 2, outer = (x0 + x1) / 2 < mid ? x0 : x1 - t;
-    cell.add(boxFromRect([x0, ym - 3.5, x1, ym + 3.5], 0, 0.25, clipMat));
-    cell.add(boxFromRect([outer, ym - 3.5, outer + t, ym + 3.5], 0, c.clipH, clipMat));
-    cell.add(boxFromRect([x0 + 1.5, y0, x1 - 1.5, y0 + t], 0, c.z + 2, clipMat));
-    cell.add(boxFromRect([x0 + 1.5, y1 - t, x1 - 1.5, y1], 0, c.z + 2, clipMat));
-  }
   // The M2 screws, from the back: head in the shell's counterbore, shank up into the bezel's chin.
   const sc = d.screws;
   const steel = new THREE.MeshStandardMaterial({ color: 0xc3c7cf, metalness: 1, roughness: 0.3 });
@@ -872,7 +869,7 @@ async function main() {
     shank.position.set(hx, -hy, sc.seat + sc.length / 2);
     screws.add(head, shank);
   }
-  const parts = { shell, bezel, panel, cell, board, screws };
+  const parts = { shell, bezel, panel, board, screws };
   for (const p of Object.values(parts)) device.add(p);
   msg.hidden = true;
 
@@ -912,13 +909,17 @@ async function main() {
       caseMat.attenuationColor.set(c.attenuationColor);
       caseMat.attenuationDistance = c.attenuationDistance;
       caseMat.roughness = c.roughness;
+      edge.color.value.set(c.edge);
+      edge.strength.value = c.edgeGlow;
       caseTransmission = c.transmission;
       caseMat.transmission = caseTransmission * (1 - APART_SOLIDITY * exploded);
     }
+    scene.background?.dispose();   // the hero render runs with no background
+    scene.background = glowTexture(CASE[none ? "clear" : name].glow);
     pick($("cases"), "data-case", name);
   };
   for (const b of $("cases").querySelectorAll("[data-case]")) b.addEventListener("click", () => setCase(b.dataset.case));
-  setCase("purple");
+  setCase("ice");
 
   // near plane well out: parts 1 mm apart must not z-fight on 16-bit depth buffers
   const camera = new THREE.PerspectiveCamera(26, 1, 40, 900);

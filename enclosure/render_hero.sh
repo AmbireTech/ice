@@ -3,12 +3,11 @@
 # rendered alone on a transparent background by headless Chrome. Rerun after
 # enclosure/generate.py changes the model.
 #
-#   enclosure/render_hero.sh [scheme index, default 1 = purple on black]
+#   enclosure/render_hero.sh      (the page's default case and print: ice blue, purple on black)
 #
 # Needs Google Chrome and python3 with Pillow. Uses a throwaway copy of the page.
 set -euo pipefail
 cd "${0:A:h}/.."
-SCHEME=${1:-1}
 CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 TMP=$(mktemp -d)
 PORT=8799
@@ -16,12 +15,13 @@ trap 'kill $SERVER 2>/dev/null; rm -f docs/v2/_hero.html; rm -rf "$TMP"' EXIT
 
 sed -e 's#</style>#html,body{background:transparent!important;padding:0!important;margin:0} body::after{display:none!important} .hero,.closer,footer,main>section:not(\#configure),\#configure .head,.config,figcaption,.onstage{display:none!important} .build{display:block} .stage{position:fixed!important;inset:0;border:0!important;border-radius:0!important;aspect-ratio:auto!important;background:transparent!important}</style>#' \
   -e 's#new THREE.WebGLRenderer({ antialias: true })#new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true })#' \
-  -e 's#scene.background = glowTexture([^;]*);#scene.background = null;#' \
+  -e 's#scene.background = glowTexture(#scene.background = null \&\& glowTexture(#g' \
   -e 's#controls.autoRotate = true;#controls.autoRotate = false;#' \
   -e 's#camera.position.set(120, 70, -235);#camera.position.set(95, 55, -200);#' \
-  -e "s#setScheme(d.schemes\[0\]);#setScheme(d.schemes[$SCHEME]);#" \
   -e 's#^<title>#<meta charset=utf-8><title>#' docs/v2/index.html > docs/v2/_hero.html
-grep -q 'alpha: true' docs/v2/_hero.html || { echo "page changed: the hero patch no longer applies" >&2; exit 1; }
+for patched in 'alpha: true' 'scene.background = null && glowTexture(CASE.ice' 'background = null && glowTexture(CASE[none' 'camera.position.set(95, 55, -200)'; do
+  grep -qF "$patched" docs/v2/_hero.html || { echo "page changed: the hero patch '$patched' no longer applies" >&2; exit 1; }
+done
 
 python3 -m http.server $PORT --directory docs/v2 >/dev/null 2>&1 &
 SERVER=$!

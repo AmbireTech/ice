@@ -164,7 +164,8 @@ LEVER_TRAVEL, LEVER_CLR = 1.5, 0.5   # MSK12C02 slide travel; clearance around t
 # purple flame or a Volt board is a full-colour print (PCBWay); white on black and
 # black on white are an ordinary mask + silkscreen order anywhere.
 PRINT_SCHEMES = [
-    {"id": "neon", "label": "Purple on neon", "ink": "#6000FF", "mask": "#D7FF00", "colour": True},
+    # offered: False keeps a scheme out of the configurator (neon is off for proto 1)
+    {"id": "neon", "label": "Purple on neon", "ink": "#6000FF", "mask": "#D7FF00", "colour": True, "offered": False},
     {"id": "black", "label": "Purple on black", "ink": "#6000FF", "mask": "#181A1F", "colour": True},
     {"id": "white-black", "label": "White on black", "ink": "#F2F3F5", "mask": "#181A1F", "colour": False},
     {"id": "black-white", "label": "Black on white", "ink": "#181A1F", "mask": "#EEEEEA", "colour": False},
@@ -806,7 +807,7 @@ def main():
                    "holes": [[hx, hy] for hx, hy in screw_holes]},
         "maskBack": header["maskBack"],
         "flame": flame,
-        "schemes": PRINT_SCHEMES,
+        "schemes": [sc for sc in PRINT_SCHEMES if sc.get("offered", True)],
         "downloads": downloads,
     }
     (WEB / "enclosure.json").write_text(json.dumps(data, indent=1))
