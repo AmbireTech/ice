@@ -12,15 +12,15 @@
   "t": 1.0,
   "slots": [
    [
-    11.1,
+    11.4,
     63.91,
-    33.1,
+    32.8,
     65.51
    ],
    [
-    35.75,
+    36.05,
     63.91,
-    44.25,
+    43.95,
     65.51
    ]
   ],
@@ -231,7 +231,7 @@
    {
     "label": "Case: 3MF, STL and STEP (zip)",
     "filename": "ambire-signer-case.zip",
-    "bytes": 431743,
+    "bytes": 435067,
     "part": "enclosure/files/ambire-signer-case.zip.b64.txt",
     "b64": true
    }

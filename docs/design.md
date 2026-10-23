@@ -294,10 +294,15 @@ touch flex is merged into the TFT flex.
   ([experiments](../board/experiments/README.md)). The UART translator sits between the TFT slot and the
   radio module, right over the module's two north-edge UART pads, so no radio
   line runs under the module; the two MCU-side lines come over the west bridge.
-- The front copper has no parts at all: it is the layer for the buses between
-  blocks (drop a via at the pin).
+- Under the screen the front copper has no parts: it is the layer for the buses
+  between blocks (drop a via at the pin).
 - Signals reach the chin over three bridges between the slots and the edges:
-  west (≈ 6 mm usable beside the hole), middle (2.6 mm) and east (3.7 mm).
+  west (11.4 mm, with the hole H3 out), middle (3.25 mm) and east (4.05 mm). The
+  slots run 0.45 mm past each tail's edge, enough for the panel's placement and the
+  tail's width tolerance (they ran 0.75 mm past until proto 1), and copper keeps
+  0.25 mm from every edge (JLC: 0.2): the middle bridge's copper went from 2.0 to
+  2.7 mm. A slot stays 1.6 mm wide, for the tail's two 90-degree turns through the
+  1.0 mm board.
 
 ## Power: one AAA cell
 
