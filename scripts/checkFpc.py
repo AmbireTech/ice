@@ -134,6 +134,39 @@ for name, (tx0, tw) in (("TFT tail", nb.TFT_TAIL), ("touch tail", nb.CTP_TAIL)):
                f"x {x0:.1f}..{x1:.1f})")
 print(f"tails' drop y {nb.PANEL_S:.2f}..{drop_s:.2f}: clear of the front parts and the cell (north edge {cy0:.2f})")
 
+# Front parts under the cell (the owner's ladder row, 2026-10-23): the cell rests on its
+# clips' bases, its underside CELL_BASE above the board along the axis and rising as a
+# circle away from it. A part there must stay UNDER_CELL_CLR below the underside at the
+# part's point nearest the axis. The largest AAA (10.5 mm) sits flattest: the worst case.
+CELL_BASE, CELL_R_MAX, UNDER_CELL_CLR = 0.25, 10.5 / 2, 0.3
+PART_H = {"R_0402": 0.40, "C_0402": 0.55, "R_0603": 0.50, "C_0603": 0.90, "R_0805": 0.60, "C_0805": 1.35}
+if ant is not None:
+    axis = (ny + py) / 2
+    under = []
+    for f in board.GetFootprints():
+        if f.GetLayer() != pcbnew.F_Cu or f.GetReference() in ("BT_N", "BT_P"):
+            continue
+        fab = [g.GetBoundingBox() for g in f.GraphicalItems() if g.GetLayer() == pcbnew.F_Fab]
+        if not fab:
+            continue
+        fx0, fy0 = min(pcbnew.ToMM(b.GetLeft()) for b in fab), min(pcbnew.ToMM(b.GetTop()) for b in fab)
+        fx1, fy1 = max(pcbnew.ToMM(b.GetRight()) for b in fab), max(pcbnew.ToMM(b.GetBottom()) for b in fab)
+        d = 0.0 if fy0 <= axis <= fy1 else min(abs(fy0 - axis), abs(fy1 - axis))
+        if not (fx0 < cx1 and cx0 < fx1) or d >= CELL_R_MAX:
+            continue
+        under_h = CELL_BASE + CELL_R_MAX - (CELL_R_MAX ** 2 - d ** 2) ** 0.5
+        pkg = f.GetFPID().GetLibItemName().wx_str().split("_1005")[0].split("_1608")[0].split("_2012")[0]
+        h = PART_H.get(pkg)
+        if h is None:
+            errors.append(f"{f.GetReference()} stands under the cell and has no height bound ({pkg})")
+            continue
+        expect(h + UNDER_CELL_CLR <= under_h,
+               f"{f.GetReference()} ({h:.2f} mm) under the cell: its underside is {under_h:.2f} mm up there "
+               f"({d:.2f} mm off the axis), under {UNDER_CELL_CLR} mm left")
+        under.append(f"{f.GetReference()} {under_h - h:.2f}")
+    if under:
+        print("under the cell (mm to spare): " + ", ".join(under))
+
 for ref, end_y, row in (("J_TFT", nb.TFT_END_Y, nb.TFT_ROW), ("J_CTP", nb.CTP_END_Y, nb.CTP_ROW)):
     row_y = pcbnew.ToMM(fp[ref].GetPosition().y) - row
     slack = end_y - row_y      # positive: the tail end would sit south of the row

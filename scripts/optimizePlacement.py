@@ -224,8 +224,10 @@ class Model:
             rail = [n for n in nets if n != "GND"]
             if not rail or not rail[0]:
                 continue
+            # a decap belongs at a chip's rail pin, never a connector's: the owner moved the
+            # USB buck's input cap from USB-C's VBUS pin to the buck's VIN pin (2026-10-23)
             pins = [(r2, pd) for r2, q in self.parts.items() if r2 != ref and len(list(q.fp.Pads())) > 3
-                    for pd in q.fp.Pads() if pd.GetNetname() == rail[0]]
+                    and not r2.startswith("J") for pd in q.fp.Pads() if pd.GetNetname() == rail[0]]
             if pins:
                 self.decaps[ref] = (rail[0], pins)
 
@@ -252,6 +254,16 @@ class Model:
                        (b.CTP_TAIL[0] - b.SLOT_MARGIN, b.CTP_TAIL[0] + b.CTP_TAIL[1] + b.SLOT_MARGIN)):
             self.forbidden.append((x0 - 0.3, b.SLOT_Y0 - 0.3, x1 + 0.3, b.SLOT_Y1 + 0.3))
         self.forbidden += [(x - 2.2, y - 2.2, x + 2.2, y + 2.2) for x, y in b.HOLES.values()]
+        # every drilled hole (a connector's legs and pegs, mounting holes) is in the way on
+        # both faces: the same-side courtyard and pad checks do not see a back part's legs
+        # under a front part (2026-10-23: a resistor was placed over USB-C's peg)
+        self.holes = []
+        for fp in self.board.GetFootprints():
+            for pad in fp.Pads():
+                if pad.HasHole():
+                    bb = pad.GetBoundingBox()
+                    self.holes.append((mm(bb.GetLeft()) - 0.25, mm(bb.GetTop()) - 0.25,
+                                       mm(bb.GetRight()) + 0.25, mm(bb.GetBottom()) + 0.25, fp.GetReference()))
         # the antenna end as drawn from the placed module (newBoard's ANT_KEEPOUT is only the seed)
         self.ant_keepout = b.antenna_keepout(self.board)
         self.back_only = [box for _, box in b.footprint_keepouts(self.board)] + list(b.LABEL_SLOTS.values()) + \
@@ -263,6 +275,8 @@ class Model:
         extra = self.back_only if part.side == nb.BOT else []
         ant = [] if part.ref == "U11" else [self.ant_keepout]
         if any(nb._hits(tight, o) for o in self.forbidden + extra + ant):
+            return False
+        if any(nb._hits(tight, h[:4]) for h in self.holes if h[4] != part.ref):
             return False
         for ref, other in self.parts.items():
             if ref != part.ref and ref not in self.parked and other.side == part.side \

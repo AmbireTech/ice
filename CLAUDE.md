@@ -94,6 +94,24 @@ Ambire internals into GridCore's.
   pull-ups and series parts inline between source and destination. Judge routability
   with a trial route (`trialRoute.sh` / `routeGauge.py`), never with spacing or
   crossing proxies — those disagreed with the router.
+- From the owner's hand pass on the chin (2026-10-23), checked by `placementScan.py`
+  and `checkFpc.py` — run both after any placement:
+  - A decap sits at its **chip's** rail pin, never a connector's (the USB buck's input
+    cap had landed on USB-C's VBUS pin, on the other face).
+  - A passive goes on the **face of the part it serves**: a net whose every other pad
+    is on the other face costs a via. The joystick's ladder belongs on the front, in a
+    row between the joystick and the cell, not on the back under it.
+  - The front under the cell's flanks is usable for low parts: the cell's underside
+    rises from 0.25 mm on its axis; `checkFpc.py` wants 0.3 mm over each part.
+  - A **test pad sits beside its pin**, on the near side of any no-via zone and any
+    run that could wall it off: the radio's SWD pads out over the module (no vias
+    under it) were walled off by JOY_A and routed at 2–2.5×; beside the module's SWD
+    pins they route in 3 mm.
+  - Every drilled hole blocks both faces: the placer once put a front resistor over
+    USB-C's peg (its same-side checks did not see a back part's legs; fixed).
+  - A signal may **jump** under a two-pad part, straight between its pads (0.15 mm
+    under an 0402 keeps 0.165 mm to each pad). The router does it too, on its
+    `under-part-jumps` branch (`HUMAN_ROUTER` at a checkout of it).
 - Under the screen the front (F.Cu) is bare: the panel sits on it. Assembly is double-sided
   since proto 1 (owner, 2026-10-22): in the chin the front carries the cell clips, the
   joystick, the radio's SWD pads and power parts that thin out the back (the USB buck and
