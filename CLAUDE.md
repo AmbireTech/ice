@@ -119,6 +119,16 @@ Ambire internals into GridCore's.
     (not across the board on the load's pin); a pull-up sits at its rail's source pin.
     `placementScan.py` lists nodes whose passives step more than 2 mm apart; spreading
     parts apart for room (`nudgeApart.py`) is what pulled the feedback node open.
+  - **How the owner closed the fourth pass** (2026-10-23): the charger corner's DRC
+    conflicts went by re-seating and turning its passives (the ISET/VSET/TMR resistors,
+    the input cap), not by rerouting; the reverse-FET gate network stayed split and its
+    V_BOOST tap (microamps) runs at 0.15-0.2 mm beside REV_G along the south edge: a
+    rail's class width is for its current path, not for every tap; the air-gap switch's
+    boxed-in shield tabs got a short tie to a via each (kept in `stripGndTies.py`).
+  - The router's own power/ground habits were slop to the owner: 1-2 mm "slabs"
+    (its `fatten` pass) and GND tracks tying pads the pour missed. Both are opt-in knobs
+    now (`fatten`, `gndRepair=join`) on the router's `under-part-jumps` branch; leave
+    them off.
   - A signal may **jump** under a two-pad part, straight between its pads (0.15 mm
     under an 0402 keeps 0.165 mm to each pad). The router does it too, on its
     `under-part-jumps` branch (`HUMAN_ROUTER` at a checkout of it).

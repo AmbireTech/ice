@@ -14,7 +14,9 @@ Kept, because the part asks for a short path to the plane:
   - the TPS60230 backlight charge pump (switching, exposed pad);
   - the BQ25172 charger's exposed pad (heat while charging);
   - the E73 radio module's ground pads (RF ground);
-  - the USBLC6 ESD clamp's ground (surge current).
+  - the USBLC6 ESD clamp's ground (surge current);
+  - the air-gap switch's west shield tabs: boxed in by the board edge and the MCU USB
+    pair, no pour reaches them; the owner tied each to a via (2026-10-23).
 Afterwards the board is left with pads the pour may not reach and pour pieces
 without vias: run humanRouter with `--keep-copper --nets GND --knob
 fanoutParts=none`, which stitches and joins those pads to the pour.
@@ -28,7 +30,8 @@ import pcbnew
 NM = 1e6
 TIE_MM = 4.5
 KEEP = {"U2.2", "U2.3", "U2.9", "C_IN_BOOST.2", "C_BOOST.2", "U3.2", "C_USB3V3.2", "C_VBUS.2",
-        "Q_REV.2", "U13.7", "U13.14", "U13.17", "U1.4", "U1.9", "U11.5", "U11.21", "U11.24", "D_ESD.2"}
+        "Q_REV.2", "U13.7", "U13.14", "U13.17", "U1.4", "U1.9", "U11.5", "U11.21", "U11.24", "D_ESD.2",
+        "SW_AIR.SH"}
 
 
 def touches(t, p):
