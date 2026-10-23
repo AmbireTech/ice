@@ -164,7 +164,12 @@ touch flex is merged into the TFT flex.
   the **cell path at 0.8 mm** (BAT, BAT_N, SW_BOOST: ~1 A from a 1.0 V cell, every
   10 mΩ is 1 % of its voltage; two vias per layer change), the 3.3–5 V rails at
   0.4 mm (VBUS, SW_USB, V3V3_USB, V_BOOST, the 3.3 V plane's fanouts), small supplies
-  at 0.25, the USB pair at 0.2, signals at 0.15.
+  at 0.25, the USB pairs at 0.15 (coupled, 0.25–0.3 mm apart), signals at 0.15. Both
+  USB links are full speed (the STM32U585 has no high-speed PHY): 12 Mb/s with edges of
+  4 ns or more over 8 cm of trace is electrically short, so the pair's impedance (an
+  estimated 110–125 Ω differential, against USB's 90 Ω; the fab's stackup is not
+  confirmed) does not matter. Keeping the two lines together does; a 1.5 mm length
+  difference is about 10 ps.
 - **The radio's antenna points south**, at the board edge in the south-west corner,
   with a copper keep-out on every layer. Proto 0's antenna pointed west from a
   module across the chin; with a metal cell over the chin's front that would have

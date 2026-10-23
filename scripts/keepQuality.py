@@ -12,10 +12,17 @@ net whose copper the router added or changed (BEFORE vs ROUTED):
   - its vias at most one more than its pads' faces need (pads on both faces: one);
   - no craft finding (detour, wiggle, hairpin) on it in the gauge's audit;
   - half of a differential pair: coupled to its partner over at least 70 % of its length;
+  - none of the designer's copper gone unreplaced: the router's tidy pass drops track it
+    finds dangling, and once took 3.4 mm of the owner's 2 mm BAT_N run that was still
+    being drawn. Removals are kept only as part of a nudge or merge (added copper at
+    least half the removed length) or as crumbs under --crumb-mm;
   - not listed in --leave.
 A net that fails gets BEFORE's copper back exactly (the designer's, a nudged trace
-included) and is listed as left to the owner. GND and V3V3 (pour and plane) are kept as
-routed. OUT is the result; run KiCad's DRC on it: a kept net may need room a restored
+included) and is listed as left to the owner. GND and V3V3 (pour and plane) keep the
+router's stitching vias, but any of the designer's copper it removed is put back (its tidy
+pass once took 2.2 mm of the owner's 0.5 mm V3V3 run), and every GND track it added goes,
+with the vias it served: the owner's rule is pour plus stitching, ties only where listed
+in stripGndTies.py (it once tied R_VSET's ground to a via and bridged two kept ties). OUT is the result; run KiCad's DRC on it: a kept net may need room a restored
 nudge took back, which DRC reports.
 """
 import argparse
@@ -141,6 +148,7 @@ def main():
     ap.add_argument("--max-ratio", type=float, default=1.35)
     ap.add_argument("--short-mm", type=float, default=5.0)
     ap.add_argument("--short-ratio", type=float, default=1.6)
+    ap.add_argument("--crumb-mm", type=float, default=0.5)
     a = ap.parse_args()
     bboard = pcbnew.LoadBoard(a.before)
     before = copper(bboard)
@@ -170,6 +178,9 @@ def main():
         # designer's copper already joined, linked by the shortest pad-to-pad steps
         old = {k for k, _ in before.get(n, [])}
         added = [t for k, t in after.get(n, []) if k not in old]
+        new = {k for k, _ in after.get(n, [])}
+        removed = sum(M((t.GetEnd() - t.GetStart()).EuclideanNorm()) for k, t in before.get(n, [])
+                      if k not in new and t.Type() != pcbnew.PCB_VIA_T)
         tree, need = gaps(islands(bboard, n))
         length = sum(M((t.GetEnd() - t.GetStart()).EuclideanNorm()) for t in added if t.Type() != pcbnew.PCB_VIA_T)
         vias = sum(1 for t in added if t.Type() == pcbnew.PCB_VIA_T)
@@ -181,6 +192,8 @@ def main():
             why.append(f"{length / tree:.2f}x the gaps it closed")
         if vias > need + 1:
             why.append(f"{vias} new vias (needs {need})")
+        if removed > a.crumb_mm and length < removed / 2:
+            why.append(f"{removed:.1f} mm of the designer's copper removed")
         if craft.get(n):
             why.append("/".join(sorted(set(craft[n]))))
         if n in pairs:
@@ -198,13 +211,32 @@ def main():
             kept = [k for k in kept if k[0] != m]
     before_items = defaultdict(list)
     bsrc = pcbnew.LoadBoard(a.before)
+    restored = defaultdict(float)
+    for n in PLANES:
+        new = {k for k, _ in after.get(n, [])}
+        for k, t in before.get(n, []):
+            if k not in new:
+                before_items[n].append(t)
+                restored[n] += M((t.GetEnd() - t.GetStart()).EuclideanNorm()) if t.Type() != pcbnew.PCB_VIA_T else 0
     for t in bsrc.GetTracks():
         if t.GetNetname() in rejected:
             before_items[t.GetNetname()].append(t)
-    gone = [t for n in rejected for _, t in after.get(n, [])]
+    old = {k for k, _ in before.get("GND", [])}
+    # the router's new GND tracks, and the new vias joined to them end to end
+    fresh = [t for k, t in after.get("GND", []) if k not in old]
+    ends = lambda t: [t.GetPosition()] if t.Type() == pcbnew.PCB_VIA_T else [t.GetStart(), t.GetEnd()]
+    ties = [t for t in fresh if t.Type() != pcbnew.PCB_VIA_T]
+    grow = list(ties)
+    while grow:
+        t = grow.pop()
+        for u in fresh:
+            if all(u is not v for v in ties) and (any(u.HitTest(q) for q in ends(t)) or any(t.HitTest(q) for q in ends(u))):
+                ties.append(u)
+                grow.append(u)
+    gone = [t for n in rejected for _, t in after.get(n, [])] + ties
     for t in gone:
         board.Remove(t)
-    netinfo = {n: board.FindNet(n) for n in rejected}
+    netinfo = {n: board.FindNet(n) for n in set(rejected) | PLANES}
     for n, ts in before_items.items():
         for t in ts:
             if t.Type() == pcbnew.PCB_VIA_T:
@@ -227,6 +259,11 @@ def main():
         print(f"keep  {n:16s} {length:6.1f} mm added (gaps {tree:5.1f}), {vias} new via(s)")
     for n, why in sorted(rejected.items()):
         print(f"back  {n:16s} {'; '.join(why)}")
+    for n, mm in restored.items():
+        print(f"back  {n:16s} {mm:.1f} mm of the designer's copper the router removed")
+    if ties:
+        print(f"strip GND tracks the router added: {sum(1 for t in ties if t.Type() != pcbnew.PCB_VIA_T)} track(s), "
+              f"{sum(1 for t in ties if t.Type() == pcbnew.PCB_VIA_T)} via(s)")
     print(f"{len(kept)} nets kept as routed, {len(rejected)} given back; wrote {a.out}")
 
 

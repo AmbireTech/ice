@@ -113,6 +113,12 @@ Ambire internals into GridCore's.
     TFT slot 0.45 mm away, so its diff pair could not even start; turned so they face
     west, toward the pair's bridge, with the connector-side pins facing the ESD clamp.
     And no free stitching via in a pair's exit (one blocked the switch's).
+  - **A small-signal node is one cluster** (third pass): the boost's feedback divider
+    and feed-forward cap within 1.3-1.9 mm of each other, the cell-sense filter cap
+    beside its resistor; an output cap stays with its regulator's output on the same face
+    (not across the board on the load's pin); a pull-up sits at its rail's source pin.
+    `placementScan.py` lists nodes whose passives step more than 2 mm apart; spreading
+    parts apart for room (`nudgeApart.py`) is what pulled the feedback node open.
   - A signal may **jump** under a two-pad part, straight between its pads (0.15 mm
     under an 0402 keeps 0.165 mm to each pad). The router does it too, on its
     `under-part-jumps` branch (`HUMAN_ROUTER` at a checkout of it).

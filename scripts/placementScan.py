@@ -10,7 +10,12 @@ From the owner's edits of 2026-10-23 on the chin:
   - a two-pad part with a net whose every other pad is on the other face: a via per
     such net. The joystick's ladder sat on the back, its four direction lines each
     dropping through a via to the joystick on the front; the owner put the ladder on
-    the front, in a row between the joystick and the cell.
+    the front, in a row between the joystick and the cell;
+  - a small-signal node spread out (third pass): the boost's feedback divider and its
+    feed-forward cap had drifted 2.3-3.0 mm apart, the cell-sense filter cap sat 3.5 mm
+    from its resistor; the owner drew each node into one cluster (1.3-1.9 mm). Flagged:
+    two-pad passives on one non-supply net of at most --node-pads pads whose pads link
+    (minimum spanning tree) by a step over NODE_STEP_MM.
 Prints the findings in the region south of --y-min (default: the chin); exit 0 always,
 it is a review aid, not a gate. scripts/checkFpc.py checks parts under the cell.
 """
@@ -26,6 +31,7 @@ import newBoard as nb  # noqa: E402
 import optimizePlacement as op  # noqa: E402
 
 DECAP_FAR_MM = 2.0
+NODE_STEP_MM = 2.0
 SUPPLIES = {n for _, _, _, _, _, nets in nb.NETCLASSES for n in nets} | {"V3V3"}
 
 
@@ -33,6 +39,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("board", nargs="?", default=str(nb.HERE / "board/wallet.kicad_pcb"))
     ap.add_argument("--y-min", type=float, default=64.0)
+    ap.add_argument("--node-pads", type=int, default=4)
     a = ap.parse_args()
     m = op.Model(pcbnew.LoadBoard(a.board))
     region = {r for r, p in m.parts.items() if p.pos()[1] > a.y_min and 0 < p.pos()[0] < nb.W}
@@ -60,6 +67,26 @@ def main():
                 forced.append(n)
         if forced:
             print(f"  {r:10s} on the {p.side}: {', '.join(forced)}")
+
+    print(f"small-signal nodes whose passives step more than {NODE_STEP_MM} mm apart:")
+    by_net = {}
+    for ref, o in m.parts.items():
+        for pd in o.fp.Pads():
+            by_net.setdefault(pd.GetNetname(), []).append((ref, len(list(o.fp.Pads())), pd))
+    for n, pads in sorted(by_net.items()):
+        if not n or n in SUPPLIES or n == "GND" or len(pads) > a.node_pads:
+            continue
+        mine = [(ref, pd) for ref, k, pd in pads if k == 2 and not ref.startswith(("TP", "H"))]
+        if len(mine) < 2 or not any(ref in region for ref, _ in mine):
+            continue
+        pts = [(pcbnew.ToMM(pd.GetPosition().x), pcbnew.ToMM(pd.GetPosition().y)) for _, pd in mine]
+        inside, steps = {0}, []
+        while len(inside) < len(pts):
+            d, j = min((math.dist(pts[i], pts[k]), k) for i in inside for k in range(len(pts)) if k not in inside)
+            inside.add(j)
+            steps.append(d)
+        if max(steps) > NODE_STEP_MM:
+            print(f"  {n:14s} {', '.join(ref for ref, _ in mine)}: steps {' '.join(f'{d:.1f}' for d in steps)} mm")
 
 
 if __name__ == "__main__":

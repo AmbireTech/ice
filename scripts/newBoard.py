@@ -372,7 +372,9 @@ NETCLASSES = [
     # Small local supplies, tens of mA.
     ("Lite", 0.25, 0.15, 0.45, 0.25, ["RADIO_3V3", "VDD11", "VBAT_RTC", "SE_VCC", "CAM_AVDD",
                                       "CAM_DVDD", "BL_A", "BL_K", "BUZ_SW"]),
-    ("USB", 0.20, 0.15, 0.45, 0.25, ["USB_DP", "USB_DN", "USB_MCU_DP", "USB_MCU_DN"]),
+    # USB full speed (the STM32U585 has no high-speed PHY): 12 Mb/s over a few cm cares
+    # little for impedance; 0.15 mm keeps the pair slim through the bridges (owner, 2026-10-23)
+    ("USB", 0.15, 0.15, 0.45, 0.25, ["USB_DP", "USB_DN", "USB_MCU_DP", "USB_MCU_DN"]),
 ]
 
 
