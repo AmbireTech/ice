@@ -109,6 +109,10 @@ Ambire internals into GridCore's.
     pins they route in 3 mm.
   - Every drilled hole blocks both faces: the placer once put a front resistor over
     USB-C's peg (its same-side checks did not see a back part's legs; fixed).
+  - **Pins face the way their route leaves.** The USB switch's MCU-side pins faced the
+    TFT slot 0.45 mm away, so its diff pair could not even start; turned so they face
+    west, toward the pair's bridge, with the connector-side pins facing the ESD clamp.
+    And no free stitching via in a pair's exit (one blocked the switch's).
   - A signal may **jump** under a two-pad part, straight between its pads (0.15 mm
     under an 0402 keeps 0.165 mm to each pad). The router does it too, on its
     `under-part-jumps` branch (`HUMAN_ROUTER` at a checkout of it).
@@ -129,7 +133,10 @@ Ambire internals into GridCore's.
   the plotter ignores the hidden flag on board text (remove it in memory instead).
   After any `board.Remove()`, `GetDrawings()`/`Pads()` of other objects can come back
   broken: collect what you need first, remove last. A board saved next to a missing or
-  default `.kicad_pro` gets default design rules: keep copies beside the real project.
+  default `.kicad_pro` gets default design rules: keep copies beside the real project. Load a
+  board only as `wallet.kicad_pcb` beside its project: loading `other.kicad_pcb` (no
+  project beside it) and saving it as `wallet.kicad_pcb` writes default rules over the
+  real `wallet.kicad_pro` (2026-10-23: every DRC after that read 199 width/drill errors).
 - `tsci export` reads every file under the entry's folder and dies on the vendored
   firmware's dangling symlinks: export with `scripts/exportNetlist.sh`.
 - KiCad's DRC alone misses joins that hold only by track overlap; the router's tidy pass

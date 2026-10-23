@@ -51,7 +51,12 @@ CTP_TAIL = (PANEL[0] + PANEL[2] - 1.90 - 7.00, 7.00)
 # the board the tails drop 4 mm less, and the slots moved 2 mm south take that length
 # back (each mm south costs a tail 2 mm), so both tails land as before.
 SLOT_Y0, SLOT_Y1 = PANEL_S + 3.0, PANEL_S + 4.6
-SLOT_MARGIN = 0.75                            # tail-to-slot clearance each side
+# Tail-to-slot clearance at each end. The panel is located by the bezel and the tails
+# by the panel: placement ~0.2 mm plus tail width +-0.1 is the lateral error, so 0.45
+# keeps the tail off the slot's end. Was 0.75 until 2026-10-23: every 0.1 mm here is
+# routing room on the three bridges all chin-to-MCU lines cross (the centre bridge's
+# copper went 2.01 -> 2.71 mm with this and the 0.25 mm edge clearance).
+SLOT_MARGIN = 0.45
 # Each tail comes off the panel's south edge and drops through the north half of its
 # slot. Front parts (the cell's clips) and the cell may stand over the slot's south
 # half, never over the tail's drop: north of SLOT_Y0 + TAIL_BEND + TAIL_CLR, across the
@@ -698,7 +703,7 @@ def write_project():
     # JLC 4-layer standard capability: 0.09 mm track/space, 0.2 mm drill, 0.45 mm via.
     ds["rules"].update(min_clearance=0.1, min_track_width=0.1, min_via_diameter=0.45,
                        min_through_hole_diameter=0.2, min_hole_to_hole=0.25,
-                       min_copper_edge_clearance=0.3, min_hole_clearance=0.2,
+                       min_copper_edge_clearance=0.25,   # JLC: 0.2 to a routed edge min_hole_clearance=0.2,
                        min_text_height=0.7, min_text_thickness=0.1)
     ds["rule_severities"].update(silk_over_copper="warning", text_height="warning", text_thickness="warning",
                                  starved_thermal="warning")
