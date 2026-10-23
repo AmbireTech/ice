@@ -234,7 +234,7 @@ footer svg { width: 18px; height: 27px; color: var(--violet); }
           <a class="btn ghost" href="#configure" data-open-diy>Build it yourself</a>
         </div>
       </div>
-      <div class="hero-shot"><img src="brand/signer.webp" alt="Ambire Signer in its see-through ice blue case, with the purple flame printed on the black board inside" width="716" height="1167"></div>
+      <div class="hero-shot"><img src="brand/signer.webp" alt="Ambire Signer from the front in its see-through ice blue case: the screen, the joystick and the two clips that hold the AAA cell" width="674" height="1050"></div>
     </div>
   </header>
 
@@ -849,6 +849,18 @@ async function main() {
   lens.rotation.x = Math.PI / 2;
   lens.position.set((cx0 + cx1) / 2, -(cy0 + cy1) / 2, z.boardBack - 6.1);
   board.add(lens);
+  // The AAA cell's two steel clips, soldered to the board's front (the cell itself is not
+  // drawn): a thin base, an end wall on the outside, and two arms that hug the cell.
+  const c = d.cell;
+  const clipMat = new THREE.MeshStandardMaterial({ color: 0xc9ccd2, roughness: 0.3, metalness: 0.9 });
+  const t = 0.3, mid = (c.x[0] + c.x[1]) / 2;
+  for (const [x0, y0, x1, y1] of c.clips) {
+    const ym = (y0 + y1) / 2, outer = (x0 + x1) / 2 < mid ? x0 : x1 - t;
+    board.add(boxFromRect([x0, ym - 3.5, x1, ym + 3.5], 0, 0.25, clipMat));
+    board.add(boxFromRect([outer, ym - 3.5, outer + t, ym + 3.5], 0, c.clipH, clipMat));
+    board.add(boxFromRect([x0 + 1.5, y0, x1 - 1.5, y0 + t], 0, c.z + 2, clipMat));
+    board.add(boxFromRect([x0 + 1.5, y1 - t, x1 - 1.5, y1], 0, c.z + 2, clipMat));
+  }
 
   const [vx0, vy0, vx1, vy1] = d.viewingArea;
   const panel = new THREE.Group();

@@ -3,7 +3,9 @@
 # rendered alone on a transparent background by headless Chrome. Rerun after
 # enclosure/generate.py changes the model.
 #
-#   enclosure/render_hero.sh      (the page's default case and print: ice blue, purple on black)
+#   enclosure/render_hero.sh      (the page's default case and print: ice blue, purple on black;
+#                                  from the front, low on the chin: the screen, the joystick and
+#                                  the AAA cell's two clips)
 #
 # Needs Google Chrome and python3 with Pillow. Uses a throwaway copy of the page.
 set -euo pipefail
@@ -17,9 +19,9 @@ sed -e 's#</style>#html,body{background:transparent!important;padding:0!importan
   -e 's#new THREE.WebGLRenderer({ antialias: true })#new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true })#' \
   -e 's#scene.background = glowTexture(#scene.background = null \&\& glowTexture(#g' \
   -e 's#controls.autoRotate = true;#controls.autoRotate = false;#' \
-  -e 's#camera.position.set(120, 70, -235);#camera.position.set(95, 55, -200);#' \
+  -e 's#camera.position.set(120, 70, -235);#camera.position.set(-70, -120, 200);#' \
   -e 's#^<title>#<meta charset=utf-8><title>#' docs/v2/index.html > docs/v2/_hero.html
-for patched in 'alpha: true' 'scene.background = null && glowTexture(CASE.ice' 'background = null && glowTexture(CASE[none' 'camera.position.set(95, 55, -200)'; do
+for patched in 'alpha: true' 'scene.background = null && glowTexture(CASE.ice' 'background = null && glowTexture(CASE[none' 'camera.position.set(-70, -120, 200)'; do
   grep -qF "$patched" docs/v2/_hero.html || { echo "page changed: the hero patch '$patched' no longer applies" >&2; exit 1; }
 done
 
