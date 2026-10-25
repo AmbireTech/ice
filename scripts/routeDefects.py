@@ -30,7 +30,8 @@ Each finding has a place (mm) and a reason, sorted north to south:
               would reach the pad without it (DRC decides), or runs longer than
               GND_RUN_MM (stripGndTies' tie length): ground as a trace. A short pad-to-via
               tie is good practice
-  via-in-pad  a via under an SMD pad (solder wicks down it); chips' exposed pads excepted
+  via-in-pad  a via whose drill reaches into an SMD pad's solder-mask opening (solder wicks
+              down it); a tented ring grazing the copper is fine; thermal pads excepted
 With --all, also the noisy ones: via-near-pad (legal spacing under DRC's clearance),
 jump (a track between a two-pad part's pads; DRC judges its clearance), craft
 (detours and wiggles from hardware/carrier/.tools/audit_craft.py).
@@ -290,18 +291,35 @@ def needed(board_path, uid):
 
 
 def vias_in_pads(board):
+    """A via whose drill hole reaches into a pad's solder-mask opening: solder wicks down the
+    barrel. A tented via whose ring only grazes the pad's copper wicks nothing."""
+    from shapely.geometry import Point, Polygon
     out = []
-    smd = [(f"{fp.GetReference()}.{p.GetNumber()}", p, fp) for fp in board.GetFootprints() for p in fp.Pads()
-           if p.GetAttribute() == pcbnew.PAD_ATTRIB_SMD and p.GetNumber()
-           and fp.GetReference() not in ("BT_N", "BT_P")]
+    mask = M(board.GetDesignSettings().m_SolderMaskExpansion)
+    smd = []
+    for fp in board.GetFootprints():
+        if fp.GetReference() in ("BT_N", "BT_P"):
+            continue
+        for p in fp.Pads():
+            if p.GetAttribute() != pcbnew.PAD_ATTRIB_SMD or not p.GetNumber():
+                continue
+            big = p.GetNetname() == "GND" and len(list(fp.Pads())) > 4 and \
+                min(M(p.GetSize(pcbnew.F_Cu).x), M(p.GetSize(pcbnew.F_Cu).y)) > 1.0   # thermal pads take vias
+            if big:
+                continue
+            L = pcbnew.B_Cu if fp.IsFlipped() else pcbnew.F_Cu
+            o = p.GetEffectivePolygon(L).Outline(0)
+            opening = Polygon([xy(o.CPoint(i)) for i in range(o.PointCount())]).buffer(mask)
+            smd.append((f"{fp.GetReference()}.{p.GetNumber()}", p.GetNetname(), opening))
     for v in board.GetTracks():
         if v.Type() != pcbnew.PCB_VIA_T:
             continue
-        for name, p, fp in smd:
-            big = p.GetNetname() == "GND" and len(list(fp.Pads())) > 4 and \
-                min(M(p.GetSize(pcbnew.F_Cu).x), M(p.GetSize(pcbnew.F_Cu).y)) > 1.0
-            if not big and p.HitTest(v.GetPosition(), v.GetWidth(pcbnew.F_Cu) // 2):
-                out.append(("via-in-pad", xy(v.GetPosition()), f"{v.GetNetname()} via in {name} [{p.GetNetname()}]"))
+        hole = Point(xy(v.GetPosition())).buffer(M(v.GetDrillValue()) / 2)
+        for name, net, opening in smd:
+            if opening.intersects(hole):
+                depth = opening.intersection(hole).area / hole.area
+                out.append(("via-in-pad", xy(v.GetPosition()),
+                            f"{v.GetNetname()} via in {name} [{net}]: {depth:.0%} of its drill in the mask opening"))
     return out
 
 

@@ -37745,14 +37745,6 @@
 		(uuid "6ae0b649-285b-45c2-9fcc-50f451ddb419")
 	)
 	(segment
-		(start 32.1125 80.7)
-		(end 32.4625 81.05)
-		(width 0.4)
-		(layer "F.Cu")
-		(net "VBUS")
-		(uuid "76ced037-e027-42c3-8102-411c937e58e4")
-	)
-	(segment
 		(start 34.7375 84.4025)
 		(end 34.835 84.5)
 		(width 0.4)
@@ -37889,14 +37881,6 @@
 		(uuid "4c25d0c6-771d-44ae-a9ac-96b0adb565c1")
 	)
 	(segment
-		(start 31.209428 80.089124)
-		(end 31.205925 80.089124)
-		(width 0.4)
-		(layer "B.Cu")
-		(net "VBUS")
-		(uuid "4f0c3413-2b86-4d78-92ae-385bf255ed3a")
-	)
-	(segment
 		(start 31.15 80.214695)
 		(end 31.15 79.355)
 		(width 0.4)
@@ -37946,27 +37930,11 @@
 	)
 	(segment
 		(start 31.407652 80.472348)
-		(end 31.407652 80.287348)
-		(width 0.4)
-		(layer "B.Cu")
-		(net "VBUS")
-		(uuid "b5764903-74bd-4d5f-be9c-aed98f28b919")
-	)
-	(segment
-		(start 31.407652 80.472348)
 		(end 33.214964 80.472348)
 		(width 0.4)
 		(layer "B.Cu")
 		(net "VBUS")
 		(uuid "b5d5dc93-34af-4e64-9bac-d0af9faa486c")
-	)
-	(segment
-		(start 31.407652 80.472348)
-		(end 31.15 80.214695)
-		(width 0.4)
-		(layer "B.Cu")
-		(net "VBUS")
-		(uuid "b980c72a-1e83-422f-97ec-11e5c6b82281")
 	)
 	(segment
 		(start 27.84594 80.21)
@@ -40984,14 +40952,6 @@
 		(net "CAM_EN")
 		(uuid "cdb97b69-a03a-43eb-bf40-10bd2eaf4b5a")
 	)
-	(segment
-		(start 23.7 12.35)
-		(end 23.64 12.35)
-		(width 0.15)
-		(layer "F.Cu")
-		(net "CAM_EN")
-		(uuid "f37c6bc8-9656-4930-b87a-8298709f1bb4")
-	)
 	(via
 		(at 28.825 8.65)
 		(size 0.45)
@@ -43775,14 +43735,6 @@
 		(layer "B.Cu")
 		(net "OPTIGA_RST")
 		(uuid "dfee8bee-aa07-438a-889e-c74249c6c17b")
-	)
-	(segment
-		(start 10.891439 28.461439)
-		(end 10.937878 28.415)
-		(width 0.15)
-		(layer "B.Cu")
-		(net "OPTIGA_RST")
-		(uuid "f322f80c-80a2-4b61-8293-4da277891fc7")
 	)
 	(segment
 		(start 11.762122 28.415)
@@ -47199,14 +47151,6 @@
 		(layer "B.Cu")
 		(net "BAT_N")
 		(uuid "bb46ee41-5cd0-481f-bb23-9e96608d7889")
-	)
-	(segment
-		(start 2.476776 62.126776)
-		(end 2.495 62.145)
-		(width 0.8)
-		(layer "B.Cu")
-		(net "BAT_N")
-		(uuid "f176a9e1-25c8-42dd-a19a-98d691153279")
 	)
 	(segment
 		(start 35.985 60.75)
