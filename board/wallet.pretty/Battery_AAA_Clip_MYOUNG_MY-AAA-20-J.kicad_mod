@@ -165,4 +165,9 @@
 		(uuid "f21765d4-90ae-47e0-bad4-9530943a4da4")
 	)
 	(embedded_fonts no)
+	(model "${KIPRJMOD}/../3d/MYOUNG_MY-AAA-20-J.step"
+		(offset (xyz 0.480 0.000 0.000))
+		(scale (xyz 1 1 1))
+		(rotate (xyz 0 0 180))
+	)
 )

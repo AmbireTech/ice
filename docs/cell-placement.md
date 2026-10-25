@@ -12,7 +12,7 @@ antenna still south), routed.
 built into the back half would have left that half unprintable without supports. So
 the case leaves the cell open: it stands 5.6 mm out of a flat back, 17.1 mm thick
 there. A separately printed, rounded cover slides on from the side and makes it
-18.1 mm. The cell charges over USB in the device, so it rarely comes out. The options
+17.7 mm. The cell charges over USB in the device, so it rarely comes out. The options
 below are the comparison the decision was made on.
 
 ## How the numbers were worked out
@@ -130,14 +130,15 @@ case needs a wall behind each one. All of that buys 2 mm of thickness.
   of the board that took the most hand routing.
 - **Getting at the cell:** it charges in the device, and the case leaves it open; the
   cover slides off sideways.
-- **The cover is rounder than a hump would be, and 1 mm thicker** than the 17.9 mm
-  estimate. The clips' arms flare out near the cell's top, and the cover's inside has
-  to clear them.
+- **The cover is wider than the cell.** The clips' arms flare out near the cell's top,
+  so its roof is broad and flat. Its sides ramp down gently (40° at the steepest), so it
+  covers 26 mm of the back for an 11 mm cell. A steeper cover could be 19 mm wide (55°).
 - **The flame print** on the back loses its chin end under the cell. The cell shows
   through a clear cover.
 - **The radio's antenna** stays at the south edge, outside the cell's footprint, as
   it is today.
-- **The cover's numbers come from the generated case** (2026-10-25): 15 mm wide,
-  6.6 mm proud of the back, a 0.8 mm skin, 18.1 mm thick there. Nothing is
+- **The cover's numbers come from the generated case** (2026-10-25), sized from the
+  clips' real 3D model: 26 mm wide on the back, 6.2 mm proud, 0.1 mm to the cell and
+  0.15 mm to the clips inside, a 0.5 mm roof, 17.7 mm thick there. Nothing is
   test-printed yet: the slide's fit and whether it needs a detent to stay put are
   open.

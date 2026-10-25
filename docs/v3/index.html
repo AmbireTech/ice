@@ -502,7 +502,7 @@ footer svg { width: 18px; height: 27px; color: var(--violet); }
     </div>
     <div class="status">
       <span class="badge">In design</span>
-      <p><b>The next board is designed and routed.</b> It runs on one AAA cell instead of a built-in battery. The case is 11.5 mm thick, about 6.5 mm thinner than before, except across the bottom of the back, where the cell stands out (17.1 mm there, 18.1 mm with its optional cover). It adds a joystick under the screen and a buzzer. The first three devices, ordered on 18 October, are the previous board.</p>
+      <p><b>The next board is designed and routed.</b> It runs on one AAA cell instead of a built-in battery. The case is 11.5 mm thick, about 6.5 mm thinner than before, except across the bottom of the back, where the cell stands out (17.1 mm there, 17.7 mm with its optional cover). It adds a joystick under the screen and a buzzer. The first three devices, ordered on 18 October, are the previous board.</p>
       <h3>What changed</h3>
       <ul class="plain">
         <li>Any AAA cell: rechargeable NiMH, lithium or alkaline. It sits in clips on the back and charges over USB in the device; the case leaves it open, or a printed cover slides on over it.</li>
@@ -854,21 +854,6 @@ async function main() {
   lens.rotation.x = Math.PI / 2;
   lens.position.set((cx0 + cx1) / 2, -(cy0 + cy1) / 2, z.boardBack - 6.1);
   board.add(lens);
-  // The AAA cell's two steel clips, soldered to the board's back (the cell itself is not
-  // drawn): a thin base, an end wall on the outside, and two arms that hug the cell.
-  // Heights are off the board's back face, outward.
-  const c = d.cell;
-  const clipMat = new THREE.MeshStandardMaterial({ color: 0xc9ccd2, roughness: 0.3, metalness: 0.9 });
-  const t = 0.3, mid = (c.x[0] + c.x[1]) / 2, arms = 0.25 + c.d / 2 + 2;
-  const clip = (rect, h) => boxFromRect(rect, z.boardBack - h, z.boardBack, clipMat);
-  for (const [x0, y0, x1, y1] of c.clips) {
-    const ym = (y0 + y1) / 2, outer = (x0 + x1) / 2 < mid ? x0 : x1 - t;
-    board.add(clip([x0, ym - 3.5, x1, ym + 3.5], 0.25));
-    board.add(clip([outer, ym - 3.5, outer + t, ym + 3.5], c.clipH));
-    board.add(clip([x0 + 1.5, y0, x1 - 1.5, y0 + t], arms));
-    board.add(clip([x0 + 1.5, y1 - t, x1 - 1.5, y1], arms));
-  }
-
   const [vx0, vy0, vx1, vy1] = d.viewingArea;
   const panel = new THREE.Group();
   panel.add(boxFromRect(d.panel, z.panel[0], z.panel[1], new THREE.MeshStandardMaterial({ color: 0x0a0c0e, roughness: 0.25 })));

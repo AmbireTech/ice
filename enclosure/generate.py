@@ -81,6 +81,7 @@ from build123d import (
     Mesher,
     Plane,
     Polygon,
+    Vector,
     fillet,
 )
 
@@ -101,19 +102,21 @@ FOAM_T = 0.3          # foam tape under the screen, on the board (newBoard.py bu
 # in from the east over it (owner, 2026-10-25: the case is open by default).
 CELL_REFS = ("BT_N", "BT_P")
 CELL_D, CELL_BASE = 10.5, 0.25
-CLIP_H = 10.41
-# The clips' arms wrap the cell and flare out at their tips: (depth off the board, the
-# widest half-width off the cell's axis in the 0.5 mm above that depth), from MYOUNG's
-# model on EasyEDA (LCSC C6937104 / C6937107), both clips.
-CLIP_PROFILE = ((2.5, 4.92), (3.0, 5.15), (3.5, 5.24), (4.0, 5.39), (4.5, 5.48), (5.0, 5.5), (5.5, 5.5),
-                (6.0, 5.47), (6.5, 5.39), (7.0, 5.32), (7.5, 5.15), (8.0, 4.91), (8.5, 4.63), (9.0, 4.3),
-                (9.5, 3.92), (10.0, 3.64), (10.5, 3.8))
-CLIP_CLR = 0.25       # the cover's inside to the clips
-CELL_AIR = 0.2        # the cover's inside to the cell
-# The cover: a round shell over the cell with a web down through the opening on each
-# side and a lip under the floor's edge (the floor sits between lip and body). It
-# stops against the west wall; it prints standing on its end, with no supports.
-COVER_SKIN, COVER_WEB, COVER_CLR = 0.8, 0.8, 0.15
+# The clips' real shape comes from their models on the board (MYOUNG's, board/models.json):
+# the arms wrap the cell and flare out at their tips, so the cover clears both.
+CLIP_CLR = 0.15       # the cover's inside to the clips (it slides over them)
+CELL_AIR = 0.1        # the cover's inside to the cell
+# The cover: one smooth curve, flat over the cell and the clips' tips, rounding into
+# shoulders and leaving the back tangentially (F + H (1 - (|y|/R)^p)^2, the narrowest p
+# and R that keep COVER_SKIN everywhere and no part steeper than FLANK_DEG); a web down
+# through the opening on each side and a lip under the floor's edge (the floor sits
+# between lip and cover). It stops against the west wall; it prints standing on its
+# end, with no supports.
+COVER_SKIN = 0.5      # the least plastic anywhere over the inside: the roof, over the cell
+FLANK_DEG = 40.0      # the steepest the curve may get
+COVER_FLANGE = 0.8    # the least thickness over the lips, where it clamps the floor
+COVER_EDGE = 0.4      # the flanks' feather edge on the back is cut off at this thickness
+COVER_WEB, COVER_CLR = 0.8, 0.15
 COVER_LIP = (0.8, 0.8)   # over the floor's edge, thick
 # The joystick (ALPS SKRHAAE010, 7.5 x 7.5 mm housing 2.23 mm tall, a 3 mm stem to
 # 5.08 mm: EasyEDA's model) on the front, below the cell: a pocket over its housing in
@@ -578,58 +581,91 @@ def wall_cut(side, b, along, z, size_along, size_z, r):
     return Pos(x, -along, z) * Rot(0, 90, 0) * Rot(0, 0, 90) * extrude(sk, amount=depth / 2, both=True)
 
 
-def rounded_u(hw, bottom, r, top, n=24):
-    """A U profile (y across the cell's axis, d deeper off the board's back): flat top at
-    d = top, straight sides at +-hw, bottom at d = bottom with corners of radius r."""
-    pts = [(-hw, top), (-hw, bottom - r)]
-    pts += [(-hw + r - r * math.cos(t), bottom - r + r * math.sin(t)) for t in np.linspace(0, math.pi / 2, n)][1:]
-    pts += [(hw - r + r * math.sin(t), bottom - r + r * math.cos(t)) for t in np.linspace(0, math.pi / 2, n)][1:]
-    return pts + [(hw, top)]
+def hull(pts):
+    """Convex hull of 2D points, counter-clockwise (Andrew's monotone chain)."""
+    pts = sorted(set(map(tuple, np.round(pts, 4))))
+    def half(seq):
+        out = []
+        for q in seq:
+            while len(out) >= 2 and (out[-1][0] - out[-2][0]) * (q[1] - out[-2][1]) - (out[-1][1] - out[-2][1]) * (q[0] - out[-2][0]) <= 0:
+                out.pop()
+            out.append(q)
+        return out
+    lo, hi = half(pts), half(pts[::-1])
+    return np.array(lo[:-1] + hi[:-1])
 
 
-def in_u(y, d, hw, bottom, r):
-    y = abs(y)
-    if y > hw + 1e-9 or d > bottom + 1e-9:
-        return False
-    cy, cd = hw - r, bottom - r
-    return not (y > cy and d > cd) or math.hypot(y - cy, d - cd) <= r + 1e-9
-
-
-def cover_geometry(d_floor_in, d_floor_out):
-    """The cell cover's cross-section, from the clips' profile: half-widths off the cell's
-    axis and depths off the board's back face."""
-    in_hw = max(w for _, w in CLIP_PROFILE) + CLIP_CLR
+def cover_geometry(clip_pts, d_floor_in, d_floor_out):
+    """The cell cover's cross-section from the clips' and the cell's real outlines.
+    clip_pts: the clips' model vertices as (offset across the cell's axis, depth off the
+    board's back face). Returns half-widths off the axis, depths, and the two outlines."""
+    lip_bot = d_floor_in - COVER_CLR
+    lip_top = lip_bot - COVER_LIP[1]
+    web_zone = clip_pts[(clip_pts[:, 1] > lip_top - COVER_CLR) & (clip_pts[:, 1] < d_floor_out + 0.5)]
+    in_hw = np.abs(web_zone[:, 0]).max() + CLIP_CLR
     web_out = in_hw + COVER_WEB
     edge = web_out + COVER_CLR                    # the shell's opening
     lip_out = edge + COVER_LIP[0]
-    lip_bot = d_floor_in - COVER_CLR
-    in_bottom = CELL_BASE + CELL_D + CELL_AIR
-    if max(h for h, _ in CLIP_PROFILE) - 0.5 + CLIP_CLR > in_bottom:
-        raise SystemExit("the clips stand deeper than the cell: the cover's inside needs their height")
-    pts = [(w, h) for h, w in CLIP_PROFILE] + [(w, h - 0.5) for h, w in CLIP_PROFILE] + [(w, CLIP_H) for h, w in CLIP_PROFILE[-1:]]
-    # the roundest inside that still clears every clip point by CLIP_CLR
-    def clears(r):
-        cy_, cd = in_hw - r, in_bottom - r
-        return all(math.hypot(w - cy_, h - cd) <= r - CLIP_CLR + 1e-9 for w, h in pts if w > cy_ and h > cd)
-    rc = next(r for r in np.arange(in_hw, 0.4, -0.05) if clears(r))
-    out_bottom = in_bottom + COVER_SKIN
-    # the roundest outside that keeps COVER_SKIN everywhere over the inside
-    skin = rounded_u(in_hw + COVER_SKIN, out_bottom, rc + COVER_SKIN, d_floor_out, 48)
-    ro = next(r for r in np.arange(out_bottom - d_floor_out, 0.4, -0.05)
-              if all(in_u(y, d, lip_out, out_bottom, r) for y, d in skin))
-    return {"in_hw": in_hw, "web_out": web_out, "edge": edge, "lip_out": lip_out, "out_hw": lip_out,
-            "lip_bot": lip_bot, "lip_top": lip_bot - COVER_LIP[1], "in_bottom": in_bottom, "out_bottom": out_bottom,
-            "rc": rc, "ro": ro, "floor_out": d_floor_out, "cell_out": CELL_BASE + CELL_D}
+    # inside: the hull of the clips (+CLIP_CLR) and the cell (+CELL_AIR), below the floor
+    ring = np.c_[np.cos(np.linspace(0, 2 * math.pi, 24, endpoint=False)), np.sin(np.linspace(0, 2 * math.pi, 24, endpoint=False))]
+    deep = clip_pts[clip_pts[:, 1] > d_floor_out - 0.5]
+    deep = np.r_[deep, deep * [-1, 1]]
+    axis = CELL_BASE + CELL_D / 2
+    cell = np.c_[np.cos(np.linspace(0, 2 * math.pi, 180)), np.sin(np.linspace(0, 2 * math.pi, 180))] * (CELL_D / 2 + CELL_AIR) + [0, axis]
+    inner = hull(np.r_[(deep[:, None, :] + ring[None] * CLIP_CLR).reshape(-1, 2), cell,
+                       [[-in_hw, d_floor_out - 1], [in_hw, d_floor_out - 1]]])
+    inner = inner[(inner[:, 1] >= d_floor_out - 1 - 1e-3)]   # hull() rounds; keep the two top corners
+    roof = inner[:, 1].max()
+    top = roof + COVER_SKIN
+    # outside: the narrowest plateau curve that keeps COVER_SKIN over the inside
+    dense = np.r_[[inner[i] + (inner[(i + 1) % len(inner)] - inner[i]) * t
+                   for i in range(len(inner)) for t in np.linspace(0, 1, 10)]]
+    dense = dense[dense[:, 1] >= d_floor_out]
+    H = top - d_floor_out
+
+    def curve(p, r, n=1201):
+        y = np.linspace(-r, r, n)
+        return np.c_[y, d_floor_out + H * (1 - (np.abs(y) / r) ** p) ** 2]
+
+    def clears(p, r):
+        o = curve(p, r)
+        half = o[len(o) // 2:]
+        under = np.interp(np.abs(dense[:, 0]), half[:, 0], half[:, 1]) > dense[:, 1]
+        return under.all() and np.sqrt(((dense[:, None, :] - o[None]) ** 2).sum(-1)).min() >= COVER_SKIN - 1e-6
+
+    best = None
+    for p in np.arange(2.0, 8.01, 0.25):
+        r = next((r for r in np.arange(in_hw + COVER_SKIN, 40, 0.1) if clears(p, r)), None)
+        if r is None:
+            continue
+        o = curve(p, r)
+        steep = math.degrees(math.atan(np.abs(np.diff(o[:, 1]) / np.diff(o[:, 0])).max()))
+        if steep <= FLANK_DEG and (best is None or r < best[1]):
+            best = (p, r, steep)
+    if best is None:
+        raise SystemExit(f"no cover curve keeps {COVER_SKIN} mm of skin within {FLANK_DEG} deg")
+    p_, rb, steep = best
+    o = curve(p_, rb)
+    half = o[len(o) // 2:]
+    flange = np.interp(lip_out, half[:, 0], half[:, 1]) - d_floor_out
+    if flange < COVER_FLANGE:
+        raise SystemExit(f"the cover is only {flange:.2f} mm thick over its lips")
+    # cut the feather edge where the curve is thinner than COVER_EDGE
+    y_edge = half[half[:, 1] - d_floor_out >= COVER_EDGE][-1, 0]
+    body = o[np.abs(o[:, 0]) <= y_edge]
+    outer = np.r_[[[-y_edge, d_floor_out]], body, [[y_edge, d_floor_out]]]
+    return {"in_hw": in_hw, "web_out": web_out, "edge": edge, "lip_out": lip_out, "out_hw": y_edge,
+            "lip_bot": lip_bot, "lip_top": lip_top, "in_bottom": roof, "out_bottom": top, "rb": rb, "steep": steep,
+            "inner": inner, "outer": outer, "floor_out": d_floor_out, "cell_out": CELL_BASE + CELL_D}
 
 
 def cover_part(cv, cy, z_back, x0, xi0, x1):
-    """The cover: the round body outside the back, from x0 to x1; the webs through the
-    opening and the lips under the floor from xi0 (they stop at the west wall) to x1."""
+    """The cover: the bell outside the back, from x0 to x1; the webs through the opening
+    and the lips under the floor from xi0 (they stop at the west wall) to x1."""
     def slab(pts, a, b_):
         sk = Plane.YZ * Polygon(*[(-(cy + y), z_back - d) for y, d in pts], align=None)
         return Pos(a, 0, 0) * extrude(sk, amount=b_ - a, dir=(1, 0, 0))   # the outline's winding would set +-X
-    body = slab(rounded_u(cv["out_hw"], cv["out_bottom"], cv["ro"], cv["floor_out"]), x0, x1)
-    body -= slab(rounded_u(cv["in_hw"], cv["in_bottom"], cv["rc"], cv["floor_out"] - 1), x0 - 1, x1 + 1)
+    body = slab(cv["outer"], x0, x1) - slab(cv["inner"], x0 - 1, x1 + 1)
     for s in (-1, 1):
         ya, yb = sorted((cy + s * cv["in_hw"], cy + s * cv["web_out"]))
         body += box(xi0, ya, x1, yb, z_back - cv["floor_out"] - 0.01, z_back - cv["lip_top"])
@@ -646,7 +682,7 @@ def main():
     with tempfile.TemporaryDirectory() as tmp:
         parts = parts_geometry(BOARD, Path(tmp))
 
-    back = {ref: v for ref, v in parts.items() if v[:, 2].min() < -0.01}
+    back = {ref: v for ref, v in parts.items() if v[:, 2].min() < -0.01 and ref not in CELL_REFS}   # the cell's clips stand out of the back
     # not fitted (DNP: the optional edge buttons) = not there; the case gets no opening for them
     unmodelled = sorted(ref for ref, f in b["fps"].items()
                         if f["layer"] == "B.Cu" and ref not in parts and not f["dnp"] and ref not in CELL_REFS
@@ -732,7 +768,11 @@ def main():
         clips.append([round(v, 3) for v in (*fw.min(0), *fw.max(0))])
     cell_cx = sum((c[0] + c[2]) / 2 for c in clips) / 2
     cell_cy = sum((c[1] + c[3]) / 2 for c in clips) / 2
-    cv = cover_geometry(z_back - z_floor_in, z_back - z_floor_out)
+    missing = [r for r in CELL_REFS if r not in parts]
+    if missing:
+        raise SystemExit(f"{missing}: the cell's clips need their 3D models (board/models.json) to size the cover")
+    clip_v = np.vstack([parts[r] for r in CELL_REFS])
+    cv = cover_geometry(np.c_[clip_v[:, 1] - cell_cy, -clip_v[:, 2]], z_back - z_floor_in, z_back - z_floor_out)
     shell -= rr_prism(*in_o[:4], in_o[4], z_floor_in, z_split + 1)
     shell -= box(-GAP, cell_cy - cv["edge"], W + GAP + WALL + 2, cell_cy + cv["edge"], z_floor_out - 1, z_floor_in + 0.01)
     slot = cv["lip_out"] + COVER_CLR
@@ -751,12 +791,19 @@ def main():
                for r, v in back.items() if r not in CELL_REFS)
     face = outline(b, GAP + WALL - DRAFT_MM / 2)
     cover = cover_part(cv, cell_cy, z_back, face[0], -GAP + COVER_CLR, face[2])
+    # the cover slides over the clips: none of their model's points may be inside it
+    probe = clip_v[np.random.default_rng(0).choice(len(clip_v), min(1500, len(clip_v)), replace=False)]
+    inside = [p for p in probe if cover.is_inside(Vector(p[0], -p[1], z_back + p[2]))]
+    if inside:
+        raise SystemExit(f"the cover runs into the clips at {len(inside)} of {len(probe)} sampled points, e.g. "
+                         f"x {inside[0][0]:.2f}, y {inside[0][1]:.2f}, {-inside[0][2]:.2f} mm off the board "
+                         f"(cv floor {cv['floor_out']}, inner {cv['inner'][:3].round(2).tolist()})")
     report.append(f"AAA cell open through the back ({2 * cv['edge']:.1f} mm wide), standing "
                   f"{cv['cell_out'] - (z_back - z_floor_out):.1f} mm out: {z_top - z_back + cv['cell_out']:.1f} mm thick there")
-    report.append(f"cell cover (optional, slides in from the east): {2 * cv['out_hw']:.1f} mm wide, "
-                  f"{cv['out_bottom'] - (z_back - z_floor_out):.1f} mm proud, corners {cv['rc']:.2f} inside / {cv['ro']:.2f} outside, "
-                  f"{COVER_SKIN} mm skin; {z_top - z_back + cv['out_bottom']:.1f} mm thick there; its lips pass "
-                  f"{near[0]:.2f} mm from {near[1]}")
+    report.append(f"cell cover (optional, slides in from the east): {2 * cv['out_hw']:.1f} mm wide on the back "
+                  f"(one smooth curve, its steepest {cv['steep']:.0f} deg, the feather edge cut at {COVER_EDGE} mm), {cv['out_bottom'] - (z_back - z_floor_out):.1f} mm proud; "
+                  f"inside {CELL_AIR} mm to the cell and {CLIP_CLR} mm to the clips, {COVER_SKIN} mm roof; "
+                  f"{z_top - z_back + cv['out_bottom']:.1f} mm thick there; its lips pass {near[0]:.2f} mm from {near[1]}")
     shell += rr_prism(*tongue_o[:4], tongue_o[4], z_split, z_split + TONGUE_H) - rr_prism(*in_o[:4], in_o[4], z_split - 1, z_split + TONGUE_H + 1)
 
     # A screw only where the front half is solid: under the screen there is no room
@@ -877,7 +924,7 @@ def main():
     if front:
         report.append(f"front parts in pockets under the bezel's chin: {', '.join(front)}")
     cell = {"side": "back", "x": [round(cell_cx - 22.25, 3), round(cell_cx + 22.25, 3)], "y": round(cell_cy, 3),
-            "z": round(z_back - CELL_BASE - CELL_D / 2, 3), "d": CELL_D, "clips": clips, "clipH": CLIP_H}
+            "z": round(z_back - CELL_BASE - CELL_D / 2, 3), "d": CELL_D, "clips": clips}
 
     # Screw bosses: the chin is solid from the board up to the front skin there; the
     # pilot runs up to PILOT_TOP_CLR under the front face.

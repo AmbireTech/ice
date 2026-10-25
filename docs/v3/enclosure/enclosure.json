@@ -48,7 +48,7 @@
   "boardBack": -1.0,
   "split": 0.0,
   "cellOut": -11.75,
-  "coverOut": -12.75,
+  "coverOut": -12.3498,
   "panel": [
    0.3,
    4.43
@@ -90,8 +90,7 @@
     47.5,
     77.5
    ]
-  ],
-  "clipH": 10.41
+  ]
  },
  "camera": [
   4.0,
@@ -235,7 +234,7 @@
    {
     "label": "Case: 3MF, STL and STEP (zip)",
     "filename": "ambire-signer-case.zip",
-    "bytes": 576704,
+    "bytes": 1343329,
     "part": "enclosure/files/ambire-signer-case.zip.b64.txt",
     "b64": true
    }

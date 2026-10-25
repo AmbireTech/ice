@@ -10,7 +10,7 @@ firmware starts from a fork of Trezor's.
 fitted). The board file is now **v3**, routed: one AAA cell of any chemistry in
 clips on the back instead of the pouch (NiMH charged over USB only once
 identified as NiMH), a flat front, a case 6.5 mm thinner (11.5 mm) with the cell
-standing out across the bottom of the back (17.1 mm there, 18.1 mm under its optional
+standing out across the bottom of the back (17.1 mm there, 17.7 mm under its optional
 slide-on cover), a joystick below the
 screen, a buzzer, and the flame on the back. Proto 1, the same with the cell on
 the front, was never ordered. Why and
