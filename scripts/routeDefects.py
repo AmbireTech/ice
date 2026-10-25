@@ -58,8 +58,11 @@ def hops(board, max_mm):
             continue
         vias = [t for t in items if t.Type() == pcbnew.PCB_VIA_T]
         tracks = [t for t in items if t.Type() != pcbnew.PCB_VIA_T]
-        for i, a in enumerate(vias):
-            for c in vias[i + 1:]:
+        seen = set()
+        for a in vias:
+            for c in vias:
+                if a is c:
+                    continue
                 for layer in (pcbnew.F_Cu, pcbnew.B_Cu):
                     seg = [t for t in tracks if t.GetLayer() == layer]
                     start = [t for t in seg if a.HitTest(t.GetStart()) or a.HitTest(t.GetEnd())]
@@ -89,6 +92,10 @@ def hops(board, max_mm):
                     if not any(t.GetLayer() == other and (c.HitTest(t.GetStart()) or c.HitTest(t.GetEnd())) for t in tracks):
                         continue
                     pa, pc = xy(a.GetPosition()), xy(c.GetPosition())
+                    # walked from either via: a via that branches on this layer only walks one way
+                    if frozenset((pa, pc, layer)) in seen:
+                        continue
+                    seen.add(frozenset((pa, pc, layer)))
                     out.append(("hop", pa, f"{net}: two vias {pa} and {pc}, {length:.1f} mm on "
                                            f"{board.GetLayerName(layer)} between them"))
     return out
