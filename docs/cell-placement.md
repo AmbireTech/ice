@@ -24,6 +24,10 @@ All heights are in mm from the board's front face. They come from the enclosure 
 The cell is 44.5 × 10.5 mm, lying across the chin. The camera head always sticks out
 0.7 mm through the back, in every option.
 
+"Thickness at the cell" is the device's total there, the thickest point. A hump is how
+far that part stands out past the 11.5 mm body: back, enclosed is 11.5 + 6.4 ≈ 17.9 mm,
+not 17.9 + 6.4.
+
 ## The options
 
 | Option | Thickness at the cell | Front face | Back face | Changing the cell | Board change |
