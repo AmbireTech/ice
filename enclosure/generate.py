@@ -18,8 +18,10 @@ Parts (Z = 0 is the board's front face, +Z toward the screen; X east, Y north):
           hole: a locating pin where the hole sits under the screen, a clearance hole
           and a counterbore (the screw head sits flush) where the front half is solid;
           USB-C opening, airgap-lever slot, an open window the camera head stands
-          through, a hole over the buzzer, a groove along the north tongue, and a
-          hump across the chin that encloses the AAA cell in its clips
+          through, a hole over the buzzer, a groove along the north tongue, and an
+          opening the AAA cell and its clips stand through, open to the east wall
+  cover   optional: a round cover over the cell that slides into that opening from
+          the east, its lips under the floor's edges
   bezel   front plate with the display window and walls down to the parting line;
           its skirt laps over a tongue on the shell, with a ridge along the north side
           that hooks into the tongue's groove. Inside: solid fills that locate the
@@ -77,6 +79,8 @@ from build123d import (
     export_stl,
     extrude,
     Mesher,
+    Plane,
+    Polygon,
     fillet,
 )
 
@@ -91,17 +95,26 @@ KICAD_3D = os.environ.get("KICAD_3DMODEL_DIR", "/Applications/KiCad/KiCad.app/Co
 # ── Stack in front of the board ─────────────────────────────────────────────
 FOAM_T = 0.3          # foam tape under the screen, on the board (newBoard.py budgets the tails with it)
 # The AAA cell lies across the chin on the board's back face, in two clips (MYOUNG
-# MY-AAA-19-J / -20-J: base 0.25 mm steel, arms 10.46 mm tall, 11 mm across), under
-# a hump in the shell (docs/cell-placement.md: back, enclosed). 10.5 mm across
-# (Energizer E92/L92, eneloop BK-4MCCE all 10.1-10.5), resting on the clip bases.
+# MY-AAA-19-J / -20-J: base 0.25 mm steel, 11 mm across), and stands out of the back
+# through an opening. 10.5 mm across (Energizer E92/L92, eneloop BK-4MCCE all
+# 10.1-10.5), resting on the clip bases. An optional cover, printed on its own, slides
+# in from the east over it (owner, 2026-10-25: the case is open by default).
 CELL_REFS = ("BT_N", "BT_P")
 CELL_D, CELL_BASE = 10.5, 0.25
-CLIP_H = 10.46
-CELL_CLR = 0.4        # the hump's inside around the clips' outlines
-CELL_AIR = 0.2        # between the cell and the hump's skin
-# The hump's skin over the cell: the thinnest strip a resin print keeps (the cell
-# backs it CELL_AIR below); its north and south walls are as thick as the case's.
-HUMP_SKIN = 0.6
+CLIP_H = 10.41
+# The clips' arms wrap the cell and flare out at their tips: (depth off the board, the
+# widest half-width off the cell's axis in the 0.5 mm above that depth), from MYOUNG's
+# model on EasyEDA (LCSC C6937104 / C6937107), both clips.
+CLIP_PROFILE = ((2.5, 4.92), (3.0, 5.15), (3.5, 5.24), (4.0, 5.39), (4.5, 5.48), (5.0, 5.5), (5.5, 5.5),
+                (6.0, 5.47), (6.5, 5.39), (7.0, 5.32), (7.5, 5.15), (8.0, 4.91), (8.5, 4.63), (9.0, 4.3),
+                (9.5, 3.92), (10.0, 3.64), (10.5, 3.8))
+CLIP_CLR = 0.25       # the cover's inside to the clips
+CELL_AIR = 0.2        # the cover's inside to the cell
+# The cover: a round shell over the cell with a web down through the opening on each
+# side and a lip under the floor's edge (the floor sits between lip and body). It
+# stops against the west wall; it prints standing on its end, with no supports.
+COVER_SKIN, COVER_WEB, COVER_CLR = 0.8, 0.8, 0.15
+COVER_LIP = (0.8, 0.8)   # over the floor's edge, thick
 # The joystick (ALPS SKRHAAE010, 7.5 x 7.5 mm housing 2.23 mm tall, a 3 mm stem to
 # 5.08 mm: EasyEDA's model) on the front, below the cell: a pocket over its housing in
 # the bezel's solid chin, and a hole wide enough for the stem to rock. The stem stops
@@ -188,24 +201,26 @@ PRINT_SCHEMES = [
     {"id": "incognito", "label": "Incognito", "ink": None, "mask": "#181A1F", "colour": False},   # plain black, no print
 ]
 
-CASE_README = """Ambire signer proto 1 case
+CASE_README = """Ambire signer v3 case
 
-case.3mf     both parts laid out for printing: the shell on its back, the bezel face down
-shell.stl    back shell (standoffs, locating pins, the screw holes, the camera window,
-             the hump over the AAA cell)
-bezel.stl    front bezel (the screen sits in it; the screws thread into its chin)
+case.3mf     shell and bezel laid out for printing: the shell on its back, the bezel face down
+shell.stl    back shell (standoffs, locating pins, the screw hole, the camera window, the
+             opening the AAA cell stands through)
+bezel.stl    front bezel (the screen sits in it; the screw threads into its chin)
+cover.stl    optional cell cover: slides into the cell's opening from the right-hand
+             edge (seen from the back, the left) until it stops
 *.step       the same parts for CAD
 
 Assembly: stick the screen to the board's front face with 0.3 mm foam tape, its
 ribbons through the board's slots into their connectors. Press an AAA cell into its
 clips on the board's back. Lay the board in the shell (its two top holes onto the
 pins). Hook the bezel's top edge under the shell's top lip, swing it down over the
-screen, then the M2 pan-head screws from the back. The camera stands out of the
-back; the cell sits under the hump. To change the cell, take the screws out and lift
-the shell off: the cell stays on the board.
+screen, then the M2 pan-head screw from the back. The camera and the cell stand
+out of the back; slide the cover on over the cell if you want it covered. The cell
+charges over USB in the device.
 
-Print the bezel face down: it needs no supports. The shell rests on its hump, so the
-rest of its back needs supports (or print it in resin, which supports it anyway).
+Print the shell on its back and the bezel face down, the cover standing on its end:
+none of them needs supports.
 
 Units are millimetres. Print in see-through resin or PETG (ice blue, orange,
 purple or clear). Nothing has been test-printed yet: the screw bosses, the top hook
@@ -563,6 +578,66 @@ def wall_cut(side, b, along, z, size_along, size_z, r):
     return Pos(x, -along, z) * Rot(0, 90, 0) * Rot(0, 0, 90) * extrude(sk, amount=depth / 2, both=True)
 
 
+def rounded_u(hw, bottom, r, top, n=24):
+    """A U profile (y across the cell's axis, d deeper off the board's back): flat top at
+    d = top, straight sides at +-hw, bottom at d = bottom with corners of radius r."""
+    pts = [(-hw, top), (-hw, bottom - r)]
+    pts += [(-hw + r - r * math.cos(t), bottom - r + r * math.sin(t)) for t in np.linspace(0, math.pi / 2, n)][1:]
+    pts += [(hw - r + r * math.sin(t), bottom - r + r * math.cos(t)) for t in np.linspace(0, math.pi / 2, n)][1:]
+    return pts + [(hw, top)]
+
+
+def in_u(y, d, hw, bottom, r):
+    y = abs(y)
+    if y > hw + 1e-9 or d > bottom + 1e-9:
+        return False
+    cy, cd = hw - r, bottom - r
+    return not (y > cy and d > cd) or math.hypot(y - cy, d - cd) <= r + 1e-9
+
+
+def cover_geometry(d_floor_in, d_floor_out):
+    """The cell cover's cross-section, from the clips' profile: half-widths off the cell's
+    axis and depths off the board's back face."""
+    in_hw = max(w for _, w in CLIP_PROFILE) + CLIP_CLR
+    web_out = in_hw + COVER_WEB
+    edge = web_out + COVER_CLR                    # the shell's opening
+    lip_out = edge + COVER_LIP[0]
+    lip_bot = d_floor_in - COVER_CLR
+    in_bottom = CELL_BASE + CELL_D + CELL_AIR
+    if max(h for h, _ in CLIP_PROFILE) - 0.5 + CLIP_CLR > in_bottom:
+        raise SystemExit("the clips stand deeper than the cell: the cover's inside needs their height")
+    pts = [(w, h) for h, w in CLIP_PROFILE] + [(w, h - 0.5) for h, w in CLIP_PROFILE] + [(w, CLIP_H) for h, w in CLIP_PROFILE[-1:]]
+    # the roundest inside that still clears every clip point by CLIP_CLR
+    def clears(r):
+        cy_, cd = in_hw - r, in_bottom - r
+        return all(math.hypot(w - cy_, h - cd) <= r - CLIP_CLR + 1e-9 for w, h in pts if w > cy_ and h > cd)
+    rc = next(r for r in np.arange(in_hw, 0.4, -0.05) if clears(r))
+    out_bottom = in_bottom + COVER_SKIN
+    # the roundest outside that keeps COVER_SKIN everywhere over the inside
+    skin = rounded_u(in_hw + COVER_SKIN, out_bottom, rc + COVER_SKIN, d_floor_out, 48)
+    ro = next(r for r in np.arange(out_bottom - d_floor_out, 0.4, -0.05)
+              if all(in_u(y, d, lip_out, out_bottom, r) for y, d in skin))
+    return {"in_hw": in_hw, "web_out": web_out, "edge": edge, "lip_out": lip_out, "out_hw": lip_out,
+            "lip_bot": lip_bot, "lip_top": lip_bot - COVER_LIP[1], "in_bottom": in_bottom, "out_bottom": out_bottom,
+            "rc": rc, "ro": ro, "floor_out": d_floor_out, "cell_out": CELL_BASE + CELL_D}
+
+
+def cover_part(cv, cy, z_back, x0, xi0, x1):
+    """The cover: the round body outside the back, from x0 to x1; the webs through the
+    opening and the lips under the floor from xi0 (they stop at the west wall) to x1."""
+    def slab(pts, a, b_):
+        sk = Plane.YZ * Polygon(*[(-(cy + y), z_back - d) for y, d in pts], align=None)
+        return Pos(a, 0, 0) * extrude(sk, amount=b_ - a, dir=(1, 0, 0))   # the outline's winding would set +-X
+    body = slab(rounded_u(cv["out_hw"], cv["out_bottom"], cv["ro"], cv["floor_out"]), x0, x1)
+    body -= slab(rounded_u(cv["in_hw"], cv["in_bottom"], cv["rc"], cv["floor_out"] - 1), x0 - 1, x1 + 1)
+    for s in (-1, 1):
+        ya, yb = sorted((cy + s * cv["in_hw"], cy + s * cv["web_out"]))
+        body += box(xi0, ya, x1, yb, z_back - cv["floor_out"] - 0.01, z_back - cv["lip_top"])
+        ya, yb = sorted((cy + s * cv["web_out"] - s * 0.01, cy + s * cv["lip_out"]))
+        body += box(xi0, ya, x1, yb, z_back - cv["lip_bot"], z_back - cv["lip_top"])
+    return body
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     WEB.mkdir(parents=True, exist_ok=True)
@@ -646,9 +721,8 @@ def main():
     # ── shell ──
     shell = rr_prism_drafted(*out_o[:4], out_o[4], z_split, z_floor_out, draft_back)
     shell = fillet(shell.edges().group_by(Axis.Z)[0], BACK_FILLET)
-    # The AAA cell's hump: across the back's full width over the clips, its inside down
-    # to the cell plus CELL_AIR. It reaches up into the back so it fills the back edge's
-    # fillet where the two meet.
+    # The AAA cell stands out of the back through an opening over its clips, open to the
+    # east so the optional cover slides in (cover_part); the back stays flat for printing.
     clips = []
     for ref in CELL_REFS:
         f = b["fps"].get(ref)
@@ -658,23 +732,31 @@ def main():
         clips.append([round(v, 3) for v in (*fw.min(0), *fw.max(0))])
     cell_cx = sum((c[0] + c[2]) / 2 for c in clips) / 2
     cell_cy = sum((c[1] + c[3]) / 2 for c in clips) / 2
-    hy0, hy1 = min(c[1] for c in clips) - CELL_CLR, max(c[3] for c in clips) + CELL_CLR
-    z_hump_in = z_back - CELL_BASE - CELL_D - CELL_AIR
-    z_hump_out = z_hump_in - HUMP_SKIN
-    if z_hump_in > z_floor_in:
-        raise SystemExit("the cell fits inside the body's back cavity: no hump needed, the model expects one")
-    face = outline(b, GAP + WALL - DRAFT_MM / 2)
-    hump_o = (face[0], hy0 - WALL, face[2], hy1 + WALL)
-    hump = rr_prism(*hump_o, BACK_FILLET, z_hump_out, z_floor_out + BACK_FILLET + 0.2)
-    shell += fillet(hump.edges().group_by(Axis.Z)[0], BACK_FILLET)
+    cv = cover_geometry(z_back - z_floor_in, z_back - z_floor_out)
     shell -= rr_prism(*in_o[:4], in_o[4], z_floor_in, z_split + 1)
-    shell -= box(-GAP, hy0, W + GAP, hy1, z_hump_in, z_floor_in + 0.01)
-    holes_in_hump = [(hx, hy) for hx, hy, _ in b["holes"] if hump_o[1] - STANDOFF_R < hy < hump_o[3] + STANDOFF_R]
-    if holes_in_hump:
-        raise SystemExit(f"board holes {holes_in_hump} under the cell's hump: their standoffs and screws need a rule")
-    report.append(f"AAA cell under a hump on the back: {hump_o[2] - hump_o[0]:.1f} x {hump_o[3] - hump_o[1]:.1f} mm, "
-                  f"{z_floor_out - z_hump_out:.1f} mm proud of the back, {HUMP_SKIN} mm skin {CELL_AIR} mm over the cell; "
-                  f"the case is {z_top - z_hump_out:.1f} mm thick there")
+    shell -= box(-GAP, cell_cy - cv["edge"], W + GAP + WALL + 2, cell_cy + cv["edge"], z_floor_out - 1, z_floor_in + 0.01)
+    slot = cv["lip_out"] + COVER_CLR
+    shell -= box(W + GAP - 0.01, cell_cy - slot, W + GAP + WALL + 2, cell_cy + slot,
+                 z_floor_out - 1, z_back - cv["lip_top"] + COVER_CLR)
+    # the lips slide under the floor from the east: nothing on the board's back may reach them
+    lip_band = (cell_cy - slot, cell_cy + slot)
+    hit = []
+    for ref, v in back.items():
+        m = (v[:, 1] > lip_band[0]) & (v[:, 1] < lip_band[1]) & (np.abs(v[:, 1] - cell_cy) > cv["in_hw"])
+        if ref not in CELL_REFS and m.any() and -v[m, 2].min() > cv["lip_top"] - COVER_CLR:
+            hit.append(f"{ref} ({-v[m, 2].min():.2f} mm deep)")
+    if hit:
+        raise SystemExit(f"the cover's lips run into {hit}")
+    near = min(((abs(v[:, 1] - cell_cy) - cv["lip_out"])[-v[:, 2] > cv["lip_top"] - COVER_CLR].min(initial=99), r)
+               for r, v in back.items() if r not in CELL_REFS)
+    face = outline(b, GAP + WALL - DRAFT_MM / 2)
+    cover = cover_part(cv, cell_cy, z_back, face[0], -GAP + COVER_CLR, face[2])
+    report.append(f"AAA cell open through the back ({2 * cv['edge']:.1f} mm wide), standing "
+                  f"{cv['cell_out'] - (z_back - z_floor_out):.1f} mm out: {z_top - z_back + cv['cell_out']:.1f} mm thick there")
+    report.append(f"cell cover (optional, slides in from the east): {2 * cv['out_hw']:.1f} mm wide, "
+                  f"{cv['out_bottom'] - (z_back - z_floor_out):.1f} mm proud, corners {cv['rc']:.2f} inside / {cv['ro']:.2f} outside, "
+                  f"{COVER_SKIN} mm skin; {z_top - z_back + cv['out_bottom']:.1f} mm thick there; its lips pass "
+                  f"{near[0]:.2f} mm from {near[1]}")
     shell += rr_prism(*tongue_o[:4], tongue_o[4], z_split, z_split + TONGUE_H) - rr_prism(*in_o[:4], in_o[4], z_split - 1, z_split + TONGUE_H + 1)
 
     # A screw only where the front half is solid: under the screen there is no room
@@ -825,11 +907,11 @@ def main():
     # ── checks that the geometry, not prose, has to satisfy ──
     if win[0] < panel[0] or win[2] > panel[2] or win[1] < panel[1] or win[3] > panel[3]:
         raise SystemExit("display window is larger than the glass")
-    assert shell.is_valid and bezel.is_valid, "invalid solid"
+    assert shell.is_valid and bezel.is_valid and cover.is_valid, "invalid solid"
 
-    size = (out_o[2] - out_o[0], out_o[3] - out_o[1], z_top - z_floor_out)   # the body; the hump adds to it
+    size = (out_o[2] - out_o[0], out_o[3] - out_o[1], z_top - z_floor_out)   # the body; the cell (or its cover) adds to it
     print_3mf(shell, bezel, OUT / "case.3mf")
-    for name, part in (("shell", shell), ("bezel", bezel)):
+    for name, part in (("shell", shell), ("bezel", bezel), ("cover", cover)):
         export_step(part, str(OUT / f"{name}.step"))
         export_stl(part, str(OUT / f"{name}.stl"), tolerance=MESH_TOL, angular_tolerance=0.2)
         glb = OUT / f"{name}.glb"
@@ -856,13 +938,13 @@ def main():
         "size_mm": [round(v, 1) for v in size],
         "board": {"w": W, "h": H, "r": b["r"], "t": T, "slots": b["slots"], "holes": b["holes"]},
         "z": {"floorOut": z_floor_out, "floorIn": z_floor_in, "boardBack": z_back, "split": z_split,
-              "humpOut": z_hump_out,
+              "cellOut": z_back - cv["cell_out"], "coverOut": z_back - cv["out_bottom"],
               "panel": list(z_panel), "lip": z_lip, "top": z_top},
         "panel": list(panel), "viewingArea": list(va),
         "cell": cell,
         "camera": cam,
         "depthDriver": driver,
-        "parts": {"shell": "enclosure/shell.json", "bezel": "enclosure/bezel.json"},
+        "parts": {"shell": "enclosure/shell.json", "bezel": "enclosure/bezel.json", "cover": "enclosure/cover.json"},
         "board3d": "enclosure/board.json",
         "screws": {"length": screw, "d": 2.0, "head": [3.8, 1.6], "seat": seat,
                    "holes": [[hx, hy] for hx, hy in screw_holes]},
@@ -873,7 +955,8 @@ def main():
     }
     (WEB / "enclosure.json").write_text(json.dumps(data, indent=1))
 
-    print(f"case {size[0]:.1f} x {size[1]:.1f} x {size[2]:.1f} mm, {z_top - z_hump_out:.1f} at the cell's hump "
+    print(f"case {size[0]:.1f} x {size[1]:.1f} x {size[2]:.1f} mm, {z_top - z_back + cv['cell_out']:.1f} at the cell "
+          f"({z_top - z_back + cv['out_bottom']:.1f} with its cover) "
           f"(back cavity {depth + BACK_CLEAR:.1f} mm, set by the {driver}; deepest modelled part {deepest_ref} {deepest:.2f} mm)")
     for line in report:
         print(" ", line)
@@ -925,7 +1008,7 @@ def write_downloads() -> dict:
     # The viewer saves only allowlisted types (zip, csv, ...), so the case goes as one zip.
     case_zip = OUT / "ambire-signer-case.zip"
     with zipfile.ZipFile(case_zip, "w", zipfile.ZIP_DEFLATED) as z:
-        for name in ("case.3mf", "shell.stl", "bezel.stl", "shell.step", "bezel.step"):
+        for name in ("case.3mf", "shell.stl", "bezel.stl", "cover.stl", "shell.step", "bezel.step", "cover.step"):
             z.write(OUT / name, name)
         z.writestr("README.txt", CASE_README)
     return {"fabs": {fab: [entry(l, p) for l, p in files] for fab, files in FAB_SETS.items()},

@@ -6,8 +6,14 @@ where that cell can sit, and records the choice.
 **Decision (2026-10-25): the cell goes on the back, inside the case.** The front becomes
 one flat face with no chin, and the cell sits under a hump on the back. The board
 carries it since 2026-10-25 (cell and clips on the back, the radio module on the front,
-antenna still south), routed; the case is regenerated for it (v3, published at /v3/):
-11.5 mm body, 17.9 mm at the hump, as estimated below.
+antenna still south), routed.
+
+**Update (2026-10-25, v3's case): open by default, with an optional cover.** A hump
+built into the back half would have left that half unprintable without supports. So
+the case leaves the cell open: it stands 5.6 mm out of a flat back, 17.1 mm thick
+there. A separately printed, rounded cover slides on from the side and makes it
+18.1 mm. The cell charges over USB in the device, so it rarely comes out. The options
+below are the comparison the decision was made on.
 
 ## How the numbers were worked out
 
@@ -122,14 +128,16 @@ case needs a wall behind each one. All of that buys 2 mm of thickness.
 
 - **The chin is re-laid on both faces**, and re-routed. The chin's back is the part
   of the board that took the most hand routing.
-- **Changing the cell needs a way in.** v3's case: the back half comes off. Undo the
-  screw in the back, lift the back off, and the cell sits on the board in its clips.
-  A door in the hump would swap it without opening the case; not designed.
-- **The back half no longer prints flat:** it rests on its hump, so the rest of the
-  back needs supports (a resin print has them anyway).
-- **The flame print** on the back loses its chin end under the hump. The cell shows
-  through a clear case.
+- **Getting at the cell:** it charges in the device, and the case leaves it open; the
+  cover slides off sideways.
+- **The cover is rounder than a hump would be, and 1 mm thicker** than the 17.9 mm
+  estimate. The clips' arms flare out near the cell's top, and the cover's inside has
+  to clear them.
+- **The flame print** on the back loses its chin end under the cell. The cell shows
+  through a clear cover.
 - **The radio's antenna** stays at the south edge, outside the cell's footprint, as
   it is today.
-- **The hump's numbers come from the regenerated case** (2026-10-25): 51.2 × 15.4 mm,
-  6.4 mm proud of the back, a 0.6 mm skin 0.2 mm over the cell, 17.9 mm thick there.
+- **The cover's numbers come from the generated case** (2026-10-25): 15 mm wide,
+  6.6 mm proud of the back, a 0.8 mm skin, 18.1 mm thick there. Nothing is
+  test-printed yet: the slide's fit and whether it needs a detent to stay put are
+  open.

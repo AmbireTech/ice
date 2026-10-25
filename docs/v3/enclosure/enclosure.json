@@ -47,7 +47,8 @@
   "floorIn": -4.995000058263541,
   "boardBack": -1.0,
   "split": 0.0,
-  "humpOut": -12.549999999999999,
+  "cellOut": -11.75,
+  "coverOut": -12.75,
   "panel": [
    0.3,
    4.43
@@ -90,7 +91,7 @@
     77.5
    ]
   ],
-  "clipH": 10.46
+  "clipH": 10.41
  },
  "camera": [
   4.0,
@@ -101,7 +102,8 @@
  "depthDriver": "J1",
  "parts": {
   "shell": "enclosure/shell.json",
-  "bezel": "enclosure/bezel.json"
+  "bezel": "enclosure/bezel.json",
+  "cover": "enclosure/cover.json"
  },
  "board3d": "enclosure/board.json",
  "screws": {
@@ -233,7 +235,7 @@
    {
     "label": "Case: 3MF, STL and STEP (zip)",
     "filename": "ambire-signer-case.zip",
-    "bytes": 558867,
+    "bytes": 576704,
     "part": "enclosure/files/ambire-signer-case.zip.b64.txt",
     "b64": true
    }

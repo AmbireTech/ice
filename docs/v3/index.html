@@ -115,6 +115,7 @@ legend { font: 500 .72rem/1.2 var(--mono); letter-spacing: .12em; text-transform
 .seg.wide button { flex: 1; }
 .seg button, .tog { font: 500 .86rem/1 var(--display); color: var(--muted); background: none; border: 0; border-radius: 999px; padding: 0 16px; min-height: 38px; cursor: pointer; }
 .tog { border: 1px solid var(--line-2); }
+#coverTog { left: auto; right: 14px; }
 .onstage { position: absolute; left: 14px; bottom: 14px; background: rgba(12, 13, 17, .7); backdrop-filter: blur(8px); color: var(--fg); }
 .seg button[aria-pressed="true"], .tog[aria-pressed="true"] { background: var(--purple); color: #fff; border-color: var(--purple); }
 button:focus-visible, input:focus-visible { outline: 2px solid var(--volt); outline-offset: 2px; }
@@ -296,6 +297,7 @@ footer svg { width: 18px; height: 27px; color: var(--violet); }
         <div class="stage" id="stage" role="img" aria-label="3D model of the Ambire Signer with its board and case. Drag to turn it.">
           <p class="stage-msg" id="stageMsg">Loading the 3D model…</p>
           <button type="button" class="tog onstage" id="explode" aria-pressed="false">Take apart</button>
+          <button type="button" class="tog onstage" id="coverTog" aria-pressed="false">Cell cover</button>
         </div>
         <figcaption>Drag to turn it, or take it apart. The airgap switch is on the left edge, the joystick (its centre press is the power key) and USB-C at the bottom; the QR camera looks out through a window in the back. <span id="dims"></span></figcaption>
       </figure>
@@ -461,7 +463,7 @@ footer svg { width: 18px; height: 27px; color: var(--violet); }
         <h3>Built to be looked at</h3>
         <ul class="plain sub">
           <li>About the size of a credit card, and every part sits on the back, where the see-through case shows it.</li>
-          <li>The front is flat: the screen and the joystick, nothing standing out. One AAA cell sits on the back under a hump in the case: any AAA, rechargeable or not.</li>
+          <li>The front is flat: the screen and the joystick, nothing standing out. One AAA cell stands out of the back, open or under a cover that slides on: any AAA, rechargeable or not.</li>
           <li>Carefully designed and audited in-house: the board passes a full set of checks before every order.</li>
           <li>A factory assembles it. Only the screen and camera go in by hand. DIY friendly, fully open source.</li>
         </ul>
@@ -500,10 +502,10 @@ footer svg { width: 18px; height: 27px; color: var(--violet); }
     </div>
     <div class="status">
       <span class="badge">In design</span>
-      <p><b>The next board is designed and routed.</b> It runs on one AAA cell instead of a built-in battery. The case is 11.5 mm thick, about 6.5 mm thinner than before, except across the bottom of the back, where a hump holds the cell (17.9 mm there). It adds a joystick under the screen and a buzzer. The first three devices, ordered on 18 October, are the previous board.</p>
+      <p><b>The next board is designed and routed.</b> It runs on one AAA cell instead of a built-in battery. The case is 11.5 mm thick, about 6.5 mm thinner than before, except across the bottom of the back, where the cell stands out (17.1 mm there, 18.1 mm with its optional cover). It adds a joystick under the screen and a buzzer. The first three devices, ordered on 18 October, are the previous board.</p>
       <h3>What changed</h3>
       <ul class="plain">
-        <li>Any AAA cell: rechargeable NiMH, lithium or alkaline. It sits in clips on the back of the board, under the hump; to change it, undo the screw in the back and lift the back of the case off.</li>
+        <li>Any AAA cell: rechargeable NiMH, lithium or alkaline. It sits in clips on the back and charges over USB in the device; the case leaves it open, or a printed cover slides on over it.</li>
         <li>USB charges a cell only once the device has identified it as NiMH; a lithium or alkaline cell is never charged.</li>
         <li>A joystick with a centre press, below the screen.</li>
         <li>A buzzer for confirmations.</li>
@@ -569,7 +571,8 @@ const CASE = {
 };
 // Take apart: the stack opens along Z, the front half lifts out above it with its inside
 // (bosses, screen fills, chin) facing the viewer, the screws back out of the shell.
-const EXPLODE = { bezel: [0, 104, -26], panel: [0, 0, 24], board: [0, 0, 0], shell: [0, 0, -20], screws: [0, 0, -44] };
+const EXPLODE = { bezel: [0, 104, -26], panel: [0, 0, 24], board: [0, 0, 0], shell: [0, 0, -20], screws: [0, 0, -44],
+  cover: [40, 0, -20] };   // the cell cover slides out east, the way it goes in
 const APART_CENTRE = [0, 48, 0];   // the camera re-centres between the stack and the front half
 const APART_SOLIDITY = 0.45;
 const APART_ZOOM = 1.05;           // the camera backs off this much more while apart       // apart, the case is less see-through so its bosses and fills read
@@ -774,7 +777,7 @@ function fileList(el, files) {
 async function main() {
   const d = await fetchJson("enclosure/enclosure.json");
   const [sw, sh, st] = d.size_mm;
-  $("dims").textContent = `The case is ${sw} × ${sh} × ${st} mm, ${(d.z.top - d.z.humpOut).toFixed(1)} mm at the cell's hump.`;
+  $("dims").textContent = `The case is ${sw} × ${sh} × ${st} mm; ${(d.z.top - d.z.cellOut).toFixed(1)} mm at the cell, which stands out of the back, or ${(d.z.top - d.z.coverOut).toFixed(1)} mm with the cell cover on.`;
 
   // downloads first: they do not need WebGL
   const dl = d.downloads;
@@ -834,7 +837,9 @@ async function main() {
     return new THREE.Group().add(new THREE.Mesh(merged, caseMat));
   };
   await document.fonts.ready;
-  const [shell, bezel, boardData] = await Promise.all([loadPart(d.parts.shell), loadPart(d.parts.bezel), fetchJson(d.board3d)]);
+  const [shell, bezel, cover, boardData] = await Promise.all([loadPart(d.parts.shell), loadPart(d.parts.bezel),
+    loadPart(d.parts.cover), fetchJson(d.board3d)]);
+  cover.visible = false;   // the case is open by default; the cover is an option
 
   // Each part sits in its own group: the take-apart animation moves the groups, never the meshes.
   const board = new THREE.Group().add(boardMesh(boardData, maskMat));
@@ -883,7 +888,7 @@ async function main() {
     shank.position.set(hx, -hy, sc.seat + sc.length / 2);
     screws.add(head, shank);
   }
-  const parts = { shell, bezel, panel, board, screws };
+  const parts = { shell, bezel, panel, board, screws, cover };
   for (const p of Object.values(parts)) device.add(p);
   msg.hidden = true;
 
@@ -913,9 +918,12 @@ async function main() {
   // case
   let exploded = 0, target = 0;   // take-apart progress, 0 = assembled
   let caseTransmission = 1;
+  let coverOn = false, caseNone = false;
   const setCase = (name) => {
     const none = name === "none";
+    caseNone = none;
     shell.visible = bezel.visible = screws.visible = !none;
+    cover.visible = coverOn && !none;
     $("caseFiles").hidden = !none;
     if (!none) {
       const c = CASE[name];
@@ -946,6 +954,13 @@ async function main() {
   controls.autoRotate = true;
   controls.autoRotateSpeed = 1.1;
   controls.addEventListener("start", () => { controls.autoRotate = false; });
+
+  const coverBtn = $("coverTog");
+  coverBtn.addEventListener("click", () => {
+    coverOn = !coverOn;
+    cover.visible = coverOn && !caseNone;
+    coverBtn.setAttribute("aria-pressed", String(coverOn));
+  });
 
   const explodeBtn = $("explode");
   explodeBtn.addEventListener("click", () => {

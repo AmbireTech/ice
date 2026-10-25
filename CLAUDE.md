@@ -20,11 +20,13 @@ Ambire internals into GridCore's.
   re-placed and routed with humanizedKicadAutoRouter plus hand fixes (see
   `docs/power-aaa.md`, `docs/design.md`). Proto 0 (ordered 2026-10-18, LiPo pouch) is
   in git history before 2026-10-22.
-- Since 2026-10-25 the cell is on the **back**, enclosed (flat front, a hump on the back),
+- Since 2026-10-25 the cell is on the **back** (flat front),
   and the radio module on the **front** (antenna still south): `docs/cell-placement.md`.
   The owner calls this board **v3**; routing is done (2026-10-25) and the order set recut.
-  Its case and page are `docs/v3/` (published at /v3/); the cell is changed by taking the
-  shell off.
+  Its case and page are `docs/v3/` (published at /v3/). The case is **open over the cell by
+  default**; an optional cover, printed separately, slides in from the east (owner: no
+  hump built into the shell, which would need supports to print). The cell charges in the
+  device, so access to it is rare: never design for frequent cell swaps.
 - Pages: `docs/ambire-signer.html` (+ `docs/brand`, `docs/enclosure`) is the proto 0 team
   page; `docs/v2/` is proto 1 (cell on the front), published at /v2/. Both stay frozen.
   v3 (cell on the back) lives in `docs/v3/` (own `index.html`, `brand/`, `enclosure/`),
