@@ -159,10 +159,16 @@ Ambire internals into GridCore's.
   joystick, the radio's SWD pads and power parts that thin out the back (the USB buck and
   the power mux), each in a pocket under the bezel. The art lives on the back.
 
-- **Routing defects: identify, never fix** (owner, 2026-10-25: "I want you to IDENTIFY these
-  cases and I'll fix them manually"). `scripts/routeDefects.py [--since COMMIT]` lists hops,
-  GND tracks, vias in pads, dangling ends, unconnected items and craft findings; hand the
-  list over. Do not run the router's `gndRepair=join`.
+- **Routing defects: judge the copper, not its author** (owner, 2026-10-25: "whether something
+  stays or not shouldn't depend on whether I did it, but on whether it's actually good").
+  `scripts/routeDefects.py` lists only real defects, each tested on merit: a hop only when its
+  own layer has a short way (grid search), a turn only in open copper, a GND track into the
+  fill only when the pad does not need it (DRC decides), all of DRC at every severity, power
+  necks, vias in pads, stubs. Calibrated on f5cf3e3 (the router's chin: finds the BAT_N neck
+  and the pointless RADIO_RXD_MCU hop) and 7d25393 (the owner's: none of his deliberate hops).
+  Fix what is mechanical yourself (stubs, DRC, silk), one change at a time under DRC counted
+  by type, and hand the owner only what needs judgement; then give him a window to look.
+  Never run the router's `gndRepair=join`.
 - **Check widths, not only geometry.** The router once ran the cell's return (BAT_N)
   0.8 → 0.15 → 0.8 mm through the cell-sense resistor's pad; DRC and three review passes
   missed it (owner, 2026-10-25: "what the fuck"). `routeDefects.py` lists such "necks";
