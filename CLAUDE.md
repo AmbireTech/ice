@@ -88,6 +88,11 @@ Ambire internals into GridCore's.
   listed in `scripts/stripGndTies.py` (switching stages, exposed pads carrying heat,
   RF ground, ESD clamp, the owner's C_USBSW/R_FB2 tie). Stitching vias are "free" vias,
   or KiCad's interactive router shoves and re-nets them.
+- The owner does tie a pad to a GND via on purpose where the pour would reach it only by
+  fragmenting (2026-10-25: the charger's gate FET and ISET/VSET/input-cap pads, the radio
+  UART translator, the SE050's ground pins). A tie DRC calls redundant is not therefore
+  clutter: one removed in a quality pass came straight back. Add each new owner tie to
+  `stripGndTies.py`'s KEEP, which `routeDefects.py` also skips.
 - Route differential pairs and other critical nets **before** general signals
   (autorouted charger lines once took the USB pair's only corridor).
 - Accept autorouted nets one at a time: near-shortest length, no detour, hairpin or

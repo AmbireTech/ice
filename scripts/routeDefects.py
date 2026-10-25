@@ -107,7 +107,11 @@ def gnd_tracks(board):
             if p.GetNetname() == "GND"]
     vias = [t for t in board.GetTracks() if t.Type() == pcbnew.PCB_VIA_T and t.GetNetname() == "GND"]
     tracks = [t for t in board.GetTracks() if t.Type() != pcbnew.PCB_VIA_T and t.GetNetname() == "GND"]
+    # a whole tie piece that reaches a kept pad is the owner's, chain links included
+    kept = {t.m_Uuid.AsString() for names, _, g in sg.ties(board) if set(names) & sg.KEEP for t in g}
     for t in tracks:
+        if t.m_Uuid.AsString() in kept:
+            continue
         ends = []
         for p in (t.GetStart(), t.GetEnd()):
             hit = [r for r, pd in pads if pd.HitTest(p)]
