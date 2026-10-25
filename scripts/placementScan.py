@@ -16,6 +16,8 @@ From the owner's edits of 2026-10-23 on the chin:
     from its resistor; the owner drew each node into one cluster (1.3-1.9 mm). Flagged:
     two-pad passives on one non-supply net of at most --node-pads pads whose pads link
     (minimum spanning tree) by a step over NODE_STEP_MM.
+  - a via in an SMD pad (2026-10-25): a part moved onto a stitching via, or a route
+    dropped through a pad; exposed thermal pads, whose vias are meant, excepted.
 Prints the findings in the region south of --y-min (default: the chin); exit 0 always,
 it is a review aid, not a gate. scripts/checkFpc.py checks parts under the cell.
 """
@@ -67,6 +69,19 @@ def main():
                 forced.append(n)
         if forced:
             print(f"  {r:10s} on the {p.side}: {', '.join(forced)}")
+
+    print("vias in SMD pads (not thermal pads):")
+    smd = [(ref, pd) for ref in region for pd in m.parts[ref].fp.Pads()
+           if pd.GetAttribute() == pcbnew.PAD_ATTRIB_SMD and pd.GetNumber() and len(list(m.parts[ref].fp.Pads())) < 40
+           and not (pd.GetNetname() == "GND" and len(list(m.parts[ref].fp.Pads())) > 4
+                    and min(pcbnew.ToMM(pd.GetSize(pd.GetLayer() if pd.GetLayer() >= 0 else pcbnew.F_Cu).x),
+                            pcbnew.ToMM(pd.GetSize(pd.GetLayer() if pd.GetLayer() >= 0 else pcbnew.F_Cu).y)) > 1.0)]
+    for v in m.board.GetTracks():
+        if v.Type() != pcbnew.PCB_VIA_T:
+            continue
+        hit = [f"{ref}.{pd.GetNumber()}" for ref, pd in smd if pd.HitTest(v.GetPosition(), v.GetWidth(pcbnew.F_Cu) // 2)]
+        if hit and not any(h.startswith(("BT_N", "BT_P")) for h in hit):
+            print(f"  {v.GetNetname():10s} via at ({pcbnew.ToMM(v.GetPosition().x):.2f}, {pcbnew.ToMM(v.GetPosition().y):.2f}) in {', '.join(hit)}")
 
     print(f"small-signal nodes whose passives step more than {NODE_STEP_MM} mm apart:")
     by_net = {}

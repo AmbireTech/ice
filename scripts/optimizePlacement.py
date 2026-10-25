@@ -321,7 +321,20 @@ class Model:
             if ref != part.ref and ref not in self.parked and other.side == part.side \
                     and nb._hits(box, self.boxes[ref]):
                 return False
-        return self.copper_ok(part) and self.pads_ok(part)
+        return self.copper_ok(part) and self.pads_ok(part) and self.no_via_in_pad(part)
+
+    def no_via_in_pad(self, part):
+        """No via of any net under the part's SMD pads (a moved part once landed on a
+        stitching via: via in pad, 2026-10-25)."""
+        if not hasattr(self, "_vias"):
+            self._vias = [(t.GetPosition(), t.GetWidth(pcbnew.F_Cu) // 2) for t in self.board.GetTracks()
+                          if t.Type() == pcbnew.PCB_VIA_T]
+        for pd in part.fp.Pads():
+            if pd.GetAttribute() != pcbnew.PAD_ATTRIB_SMD:
+                continue
+            if any(pd.HitTest(pos, r) for pos, r in self._vias):
+                return False
+        return True
 
     def moved(self, *refs):
         for r in refs:

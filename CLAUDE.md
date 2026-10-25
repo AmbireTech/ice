@@ -140,6 +140,12 @@ Ambire internals into GridCore's.
     (`scripts/krtPlace.sh`, side-blind, wrapped per face) both scored worse than a
     deliberate seed. What paid: the USB switch and ESD clamp beside USB-C (−75 mm,
     −10 vias), the charger beside the middle bridge it feeds the cell through (−78 mm).
+  - **Never rip whole nets after moving parts** (owner, 2026-10-25: "you've set me back a
+    lot"): rip locally, let the router rebuild, and judge its output by look, not by
+    keepQuality's default thresholds alone (they flag every long run's via pair as
+    "2 new vias (needs 0)", which handed back 26 nets). Hand back only what is really
+    bad, and fix placement for those first. Moved parts must not land on vias
+    (optimizePlacement now refuses it; placementScan lists vias in pads).
   - A signal may **jump** under a two-pad part, straight between its pads (0.15 mm
     under an 0402 keeps 0.165 mm to each pad). The router does it too, on its
     `under-part-jumps` branch (`HUMAN_ROUTER` at a checkout of it).
