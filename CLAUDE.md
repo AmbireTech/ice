@@ -163,6 +163,10 @@ Ambire internals into GridCore's.
   cases and I'll fix them manually"). `scripts/routeDefects.py [--since COMMIT]` lists hops,
   GND tracks, vias in pads, dangling ends, unconnected items and craft findings; hand the
   list over. Do not run the router's `gndRepair=join`.
+- **Check widths, not only geometry.** The router once ran the cell's return (BAT_N)
+  0.8 → 0.15 → 0.8 mm through the cell-sense resistor's pad; DRC and three review passes
+  missed it (owner, 2026-10-25: "what the fuck"). `routeDefects.py` lists such "necks";
+  read them after every routing pass.
 
 ## Traps
 
