@@ -21,7 +21,7 @@ A net that fails gets BEFORE's copper back exactly (the designer's, a nudged tra
 included) and is listed as left to the owner. GND and V3V3 (pour and plane) keep the
 router's stitching vias, but any of the designer's copper it removed is put back (its tidy
 pass once took 2.2 mm of the owner's 0.5 mm V3V3 run), and every GND track it added goes,
-with the vias it served: the owner's rule is pour plus stitching, ties only where listed
+with the vias it served, and so does a return via beside a signal via of a net given back: the owner's rule is pour plus stitching, ties only where listed
 in stripGndTies.py (it once tied R_VSET's ground to a via and bridged two kept ties). OUT is the result; run KiCad's DRC on it: a kept net may need room a restored
 nudge took back, which DRC reports.
 """
@@ -35,6 +35,7 @@ import pcbnew
 
 M = pcbnew.ToMM
 PLANES = {"GND", "V3V3"}
+RETURN_MM = 2.0     # the router's return vias sit this close to the signal via they serve
 
 
 def copper(board):
@@ -233,7 +234,16 @@ def main():
             if all(u is not v for v in ties) and (any(u.HitTest(q) for q in ends(t)) or any(t.HitTest(q) for q in ends(u))):
                 ties.append(u)
                 grow.append(u)
-    gone = [t for n in rejected for _, t in after.get(n, [])] + ties
+    # a return via the router set beside a signal via of a net that goes back has nothing
+    # to return for any more: it goes too (the router places them within RETURN_MM)
+    pos = lambda t: (M(t.GetPosition().x), M(t.GetPosition().y))
+    sig_vias = lambda nets: [pos(t) for n in nets for k, t in after.get(n, [])
+                             if t.Type() == pcbnew.PCB_VIA_T and k not in {k2 for k2, _ in before.get(n, [])}]
+    dropped, kept_vias = sig_vias(rejected), sig_vias([k[0] for k in kept])
+    returns = [t for t in fresh if t.Type() == pcbnew.PCB_VIA_T and all(t is not u for u in ties)
+               and any(math.dist(pos(t), q) <= RETURN_MM for q in dropped)
+               and not any(math.dist(pos(t), q) <= RETURN_MM for q in kept_vias)]
+    gone = [t for n in rejected for _, t in after.get(n, [])] + ties + returns
     for t in gone:
         board.Remove(t)
     netinfo = {n: board.FindNet(n) for n in set(rejected) | PLANES}
@@ -261,6 +271,8 @@ def main():
         print(f"back  {n:16s} {'; '.join(why)}")
     for n, mm in restored.items():
         print(f"back  {n:16s} {mm:.1f} mm of the designer's copper the router removed")
+    if returns:
+        print(f"strip {len(returns)} return via(s) beside signal vias of nets given back")
     if ties:
         print(f"strip GND tracks the router added: {sum(1 for t in ties if t.Type() != pcbnew.PCB_VIA_T)} track(s), "
               f"{sum(1 for t in ties if t.Type() == pcbnew.PCB_VIA_T)} via(s)")

@@ -4,8 +4,9 @@ Proto 1 runs on one AAA cell (why: [power-aaa.md](power-aaa.md)). This page comp
 where that cell can sit, and records the choice.
 
 **Decision (2026-10-25): the cell goes on the back, inside the case.** The front becomes
-one flat face with no chin, and the cell sits under a hump on the back. The board is
-not changed yet: proto 1 as routed still has the cell on the front.
+one flat face with no chin, and the cell sits under a hump on the back. The board
+carries it since 2026-10-25 (cell and clips on the back, the radio module on the front,
+antenna still south); the case and renders follow once it is routed.
 
 ## How the numbers were worked out
 

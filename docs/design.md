@@ -147,19 +147,24 @@ touch flex is merged into the TFT flex.
   only). The MCU's 1.1 V core link (pin 49 to pin 98) runs on the back copper
   under the package, inside its pin ring.
 - **Parts on both faces** (double-sided assembly since proto 1). Under the screen
-  the front is bare: the panel sits on it. The front's chin carries the AAA cell's
-  two clips, the joystick, the radio's two SWD pads, and the **USB power path**: the
-  TLV62569P buck between USB-C's shell legs, right over VBUS, and the TPS2116 mux
-  beside it, each part in a pocket under the bezel. Everything else is on the back.
-  The **programming pads** (MCU SWD under the panel, radio SWD south of the cell) are
-  reachable by pogo pins before assembly.
-- **The chin** (south of the slots) holds the AAA cell on the front, across the
-  board (the clips' bases span 47 mm of the 48), and on the back USB-C (mouth
-  south), the radio module, the boost, the charger and the joystick's resistor
-  ladder. With the USB buck and the mux on the front (and the schematic review's four
-  extra parts in), the human router's trial route of the chin needs 71 signal vias
-  instead of 82 and 809 mm of copper instead of 840, with nothing left unconnected
-  (1 before). The same move without the extra parts scored 726 mm and no detours.
+  the front is bare: the panel sits on it. Since the cell moved to the back
+  ([cell-placement.md](cell-placement.md)), the front's chin carries the radio module,
+  the joystick and its resistor ladder, the boost (LTC3539 with its inductor and caps),
+  the reverse-cell FET, the power-key transistor and the **USB power path** (the
+  TLV62569P buck between USB-C's shell legs and the TPS2116 mux), each part in a pocket
+  under the flat bezel. The front's chin face stays flat: the tallest part there is
+  the 3.0 mm radio module, under a 5.33 mm screen stack.
+  The **programming pads** (MCU SWD under the panel, the radio's SWDIO/SWCLK on the
+  back beside the module's SWD pins) are reachable by pogo pins before assembly.
+- **The chin's back** holds the AAA cell across the board in its two clips (their
+  bases span 47 mm of the 48), USB-C (mouth south) with the USB switch and ESD clamp
+  beside it, and under the cell's flanks only low parts (0402s at least 2 mm off its
+  axis): the charger's NTC, the cell-sense divider, the CC pull-downs. North of the
+  slots, between the two display tails and under them (low parts only), sits the
+  charger with its control transistors, next to the middle bridge it feeds the cell
+  through. The placement was chosen by trial routes with the human router: with the
+  USB block beside USB-C and the charger beside the middle bridge it routes in 1230 mm
+  and 87 signal vias, against 1383 mm and 100 for the first seed.
 - **Trace widths** come from the net classes (KiCad's default when routing a net):
   the **cell path at 0.8 mm** (BAT, BAT_N, SW_BOOST: ~1 A from a 1.0 V cell, every
   10 mΩ is 1 % of its voltage; two vias per layer change), the 3.3–5 V rails at
@@ -174,9 +179,10 @@ touch flex is merged into the TFT flex.
   with a copper keep-out on every layer. Proto 0's antenna pointed west from a
   module across the chin; with a metal cell over the chin's front that would have
   sat under the can, which detunes a chip antenna. `checkFpc.py` fails if the cell
-  (between its clips, 10.5 mm across) overlaps the antenna keep-out. The module's
-  pad row faces north, so its UART translator sits on the west bridge next to the
-  UART pads.
+  (between its clips, 10.5 mm across) overlaps the antenna keep-out. Since the cell
+  went to the back the module sits on the front, its antenna end 6 mm south of the cell
+  and on the other face (the same relation as before, mirrored); its pad row faces
+  north, and its UART translator stays on the back's west bridge.
 - The airgap switch's lever exits the west edge next to the RADIO light. There is
   no power button on the edge: the joystick's centre press is the power key.
 - No 32 kHz crystal and no RTC backup supply: nothing on the device needs the

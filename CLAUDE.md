@@ -20,9 +20,10 @@ Ambire internals into GridCore's.
   re-placed and routed with humanizedKicadAutoRouter plus hand fixes (see
   `docs/power-aaa.md`, `docs/design.md`). Proto 0 (ordered 2026-10-18, LiPo pouch) is
   in git history before 2026-10-22.
-- Decided 2026-10-25, not yet on the board: the cell moves to the **back**, enclosed (flat
-  front, a hump on the back; the chin's back parts move to the front). Options, numbers
-  and reasons: `docs/cell-placement.md`.
+- Since 2026-10-25 the cell is on the **back**, enclosed (flat front, a hump on the back),
+  and the radio module on the **front** (antenna still south): `docs/cell-placement.md`.
+  The chin was re-placed with trial routes; the enclosure generator and renders still
+  assume the front cell (update them after the owner's routing).
 - Proto 0 vs proto 1 pages: `docs/ambire-signer.html` (+ `docs/brand`, `docs/enclosure`)
   is the proto 0 team page and stays frozen; proto 1 lives in `docs/v2/` (own
   `index.html`, `brand/`, `enclosure/`), published at /v2/ and not linked from the
@@ -132,6 +133,13 @@ Ambire internals into GridCore's.
     (its `fatten` pass) and GND tracks tying pads the pour missed. Both are opt-in knobs
     now (`fatten`, `gndRepair=join`) on the router's `under-part-jumps` branch; leave
     them off.
+  - **Re-placing a region** (the cell to the back, 2026-10-25): seed every displaced part
+    deliberately (block by block, from pin maps), legalize with optimizePlacement's
+    rules, then judge each idea by a trial route (routeGauge.py), one change at a time.
+    Greedy block placement from a poor seed and KiCadRoutingTools' quench
+    (`scripts/krtPlace.sh`, side-blind, wrapped per face) both scored worse than a
+    deliberate seed. What paid: the USB switch and ESD clamp beside USB-C (−75 mm,
+    −10 vias), the charger beside the middle bridge it feeds the cell through (−78 mm).
   - A signal may **jump** under a two-pad part, straight between its pads (0.15 mm
     under an 0402 keeps 0.165 mm to each pad). The router does it too, on its
     `under-part-jumps` branch (`HUMAN_ROUTER` at a checkout of it).

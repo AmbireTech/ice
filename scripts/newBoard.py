@@ -403,6 +403,76 @@ def _hits(a, b):
     return a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]
 
 
+# The AAA cell between its clips (MY-AAA-19-J/20-J): it rests on the clips' bases,
+# its underside CELL_BASE above the board along the axis and rising as a circle away
+# from it. A part under it must stay UNDER_CELL_CLR below that underside at the
+# part's point nearest the axis. The largest AAA (10.5 mm) sits flattest: the worst case.
+CELL_BASE, CELL_R_MAX, UNDER_CELL_CLR = 0.25, 10.5 / 2, 0.3
+PART_H = {"R_0402": 0.40, "C_0402": 0.55, "R_0603": 0.50, "C_0603": 0.90, "R_0805": 0.60, "C_0805": 1.35}
+
+
+# Under the display's flex tails, on the back between each connector and its slot, only
+# low parts: the tail lies flat on them. Chip passives and small SMD IC packages.
+LOW_LIBS = ("Capacitor_SMD:", "Resistor_SMD:", "Inductor_SMD:", "LED_SMD:", "Package_TO_SOT_SMD:",
+            "Package_DFN_QFN:", "Package_SON:", "wallet:Texas_", "wallet:NXP_", "Crystal:")
+
+
+def tail_corridors(board):
+    """{name: (x0, y0, x1, y1)}: each tail from its connector's south edge to its slot."""
+    out = {}
+    for name, ref, (tx0, tw) in (("TFT tail", "J_TFT", TFT_TAIL), ("touch tail", "J_CTP", CTP_TAIL)):
+        y0 = pcbnew.ToMM(board.FindFootprintByReference(ref).GetBoundingBox(False).GetBottom())
+        out[name] = (tx0, y0, tx0 + tw, SLOT_Y0)
+    return out
+
+
+def under_tail(fp, corridors):
+    """The tails a back part that is not low sits under."""
+    if not fp.IsFlipped() or fp.GetReference() in ("J_TFT", "J_CTP") or fp.GetFPIDAsString().startswith(LOW_LIBS):
+        return []
+    bb = fp.GetBoundingBox(False)
+    x0, y0, x1, y1 = (pcbnew.ToMM(v) for v in (bb.GetLeft(), bb.GetTop(), bb.GetRight(), bb.GetBottom()))
+    return [n for n, (cx0, cy0, cx1, cy1) in corridors.items() if x0 < cx1 and cx0 < x1 and y0 < cy1 and cy0 < y1]
+
+
+def cell_geometry(board):
+    """(face, axis y, x0, x1) of the cell from its clips' pads: the face the clips are
+    on (TOP/BOT) and the span between the clips' pad centres."""
+    pads = {}
+    for ref in ("BT_N", "BT_P"):
+        fp = board.FindFootprintByReference(ref)
+        ps = list(fp.Pads())
+        pads[ref] = (sum(pcbnew.ToMM(p.GetPosition().x) for p in ps) / len(ps),
+                     sum(pcbnew.ToMM(p.GetPosition().y) for p in ps) / len(ps), BOT if fp.IsFlipped() else TOP)
+    (nx, ny, nside), (px, py, pside) = pads["BT_N"], pads["BT_P"]
+    if nside != pside:
+        raise SystemExit("the cell clips BT_N/BT_P must be on the same face")
+    return nside, (ny + py) / 2, min(nx, px), max(nx, px)
+
+
+def under_cell_room(fp, cell):
+    """(mm left under the cell, package) for a part on the cell's face within its
+    footprint; None when the part is not under the cell. The mm left is None for a
+    package with no height bound in PART_H: it may not go there."""
+    side, axis, cx0, cx1 = cell
+    if (BOT if fp.IsFlipped() else TOP) != side or fp.GetReference() in ("BT_N", "BT_P"):
+        return None
+    fab = [g.GetBoundingBox() for g in fp.GraphicalItems()
+           if g.GetLayer() in (pcbnew.F_Fab, pcbnew.B_Fab)]
+    if fab:
+        fx0, fy0 = min(pcbnew.ToMM(b.GetLeft()) for b in fab), min(pcbnew.ToMM(b.GetTop()) for b in fab)
+        fx1, fy1 = max(pcbnew.ToMM(b.GetRight()) for b in fab), max(pcbnew.ToMM(b.GetBottom()) for b in fab)
+    else:
+        fx0, fy0, fx1, fy1 = _box(fp)
+    d = 0.0 if fy0 <= axis <= fy1 else min(abs(fy0 - axis), abs(fy1 - axis))
+    if not (fx0 < cx1 and cx0 < fx1) or d >= CELL_R_MAX:
+        return None
+    under_h = CELL_BASE + CELL_R_MAX - (CELL_R_MAX ** 2 - d ** 2) ** 0.5
+    pkg = fp.GetFPID().GetLibItemName().wx_str().split("_1005")[0].split("_1608")[0].split("_2012")[0]
+    h = PART_H.get(pkg)
+    return (None if h is None else under_h - h - UNDER_CELL_CLR), pkg
+
+
 def legalize(board):
     """Move each non-anchored part to the closest position (spiral search, 0.2 mm
     steps) where its courtyard clears every placed courtyard, the board edge, the
@@ -600,7 +670,8 @@ def keepouts(board):
     xs = [pcbnew.ToMM(p.GetPosition().x) for p in u11.Pads()]
     ys = [pcbnew.ToMM(p.GetPosition().y) for p in u11.Pads()]
     rule_area(board, "no tracks/vias: under the radio module",
-              rect(min(xs) + 1.3, min(ys) + 1.3, max(xs) - 1.3, max(ys) - 1.3), [pcbnew.B_Cu], tracks=True, vias=True)
+              rect(min(xs) + 1.3, min(ys) + 1.3, max(xs) - 1.3, max(ys) - 1.3),
+              [pcbnew.B_Cu if u11.IsFlipped() else pcbnew.F_Cu], tracks=True, vias=True)
     keepout(board, *antenna_keepout(board), "E73 antenna")
 
 

@@ -54,7 +54,8 @@ def expect(cond, msg):
 
 fp = {f.GetReference(): f for f in board.GetFootprints()}
 sig40 = {str(i) for i in range(1, 41)}
-for ref, want_side in (("J_TFT", True), ("J_CTP", True), ("J_CAM", True), ("U11", True), ("J1", True)):
+# (the radio may sit on either face: the front since the cell went to the back, 2026-10-25)
+for ref, want_side in (("J_TFT", True), ("J_CTP", True), ("J_CAM", True), ("J1", True)):
     expect(fp[ref].IsFlipped() == want_side, f"{ref} must be on the back face")
 
 expect(facing(fp["J_TFT"], sig40, {"41", "42"}) == "south", "J_TFT must open south, toward the TFT slot")
@@ -82,9 +83,10 @@ _, ey = centre(pads(fp["U11"], {"1", "43"}))
 _, fy = centre(pads(fp["U11"], {"11", "25"}))
 expect(ey > fy, "U11 antenna end must be south (pads 1/43 nearer the south edge than 11/25)")
 
-# The AAA cell lies across the front between its clips; its metal can must not
-# sit over the antenna keep-out on the other side of the board. The cell is
-# 10.5 mm across, centred on the clips' pads (MY-AAA-19-J/20-J).
+# The AAA cell lies across the chin between its clips (front in proto 1 as built, the
+# back since 2026-10-25: docs/cell-placement.md); its metal can must not sit over the
+# antenna keep-out. The cell is 10.5 mm across, centred on the clips' pads
+# (MY-AAA-19-J/20-J).
 CELL_R = 10.5 / 2 + 0.25
 ant = next((z for z in board.Zones() if z.GetIsRuleArea() and z.GetZoneName() == "E73 antenna"), None)
 if ant is None:
@@ -93,15 +95,15 @@ else:
     ab = ant.GetBoundingBox()
     ax0, ay0, ax1, ay1 = (pcbnew.ToMM(v) for v in (ab.GetLeft(), ab.GetTop(), ab.GetRight(), ab.GetBottom()))
     (nx, ny), (px, py) = centre(list(fp["BT_N"].Pads())), centre(list(fp["BT_P"].Pads()))
-    expect(fp["BT_N"].GetLayer() == pcbnew.F_Cu and fp["BT_P"].GetLayer() == pcbnew.F_Cu,
-           "the cell clips BT_N/BT_P must be on the front face")
+    expect(fp["BT_N"].GetLayer() == fp["BT_P"].GetLayer(), "the cell clips BT_N/BT_P must be on the same face")
+    cell_front = fp["BT_N"].GetLayer() == pcbnew.F_Cu
     cy0, cy1 = min(ny, py) - CELL_R, max(ny, py) + CELL_R
     cx0, cx1 = min(nx, px), max(nx, px)
     expect(not (cx0 < ax1 and ax0 < cx1 and cy0 < ay1 and ay0 < cy1),
            f"the cell (y {cy0:.1f}..{cy1:.1f}) lies over the antenna keep-out (y {ay0:.1f}..{ay1:.1f})")
     print(f"cell y {cy0:.1f}..{cy1:.1f}, antenna keep-out y {ay0:.1f}..{ay1:.1f}: {max(ay0 - cy1, cy0 - ay1):.1f} mm apart")
-    # The charger's NTC must sit under the cell (on the back, through the board): its
-    # 0-45 C cut-off and the MCU's dT/dt both read the cell's temperature through it.
+    # The charger's NTC must sit under the cell (on either face): its 0-45 C cut-off
+    # and the MCU's dT/dt both read the cell's temperature through it.
     tx, ty = centre(list(fp["RT_CHG"].Pads()))
     expect(cx0 < tx < cx1 and ny - 10.5 / 2 < ty < ny + 10.5 / 2,
            f"RT_CHG at ({tx:.1f}, {ty:.1f}) is not under the cell (x {cx0:.1f}..{cx1:.1f}, y {cy0:.1f}..{cy1:.1f})")
@@ -126,7 +128,7 @@ for name, (tx0, tw) in (("TFT tail", nb.TFT_TAIL), ("touch tail", nb.CTP_TAIL)):
             bodies.append((f.GetReference(), min(pcbnew.ToMM(b.GetLeft()) for b in fab),
                            min(pcbnew.ToMM(b.GetTop()) for b in fab), max(pcbnew.ToMM(b.GetRight()) for b in fab),
                            max(pcbnew.ToMM(b.GetBottom()) for b in fab)))
-    if ant is not None:
+    if ant is not None and cell_front:
         bodies.append(("the cell", cx0, cy0, cx1, cy1))
     for ref, bx0, by0, bx1, by1 in bodies:
         expect(not (bx0 < x1 and x0 < bx1 and by0 < drop_s and nb.PANEL_S < by1),
@@ -134,36 +136,21 @@ for name, (tx0, tw) in (("TFT tail", nb.TFT_TAIL), ("touch tail", nb.CTP_TAIL)):
                f"x {x0:.1f}..{x1:.1f})")
 print(f"tails' drop y {nb.PANEL_S:.2f}..{drop_s:.2f}: clear of the front parts and the cell (north edge {cy0:.2f})")
 
-# Front parts under the cell (the owner's ladder row, 2026-10-23): the cell rests on its
-# clips' bases, its underside CELL_BASE above the board along the axis and rising as a
-# circle away from it. A part there must stay UNDER_CELL_CLR below the underside at the
-# part's point nearest the axis. The largest AAA (10.5 mm) sits flattest: the worst case.
-CELL_BASE, CELL_R_MAX, UNDER_CELL_CLR = 0.25, 10.5 / 2, 0.3
-PART_H = {"R_0402": 0.40, "C_0402": 0.55, "R_0603": 0.50, "C_0603": 0.90, "R_0805": 0.60, "C_0805": 1.35}
+# Parts under the cell, on the clips' face (newBoard.under_cell_room): the owner's
+# ladder row under the front cell (2026-10-23), the chin's back parts under the back one.
 if ant is not None:
-    axis = (ny + py) / 2
+    cell = nb.cell_geometry(board)
     under = []
     for f in board.GetFootprints():
-        if f.GetLayer() != pcbnew.F_Cu or f.GetReference() in ("BT_N", "BT_P"):
+        room = nb.under_cell_room(f, cell)
+        if room is None:
             continue
-        fab = [g.GetBoundingBox() for g in f.GraphicalItems() if g.GetLayer() == pcbnew.F_Fab]
-        if not fab:
-            continue
-        fx0, fy0 = min(pcbnew.ToMM(b.GetLeft()) for b in fab), min(pcbnew.ToMM(b.GetTop()) for b in fab)
-        fx1, fy1 = max(pcbnew.ToMM(b.GetRight()) for b in fab), max(pcbnew.ToMM(b.GetBottom()) for b in fab)
-        d = 0.0 if fy0 <= axis <= fy1 else min(abs(fy0 - axis), abs(fy1 - axis))
-        if not (fx0 < cx1 and cx0 < fx1) or d >= CELL_R_MAX:
-            continue
-        under_h = CELL_BASE + CELL_R_MAX - (CELL_R_MAX ** 2 - d ** 2) ** 0.5
-        pkg = f.GetFPID().GetLibItemName().wx_str().split("_1005")[0].split("_1608")[0].split("_2012")[0]
-        h = PART_H.get(pkg)
-        if h is None:
+        left, pkg = room
+        if left is None:
             errors.append(f"{f.GetReference()} stands under the cell and has no height bound ({pkg})")
             continue
-        expect(h + UNDER_CELL_CLR <= under_h,
-               f"{f.GetReference()} ({h:.2f} mm) under the cell: its underside is {under_h:.2f} mm up there "
-               f"({d:.2f} mm off the axis), under {UNDER_CELL_CLR} mm left")
-        under.append(f"{f.GetReference()} {under_h - h:.2f}")
+        expect(left >= 0, f"{f.GetReference()} under the cell: {-left:.2f} mm too tall for the cell's underside there")
+        under.append(f"{f.GetReference()} {left + nb.UNDER_CELL_CLR:.2f}")
     if under:
         print("under the cell (mm to spare): " + ", ".join(under))
 
@@ -189,23 +176,10 @@ for tail in nb.CAM_TAIL:
     else:
         print(f"J_CAM: a {tail:.1f} mm camera tail lands with {slack:.1f} mm of bow")
 
-# Under the flex tails only low parts: the tail lies flat on them. Anything
-# whose land is not a chip passive or a small SMD IC package fails.
-LOW = ("Capacitor_SMD:", "Resistor_SMD:", "Inductor_SMD:", "LED_SMD:", "Package_TO_SOT_SMD:",
-       "Package_DFN_QFN:", "Package_SON:", "wallet:Texas_", "wallet:NXP_", "Crystal:")
-fp_by_ref = fp
-tft_y0 = pcbnew.ToMM(fp["J_TFT"].GetBoundingBox(False).GetBottom())
-ctp_y0 = pcbnew.ToMM(fp["J_CTP"].GetBoundingBox(False).GetBottom())
-corridors = {"TFT tail": (nb.TFT_TAIL[0], tft_y0, nb.TFT_TAIL[0] + nb.TFT_TAIL[1], nb.SLOT_Y0),
-             "touch tail": (nb.CTP_TAIL[0], ctp_y0, nb.CTP_TAIL[0] + nb.CTP_TAIL[1], nb.SLOT_Y0)}
+# Under the flex tails only low parts (newBoard.tail_corridors / LOW_LIBS).
 for f in board.GetFootprints():
-    if not f.IsFlipped() or f.GetReference() in ("J_TFT", "J_CTP"):
-        continue
-    b = f.GetBoundingBox(False)
-    x0, y0, x1, y1 = (pcbnew.ToMM(v) for v in (b.GetLeft(), b.GetTop(), b.GetRight(), b.GetBottom()))
-    for name, (cx0, cy0, cx1, cy1) in corridors.items():
-        if x0 < cx1 and cx0 < x1 and y0 < cy1 and cy0 < y1 and not f.GetFPIDAsString().startswith(LOW):
-            errors.append(f"{f.GetReference()} ({f.GetFPIDAsString()}) is under the {name}: only low parts may sit there")
+    for name in nb.under_tail(f, nb.tail_corridors(board)):
+        errors.append(f"{f.GetReference()} ({f.GetFPIDAsString()}) is under the {name}: only low parts may sit there")
 
 for e in errors:
     print("ERROR", e)

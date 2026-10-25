@@ -34,6 +34,9 @@ import newBoard as nb  # noqa: E402
 
 CROSSING_MM = 6.0                    # one crossing costs as much as 6 mm of airwire
 DECAP_MM = 3.0                       # each mm between a decoupling cap and its rail's nearest IC pin
+CLUSTER_MM = 3.0                     # each mm a small-signal node's passives step apart beyond CLUSTER_STEP
+CLUSTER_STEP = 2.0                   # (the owner's third pass: a feedback divider and its
+                                     # feed-forward cap drawn into one cluster, 1.3-1.9 mm)
 # an airwire leaving a chip's pin backwards (into or around the chip) costs this
 # many mm; sideways half of it. The owner's lesson (2026-10-17): the SE050 turned so
 # its I2C pins face the MCU -- airwire length and crossings cannot see which way a
@@ -135,6 +138,7 @@ class Model:
         self._legal_cache()
         self._copper_cache()
         self._decap_cache()
+        self._cluster_cache()
 
     # ── existing copper: a part may move only where its pads clear other nets' tracks/vias ──
     def _copper_cache(self):
@@ -231,6 +235,31 @@ class Model:
             if pins:
                 self.decaps[ref] = (rail[0], pins)
 
+    def _cluster_cache(self):
+        """Small-signal nodes: a non-supply net of at most 4 pads with two or more two-pad
+        passives on it (placementScan.py's spread-node finding, as a cost)."""
+        supplies = {n for *_, nets in nb.NETCLASSES for n in nets} | NO_AIRWIRE
+        self.clusters = {}
+        for n, lst in self.net_pads.items():
+            if n in supplies or len(lst) > 4:
+                continue
+            two = [(r2, pd) for r2, pd in lst if len(list(self.parts[r2].fp.Pads())) == 2
+                   and not r2.startswith(("TP", "H"))]
+            if len(two) >= 2:
+                self.clusters[n] = two
+        self.part_clusters = {}
+        for n, two in self.clusters.items():
+            for r2, _ in two:
+                self.part_clusters.setdefault(r2, set()).add(n)
+
+    def cluster_cost(self, ref):
+        c = 0.0
+        for n in self.part_clusters.get(ref, ()):
+            pts = [(mm(pd.GetPosition().x), mm(pd.GetPosition().y)) for _, pd in self.clusters[n]]
+            for i, j in mst_edges(pts):
+                c += max(0.0, math.dist(pts[i], pts[j]) - CLUSTER_STEP) * CLUSTER_MM
+        return c
+
     def decap_cost(self, ref):
         if ref not in self.decaps:
             return 0.0
@@ -268,13 +297,23 @@ class Model:
         self.ant_keepout = b.antenna_keepout(self.board)
         self.back_only = [box for _, box in b.footprint_keepouts(self.board)] + list(b.LABEL_SLOTS.values()) + \
                          [(x - b.HOLE_RING, y - b.HOLE_RING, x + b.HOLE_RING, y + b.HOLE_RING) for x, y in b.HOLES.values()]
+        # the front is bare under the panel and the tails' drop: a front part lives in the
+        # chin, south of the drop (checkFpc.py's tails' drop check)
+        self.front_only = [(-999, -999, b.W + 999, b.SLOT_Y0 + b.TAIL_BEND + b.TAIL_CLR)]
+        self.cell = b.cell_geometry(self.board)
+        self.tails = b.tail_corridors(self.board)
 
     def legal(self, part):
         box = nb._box(part.fp, TOUCH)
         tight = nb._box(part.fp, 0.1)
-        extra = self.back_only if part.side == nb.BOT else []
+        extra = self.back_only if part.side == nb.BOT else self.front_only
         ant = [] if part.ref == "U11" else [self.ant_keepout]
         if any(nb._hits(tight, o) for o in self.forbidden + extra + ant):
+            return False
+        room = nb.under_cell_room(part.fp, self.cell)     # under the cell: low parts only
+        if room is not None and (room[0] is None or room[0] < 0):
+            return False
+        if nb.under_tail(part.fp, self.tails):            # under a flex tail: low parts only
             return False
         if any(nb._hits(tight, h[:4]) for h in self.holes if h[4] != part.ref):
             return False
@@ -412,7 +451,7 @@ def place_block(board, ic, sats=None, rotations=(0, 90, 180, 270), radius=3.0, l
         for n in block_nets:
             m.wires[n] = m._wires(n)
         others, ids = m.all_wires(skip=block_nets)
-        return m.nets_cost(block_nets, others, ids) + sum(m.decap_cost(r2) for r2 in sats) \
+        return m.nets_cost(block_nets, others, ids) + sum(m.decap_cost(r2) + m.cluster_cost(r2) for r2 in sats) \
             + m.facing_cost(block_nets)
 
     def best_spot(ref, box, step):
@@ -431,7 +470,7 @@ def place_block(board, ic, sats=None, rotations=(0, 90, 180, 270), radius=3.0, l
                         continue
                     for n in nets:
                         m.wires[n] = m._wires(n)
-                    c = m.nets_cost(nets, others, ids) + m.decap_cost(ref) + m.facing_cost(nets)
+                    c = m.nets_cost(nets, others, ids) + m.decap_cost(ref) + m.cluster_cost(ref) + m.facing_cost(nets)
                     if best is None or c < best[0]:
                         best = (c, cx, cy, rot)
         return best
@@ -562,12 +601,13 @@ def repair(board, locked, max_mm=1.0, log=print, only=None):
     return moves
 
 
-def optimize(board, radius=4.0, passes=8, seed=1, log=print, locked=()):
+def optimize(board, radius=4.0, passes=8, seed=1, log=print, locked=(), sides=(nb.BOT,), only=None):
+    """sides: the faces whose parts may move; only: if given, just these refs."""
     random.seed(seed)
     m = Model(board, locked)
     movable = [r for r, p in m.parts.items()
-               if r not in nb.ANCHORED and r not in PINNED and r not in m.locked and p.side == nb.BOT
-               and (r in m.part_nets or r in m.decaps)]
+               if r not in nb.ANCHORED and r not in PINNED and r not in m.locked and p.side in sides
+               and (only is None or r in only) and (r in m.part_nets or r in m.decaps)]
     length, x = m.total()
     log(f"start: airwire {length:.0f} mm, {x} crossings, {len(movable)} movable parts")
     by_fp = {}
@@ -595,7 +635,7 @@ def optimize(board, radius=4.0, passes=8, seed=1, log=print, locked=()):
             best = None
             nets = m.part_nets.get(ref, set())
             others, other_ids = m.all_wires(skip=nets)
-            base = m.nets_cost(nets, others, other_ids) + m.decap_cost(ref)
+            base = m.nets_cost(nets, others, other_ids) + m.decap_cost(ref) + m.cluster_cost(ref)
             saved = {n: m.wires[n] for n in nets}
             for cx, cy, cr in cands:
                 p.set(cx, cy, cr)
@@ -603,7 +643,7 @@ def optimize(board, radius=4.0, passes=8, seed=1, log=print, locked=()):
                     continue
                 for n in nets:
                     m.wires[n] = m._wires(n)
-                c = m.nets_cost(nets, others, other_ids) + m.decap_cost(ref)
+                c = m.nets_cost(nets, others, other_ids) + m.decap_cost(ref) + m.cluster_cost(ref)
                 if c < base - 1e-6 and (best is None or c < best[0]):
                     best = (c, cx, cy, cr)
             if best:
