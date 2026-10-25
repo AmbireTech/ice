@@ -14,7 +14,8 @@ on one net:
              real sharing follows resistance, not rating
 A path passes when the narrowest route carries its current. GND returns go through the
 pour and planes; for the pads that sink a power path's return, the vias that tie them
-(directly or within VIA_MM through the pour) are counted and rated instead.
+(directly or within VIA_MM through the pour: the return spreads to every via
+nearby) are counted and rated instead.
 """
 import argparse
 import math
@@ -26,7 +27,7 @@ from shapely.geometry import LineString, Point, Polygon
 M = pcbnew.ToMM
 OZ1 = 0.035
 PLATING = 0.018
-VIA_MM = 1.5
+VIA_MM = 5.0
 
 # (name, net, sources, sinks, amps, why); sources/sinks are REF.PAD, or REF for every pad of the net
 PATHS = [
@@ -216,7 +217,7 @@ def main():
         print(f"{ok}{name} ({net}): needs {amps:.2f} A ({why})")
         print(f"      narrowest route {cap:.2f} A, weakest: {its[weak][1] if weak is not None else '-'}; "
               f"all routes {par:.2f} A")
-        worst.append((cap / amps, name))
+        worst.append(((cap if cap >= amps else par) / amps, name))   # parallel vias count once they pass
     print()
     for name, amps, why, n, cap in gnd_ties(board, a.rise):
         ok = "ok  " if cap >= amps else "LOW "
