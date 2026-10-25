@@ -15,6 +15,11 @@ reason, sorted north to south:
   gnd-track   a GND track that is not one of the ties stripGndTies.py keeps; "into pour"
               when an end touches neither a pad nor a via (it only reaches the fill)
   via-in-pad  a via under an SMD pad (thermal pads of chips excepted)
+  via-near-pad a via whose ring comes within --near-mm of an SMD pad's edge without
+              touching it (any net): legal, but crowds the pad
+  jump        a track passing between the two pads of a two-pad part on the same face
+  acute       two segments of a net meeting at less than 90 degrees, nothing else there
+              (a V-turn: CELL_SENSE leaving an MCU pin and doubling back, 2026-10-25)
   dangling    a track end KiCad calls dangling
   unconnected what KiCad's DRC still reports unconnected
   craft       detours, wiggles, hairpins (hardware/carrier/.tools/audit_craft.py)
@@ -132,6 +137,91 @@ def vias_in_pads(board):
     return out
 
 
+def pad_shapes(board):
+    from shapely.geometry import Polygon
+    out = []
+    for fp in board.GetFootprints():
+        if fp.GetReference() in ("BT_N", "BT_P"):
+            continue
+        for p in fp.Pads():
+            if p.GetAttribute() != pcbnew.PAD_ATTRIB_SMD or not p.GetNumber():
+                continue
+            layer = pcbnew.B_Cu if fp.IsFlipped() else pcbnew.F_Cu
+            poly = p.GetEffectivePolygon(layer)
+            if poly.OutlineCount() == 0:
+                continue
+            o = poly.Outline(0)
+            pts = [(M(o.CPoint(i).x), M(o.CPoint(i).y)) for i in range(o.PointCount())]
+            if len(pts) >= 3:
+                out.append((f"{fp.GetReference()}.{p.GetNumber()}", p.GetNetname(), layer, Polygon(pts), fp))
+    return out
+
+
+def vias_near_pads(board, shapes, near):
+    from shapely.geometry import Point
+    out = []
+    for v in board.GetTracks():
+        if v.Type() != pcbnew.PCB_VIA_T:
+            continue
+        c = Point(M(v.GetPosition().x), M(v.GetPosition().y)).buffer(M(v.GetWidth(pcbnew.F_Cu)) / 2)
+        for name, net, layer, poly, fp in shapes:
+            d = poly.distance(c)
+            if 0 < d < near:
+                out.append(("via-near-pad", xy(v.GetPosition()),
+                            f"{v.GetNetname()} via at {xy(v.GetPosition())} {d:.2f} mm from {name} [{net}]"))
+    return out
+
+
+def jumps(board, shapes):
+    from shapely.geometry import LineString, MultiPoint
+    out = []
+    two = {}
+    for name, net, layer, poly, fp in shapes:
+        if len(list(fp.Pads())) == 2:
+            two.setdefault(fp.GetReference(), []).append((net, layer, poly))
+    gaps = []
+    for ref, pads in two.items():
+        if len(pads) != 2:
+            continue
+        (n1, l1, a), (n2, l2, b) = pads
+        gap = MultiPoint(list(a.exterior.coords) + list(b.exterior.coords)).convex_hull.difference(a).difference(b)
+        gaps.append((ref, {n1, n2}, l1, gap))
+    for t in board.GetTracks():
+        if t.Type() == pcbnew.PCB_VIA_T:
+            continue
+        line = LineString([(M(t.GetStart().x), M(t.GetStart().y)), (M(t.GetEnd().x), M(t.GetEnd().y))])
+        for ref, nets, layer, gap in gaps:
+            if t.GetLayer() == layer and t.GetNetname() not in nets and line.intersects(gap) \
+                    and line.intersection(gap).length > 0.2:
+                out.append(("jump", xy(t.GetStart()), f"{t.GetNetname()} passes between the pads of {ref}"))
+    return out
+
+
+def acute_turns(board):
+    out = []
+    ends = {}
+    for t in board.GetTracks():
+        if t.Type() == pcbnew.PCB_VIA_T:
+            continue
+        for p, q in ((t.GetStart(), t.GetEnd()), (t.GetEnd(), t.GetStart())):
+            ends.setdefault((t.GetNetname(), t.GetLayer(), xy(p)), []).append((xy(p), xy(q), t))
+    vias = {xy(v.GetPosition()) for v in board.GetTracks() if v.Type() == pcbnew.PCB_VIA_T}
+    for (net, layer, at), segs in ends.items():
+        if len(segs) != 2 or at in vias:
+            continue
+        (p, q1, a), (_, q2, b) = segs
+        if M(a.GetLength()) < 0.05 or M(b.GetLength()) < 0.05:
+            continue
+        v1 = (q1[0] - p[0], q1[1] - p[1])
+        v2 = (q2[0] - p[0], q2[1] - p[1])
+        n1, n2 = math.hypot(*v1), math.hypot(*v2)
+        cos = (v1[0] * v2[0] + v1[1] * v2[1]) / (n1 * n2)
+        angle = math.degrees(math.acos(max(-1.0, min(1.0, cos))))
+        if angle < 89.0:
+            out.append(("acute", at, f"{net} turns back at {angle:.0f} deg on {board.GetLayerName(layer)}"))
+    return out
+
+
 def drc(board_path):
     out = []
     tmp = os.path.join(tempfile.gettempdir(), "routeDefects.drc.json")
@@ -187,14 +277,17 @@ def main():
     ap.add_argument("board", nargs="?", default=str(nb.HERE / "board/wallet.kicad_pcb"))
     ap.add_argument("--hop-mm", type=float, default=6.0)
     ap.add_argument("--since")
+    ap.add_argument("--near-mm", type=float, default=0.25)
     a = ap.parse_args()
     old = old_copper(a.since) if a.since else None
     board = pcbnew.LoadBoard(a.board)
+    shapes = pad_shapes(board)
     found = hops(board, a.hop_mm) + gnd_tracks(board) + vias_in_pads(board)
+    found += vias_near_pads(board, shapes, a.near_mm) + jumps(board, shapes) + acute_turns(board)
     found += drc(a.board) + craft(a.board)
 
     def new(kind, what):
-        if old is None or kind not in ("hop", "gnd-track", "via-in-pad"):
+        if old is None or kind not in ("hop", "gnd-track", "via-in-pad", "via-near-pad"):
             return ""
         pts = [tuple(float(v) for v in m.split(", ")) for m in
                __import__("re").findall(r"\(([-\d.]+, [-\d.]+)\)", what)]
