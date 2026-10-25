@@ -106,16 +106,13 @@ CELL_D, CELL_BASE = 10.5, 0.25
 # the arms wrap the cell and flare out at their tips, so the cover clears both.
 CLIP_CLR = 0.15       # the cover's inside to the clips (it slides over them)
 CELL_AIR = 0.1        # the cover's inside to the cell
-# The cover: one smooth curve, flat over the cell and the clips' tips, rounding into
-# shoulders and leaving the back tangentially (F + H (1 - (|y|/R)^p)^2, the narrowest p
-# and R that keep COVER_SKIN everywhere and no part steeper than FLANK_DEG); a web down
-# through the opening on each side and a lip under the floor's edge (the floor sits
-# between lip and cover). It stops against the west wall; it prints standing on its
-# end, with no supports.
+# The cover: compact, its outside the inside grown by COVER_SKIN all round, with a
+# skirt COVER_FLANGE thick over the lips (owner, 2026-10-25: compact, close to the cell,
+# thin at the top); a web down through the opening on each side and a lip under the
+# floor's edge (the floor sits between lip and skirt). It stops against the west wall;
+# it prints standing on its end, with no supports.
 COVER_SKIN = 0.5      # the least plastic anywhere over the inside: the roof, over the cell
-FLANK_DEG = 40.0      # the steepest the curve may get
-COVER_FLANGE = 0.8    # the least thickness over the lips, where it clamps the floor
-COVER_EDGE = 0.4      # the flanks' feather edge on the back is cut off at this thickness
+COVER_FLANGE = 0.8    # the skirt's thickness over the lips, where it clamps the floor
 COVER_WEB, COVER_CLR = 0.8, 0.15
 COVER_LIP = (0.8, 0.8)   # over the floor's edge, thick
 # The joystick (ALPS SKRHAAE010, 7.5 x 7.5 mm housing 2.23 mm tall, a 3 mm stem to
@@ -617,45 +614,17 @@ def cover_geometry(clip_pts, d_floor_in, d_floor_out):
     inner = inner[(inner[:, 1] >= d_floor_out - 1 - 1e-3)]   # hull() rounds; keep the two top corners
     roof = inner[:, 1].max()
     top = roof + COVER_SKIN
-    # outside: the narrowest plateau curve that keeps COVER_SKIN over the inside
-    dense = np.r_[[inner[i] + (inner[(i + 1) % len(inner)] - inner[i]) * t
-                   for i in range(len(inner)) for t in np.linspace(0, 1, 10)]]
-    dense = dense[dense[:, 1] >= d_floor_out]
-    H = top - d_floor_out
-
-    def curve(p, r, n=1201):
-        y = np.linspace(-r, r, n)
-        return np.c_[y, d_floor_out + H * (1 - (np.abs(y) / r) ** p) ** 2]
-
-    def clears(p, r):
-        o = curve(p, r)
-        half = o[len(o) // 2:]
-        under = np.interp(np.abs(dense[:, 0]), half[:, 0], half[:, 1]) > dense[:, 1]
-        return under.all() and np.sqrt(((dense[:, None, :] - o[None]) ** 2).sum(-1)).min() >= COVER_SKIN - 1e-6
-
-    best = None
-    for p in np.arange(2.0, 8.01, 0.25):
-        r = next((r for r in np.arange(in_hw + COVER_SKIN, 40, 0.1) if clears(p, r)), None)
-        if r is None:
-            continue
-        o = curve(p, r)
-        steep = math.degrees(math.atan(np.abs(np.diff(o[:, 1]) / np.diff(o[:, 0])).max()))
-        if steep <= FLANK_DEG and (best is None or r < best[1]):
-            best = (p, r, steep)
-    if best is None:
-        raise SystemExit(f"no cover curve keeps {COVER_SKIN} mm of skin within {FLANK_DEG} deg")
-    p_, rb, steep = best
-    o = curve(p_, rb)
-    half = o[len(o) // 2:]
-    flange = np.interp(lip_out, half[:, 0], half[:, 1]) - d_floor_out
-    if flange < COVER_FLANGE:
-        raise SystemExit(f"the cover is only {flange:.2f} mm thick over its lips")
-    # cut the feather edge where the curve is thinner than COVER_EDGE
-    y_edge = half[half[:, 1] - d_floor_out >= COVER_EDGE][-1, 0]
-    body = o[np.abs(o[:, 0]) <= y_edge]
-    outer = np.r_[[[-y_edge, d_floor_out]], body, [[y_edge, d_floor_out]]]
-    return {"in_hw": in_hw, "web_out": web_out, "edge": edge, "lip_out": lip_out, "out_hw": y_edge,
-            "lip_bot": lip_bot, "lip_top": lip_top, "in_bottom": roof, "out_bottom": top, "rb": rb, "steep": steep,
+    # outside: the inside grown by COVER_SKIN, and the skirt's corners over the lips
+    dome = (inner[:, None, :] + ring[None] * COVER_SKIN).reshape(-1, 2)
+    skirt = [[-lip_out, d_floor_out], [lip_out, d_floor_out],
+             [-lip_out, d_floor_out + COVER_FLANGE], [lip_out, d_floor_out + COVER_FLANGE]]
+    h = hull(np.r_[dome[dome[:, 1] >= d_floor_out], skirt])
+    up = h[h[:, 1] > d_floor_out + 1e-3]
+    up = up[np.lexsort((np.where(up[:, 0] < 0, up[:, 1], -up[:, 1]), up[:, 0]))]   # left to right over the top
+    outer = np.r_[[[-lip_out, d_floor_out]], up, [[lip_out, d_floor_out]]]
+    rb = lip_out
+    return {"in_hw": in_hw, "web_out": web_out, "edge": edge, "lip_out": lip_out, "out_hw": lip_out,
+            "lip_bot": lip_bot, "lip_top": lip_top, "in_bottom": roof, "out_bottom": top, "rb": rb,
             "inner": inner, "outer": outer, "floor_out": d_floor_out, "cell_out": CELL_BASE + CELL_D}
 
 
@@ -801,7 +770,7 @@ def main():
     report.append(f"AAA cell open through the back ({2 * cv['edge']:.1f} mm wide), standing "
                   f"{cv['cell_out'] - (z_back - z_floor_out):.1f} mm out: {z_top - z_back + cv['cell_out']:.1f} mm thick there")
     report.append(f"cell cover (optional, slides in from the east): {2 * cv['out_hw']:.1f} mm wide on the back "
-                  f"(one smooth curve, its steepest {cv['steep']:.0f} deg, the feather edge cut at {COVER_EDGE} mm), {cv['out_bottom'] - (z_back - z_floor_out):.1f} mm proud; "
+                  f"(the inside grown by {COVER_SKIN} mm, a {COVER_FLANGE} mm skirt over the lips), {cv['out_bottom'] - (z_back - z_floor_out):.1f} mm proud; "
                   f"inside {CELL_AIR} mm to the cell and {CLIP_CLR} mm to the clips, {COVER_SKIN} mm roof; "
                   f"{z_top - z_back + cv['out_bottom']:.1f} mm thick there; its lips pass {near[0]:.2f} mm from {near[1]}")
     shell += rr_prism(*tongue_o[:4], tongue_o[4], z_split, z_split + TONGUE_H) - rr_prism(*in_o[:4], in_o[4], z_split - 1, z_split + TONGUE_H + 1)
