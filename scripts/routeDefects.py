@@ -20,6 +20,10 @@ reason, sorted north to south:
   jump        a track passing between the two pads of a two-pad part on the same face
   acute       two segments of a net meeting at less than 90 degrees, nothing else there
               (a V-turn: CELL_SENSE leaving an MCU pin and doubling back, 2026-10-25)
+  neck        a power or rail track much narrower than its class where wide copper of the net
+              meets both of its ends, so the current passes through it (2026-10-25: the cell's
+              return ran 0.8 mm -> 0.15 mm -> 0.8 mm through the cell-sense resistor's pad).
+              A thin tap into a pad that goes nowhere else is fine
   dangling    a track end KiCad calls dangling
   unconnected what KiCad's DRC still reports unconnected
   craft       detours, wiggles, hairpins (hardware/carrier/.tools/audit_craft.py)
@@ -233,6 +237,60 @@ def acute_turns(board):
     return out
 
 
+def necks(board):
+    out = []
+    tracks = [t for t in board.GetTracks() if t.Type() != pcbnew.PCB_VIA_T]
+    vias = [t for t in board.GetTracks() if t.Type() == pcbnew.PCB_VIA_T]
+    pads = [p for fp in board.GetFootprints() for p in fp.Pads()]
+
+    ns = board.GetDesignSettings().m_NetSettings
+    widths = {}
+
+    def cls_w(t):
+        net = t.GetNetname()
+        if net not in widths:
+            widths[net] = M(ns.GetEffectiveNetClass(net).GetTrackWidth())
+        return widths[net]
+
+    def wide_at(t, p):
+        """Wide copper of t's net meets point p: a wide track ending there, or in the pad or via there."""
+        net, w = t.GetNetCode(), cls_w(t)
+        hubs = [h for h in pads + vias if h.GetNetCode() == net and h.HitTest(p)]
+        for u in tracks:
+            if u is t or u.GetNetCode() != net or M(u.GetWidth()) < 0.9 * w:
+                continue
+            for e in (u.GetStart(), u.GetEnd()):
+                if (u.GetLayer() == t.GetLayer() and math.dist(xy(e), xy(p)) < 0.05) or \
+                        any(h.HitTest(e) for h in hubs):
+                    return True
+        return False
+    def buried(t):
+        """A thin piece lying under the net's wide copper carries nothing of its own."""
+        from shapely.geometry import LineString, Polygon
+        from shapely.ops import unary_union
+        line = lambda u: LineString([xy(u.GetStart()), xy(u.GetEnd())]).buffer(M(u.GetWidth()) / 2)
+        wide = [line(u) for u in tracks if u is not t and u.GetNetCode() == t.GetNetCode()
+                and u.GetLayer() == t.GetLayer() and M(u.GetWidth()) >= 0.9 * cls_w(t)]
+        for p in pads:
+            if p.GetNetCode() == t.GetNetCode() and p.IsOnLayer(t.GetLayer()):
+                poly = p.GetEffectivePolygon(t.GetLayer())
+                if poly.OutlineCount():
+                    o = poly.Outline(0)
+                    pts = [xy(o.CPoint(i)) for i in range(o.PointCount())]
+                    if len(pts) >= 3:
+                        wide.append(Polygon(pts))
+        mine = line(t)
+        return bool(wide) and mine.difference(unary_union(wide)).area < 0.1 * mine.area
+    for t in tracks:
+        w = cls_w(t)
+        if w < 0.3 or M(t.GetWidth()) >= 0.6 * w:
+            continue
+        if wide_at(t, t.GetStart()) and wide_at(t, t.GetEnd()) and not buried(t):
+            out.append(("neck", xy(t.GetStart()), f"{t.GetNetname()}: {M(t.GetWidth()):.2f} mm from {xy(t.GetStart())} "
+                                                  f"to {xy(t.GetEnd())} between {w:.2f} mm copper"))
+    return out
+
+
 def drc(board_path):
     out = []
     tmp = os.path.join(tempfile.gettempdir(), "routeDefects.drc.json")
@@ -295,7 +353,7 @@ def main():
     shapes = pad_shapes(board)
     found = hops(board, a.hop_mm) + gnd_tracks(board) + vias_in_pads(board)
     found += vias_near_pads(board, shapes, a.near_mm) + jumps(board, shapes) + acute_turns(board)
-    found += drc(a.board) + craft(a.board)
+    found += necks(board) + drc(a.board) + craft(a.board)
 
     def new(kind, what):
         if old is None or kind not in ("hop", "gnd-track", "via-in-pad", "via-near-pad"):
