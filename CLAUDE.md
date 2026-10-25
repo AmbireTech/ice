@@ -192,6 +192,10 @@ Ambire internals into GridCore's.
   real `wallet.kicad_pro` (2026-10-23: every DRC after that read 199 width/drill errors).
 - `tsci export` reads every file under the entry's folder and dies on the vendored
   firmware's dangling symlinks: export with `scripts/exportNetlist.sh`.
+- `SaveBoard` keeps the zone fills as they were: after adding copper by script, run
+  `ZONE_FILLER(b).Fill(b.Zones())` before saving, and gate the saved file with a DRC
+  *without* `--refill-zones` too (that flag refills in memory and hid a new BAT via
+  sitting in a stale GND fill, which the Gerbers would have shorted; 2026-10-25).
 - KiCad's DRC alone misses joins that hold only by track overlap; the router's tidy pass
   guards this, recheck after any track narrowing.
 - Rotation offsets for JLC come only from JLC's placement preview, never from a guess.
