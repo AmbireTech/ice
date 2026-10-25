@@ -20,6 +20,9 @@ Ambire internals into GridCore's.
   re-placed and routed with humanizedKicadAutoRouter plus hand fixes (see
   `docs/power-aaa.md`, `docs/design.md`). Proto 0 (ordered 2026-10-18, LiPo pouch) is
   in git history before 2026-10-22.
+- Decided 2026-10-25, not yet on the board: the cell moves to the **back**, enclosed (flat
+  front, a hump on the back; the chin's back parts move to the front). Options, numbers
+  and reasons: `docs/cell-placement.md`.
 - Proto 0 vs proto 1 pages: `docs/ambire-signer.html` (+ `docs/brand`, `docs/enclosure`)
   is the proto 0 team page and stays frozen; proto 1 lives in `docs/v2/` (own
   `index.html`, `brand/`, `enclosure/`), published at /v2/ and not linked from the

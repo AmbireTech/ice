@@ -6,6 +6,9 @@ board's front face, below the screen. The cell can be rechargeable (NiMH) or not
 that choice and the power circuit that follows from it. The circuit itself:
 [design.md](design.md#power-one-aaa-cell); the netlist: `src/blocks/Power.tsx`.
 
+Where the cell sits is decided in [cell-placement.md](cell-placement.md): from proto 1's
+front clips it moves to the back, inside the case (2026-10-25, not yet on the board).
+
 Numbers come from manufacturer datasheets and application manuals and from
 lygte-info.dk's discharge tables (constant current, one sample per model, 2013–2019).
 Where a value was read off a plotted curve it says so. Sources are at the end.
