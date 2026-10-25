@@ -154,6 +154,11 @@ Ambire internals into GridCore's.
   joystick, the radio's SWD pads and power parts that thin out the back (the USB buck and
   the power mux), each in a pocket under the bezel. The art lives on the back.
 
+- **Routing defects: identify, never fix** (owner, 2026-10-25: "I want you to IDENTIFY these
+  cases and I'll fix them manually"). `scripts/routeDefects.py [--since COMMIT]` lists hops,
+  GND tracks, vias in pads, dangling ends, unconnected items and craft findings; hand the
+  list over. Do not run the router's `gndRepair=join`.
+
 ## Traps
 
 - KiCad `Flip(FLIP_DIRECTION_LEFT_RIGHT)` on these footprints mirrors **y**, not x.
