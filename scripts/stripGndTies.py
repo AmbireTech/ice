@@ -37,7 +37,7 @@ KEEP = {"U2.2", "U2.3", "U2.9", "C_IN_BOOST.2", "C_BOOST.2", "U3.2", "C_USB3V3.2
         "Q_REV.2", "U13.7", "U13.14", "U13.17", "U1.4", "U1.9", "U11.5", "U11.21", "U11.24", "D_ESD.2",
         "SW_AIR.SH",
         "Q_CHG.4", "R_ISET.2", "C_CHGIN.2", "R_VSET.2", "U9.2", "U5.14", "U5.17", "U5.19", "U5.21",
-        "U14.4", "C_DOVDD.2"}
+        "U14.4", "C_DOVDD.2", "C_U9A.2"}
 
 
 def touches(t, p):

@@ -1,40 +1,42 @@
 Designator,Value,Footprint,LCSC,Layer,BoardAngle,DbRule,DbOffset,CPLRotation,AnchorToPadCentreMm,Status
-BT_N,MY-AAA-19-J,wallet:Battery_AAA_Clip_MYOUNG_MY-AAA-19-J,C6937104,top,0.0,,0.0,0.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
-BT_P,MY-AAA-20-J,wallet:Battery_AAA_Clip_MYOUNG_MY-AAA-20-J,C6937107,top,180.0,,0.0,180.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
-C_3V3,22uF,Capacitor_SMD:C_0805_2012Metric,C45783,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
+BT_N,MY-AAA-19-J,wallet:Battery_AAA_Clip_MYOUNG_MY-AAA-19-J,C6937104,bottom,0.0,,0.0,180.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
+BT_P,MY-AAA-20-J,wallet:Battery_AAA_Clip_MYOUNG_MY-AAA-20-J,C6937107,bottom,180.0,,0.0,0.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
+C_3V3,22uF,Capacitor_SMD:C_0805_2012Metric,C45783,top,0.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 C_AVIN,1uF,Capacitor_SMD:C_0402_1005Metric,C52923,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 C_AVOUT,1uF,Capacitor_SMD:C_0402_1005Metric,C52923,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
-C_BAT,10uF,Capacitor_SMD:C_0805_2012Metric,C15850,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
+C_BAT,10uF,Capacitor_SMD:C_0805_2012Metric,C15850,top,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 C_BLF1,470nF,Capacitor_SMD:C_0402_1005Metric,C106255,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 C_BLF2,470nF,Capacitor_SMD:C_0402_1005Metric,C106255,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 C_BLIN,1uF,Capacitor_SMD:C_0603_1608Metric,C15849,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 C_BLOUT,1uF,Capacitor_SMD:C_0603_1608Metric,C15849,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
-C_BOOST,22uF,Capacitor_SMD:C_0805_2012Metric,C45783,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
+C_BOOST,22uF,Capacitor_SMD:C_0805_2012Metric,C45783,top,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
+C_BOOST2,22uF,Capacitor_SMD:C_0805_2012Metric,C45783,top,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 C_BUZ,10uF,Capacitor_SMD:C_0603_1608Metric,C19702,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 C_CHGIN,1uF,Capacitor_SMD:C_0402_1005Metric,C52923,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 C_CNS,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
-C_CS,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
+C_CS,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 C_DOVDD,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 C_DVOUT,1uF,Capacitor_SMD:C_0402_1005Metric,C52923,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 C_EN,1uF,Capacitor_SMD:C_0402_1005Metric,C52923,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
-C_IN_BOOST,22uF,Capacitor_SMD:C_0805_2012Metric,C45783,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
+C_FFB,33pF,Capacitor_SMD:C_0402_1005Metric,C1562,top,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
+C_IN_BOOST,22uF,Capacitor_SMD:C_0805_2012Metric,C45783,top,0.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 C_NOR,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 C_NRST,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 C_OPT,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
-C_RADIO1,10uF,Capacitor_SMD:C_0603_1608Metric,C19702,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
-C_RADIO2,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
+C_RADIO1,10uF,Capacitor_SMD:C_0603_1608Metric,C19702,top,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
+C_RADIO2,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,top,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 C_RCT,1nF,Capacitor_SMD:C_0402_1005Metric,C14442,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 C_RIN,1uF,Capacitor_SMD:C_0402_1005Metric,C52923,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 C_SEIN,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 C_SEVCC,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 C_TFT1,1uF,Capacitor_SMD:C_0402_1005Metric,C52923,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 C_TFT2,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
-C_U9A,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
-C_U9B,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
-C_USB3V3,22uF,Capacitor_SMD:C_0805_2012Metric,C45783,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
-C_USBSW,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
+C_U9A,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
+C_U9B,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
+C_USB3V3,22uF,Capacitor_SMD:C_0805_2012Metric,C45783,top,0.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
+C_USBSW,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 C_VBAT,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
-C_VBUS,4.7uF,Capacitor_SMD:C_0603_1608Metric,C19666,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
+C_VBUS,4.7uF,Capacitor_SMD:C_0603_1608Metric,C19666,top,0.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 C_VDD1,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 C_VDD11A,2.2uF,Capacitor_SMD:C_0402_1005Metric,C107369,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 C_VDD11B,2.2uF,Capacitor_SMD:C_0402_1005Metric,C107369,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
@@ -50,20 +52,20 @@ D_BUZ,1N4148WS,Diode_SMD:D_SOD-323,C2128,bottom,90.0,,0.0,90.0,0.000,NO KNOWN CO
 D_ESD,USBLC6-2SC6,Package_TO_SOT_SMD:SOT-23-6,C7519,bottom,0.0,^SOT-23,180.0,0.0,0.000,db-rule
 D_OR,"BAT54C,215",Package_TO_SOT_SMD:SOT-23,C37704,bottom,90.0,^SOT-23,180.0,270.0,0.000,db-rule
 D_RADIO,KT-0603G,LED_SMD:LED_0603_1608Metric,C12624,bottom,90.0,,0.0,90.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
-D_REVG,"BAS116,215",Package_TO_SOT_SMD:SOT-23,C48502,bottom,90.0,^SOT-23,180.0,270.0,0.000,db-rule
+D_REVG,"BAS116,215",Package_TO_SOT_SMD:SOT-23,C48502,bottom,0.0,^SOT-23,180.0,0.0,0.000,db-rule
 J1,TYPE-C-31-M-12,wallet:USB_C_Receptacle_HRO_TYPE-C-31-M-12_BoardEdge,C165948,bottom,180.0,,0.0,0.0,1.460,NO KNOWN CORRECTION -> eye check in JLC preview
 J_CAM,AFC07-S24FCA-00,Connector_FFC-FPC:Jushuo_AFC07-S24FCA-00_1x24-1MP_P0.50_Horizontal,C262567,bottom,90.0,,0.0,90.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
 J_CTP,HC-FPC-1.0-6P-CSH25,wallet:FPC_HC-FPC-1.0-6P-CSH25,C49166860,bottom,180.0,,0.0,0.0,0.225,NO KNOWN CORRECTION -> eye check in JLC preview
 J_TFT,54132-4062,wallet:Molex_54132-4062,C505102,bottom,180.0,,0.0,0.0,0.325,NO KNOWN CORRECTION -> eye check in JLC preview
 LS1,MLT-5020,wallet:Buzzer_Huaneng_MLT-5020_5x5.5mm,C94598,bottom,-90.0,,0.0,270.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
-L_BOOST,WPN4020H2R2MT,wallet:L_Sunlord_WPN4020,C98361,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
-L_BUCK,CKCSA201610-2.2uH/M,Inductor_SMD:L_Cenker_CKCS201610,C5291913,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
+L_BOOST,WPN4020H2R2MT,wallet:L_Sunlord_WPN4020,C98361,top,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
+L_BUCK,CKCSA201610-2.2uH/M,Inductor_SMD:L_Cenker_CKCS201610,C5291913,top,0.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 Q_BTN,MMBT3904,Package_TO_SOT_SMD:SOT-23,C20526,bottom,-90.0,^SOT-23,180.0,90.0,0.000,db-rule
 Q_BUZ,AO3416,Package_TO_SOT_SMD:SOT-23,C43307,bottom,90.0,^SOT-23,180.0,270.0,0.000,db-rule
 Q_CHG,2N7002DW-7-F,Package_TO_SOT_SMD:SOT-363_SC-70-6,C83571,bottom,-90.0,^SOT-363,180.0,90.0,0.000,db-rule
-Q_PWRJ,MMBT3906,Package_TO_SOT_SMD:SOT-23,C2143,bottom,90.0,^SOT-23,180.0,270.0,0.000,db-rule
-Q_REV,AO3416,Package_TO_SOT_SMD:SOT-23,C43307,bottom,180.0,^SOT-23,180.0,180.0,0.000,db-rule
-RT_CHG,10k,Resistor_SMD:R_0402_1005Metric,C77131,bottom,180.0,,0.0,0.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
+Q_PWRJ,MMBT3906,Package_TO_SOT_SMD:SOT-23,C2143,top,0.0,^SOT-23,180.0,180.0,0.000,db-rule
+Q_REV,AO3416,Package_TO_SOT_SMD:SOT-23,C43307,bottom,90.0,^SOT-23,180.0,270.0,0.000,db-rule
+RT_CHG,10k,Resistor_SMD:R_0402_1005Metric,C77131,bottom,-90.0,,0.0,270.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
 R_AIRPU,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 R_AIRS,1M,Resistor_SMD:R_0402_1005Metric,C26083,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 R_AIRSER,1k,Resistor_SMD:R_0402_1005Metric,C11702,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
@@ -75,9 +77,9 @@ R_BTNB,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,90.0,,0.0,90.0,0.000,n/
 R_BUZG,100,Resistor_SMD:R_0402_1005Metric,C25076,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 R_BUZPD,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 R_CAMEN,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
-R_CC1,5.1k,Resistor_SMD:R_0402_1005Metric,C25905,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
+R_CC1,5.1k,Resistor_SMD:R_0402_1005Metric,C25905,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 R_CC2,5.1k,Resistor_SMD:R_0402_1005Metric,C25905,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
-R_CHGHI,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
+R_CHGHI,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 R_CHGOFF,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 R_CNS,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 R_CS1,1M,Resistor_SMD:R_0402_1005Metric,C26083,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
@@ -85,22 +87,23 @@ R_CS2,1M,Resistor_SMD:R_0402_1005Metric,C26083,bottom,90.0,,0.0,90.0,0.000,n/a (
 R_CSCL,4.7k,Resistor_SMD:R_0402_1005Metric,C25900,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 R_CSDA,4.7k,Resistor_SMD:R_0402_1005Metric,C25900,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 R_EN,1M,Resistor_SMD:R_0402_1005Metric,C26083,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
-R_FB1,1M,Resistor_SMD:R_0402_1005Metric,C26083,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
-R_FB2,562k,Resistor_SMD:R_0402_1005Metric,C48838,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
-R_FBU1,150k,Resistor_SMD:R_0402_1005Metric,C25755,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
-R_FBU2,33k,Resistor_SMD:R_0402_1005Metric,C25779,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
+R_FB1,1M,Resistor_SMD:R_0402_1005Metric,C26083,top,0.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
+R_FB2,562k,Resistor_SMD:R_0402_1005Metric,C48838,top,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
+R_FBU1,150k,Resistor_SMD:R_0402_1005Metric,C25755,top,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
+R_FBU2,33k,Resistor_SMD:R_0402_1005Metric,C25779,top,180.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 R_HOLD,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 R_ISET,3.6k,Resistor_SMD:R_0402_1005Metric,C25891,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
-R_ISETH,1.8k,Resistor_SMD:R_0402_1005Metric,C25871,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
-R_JA,15k,Resistor_SMD:R_0402_1005Metric,C25756,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
-R_JB,27k,Resistor_SMD:R_0402_1005Metric,C25771,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
-R_JC,47k,Resistor_SMD:R_0402_1005Metric,C25792,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
-R_JD,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
-R_JPU,15k,Resistor_SMD:R_0402_1005Metric,C25756,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
+R_ISETH,1.8k,Resistor_SMD:R_0402_1005Metric,C25871,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
+R_JA,15k,Resistor_SMD:R_0402_1005Metric,C25756,top,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
+R_JB,27k,Resistor_SMD:R_0402_1005Metric,C25771,top,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
+R_JC,47k,Resistor_SMD:R_0402_1005Metric,C25792,top,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
+R_JD,100k,Resistor_SMD:R_0402_1005Metric,C25741,top,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
+R_JPU,15k,Resistor_SMD:R_0402_1005Metric,C25756,top,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 R_OPTRST,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
-R_PG,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
-R_PWRJB,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
-R_PWRJBE,1M,Resistor_SMD:R_0402_1005Metric,C26083,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
+R_PG,150k,Resistor_SMD:R_0402_1005Metric,C25755,top,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
+R_PGB,100k,Resistor_SMD:R_0402_1005Metric,C25741,top,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
+R_PWRJB,100k,Resistor_SMD:R_0402_1005Metric,C25741,top,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
+R_PWRJBE,1M,Resistor_SMD:R_0402_1005Metric,C26083,top,180.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 R_REVG,1M,Resistor_SMD:R_0402_1005Metric,C26083,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 R_RLED,1k,Resistor_SMD:R_0402_1005Metric,C11702,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 R_ROFF,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
@@ -109,25 +112,25 @@ R_SDA,4.7k,Resistor_SMD:R_0402_1005Metric,C25900,bottom,180.0,,0.0,0.0,0.000,n/a
 R_SEENA,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 R_SESCL,4.7k,Resistor_SMD:R_0402_1005Metric,C25900,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 R_SESDA,4.7k,Resistor_SMD:R_0402_1005Metric,C25900,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
-R_STAT,10k,Resistor_SMD:R_0402_1005Metric,C25744,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
+R_STAT,10k,Resistor_SMD:R_0402_1005Metric,C25744,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 R_TMR,36k,Resistor_SMD:R_0402_1005Metric,C43676,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
-R_VB1,47k,Resistor_SMD:R_0402_1005Metric,C25792,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
-R_VB2,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
-R_VSET,62k,Resistor_SMD:R_0402_1005Metric,C37825,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
+R_VB1,47k,Resistor_SMD:R_0402_1005Metric,C25792,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
+R_VB2,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
+R_VSET,62k,Resistor_SMD:R_0402_1005Metric,C37825,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 SW_AIR,MSK12C02,Button_Switch_SMD:SW_SPDT_Shouhan_MSK12C02,C431540,bottom,90.0,,0.0,90.0,0.575,NO KNOWN CORRECTION -> eye check in JLC preview
 SW_JOY,SKRHAAE010,wallet:SW_ALPS_SKRHAAE010,C202423,top,0.0,,0.0,0.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
-U1,BQ25172DSGR,Package_SON:WSON-8-1EP_2x2mm_P0.5mm_EP0.9x1.6mm,C5189434,bottom,90.0,,0.0,90.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
-U10,TPS2116DRLR,Package_TO_SOT_SMD:SOT-583-8,C3235557,bottom,90.0,,0.0,90.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
-U11,E73-2G4M08S1C,wallet:Ebyte_E73-2G4M08S1C,C356849,bottom,180.0,,0.0,0.0,0.025,NO KNOWN CORRECTION -> eye check in JLC preview
+U1,BQ25172DSGR,Package_SON:WSON-8-1EP_2x2mm_P0.5mm_EP0.9x1.6mm,C5189434,bottom,-90.0,,0.0,270.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
+U10,TPS2116DRLR,Package_TO_SOT_SMD:SOT-583-8,C3235557,top,0.0,,0.0,0.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
+U11,E73-2G4M08S1C,wallet:Ebyte_E73-2G4M08S1C,C356849,top,0.0,,0.0,0.0,0.025,NO KNOWN CORRECTION -> eye check in JLC preview
 U12,ME6211C28M5G-N,Package_TO_SOT_SMD:SOT-23-5,C53099,bottom,180.0,^SOT-23,180.0,180.0,0.000,db-rule
 U13,TPS60230RGTR,Package_DFN_QFN:VQFN-16-1EP_3x3mm_P0.5mm_EP1.45x1.45mm,C1848364,bottom,180.0,,0.0,0.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
 U14,TLV70313DBVR,Package_TO_SOT_SMD:SOT-23-5,C2868385,bottom,180.0,^SOT-23,180.0,180.0,0.000,db-rule
 U16,SLS32AIA010MK,Package_DFN_QFN:DFN-10-1EP_3x3mm_P0.5mm_EP1.7x2.5mm,C1518668,bottom,-90.0,^DFN-,270.0,180.0,0.000,db-rule (eye check: never seen on a GridCore BOTTOM part with a 90/270 offset)
-U2,LTC3539EDCB-2#TRPBF,wallet:LT_DCB8_DFN-8-1EP_2x3mm_P0.45mm,C462652,bottom,0.0,,0.0,180.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
-U3,TLV62569PDDCR,Package_TO_SOT_SMD:SOT-23-6,C398365,bottom,90.0,^SOT-23,180.0,270.0,0.000,db-rule
+U2,LTC3539EDCB-2#TRPBF,wallet:LT_DCB8_DFN-8-1EP_2x3mm_P0.45mm,C462652,top,90.0,,0.0,90.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
+U3,TLV62569PDDCR,Package_TO_SOT_SMD:SOT-23-6,C398365,top,0.0,^SOT-23,180.0,180.0,0.000,db-rule
 U4,STM32U585VIT6Q,Package_QFP:LQFP-100_14x14mm_P0.5mm,C5270986,bottom,180.0,^LQFP-,270.0,270.0,0.000,db-rule (eye check: never seen on a GridCore BOTTOM part with a 90/270 offset)
 U5,SE050E2HQ1/Z01Z3Z,wallet:NXP_SOT1969-1_HX2QFN-20_3x3mm_P0.4mm,C5190917,bottom,-90.0,,0.0,270.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
-U6,TS3USB221ARSER,Package_DFN_QFN:Texas_UQFN-10_1.5x2mm_P0.5mm,C128396,bottom,-90.0,,0.0,270.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
+U6,TS3USB221ARSER,Package_DFN_QFN:Texas_UQFN-10_1.5x2mm_P0.5mm,C128396,bottom,0.0,,0.0,180.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
 U7,SN74LVC1G02DBVR(UMW),Package_TO_SOT_SMD:SOT-23-5,C7394016,bottom,-90.0,^SOT-23,180.0,90.0,0.000,db-rule
 U8,TPS22917DBVR,Package_TO_SOT_SMD:SOT-23-6,C2681320,bottom,0.0,^SOT-23,180.0,0.0,0.000,db-rule
 U9,TXU0202DCUR,Package_SO:VSSOP-8_2.3x2mm_P0.5mm,C5186957,bottom,0.0,^VSSOP-8_,180.0,0.0,0.000,db-rule
