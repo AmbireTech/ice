@@ -6,7 +6,8 @@ where that cell can sit, and records the choice.
 **Decision (2026-10-25): the cell goes on the back, inside the case.** The front becomes
 one flat face with no chin, and the cell sits under a hump on the back. The board
 carries it since 2026-10-25 (cell and clips on the back, the radio module on the front,
-antenna still south); the case and renders follow once it is routed.
+antenna still south), routed; the case is regenerated for it (v3, published at /v3/):
+11.5 mm body, 17.9 mm at the hump, as estimated below.
 
 ## How the numbers were worked out
 
@@ -121,11 +122,14 @@ case needs a wall behind each one. All of that buys 2 mm of thickness.
 
 - **The chin is re-laid on both faces**, and re-routed. The chin's back is the part
   of the board that took the most hand routing.
-- **Changing the cell needs a way in:** a door in the back hump, or a back half that
-  comes off. This is not designed yet; today's open front needs neither.
+- **Changing the cell needs a way in.** v3's case: the back half comes off. Undo the
+  screw in the back, lift the back off, and the cell sits on the board in its clips.
+  A door in the hump would swap it without opening the case; not designed.
+- **The back half no longer prints flat:** it rests on its hump, so the rest of the
+  back needs supports (a resin print has them anyway).
 - **The flame print** on the back loses its chin end under the hump. The cell shows
   through a clear case.
 - **The radio's antenna** stays at the south edge, outside the cell's footprint, as
   it is today.
-- **The hump's numbers are estimates** from the model's figures above, until the
-  enclosure is regenerated with the cell on the back.
+- **The hump's numbers come from the regenerated case** (2026-10-25): 51.2 × 15.4 mm,
+  6.4 mm proud of the back, a 0.6 mm skin 0.2 mm over the cell, 17.9 mm thick there.

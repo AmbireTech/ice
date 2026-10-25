@@ -4,7 +4,7 @@
 Every feature that has to line up with the board is read from the board, not typed in:
 
   board/wallet.kicad_pcb    outline, slots, thickness, mounting holes, the camera
-                            keep-out, the AAA cell's clips, the joystick
+                            keep-out, the AAA cell's clips (on the back), the joystick
   kicad-cli pcb export glb  every modelled part on the back face, as real geometry:
                             the deepest part sets the back cavity, and whatever
                             pokes past the board edge (USB-C mouth, airgap lever)
@@ -18,24 +18,26 @@ Parts (Z = 0 is the board's front face, +Z toward the screen; X east, Y north):
           hole: a locating pin where the hole sits under the screen, a clearance hole
           and a counterbore (the screw head sits flush) where the front half is solid;
           USB-C opening, airgap-lever slot, an open window the camera head stands
-          through, a hole over the buzzer, and a groove along the north tongue
+          through, a hole over the buzzer, a groove along the north tongue, and a
+          hump across the chin that encloses the AAA cell in its clips
   bezel   front plate with the display window and walls down to the parting line;
           its skirt laps over a tongue on the shell, with a ridge along the north side
           that hooks into the tongue's groove. Inside: solid fills that locate the
-          screen, a solid chin with windows for the display ribbons, an opening the
-          AAA cell and its clips stand through, a pocket and hole for the joystick,
-          and a threaded boss at each screw hole
+          screen, a solid chin with windows for the display ribbons and a pocket
+          over each front part (the radio module, the power parts), a pocket and hole
+          for the joystick, and a threaded boss at each screw hole
 
 Assembly: screen onto the board's front face on foam tape (ribbons through the slots
-into their connectors), board onto the shell's pins and standoffs, bezel hooked in at
-the north and swung down, two M2 screws from the back through shell and board into
-the bezel's bosses, then the AAA cell into its clips from the front. The screws and
-the north hook clamp the board between the standoffs and the screen.
+into their connectors), the AAA cell into its clips on the board's back, board onto
+the shell's pins and standoffs, bezel hooked in at the north and swung down, the M2
+screws from the back through shell and board into the bezel's bosses. The screws and
+the north hook clamp the board between the standoffs and the screen. Changing the
+cell: the screws out, the shell off; the cell stays on the board in its clips.
 
 Outputs:
   enclosure/out/{shell,bezel}.{step,stl}, case.3mf   for print / quote (the 3MF lays both
                                                       parts out flat for printing)
-  docs/v2/enclosure/                                  the /v2/ concept page's 3D preview and configurator:
+  docs/v3/enclosure/                                  the /v3/ concept page's 3D preview and configurator:
     enclosure.json    the numbers the preview draws from, the flame, the print schemes
     board.json        the populated board, from KiCad's own 3D export
     {shell,bezel}.json  the case parts (GLB as base64: the artifact host serves no .glb)
@@ -81,24 +83,25 @@ from build123d import (
 HERE = Path(__file__).resolve().parent.parent
 BOARD = Path(os.environ.get("ENCLOSURE_BOARD", HERE / "board/wallet.kicad_pcb"))   # a copy for trials
 OUT = HERE / "enclosure/out"
-WEB = HERE / "docs/v2/enclosure"   # proto 1: the /v2/ page (docs/enclosure is proto 0's, frozen)
+WEB = HERE / "docs/v3/enclosure"   # v3 (cell on the back): the /v3/ page; docs/enclosure (proto 0) and docs/v2 (proto 1, front cell) are frozen
 sys.path.insert(0, str(HERE / "art"))
 import flame as flame_art  # noqa: E402  (art/flame.py, shared with scripts/silkFlame.py)
 KICAD_3D = os.environ.get("KICAD_3DMODEL_DIR", "/Applications/KiCad/KiCad.app/Contents/SharedSupport/3dmodels")
 
 # ── Stack in front of the board ─────────────────────────────────────────────
 FOAM_T = 0.3          # foam tape under the screen, on the board (newBoard.py budgets the tails with it)
-# The AAA cell lies across the chin on the board's front face, in two clips (MYOUNG
-# MY-AAA-19-J / -20-J: base 0.25 mm steel, arms 10.46 mm tall, 11 mm across), and
-# stands out of the front through an opening. 10.5 mm across (Energizer E92/L92,
-# eneloop BK-4MCCE all 10.1-10.5), resting on the clip bases.
+# The AAA cell lies across the chin on the board's back face, in two clips (MYOUNG
+# MY-AAA-19-J / -20-J: base 0.25 mm steel, arms 10.46 mm tall, 11 mm across), under
+# a hump in the shell (docs/cell-placement.md: back, enclosed). 10.5 mm across
+# (Energizer E92/L92, eneloop BK-4MCCE all 10.1-10.5), resting on the clip bases.
+CELL_REFS = ("BT_N", "BT_P")
 CELL_D, CELL_BASE = 10.5, 0.25
 CLIP_H = 10.46
-CELL_CLR = 0.4        # opening around the clips' outlines
-CELL_BODY_CLR = 0.3   # opening around the cell itself, between the clips
-# The thinnest strip of bezel the case may leave between two openings in its front
-# (the cell opening and the joystick hole): below this a resin print breaks there.
-MIN_WEB = 0.6
+CELL_CLR = 0.4        # the hump's inside around the clips' outlines
+CELL_AIR = 0.2        # between the cell and the hump's skin
+# The hump's skin over the cell: the thinnest strip a resin print keeps (the cell
+# backs it CELL_AIR below); its north and south walls are as thick as the case's.
+HUMP_SKIN = 0.6
 # The joystick (ALPS SKRHAAE010, 7.5 x 7.5 mm housing 2.23 mm tall, a 3 mm stem to
 # 5.08 mm: EasyEDA's model) on the front, below the cell: a pocket over its housing in
 # the bezel's solid chin, and a hole wide enough for the stem to rock. The stem stops
@@ -188,17 +191,21 @@ PRINT_SCHEMES = [
 CASE_README = """Ambire signer proto 1 case
 
 case.3mf     both parts laid out for printing: the shell on its back, the bezel face down
-shell.stl    back shell (standoffs, two locating pins, two screw holes, the camera window)
+shell.stl    back shell (standoffs, locating pins, the screw holes, the camera window,
+             the hump over the AAA cell)
 bezel.stl    front bezel (the screen sits in it; the screws thread into its chin)
 *.step       the same parts for CAD
 
 Assembly: stick the screen to the board's front face with 0.3 mm foam tape, its
-ribbons through the board's slots into their connectors. Lay the board in the shell
-(its two top holes onto the pins). Hook the bezel's top edge under the shell's top
-lip, swing it down over the screen, then 2x M2 pan-head screws (length below) from
-the back. Last, press an AAA cell into its clips from the front: the cell and the
-camera both stand out of the case. Print the shell on its back and the bezel face
-down: neither needs supports.
+ribbons through the board's slots into their connectors. Press an AAA cell into its
+clips on the board's back. Lay the board in the shell (its two top holes onto the
+pins). Hook the bezel's top edge under the shell's top lip, swing it down over the
+screen, then the M2 pan-head screws from the back. The camera stands out of the
+back; the cell sits under the hump. To change the cell, take the screws out and lift
+the shell off: the cell stays on the board.
+
+Print the bezel face down: it needs no supports. The shell rests on its hump, so the
+rest of its back needs supports (or print it in resin, which supports it anyway).
 
 Units are millimetres. Print in see-through resin or PETG (ice blue, orange,
 purple or clear). Nothing has been test-printed yet: the screw bosses, the top hook
@@ -567,7 +574,7 @@ def main():
     back = {ref: v for ref, v in parts.items() if v[:, 2].min() < -0.01}
     # not fitted (DNP: the optional edge buttons) = not there; the case gets no opening for them
     unmodelled = sorted(ref for ref, f in b["fps"].items()
-                        if f["layer"] == "B.Cu" and ref not in parts and not f["dnp"]
+                        if f["layer"] == "B.Cu" and ref not in parts and not f["dnp"] and ref not in CELL_REFS
                         and not f["lib"].startswith(("TestPoint", "MountingHole")))
     surprise = [r for r in unmodelled if r not in UNMODELLED_MAX_H]
     if surprise:
@@ -639,7 +646,35 @@ def main():
     # ── shell ──
     shell = rr_prism_drafted(*out_o[:4], out_o[4], z_split, z_floor_out, draft_back)
     shell = fillet(shell.edges().group_by(Axis.Z)[0], BACK_FILLET)
+    # The AAA cell's hump: across the back's full width over the clips, its inside down
+    # to the cell plus CELL_AIR. It reaches up into the back so it fills the back edge's
+    # fillet where the two meet.
+    clips = []
+    for ref in CELL_REFS:
+        f = b["fps"].get(ref)
+        if f is None or f["layer"] != "B.Cu":
+            raise SystemExit(f"{ref}: the AAA cell's clip must be on the board's back face")
+        fw = fab_world(f)
+        clips.append([round(v, 3) for v in (*fw.min(0), *fw.max(0))])
+    cell_cx = sum((c[0] + c[2]) / 2 for c in clips) / 2
+    cell_cy = sum((c[1] + c[3]) / 2 for c in clips) / 2
+    hy0, hy1 = min(c[1] for c in clips) - CELL_CLR, max(c[3] for c in clips) + CELL_CLR
+    z_hump_in = z_back - CELL_BASE - CELL_D - CELL_AIR
+    z_hump_out = z_hump_in - HUMP_SKIN
+    if z_hump_in > z_floor_in:
+        raise SystemExit("the cell fits inside the body's back cavity: no hump needed, the model expects one")
+    face = outline(b, GAP + WALL - DRAFT_MM / 2)
+    hump_o = (face[0], hy0 - WALL, face[2], hy1 + WALL)
+    hump = rr_prism(*hump_o, BACK_FILLET, z_hump_out, z_floor_out + BACK_FILLET + 0.2)
+    shell += fillet(hump.edges().group_by(Axis.Z)[0], BACK_FILLET)
     shell -= rr_prism(*in_o[:4], in_o[4], z_floor_in, z_split + 1)
+    shell -= box(-GAP, hy0, W + GAP, hy1, z_hump_in, z_floor_in + 0.01)
+    holes_in_hump = [(hx, hy) for hx, hy, _ in b["holes"] if hump_o[1] - STANDOFF_R < hy < hump_o[3] + STANDOFF_R]
+    if holes_in_hump:
+        raise SystemExit(f"board holes {holes_in_hump} under the cell's hump: their standoffs and screws need a rule")
+    report.append(f"AAA cell under a hump on the back: {hump_o[2] - hump_o[0]:.1f} x {hump_o[3] - hump_o[1]:.1f} mm, "
+                  f"{z_floor_out - z_hump_out:.1f} mm proud of the back, {HUMP_SKIN} mm skin {CELL_AIR} mm over the cell; "
+                  f"the case is {z_top - z_hump_out:.1f} mm thick there")
     shell += rr_prism(*tongue_o[:4], tongue_o[4], z_split, z_split + TONGUE_H) - rr_prism(*in_o[:4], in_o[4], z_split - 1, z_split + TONGUE_H + 1)
 
     # A screw only where the front half is solid: under the screen there is no room
@@ -717,33 +752,13 @@ def main():
     # ridge's underside is a 0.3 mm step, no support).
     s_in = t_out + TONGUE_CLR
     bezel += box(W / 2 - hl / 2, -s_in, W / 2 + hl / 2, -s_in + hd, hz - hh / 2, hz + hh / 2)
-    # Solid where the screen and the cell are not: fills along the screen's edges locate
-    # it, the chin is solid down to the board, with windows where the display ribbons
-    # drop through the board's slots and an opening the AAA cell and its clips stand
-    # through.
+    # Solid where the screen is not: fills along the screen's edges locate it, the chin
+    # is solid down to the board, with windows where the display ribbons drop through
+    # the board's slots and a pocket over each front part.
     open_ = box(*glass, z_split - 1, z_lip + 0.01)
     for sx0, sy0, sx1, sy1 in b["slots"]:
         open_ += box(sx0 - RIBBON_CLR, glass[3] - 0.01, sx1 + RIBBON_CLR, sy1 + RIBBON_CLR, z_split - 1, z_lip + 0.01)
-    clips = []
-    for ref in ("BT_N", "BT_P"):
-        f = b["fps"].get(ref)
-        if f is None or f["layer"] != "F.Cu":
-            raise SystemExit(f"{ref}: the AAA cell's clip must be on the board's front face")
-        fw = fab_world(f)
-        clips.append([round(v, 3) for v in (*fw.min(0), *fw.max(0))])
-    cut = (max(min(c[0] for c in clips) - CELL_CLR, -GAP), min(c[1] for c in clips) - CELL_CLR,
-           min(max(c[2] for c in clips) + CELL_CLR, W + GAP), max(c[3] for c in clips) + CELL_CLR)
-    # full height over the clips; between them only the cell's own width, so the bezel
-    # keeps as much of the chin as the cell allows
-    cell_cy = sum((c[1] + c[3]) / 2 for c in clips) / 2
-    cell_cx = sum((c[0] + c[2]) / 2 for c in clips) / 2
-    clip_cuts = [(max(c[0] - CELL_CLR, -GAP), c[1] - CELL_CLR, min(c[2] + CELL_CLR, W + GAP), c[3] + CELL_CLR) for c in clips]
-    body_cut = (cut[0], cell_cy - CELL_D / 2 - CELL_BODY_CLR, cut[2], cell_cy + CELL_D / 2 + CELL_BODY_CLR)
-    cell_hole = box(*body_cut, z_split - 1, z_top + 1)
-    for cc in clip_cuts:
-        cell_hole += box(*cc, z_split - 1, z_top + 1)
-    bezel += rr_prism(*in_o[:4], in_o[4], z_split, z_lip + 0.01) - open_ - cell_hole
-    bezel -= cell_hole
+    bezel += rr_prism(*in_o[:4], in_o[4], z_split, z_lip + 0.01) - open_
     joy = b["fps"].get(JOY_REF)
     joy_box = None
     if joy is not None:
@@ -755,17 +770,12 @@ def main():
             raise SystemExit("no room for the joystick's housing under the bezel's front skin")
         bezel -= box(*joy_box, z_split - 1, JOY_HOUSING_H + JOY_CLR)
         bezel -= Pos(joy["x"], -joy["y"], (z_split + z_top) / 2 + 0.5) * Cylinder(JOY_HOLE_D / 2, z_top - z_split + 2)
-        r = JOY_HOLE_D / 2
-        web = min(math.hypot(max(o0 - joy["x"], 0, joy["x"] - o1), max(p0 - joy["y"], 0, joy["y"] - p1)) - r
-                  for o0, p0, o1, p1 in [body_cut] + clip_cuts)
-        if web < MIN_WEB:
-            raise SystemExit(f"the joystick hole leaves {web:.2f} mm of bezel to the cell opening, under {MIN_WEB}")
-        report.append(f"joystick at {joy['x']:.1f}, {joy['y']:.1f}: pocket {2 * h:.1f} mm square, a {JOY_HOLE_D} mm hole "
-                      f"{web:.2f} mm from the cell opening; its stem stops {z_top - JOY_H:.2f} mm under the front face "
-                      f"(a cap goes on it)")
+        report.append(f"joystick at {joy['x']:.1f}, {joy['y']:.1f}: pocket {2 * h:.1f} mm square, a {JOY_HOLE_D} mm hole; "
+                      f"its stem stops {z_top - JOY_H:.2f} mm under the front face (a cap goes on it)")
     front = sorted(ref for ref, f in b["fps"].items()
-                   if f["layer"] == "F.Cu" and not f["dnp"] and ref not in ("BT_N", "BT_P", JOY_REF)
+                   if f["layer"] == "F.Cu" and not f["dnp"] and ref != JOY_REF
                    and not f["lib"].startswith(("TestPoint", "MountingHole")))
+    pockets = []
     for ref in front:
         if ref in parts:
             h = parts[ref][:, 2].max() - T      # parts' z is 0 at the board's back face
@@ -780,21 +790,19 @@ def main():
             raise SystemExit(f"front part {ref} has no fab outline to size its pocket from")
         x0, y0 = fw.min(0)[:2]
         x1, y1 = fw.max(0)[:2]
-        bezel -= box(x0 - FRONT_CLR, y0 - FRONT_CLR, x1 + FRONT_CLR, y1 + FRONT_CLR, z_split - 1, h + FRONT_CLR)
+        pockets.append((x0 - FRONT_CLR, y0 - FRONT_CLR, x1 + FRONT_CLR, y1 + FRONT_CLR))
+        bezel -= box(*pockets[-1], z_split - 1, h + FRONT_CLR)
     if front:
         report.append(f"front parts in pockets under the bezel's chin: {', '.join(front)}")
-    cell = {"x": [round(cell_cx - 22.25, 3), round(cell_cx + 22.25, 3)], "y": round(cell_cy, 3),
-            "z": round(CELL_BASE + CELL_D / 2, 3), "d": CELL_D, "clips": clips, "clipH": CLIP_H}
-    report.append(f"AAA cell opening {cut[2] - cut[0]:.1f} x {cut[3] - cut[1]:.1f} mm over the clips, "
-                  f"{body_cut[3] - body_cut[1]:.1f} mm between them; the cell stands "
-                  f"{CELL_BASE + CELL_D - z_top:.1f} mm proud of the front, its clips {CLIP_H - z_top:.1f} mm")
+    cell = {"side": "back", "x": [round(cell_cx - 22.25, 3), round(cell_cx + 22.25, 3)], "y": round(cell_cy, 3),
+            "z": round(z_back - CELL_BASE - CELL_D / 2, 3), "d": CELL_D, "clips": clips, "clipH": CLIP_H}
 
     # Screw bosses: the chin is solid from the board up to the front skin there; the
     # pilot runs up to PILOT_TOP_CLR under the front face.
     pilot_top = z_top - PILOT_TOP_CLR
     for hx, hy in screw_holes:
         wall = min(math.hypot(max(o0 - hx, 0, hx - o1), max(p0 - hy, 0, hy - p1)) for o0, p0, o1, p1 in
-                   [glass, cut] + ([joy_box] if joy_box else []) + [(sx0 - RIBBON_CLR, glass[3], sx1 + RIBBON_CLR, sy1 + RIBBON_CLR)
+                   [glass] + pockets + ([joy_box] if joy_box else []) + [(sx0 - RIBBON_CLR, glass[3], sx1 + RIBBON_CLR, sy1 + RIBBON_CLR)
                                     for sx0, sy0, sx1, sy1 in b["slots"]]) - PILOT_R
         if wall < 0.8:
             raise SystemExit(f"screw boss at {hx}, {hy}: only {wall:.2f} mm of plastic beside the pilot")
@@ -819,7 +827,7 @@ def main():
         raise SystemExit("display window is larger than the glass")
     assert shell.is_valid and bezel.is_valid, "invalid solid"
 
-    size = (out_o[2] - out_o[0], out_o[3] - out_o[1], z_top - z_floor_out)
+    size = (out_o[2] - out_o[0], out_o[3] - out_o[1], z_top - z_floor_out)   # the body; the hump adds to it
     print_3mf(shell, bezel, OUT / "case.3mf")
     for name, part in (("shell", shell), ("bezel", bezel)):
         export_step(part, str(OUT / f"{name}.step"))
@@ -848,6 +856,7 @@ def main():
         "size_mm": [round(v, 1) for v in size],
         "board": {"w": W, "h": H, "r": b["r"], "t": T, "slots": b["slots"], "holes": b["holes"]},
         "z": {"floorOut": z_floor_out, "floorIn": z_floor_in, "boardBack": z_back, "split": z_split,
+              "humpOut": z_hump_out,
               "panel": list(z_panel), "lip": z_lip, "top": z_top},
         "panel": list(panel), "viewingArea": list(va),
         "cell": cell,
@@ -864,7 +873,7 @@ def main():
     }
     (WEB / "enclosure.json").write_text(json.dumps(data, indent=1))
 
-    print(f"case {size[0]:.1f} x {size[1]:.1f} x {size[2]:.1f} mm "
+    print(f"case {size[0]:.1f} x {size[1]:.1f} x {size[2]:.1f} mm, {z_top - z_hump_out:.1f} at the cell's hump "
           f"(back cavity {depth + BACK_CLEAR:.1f} mm, set by the {driver}; deepest modelled part {deepest_ref} {deepest:.2f} mm)")
     for line in report:
         print(" ", line)

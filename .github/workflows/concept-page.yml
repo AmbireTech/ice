@@ -2,8 +2,9 @@ name: Concept page
 
 # Publishes the concept page (docs/ambire-signer.html, proto 0) to GitHub Pages as
 # the site's index, with only the files it loads (brand/, enclosure/), and the proto 1
-# page (docs/v2/: its own index.html, brand/, enclosure/) at /v2/, which the index does
-# not link. The rest of docs/ (design notes, research) stays out of the public site.
+# page (docs/v2/: its own index.html, brand/, enclosure/) at /v2/ and the v3 page (cell
+# on the back, docs/v3/, the same layout) at /v3/, which the index does not link. The
+# rest of docs/ (design notes, research) stays out of the public site.
 # Needs Settings -> Pages -> Source: GitHub Actions.
 # Live at https://ambiretech.github.io/secure-signer/
 
@@ -15,6 +16,7 @@ on:
       - docs/brand/**
       - docs/enclosure/**
       - docs/v2/**
+      - docs/v3/**
       - .github/workflows/concept-page.yml
   workflow_dispatch:
 
@@ -43,6 +45,9 @@ jobs:
           mkdir -p _site/v2
           cp docs/v2/index.html _site/v2/index.html
           cp -R docs/v2/brand docs/v2/enclosure _site/v2/
+          mkdir -p _site/v3
+          cp docs/v3/index.html _site/v3/index.html
+          cp -R docs/v3/brand docs/v3/enclosure _site/v3/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

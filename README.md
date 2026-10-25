@@ -5,12 +5,14 @@ NXP SE050 and Infineon OPTIGA Trust M, BLE behind a hardware airgap switch, QR
 camera, 2.4" capacitive touch display, see-through case. Open hardware; the
 firmware starts from a fork of Trezor's.
 
-**Status (2026-10-22):** proto 0, the first three boards, is ordered from JLCPCB
+**Status (2026-10-25):** proto 0, the first three boards, is ordered from JLCPCB
 (plain purple, the old wordmark on the back, a LiPo pouch, the OPTIGA not
-fitted). The board file is now **proto 1**: one AAA cell of any chemistry in
-clips on the front instead of the pouch (NiMH charged over USB only once
-identified as NiMH), a case 6.5 mm thinner with the cell and the camera standing
-out of it, a joystick centred below the cell, a buzzer, and the flame on the back. Why and
+fitted). The board file is now **v3**, routed: one AAA cell of any chemistry in
+clips on the back instead of the pouch (NiMH charged over USB only once
+identified as NiMH), a flat front, a case 6.5 mm thinner (11.5 mm) with a hump
+across the bottom of the back over the cell (17.9 mm there), a joystick below the
+screen, a buzzer, and the flame on the back. Proto 1, the same with the cell on
+the front, was never ordered. Why and
 how: [docs/power-aaa.md](docs/power-aaa.md). The firmware port has started on the
 fork (below), for proto 0.
 

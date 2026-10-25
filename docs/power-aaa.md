@@ -1,8 +1,9 @@
 # One AAA cell: cells, runtime, charging
 
-Proto 1 drops the 1S LiPo pouch for a single AAA cell held in two clips on the
-board's front face, below the screen. The cell can be rechargeable (NiMH) or not
-(lithium or alkaline), and it sticks out of the case. This is the research behind
+Proto 1 drops the 1S LiPo pouch for a single AAA cell held in two clips. Since v3
+the clips are on the board's back, under a hump in the case
+([cell-placement.md](cell-placement.md)). The cell can be rechargeable (NiMH) or not
+(lithium or alkaline). This is the research behind
 that choice and the power circuit that follows from it. The circuit itself:
 [design.md](design.md#power-one-aaa-cell); the netlist: `src/blocks/Power.tsx`.
 
