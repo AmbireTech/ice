@@ -110,10 +110,11 @@ CELL_AIR = 0.1        # the cover's inside to the cell
 # skirt COVER_FLANGE thick over the lips (owner, 2026-10-25: compact, close to the cell,
 # thin at the top); a web down through the opening on each side and a lip under the
 # floor's edge (the floor sits between lip and skirt). It stops against the west wall;
-# it prints standing on its end, with no supports.
+# it prints standing on its closed east end, with no supports.
 COVER_SKIN = 0.5      # the least plastic anywhere over the inside: the roof, over the cell
 COVER_FLANGE = 0.8    # the skirt's thickness over the lips, where it clamps the floor
-COVER_WEB, COVER_CLR = 0.8, 0.15
+COVER_WEB = 0.8
+COVER_CAP = 1.0       # the end wall at the east, flush with the case: it closes the slot and is what the cover prints standing on
 COVER_LIP = (0.8, 0.8)   # over the floor's edge, thick
 # The joystick (ALPS SKRHAAE010, 7.5 x 7.5 mm housing 2.23 mm tall, a 3 mm stem to
 # 5.08 mm: EasyEDA's model) on the front, below the cell: a pocket over its housing in
@@ -154,7 +155,12 @@ WALL = 1.8
 FLOOR = 1.2
 LIP = 0.8             # bezel over the glass
 GAP = 0.3             # board edge to wall
-TONGUE_T, TONGUE_H, TONGUE_CLR = 0.8, 1.8, 0.1
+# Sliding and snapping fits, for an FDM print (0.4 mm nozzle; the first print, 2026-10-26,
+# at 0-0.1 mm would not go together): the tongue in the bezel's skirt and inside its
+# fill, the north hook in its groove, the cover in the floor.
+FIT = 0.2
+TONGUE_T, TONGUE_H, TONGUE_CLR = 0.8, 1.8, FIT
+COVER_CLR = FIT
 BACK_FILLET, FRONT_FILLET = 1.5, 1.2
 # Outer walls lean in toward the back and toward the front, widest at the parting
 # line, so the two halves meet flush: the back and front faces are DRAFT_MM narrower
@@ -172,7 +178,7 @@ CB_R, CB_DEPTH = 2.05, 1.7   # counterbore for the 3.8 x 1.6 mm head, flush with
 BOSS_R, PILOT_R = 2.2, 0.8   # bezel boss, 1.6 mm pilot for M2 self-tapping
 PILOT_TOP_CLR = 0.8  # pilot stops this far under the bezel's front face
 PIN_R = 1.0          # locating pin in a 2.2 mm board hole
-HOOK = (30.0, 0.3, 0.8, 0.05)  # north hook: length, ridge depth, ridge height, clearance
+HOOK = (30.0, 0.3, 0.8, 0.15)  # north hook: length, ridge depth, ridge height, clearance
 SOUND_R = 1.0        # hole in the back over the buzzer's top port (MLT-5020: 0.8 mm port)
 SCREW_LENGTHS = (6, 8, 10, 12)
 MIN_ENGAGE = 2.5     # mm of thread in the boss
@@ -205,7 +211,7 @@ PRINT_SCHEMES = [
 CASE_README = """Ambire signer v3 case
 
 case.3mf     all three parts laid out for printing: the shell on its back, the bezel face
-             down, the cover standing on its end
+             down, the cover standing on its closed end
 shell.stl    back shell (standoffs, locating pins, the screw hole, the camera window, the
              opening the AAA cell stands through)
 bezel.stl    front bezel (the screen sits in it; the screw threads into its chin)
@@ -221,12 +227,14 @@ screen, then the M2 pan-head screw from the back. The camera and the cell stand
 out of the back; slide the cover on over the cell if you want it covered. The cell
 charges over USB in the device.
 
-Print the shell on its back and the bezel face down, the cover standing on its end:
+Print the shell on its back and the bezel face down, the cover standing on its closed end:
 none of them needs supports.
 
 Units are millimetres. Print in see-through resin or PETG (ice blue, orange,
-purple or clear). Nothing has been test-printed yet: the screw bosses, the top hook
-and the joystick's opening may need adjusting.
+purple or clear). The fits are set for an FDM printer with a 0.4 mm nozzle (0.2 mm
+between parts that slide or snap). A first print (26 October) would not go together and
+its cover failed; these files fix both and have not been printed yet. The screw boss,
+the top hook and the joystick's opening may still need adjusting.
 """
 
 # ── DIY downloads (the board as ordered; the case from this run) ────────────
@@ -631,12 +639,13 @@ def cover_geometry(clip_pts, d_floor_in, d_floor_out):
 
 
 def cover_part(cv, cy, z_back, x0, xi0, x1):
-    """The cover: the bell outside the back, from x0 to x1; the webs through the opening
-    and the lips under the floor from xi0 (they stop at the west wall) to x1."""
+    """The cover: the bell outside the back, from x0 to x1, closed by COVER_CAP at x1; the
+    webs through the opening and the lips under the floor from xi0 (they stop at the
+    west wall) to x1."""
     def slab(pts, a, b_):
         sk = Plane.YZ * Polygon(*[(-(cy + y), z_back - d) for y, d in pts], align=None)
         return Pos(a, 0, 0) * extrude(sk, amount=b_ - a, dir=(1, 0, 0))   # the outline's winding would set +-X
-    body = slab(cv["outer"], x0, x1) - slab(cv["inner"], x0 - 1, x1 + 1)
+    body = slab(cv["outer"], x0, x1) - slab(cv["inner"], x0 - 1, x1 - COVER_CAP)
     for s in (-1, 1):
         ya, yb = sorted((cy + s * cv["in_hw"], cy + s * cv["web_out"]))
         body += box(xi0, ya, x1, yb, z_back - cv["floor_out"] - 0.01, z_back - cv["lip_top"])
@@ -762,6 +771,8 @@ def main():
                for r, v in back.items() if r not in CELL_REFS)
     face = outline(b, GAP + WALL - DRAFT_MM / 2)
     cover = cover_part(cv, cell_cy, z_back, face[0], -GAP + COVER_CLR, face[2])
+    if cell_cx + 22.25 + CELL_AIR > face[2] - COVER_CAP:
+        raise SystemExit(f"the cell's east end runs into the cover's end wall")
     # the cover slides over the clips: none of their model's points may be inside it
     probe = clip_v[np.random.default_rng(0).choice(len(clip_v), min(1500, len(clip_v)), replace=False)]
     inside = [p for p in probe if cover.is_inside(Vector(p[0], -p[1], z_back + p[2]))]
@@ -859,6 +870,8 @@ def main():
     for sx0, sy0, sx1, sy1 in b["slots"]:
         open_ += box(sx0 - RIBBON_CLR, glass[3] - 0.01, sx1 + RIBBON_CLR, sy1 + RIBBON_CLR, z_split - 1, z_lip + 0.01)
     bezel += rr_prism(*in_o[:4], in_o[4], z_split, z_lip + 0.01) - open_
+    bezel -= (rr_prism(*in_o[:4], in_o[4], z_split - 1, z_split + TONGUE_H + FIT)
+              - rr_prism(*outline(b, GAP - FIT)[:4], outline(b, GAP - FIT)[4], z_split - 2, z_split + TONGUE_H + 2))
     joy = b["fps"].get(JOY_REF)
     joy_box = None
     if joy is not None:
@@ -1010,13 +1023,13 @@ def gltf_json(glb: Path, dest: Path):
 
 def print_3mf(shell, bezel, cover, dest: Path):
     """The parts laid out for printing: the shell on its back, the bezel face down beside
-    it, the cover standing on its end (its slide axis up) beyond that."""
+    it, the cover standing on its end wall beyond that."""
     sb = shell.bounding_box()
     flat_shell = Pos(-sb.min.X, -sb.min.Y, -sb.min.Z) * shell
     turned = Rot(180, 0, 0) * bezel
     tb = turned.bounding_box()
     flat_bezel = Pos(sb.size.X + 8 - tb.min.X, -tb.min.Y, -tb.min.Z) * turned
-    upright = Rot(0, -90, 0) * cover
+    upright = Rot(0, 90, 0) * cover    # the east end wall down
     cb, fb = upright.bounding_box(), flat_bezel.bounding_box()
     flat_cover = Pos(fb.max.X + 8 - cb.min.X, -cb.min.Y, -cb.min.Z) * upright
     m = Mesher()

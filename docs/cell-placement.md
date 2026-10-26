@@ -141,6 +141,6 @@ case needs a wall behind each one. All of that buys 2 mm of thickness.
   clips' real 3D model: 14.7 mm wide on the back, 6.2 mm proud, 0.1 mm to the cell and
   0.15 mm to the clips inside, a 0.5 mm roof, 17.7 mm thick there. The cell sets that
   height (it sits on the clips' 0.25 mm steel base); thinner clips or a holder would not
-  lower it. Nothing is
-  test-printed yet: the slide's fit and whether it needs a detent to stay put are
-  open.
+  lower it. A first print (2026-10-26) of the cover, standing on its open end,
+  failed; it now has a closed end to stand on and 0.2 mm to slide. The slide's fit
+  and whether it needs a detent to stay put are still open.
