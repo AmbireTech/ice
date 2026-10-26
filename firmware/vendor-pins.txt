@@ -1,4 +1,4 @@
-# trezor-firmware 5fdc180b99bd763c3d18411bba686909875eb337 (2026-10-16) submodule pins: path url commit
+# trezor-firmware 6f320a465953ec506eb9b38de00d48f0eaf9fdb6 (2026-10-23) submodule pins: path url commit
 crypto/tests/wycheproof https://github.com/google/wycheproof fc24cd5b787d8e496bff31b0468af693a652b0f2
 vendor/QR-Code-generator https://github.com/nayuki/QR-Code-generator.git 3c6d0b3cefb4e049dc337e82237c9644399716a8
 vendor/cmsis_5 https://github.com/ARM-software/CMSIS_5.git a75f01746df18bb5b929dfb8dc6c9407fac3a0f3
