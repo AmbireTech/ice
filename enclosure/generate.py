@@ -37,8 +37,8 @@ the north hook clamp the board between the standoffs and the screen. Changing th
 cell: the screws out, the shell off; the cell stays on the board in its clips.
 
 Outputs:
-  enclosure/out/{shell,bezel}.{step,stl}, case.3mf   for print / quote (the 3MF lays both
-                                                      parts out flat for printing)
+  enclosure/out/{shell,bezel,cover}.{step,stl}, case.3mf   for print / quote (the 3MF lays all
+                                                      three parts out for printing)
   docs/v3/enclosure/                                  the /v3/ concept page's 3D preview and configurator:
     enclosure.json    the numbers the preview draws from, the flame, the print schemes
     board.json        the populated board, from KiCad's own 3D export
@@ -203,7 +203,8 @@ PRINT_SCHEMES = [
 
 CASE_README = """Ambire signer v3 case
 
-case.3mf     shell and bezel laid out for printing: the shell on its back, the bezel face down
+case.3mf     all three parts laid out for printing: the shell on its back, the bezel face
+             down, the cover standing on its end
 shell.stl    back shell (standoffs, locating pins, the screw hole, the camera window, the
              opening the AAA cell stands through)
 bezel.stl    front bezel (the screen sits in it; the screw threads into its chin)
@@ -926,7 +927,7 @@ def main():
     assert shell.is_valid and bezel.is_valid and cover.is_valid, "invalid solid"
 
     size = (out_o[2] - out_o[0], out_o[3] - out_o[1], z_top - z_floor_out)   # the body; the cell (or its cover) adds to it
-    print_3mf(shell, bezel, OUT / "case.3mf")
+    print_3mf(shell, bezel, cover, OUT / "case.3mf")
     for name, part in (("shell", shell), ("bezel", bezel), ("cover", cover)):
         export_step(part, str(OUT / f"{name}.step"))
         export_stl(part, str(OUT / f"{name}.stl"), tolerance=MESH_TOL, angular_tolerance=0.2)
@@ -986,16 +987,20 @@ def gltf_json(glb: Path, dest: Path):
     dest.write_text(json.dumps({"glb": base64.b64encode(glb.read_bytes()).decode()}))
 
 
-def print_3mf(shell, bezel, dest: Path):
-    """Both parts laid out for printing: the shell on its back, the bezel face down beside it."""
-    sb, bb = shell.bounding_box(), bezel.bounding_box()
+def print_3mf(shell, bezel, cover, dest: Path):
+    """The parts laid out for printing: the shell on its back, the bezel face down beside
+    it, the cover standing on its end (its slide axis up) beyond that."""
+    sb = shell.bounding_box()
     flat_shell = Pos(-sb.min.X, -sb.min.Y, -sb.min.Z) * shell
     turned = Rot(180, 0, 0) * bezel
     tb = turned.bounding_box()
     flat_bezel = Pos(sb.size.X + 8 - tb.min.X, -tb.min.Y, -tb.min.Z) * turned
+    upright = Rot(0, -90, 0) * cover
+    cb, fb = upright.bounding_box(), flat_bezel.bounding_box()
+    flat_cover = Pos(fb.max.X + 8 - cb.min.X, -cb.min.Y, -cb.min.Z) * upright
     m = Mesher()
-    m.add_shape(flat_shell, linear_deflection=MESH_TOL, angular_deflection=0.2, part_number="shell")
-    m.add_shape(flat_bezel, linear_deflection=MESH_TOL, angular_deflection=0.2, part_number="bezel")
+    for name, part in (("shell", flat_shell), ("bezel", flat_bezel), ("cover", flat_cover)):
+        m.add_shape(part, linear_deflection=MESH_TOL, angular_deflection=0.2, part_number=name)
     m.write(str(dest))
 
 
