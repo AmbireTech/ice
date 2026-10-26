@@ -161,7 +161,7 @@ Ambire internals into GridCore's.
 - Under the screen the front (F.Cu) is bare: the panel sits on it. Assembly is double-sided
   since proto 1 (owner, 2026-10-22): in the chin the front carries the cell clips, the
   joystick, the radio's SWD pads and power parts that thin out the back (the USB buck and
-  the power mux), each in a pocket under the bezel. The art lives on the back.
+  the power mux), under one pocket in the bezel's chin. The art lives on the back.
 
 - **Routing defects: judge the copper, not its author** (owner, 2026-10-25: "whether something
   stays or not shouldn't depend on whether I did it, but on whether it's actually good").

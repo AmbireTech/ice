@@ -25,9 +25,9 @@ Parts (Z = 0 is the board's front face, +Z toward the screen; X east, Y north):
   bezel   front plate with the display window and walls down to the parting line;
           its skirt laps over a tongue on the shell, with a ridge along the north side
           that hooks into the tongue's groove. Inside: solid fills that locate the
-          screen, a solid chin with windows for the display ribbons and a pocket
-          over each front part (the radio module, the power parts), a pocket and hole
-          for the joystick, and a threaded boss at each screw hole
+          screen, a chin with windows for the display ribbons, one pocket over all the
+          front parts (the radio module, the power parts, the joystick's housing) with a
+          hole for the joystick, and a threaded boss at each screw hole
 
 Assembly: screen onto the board's front face on foam tape (ribbons through the slots
 into their connectors), the AAA cell into its clips on the board's back, board onto
@@ -121,9 +121,10 @@ COVER_LIP = (0.8, 0.8)   # over the floor's edge, thick
 # just under the front face: a printed cap goes on it.
 JOY_REF, JOY_BODY, JOY_HOUSING_H, JOY_H, JOY_HOLE_D = "SW_JOY", 7.5, 2.23, 5.08, 6.0
 JOY_CLR = 0.3        # around the housing, and over it
-# Other parts on the front (proto 1 put power parts there, in the chin): each gets a
-# pocket in the bezel's solid chin, its fab outline plus FRONT_CLR, as deep as the part
-# plus FRONT_CLR; FRONT_SKIN is the least bezel left over a pocket.
+# Other parts on the front (proto 1 put power parts there, in the chin): one pocket in
+# the bezel's chin covers them all, as deep as the tallest plus FRONT_CLR; FRONT_SKIN is
+# the least bezel left over it. Each part's fab outline plus FRONT_CLR stays clear of
+# the screw boss.
 FRONT_CLR, FRONT_SKIN = 0.3, 0.8
 # Screws holding the front half (with the north hook and the pins). Two is the design;
 # one is allowed only while the west hole H3 is out (owner, 2026-10-22: the cell's west
@@ -874,7 +875,7 @@ def main():
     front = sorted(ref for ref, f in b["fps"].items()
                    if f["layer"] == "F.Cu" and not f["dnp"] and ref != JOY_REF
                    and not f["lib"].startswith(("TestPoint", "MountingHole")))
-    pockets = []
+    keepouts, chin_h = [], 0.0   # each front part's fab outline plus FRONT_CLR; the tallest part
     for ref in front:
         if ref in parts:
             h = parts[ref][:, 2].max() - T      # parts' z is 0 at the board's back face
@@ -882,17 +883,37 @@ def main():
             h = UNMODELLED_MAX_H[ref]
         else:
             raise SystemExit(f"front part {ref} has no 3D model and no height bound")
-        if h + FRONT_CLR > z_top - FRONT_SKIN:
-            raise SystemExit(f"front part {ref} ({h:.2f} mm) leaves under {FRONT_SKIN} mm of bezel over it")
         fw = fab_world(b["fps"][ref])
         if fw.size == 0:
-            raise SystemExit(f"front part {ref} has no fab outline to size its pocket from")
+            raise SystemExit(f"front part {ref} has no fab outline to size the chin's pocket from")
         x0, y0 = fw.min(0)[:2]
         x1, y1 = fw.max(0)[:2]
-        pockets.append((x0 - FRONT_CLR, y0 - FRONT_CLR, x1 + FRONT_CLR, y1 + FRONT_CLR))
-        bezel -= box(*pockets[-1], z_split - 1, h + FRONT_CLR)
+        keepouts.append((x0 - FRONT_CLR, y0 - FRONT_CLR, x1 + FRONT_CLR, y1 + FRONT_CLR))
+        chin_h = max(chin_h, h)
     if front:
-        report.append(f"front parts in pockets under the bezel's chin: {', '.join(front)}")
+        # One pocket over the whole chin (owner, 2026-10-26: not one per part), from the
+        # northmost part to the south wall, as deep as the tallest part plus FRONT_CLR;
+        # the screw boss stays solid through it.
+        depth = chin_h + FRONT_CLR
+        if depth > z_top - FRONT_SKIN:
+            raise SystemExit(f"the chin's tallest front part ({chin_h:.2f} mm) leaves under {FRONT_SKIN} mm of bezel over it")
+        north = min(k[1] for k in keepouts + ([joy_box] if joy_box else []))
+        if north < glass[3]:
+            raise SystemExit(f"a front part reaches {glass[3] - north:.2f} mm north of the screen's bottom edge: "
+                             "the chin's pocket would cut the screen's seat")
+        bezel -= rr_prism(*in_o[:4], in_o[4], z_split - 1, depth) & box(in_o[0] - 1, north, in_o[2] + 1, in_o[3] + 1,
+                                                                      z_split - 2, depth + 1)
+        for hx, hy in screw_holes:
+            if hy < north:
+                continue
+            hit = [ref for ref, (x0, y0, x1, y1) in zip(front, keepouts)
+                   if math.hypot(max(x0 - hx, 0, hx - x1), max(y0 - hy, 0, hy - y1)) < BOSS_R]
+            if hit:
+                raise SystemExit(f"screw boss at {hx}, {hy} (r {BOSS_R}) runs into {', '.join(hit)}")
+            bezel += Pos(hx, -hy, (z_split + depth) / 2) * Cylinder(BOSS_R, depth - z_split)
+        report.append(f"one pocket under the bezel's chin, {depth:.2f} deep ({FRONT_CLR} over the tallest part), "
+                      f"{z_top - depth:.2f} mm of bezel over it, from y {north:.1f} to the south wall, "
+                      f"a boss round the screw; it covers {', '.join(front)}")
     cell = {"side": "back", "x": [round(cell_cx - 22.25, 3), round(cell_cx + 22.25, 3)], "y": round(cell_cy, 3),
             "z": round(z_back - CELL_BASE - CELL_D / 2, 3), "d": CELL_D, "clips": clips}
 
@@ -901,7 +922,7 @@ def main():
     pilot_top = z_top - PILOT_TOP_CLR
     for hx, hy in screw_holes:
         wall = min(math.hypot(max(o0 - hx, 0, hx - o1), max(p0 - hy, 0, hy - p1)) for o0, p0, o1, p1 in
-                   [glass] + pockets + ([joy_box] if joy_box else []) + [(sx0 - RIBBON_CLR, glass[3], sx1 + RIBBON_CLR, sy1 + RIBBON_CLR)
+                   [glass] + [(sx0 - RIBBON_CLR, glass[3], sx1 + RIBBON_CLR, sy1 + RIBBON_CLR)
                                     for sx0, sy0, sx1, sy1 in b["slots"]]) - PILOT_R
         if wall < 0.8:
             raise SystemExit(f"screw boss at {hx}, {hy}: only {wall:.2f} mm of plastic beside the pilot")

@@ -234,7 +234,7 @@
    {
     "label": "Case: 3MF, STL and STEP (zip)",
     "filename": "ambire-signer-case.zip",
-    "bytes": 546404,
+    "bytes": 461005,
     "part": "enclosure/files/ambire-signer-case.zip.b64.txt",
     "b64": true
    }

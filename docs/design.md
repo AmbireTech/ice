@@ -151,8 +151,8 @@ touch flex is merged into the TFT flex.
   ([cell-placement.md](cell-placement.md)), the front's chin carries the radio module,
   the joystick and its resistor ladder, the boost (LTC3539 with its inductor and caps),
   the reverse-cell FET, the power-key transistor and the **USB power path** (the
-  TLV62569P buck between USB-C's shell legs and the TPS2116 mux), each part in a pocket
-  under the flat bezel. The front's chin face stays flat: the tallest part there is
+  TLV62569P buck between USB-C's shell legs and the TPS2116 mux), under one pocket in
+  the flat bezel's chin. The front's chin face stays flat: the tallest part there is
   the 3.0 mm radio module, under a 5.33 mm screen stack.
   The **programming pads** (MCU SWD under the panel, the radio's SWDIO/SWCLK on the
   back beside the module's SWD pins) are reachable by pogo pins before assembly.
