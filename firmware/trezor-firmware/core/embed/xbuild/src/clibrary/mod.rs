@@ -56,7 +56,14 @@ pub struct CLibrary {
     // Builders for generating Rust bindings to this library, keyed by output
     // filename.
     builders: BTreeMap<String, bindgen::Builder>,
+
+    // Options applied to every builder above, no matter which module
+    // registered it.
+    builder_defaults: Vec<BuilderFunc>,
 }
+
+/// Function customizing a bindgen builder.
+pub(crate) type BuilderFunc = Box<dyn Fn(bindgen::Builder) -> Result<bindgen::Builder>>;
 
 impl CLibrary {
     /// Creates a new `CLibrary` instance with default attributes and no sources
@@ -74,6 +81,7 @@ impl CLibrary {
             libs: Vec::new(),
             external_libs: Vec::new(),
             builders: BTreeMap::new(),
+            builder_defaults: Vec::new(),
         }
     }
 
@@ -372,6 +380,13 @@ impl CLibrary {
         for flag in flags {
             self.add_flag(flag.as_ref());
         }
+    }
+
+    /// Returns whether the library's configured C compiler is Clang-like.
+    pub fn uses_clang(&self) -> bool {
+        self.get_merged_attrs()
+            .get_configured_compiler()
+            .is_like_clang()
     }
 
     /// Returns the merged compile attributes for the library, combining both

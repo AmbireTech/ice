@@ -138,6 +138,43 @@ The new transaction format must be distinguished from the legacy transaction for
 +---------------+---------------------------+-----------------+---------------------------+-----------------+
 ```
 
+### v1 transaction format
+
+Version 1 transactions ([SIMD-0385](https://github.com/solana-foundation/solana-improvement-documents/blob/main/proposals/0385-transaction-v1.md)) have a layout of their own. There are no lookup tables, the counts have a fixed size, and all the instruction headers precede the instruction payloads. The signatures come last instead of first.
+
+```
++----------------------------------------------------------------+
+|                     v1 transaction format                      |
++-----------------------------+----------------------------------+
+| version (1B)                | 0x81                             |
+| header (3B)                 | same as in legacy transactions   |
+| config mask (4B)            | u32 LE                           |
+| blockhash (32B)             |                                  |
+| # of instructions (1B)      |                                  |
+| # of account addresses (1B) |                                  |
+| account addresses           | 32B each                         |
+| config values               | selected by the config mask      |
+| instruction headers         | 4B each                          |
+| instruction payloads        | account address indexes and data |
++-----------------------------+----------------------------------+
+```
+
+```
++----------------------------------------------------------------------------------+
+|                              v1 instruction header                               |
++-----------------------+-----------------------------------+----------------------+
+| Program id index (1B) | # of account address indexes (1B) | Data length (2B, LE) |
++-----------------------+-----------------------------------+----------------------+
+```
+
+The config replaces the ComputeBudget instructions, which don't configure v1 transactions. Its mask selects the values that follow, in this order:
+- bits 0 and 1 (both or none): priority fee, u64 LE, in lamports (not per compute unit)
+- bit 2: compute unit limit, u32 LE
+- bit 3: loaded accounts data size limit, u32 LE
+- bit 4: heap size, u32 LE
+
+Masks with other bits set are rejected. Only the priority fee is shown, the other values are resource limits which affect neither the fee nor the accounts.
+
 ## Solana app basic concept and software architecture
 
 The software architecture designed for signing Solana messages utilizes a system of parser functions to construct objects from various classes. At its core is the `Transaction` class, serving as the higher-level entity responsible for encapsulating all transaction-related information. This includes a list of instructions derived from the `Instruction` class. This structure can seamlessly handle both legacy and versioned transactions.
@@ -162,8 +199,9 @@ The `programs.json` file serves as a structured configuration file in the Solana
   - `instructions`: An array of instructions associated with the Solana program.
     - `id`: A numeric identifier for the instruction derived from the Rust implementation of the corresponding program.
     - `name`: The name of the instruction, providing a human-readable label.
-    - `is_multisig`: A boolean indicating whether the instruction is a multisig instruction.
+    - `trailing_references`: A boolean indicating whether the instruction accepts additional account references beyond those listed in `references` (e.g. multisig signers for Token program instructions, or the accounts of a newly created multisig).
     - `is_deprecated_warning`: Optional, contains a warning message when the instruction is deprecated
+    - `trailing_accounts_warning`: Optional, contains a warning message shown when the instruction carries trailing account references (e.g. Token-2022 `Transfer Checked`, whose trailing accounts may belong to a transfer hook program)
     - `parameters`: Describes the parameters required for this instruction.
       - `name`: The parameter name.
       - `type`: The data type of the parameter, such as `u64` for 64-bit unsigned integers.
@@ -175,7 +213,7 @@ The `programs.json` file serves as a structured configuration file in the Solana
       - `account`: Reference to one account in the references list identified by its `name`
       - `parameter`: Reference to one parameter in the parameters list identified by its `name`
       - `display_name`: A human-readable label for the parameter or account, suitable for user interfaces.
-      - `default_value_to_hide`: Optional. If this value is found in the account / parameter, the UI property will not be shown for confirmation. This is useful when the default value is considered safe. In particular, if the value of the property is a public key, and the special word `"signer"` is used for `default_value_to_hide`, the UI property will be hidden if the public key matches the Trezor's account.
+      - `default_value_to_hide`: Optional. If this value is found in the account / parameter, the UI property will not be shown for confirmation. This is useful when the default value is considered safe. Two special words are recognized: if `"signer"` is used and the value of the property is a public key, the UI property will be hidden if the public key matches the Trezor's account; if `"none"` is used, the UI property will be hidden if its value is `None` (an absent optional parameter, which is otherwise displayed as `None`). An absent optional account reference is always hidden, regardless of `default_value_to_hide`.
 
 Certain types of parameters, specified in `types` dict of the `programs.json` file, have special formatting capabilities.
 In particular, the type `token_amount` is a regular `u64` type, but the formatter function accepts additional parameters:
