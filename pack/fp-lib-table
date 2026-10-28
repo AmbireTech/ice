@@ -1,0 +1,5 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "wallet")(type "KiCad")(uri "${KIPRJMOD}/../board/wallet.pretty")(options "")(descr "the device board's library: the AAA clips"))
+  (lib (name "pack")(type "KiCad")(uri "${KIPRJMOD}/pack.pretty")(options "")(descr "the pack's own: the magnetic connector"))
+)
