@@ -147,7 +147,7 @@ def clip_blocks():
 def start_file():
     text = ("(kicad_pcb\n\t(version 20260206)\n\t(generator \"pcbnew\")\n\t(generator_version \"10.0\")\n"
             f"\t(general\n\t\t(thickness {THICKNESS})\n\t\t(legacy_teardrops no)\n\t)\n\t(paper \"A4\")\n"
-            "\t(title_block\n\t\t(title \"Ambire hardware signer: battery pack\")\n\t\t(rev \"v4\")\n\t)\n"
+            "\t(title_block\n\t\t(title \"Ambire Ice: battery pack\")\n\t\t(rev \"v4\")\n\t)\n"
             f"{LAYERS}\n\t(setup\n\t\t(pad_to_mask_clearance 0)\n\t\t(allow_soldermask_bridges_in_footprints no)\n"
             "\t\t(tenting\n\t\t\t(front yes)\n\t\t\t(back yes)\n\t\t)\n\t)" + clip_blocks() + "\n)\n")
     open(OUT, "w", encoding="utf-8").write(text)
@@ -294,7 +294,7 @@ def main():
         text(board, "AAA", 24.0, y, pcbnew.B_SilkS, 1.2, mirrored=True)
     for n, py in PIN.items():
         text(board, n.replace("_SENSE", ""), 27.6, py, pcbnew.F_SilkS, 0.8)
-    text(board, "AMBIRE SIGNER BATTERY PACK v4", 20.0, OUTLINE[3] - 2.2, pcbnew.F_SilkS, 0.9)
+    text(board, "AMBIRE ICE BATTERY PACK v4", 20.0, OUTLINE[3] - 2.2, pcbnew.F_SilkS, 0.9)
 
     pcbnew.ZONE_FILLER(board).Fill(board.Zones())
     pcbnew.SaveBoard(OUT, board)

@@ -1,6 +1,6 @@
 # The battery pack's board (v4)
 
-The v4 signer runs from two AAA cells in a pack that snaps onto its back (why and how:
+Ambire Ice v4 runs from two AAA cells in a pack that snaps onto its back (why and how:
 [../docs/pack.md](../docs/pack.md)). This is the pack's own board: the cells' clips on
 one face, a magnetic pogo connector on the other, the face toward the device. The
 connector's magnets, and the matching receptacle's on the device, hold the pack.
