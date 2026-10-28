@@ -1,14 +1,14 @@
 # The battery pack's board (v4)
 
-The v4 signer runs from two AAA cells in a pack that snaps onto its back with magnets
-(why and how: [../docs/pack.md](../docs/pack.md)). This is the pack's own board: the
-cells' clips on one face, the magnetic contacts on the other. It is the pack's face
-toward the device.
+The v4 signer runs from two AAA cells in a pack that snaps onto its back (why and how:
+[../docs/pack.md](../docs/pack.md)). This is the pack's own board: the cells' clips on
+one face, a magnetic pogo connector on the other, the face toward the device. The
+connector's magnets, and the matching receptacle's on the device, hold the pack.
 
-48.0 × 28.1 mm, 2 layers, 0.8 mm thick, ENIG (the contacts' pads), routed.
+48.0 × 28.1 mm, 2 layers, 0.8 mm thick, ENIG, routed.
 
-<img src="render-outer.jpg" width="430" alt="The board's outer face: the magnetic connector at the left edge, its four pins labelled BAT+, MID, NTC and BAT-">
-<img src="render-cells.jpg" width="430" alt="The board's inner face: four AAA clips holding two cells in series, the fuse between two rings marked MAGNET">
+<img src="render-outer.jpg" width="430" alt="The board's outer face: the magnetic connector near the east edge, its tab to the west, its four pins labelled BAT+, MID, NTC and BAT-">
+<img src="render-cells.jpg" width="430" alt="The board's inner face: four AAA clips holding two cells in series, the connector's four joints beside the east clips with the fuse, resistor and thermistor on their lines">
 
 *Rendered by KiCad: the outer face (toward the device), and the inner face seen from
 behind, mirrored.*
@@ -17,7 +17,7 @@ behind, mirrored.*
 
 | Part | Face | JLC / LCSC |
 |---|---|---|
-| Xinyangze YZR0158-20050-04025-01, 4-pin magnetic pogo male (1 A per pin) | outer | C5126843 |
+| Xinyangze YZP0048-20048-04025-03, 4-pin magnetic pogo male, through-hole (1 A per pin) | outer | C5126845 |
 | MYOUNG MY-AAA-19-J, AAA clip (−, spring) ×2 | inner | C6937104 |
 | MYOUNG MY-AAA-20-J, AAA clip (+) ×2 | inner | C6937107 |
 | BHFUSE BSMD1206-075-30V, resettable fuse, 0.75 A hold | inner | C976305 |
@@ -27,27 +27,36 @@ behind, mirrored.*
 The two cells are in series: the south cell's plus goes through the fuse to the BAT+
 pin; its minus meets the north cell's plus at the west clips (the mid-point, MID),
 which reaches its pin through the 1 k resistor; the north cell's minus is BAT−. The
-thermistor sits between the NTC pin and BAT−, between the cells, for the charger's
-temperature input. A coin across the pins never shorts a cell hard: plus to minus runs
-through the fuse, any short to MID through the 1 k resistor.
+thermistor sits between the NTC pin and BAT−, for the charger's temperature input. A
+coin across the pins never shorts a cell hard: plus to minus runs through the fuse, any
+short to MID through the 1 k resistor.
 
-The outer face carries only the connector, the BAT+ run to its pin and a BAT− pour,
-so it lies flat in the device's recess. Two rings on the inner face mark where the
-6 × 2 mm magnets are glued; the copper under them is covered by solder mask.
+The outer face carries only the connector, the mid-point's run under its tab and a BAT−
+pour. The pin order lives in one place, `PIN_NETS` in `makePack.py`.
+
+**Where the connector can go.** Its pins must stay off the clips' steel bases (10 × 7 mm,
+centred on each clip): the pin column fits between x 11.5 and 36.5 (device board
+coordinates). It is at x 36.5. The case first put it at 43.6, over the east clips, where
+one pin lands on a clip's pad and the joints could not be soldered under the clips' arms;
+`makePack.py` refuses any position on a base.
+
+**The connector's land** is ours, from Xinyangze's drawing (2022-03-24): four 0.80 mm
+holes at 2.50 mm, in 1.60 mm pads where the maker draws 2.20 mm (the inner face must clear
+the clips' bases). EasyEDA's land for C5126845 stacks a 2.2 mm SMD pad on a 0.85 mm
+through-hole pad with a 0.75 mm drill, a 0.05 mm ring: not used. Its tails are 0.70 mm
+long and end inside the 0.8 mm board, so the joints on the inner face are flat; the
+BAT− joint sits 2.4 mm off the south cell's axis, where the can is ~0.85 mm above the
+board. The 3D model (`3d/`, by `connModel.py`) is drawn from the same drawing.
 
 ## Files
 
 - `pack.kicad_pcb`, `pack.kicad_pro`: the board and its rules (Power class 0.8 mm for the
   cells, the fuse and the pins; 0.25 mm for the sense lines).
-- `makePack.py`: builds the board from scratch (placement and routing by script, from the
-  numbers the case generator fixes). After a hand edit, edit the board instead.
+- `makePack.py`: builds the board from scratch from `docs/v4/enclosure/enclosure.json`
+  (outline, cells) and its own constants (the connector, the parts, the copper). After a
+  hand edit, edit the board instead.
 - `makeOrder.py`: writes `../production/pack-order/` (Gerbers and drill zip, JLC BOM and
   CPL, `stock.txt` with JLC's live stock).
-- `pack.pretty/`: the connector's land, EasyEDA's for C5126843, checked against
-  Xinyangze's drawing (4 × Ø2.20 pads at 2.50 mm, body 21.20 × 6.86 mm, tab 5.03 mm).
-  `3d/` holds its model, drawn from that drawing by `connModel.py`: EasyEDA ships the
-  YZ92015035T receptacle's model for this part (3.8 mm tall; the male's pins stand to
-  5.0 mm).
 
 ```sh
 KICAD_PY=/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3
@@ -58,18 +67,25 @@ $KICAD_PY pack/makeOrder.py                                 # the order files
 
 ## Ordering at JLC
 
-- **Assembly is two-sided:** the connector on the outer face, everything else on the
-  inner. Or order one-sided (the inner face) and solder the connector by hand: four
-  round pads and a plastic body.
-- **The connector is not in JLC's own stock** (0 on 2026-10-28; 200 at LCSC). Order it
-  through JLC's global sourcing / parts pre-order before the board, or hand-solder it.
-- **Check every part's rotation in JLC's placement preview** before paying. The clips
-  carry the same rotation as the device board's (the south cell's clips exactly so, the
-  north cell's turned 180°), and the connector's tab must point east, toward the middle
-  of the board. The rotations in the CPL are KiCad's, not confirmed by JLC.
+- **Assembly:** SMT on the inner face (the clips, the fuse, the thermistor, the resistor),
+  and the connector is **through-hole** on the outer face. In the order form: PCBA on
+  the **bottom** side for SMT, and tick **through-hole (THT) assembly** for J_PACK
+  (JLC hand-solders it after reflow), or leave J_PACK out and solder it by hand: four
+  joints on the inner face, west of the east clips, done before the cells go in.
+- **Stock:** the connector had 26 in JLC's own stock on 2026-10-28: enough for a few
+  boards, not a run.
+- **Rotations:** check every part in JLC's placement preview before paying. The clips
+  carry the same rotation as the device board's (the south cell's exactly so, the
+  north cell's turned 180°); the connector's tab points west, toward the middle of the
+  board. The CPL's rotations are KiCad's, not confirmed by JLC.
 - The board is 0.8 mm thick and ENIG: pick both in the order form.
+- **Order samples of both halves first.** The device's receptacle (Xinyangze
+  YZ103915020T-04025-02, C6276862) is from another family: its contacts are 2.54 mm
+  apart against the male's 2.50 (the outer pins land 0.06 mm off centre), and its
+  magnets are about 14.6 mm apart against the male's 15.41 mm. Whether they mate,
+  attract and hold is for samples to show.
 
 What the checks cover: DRC at every severity (none found, with and without a zone
-refill) and full connectivity. What they do not: the clips holding cells on a 0.8 mm
-board, the pins' contact on the pads, the fuse's heating at full load, the fit in the
-tray. These files have not been ordered yet.
+refill), full connectivity, no stale copper. What they do not: the two connector
+families mating, the clips holding cells on a 0.8 mm board, the fuse's heating at full
+load, the fit in the tray. These files have not been ordered yet.
