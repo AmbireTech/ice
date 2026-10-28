@@ -33,11 +33,11 @@ Ambire internals into GridCore's.
   published at /v3/, linked from neither, and is frozen since v4.
 - v4 (concept, 2026-10-28; `docs/pack.md`): the cells leave the board for a pack high on
   the back, just below the camera (outside its view cone), open underneath (owner: as slim
-  as possible). Contacts (owner's choice): Xinyangze's SMT magnetic pogo male (C5126843)
-  on the pack board, pins through a window in the back onto gold pads on the device
-  board; loose N52 magnet pairs. Not on `main`'s board yet: `enclosure/generate.py` leaves
-  the clips off (reusing their models for the pack) and searches the board for the
-  connector's place (`PACK_*`/`CONN*`/`MAG_*`); boards on branches `v4-device-board` and
+  as possible). Contacts (owner: no loose magnets): a Xinyangze magnetic pogo pair, the SMT
+  receptacle (C6276862) on the device board's back east of the MCU, the male (C5126845)
+  on the pack board through a window in the back; their own magnets hold the pack. Not
+  on `main`'s board yet: `enclosure/generate.py` leaves the clips off (reusing their
+  models for the pack) and puts the pair at `CONN_AT` (`PACK_*`/`CONN_*`); boards on branches `v4-device-board` and
   `v4-pack-board` for review. Page `docs/v4/`, published at /v4/, linked from nowhere;
   `enclosure/generate.py` and `enclosure/render_hero.sh` write to it. The joystick's
   printed cap is `enclosure/joycap.py`.
