@@ -195,11 +195,14 @@ LEVER_TRAVEL = 1.5   # MSK12C02 slide travel; its lever stops inside the wall, a
 # clips hold the cells, as v3's cell was held.
 BOARD_CELL_CLIPS = ("BT_N", "BT_P")   # proto 1's clips: off the device in v4; their models shape the pack's
 CELL_D, CELL_L, CELL_BASE = 10.5, 44.5, 0.25   # AAA (Energizer E92/L92, eneloop BK-4MCCE), on the clips' 0.25 mm steel base
-# Only the clips' steel base (7 mm across the cell) lies on the board; their arms leave it
-# at the base's edge and curve up (the clips' models: 0.66 mm up 0.3 mm out, 1.36 mm up
-# 0.9 mm out, 2.4 mm up at 1.5), and the cell's can is 1.9 mm up there.
-CLIP_BASE_HALF = 3.5
-CONN_JOINT_CLR = 0.3  # the male's through-hole joints (inner face, flat: their tails end in the board) to a clip's base
+# What the male's joints must clear on the pack board is the clips' steel that lies on it,
+# taken from their models: each foot is a cross, a body 5 mm across the cell (its 9 x 5 mm
+# pad) the clip's length, and a tab 7 mm across but only 4 mm along it, from which the arms
+# rise; nothing else of the clip comes near the board.
+LOW_STEEL = 0.5       # clip steel this close to the pack board counts as lying on it
+CLIP_BODY_HALF = 2.6  # the foot's body: model vertices this close to the cell's axis; the tab beyond
+CONN_JOINT_CLR = 0.3  # the male's through-hole joints (inner face, flat: their tails end in the board) to that steel
+SMALL_CLR = 0.3       # the pack board's small parts under the cells' cans
 PACK_PCB_T = 0.8      # the pack's board
 PACK_LEDGE = 1.0      # its north and south edges rest on the tray's walls this far
 PACK_CLR = 0.3        # the clips to the tray's walls
@@ -222,22 +225,22 @@ CONN_DEV = {"part": "YZ103915020T-04025-02", "lcsc": "C6276862", "len": 22.3, "w
             "pitch": 2.54, "boss": (5.0, 1.5, 0.5)}
 CONN_PACK = {"part": "YZP0048-20048-04025-03", "lcsc": "C5126845", "len": 21.2, "wid": 6.86, "tab": (5.03, 2.31),
              "body_t": 2.8, "free": 4.1, "work": 3.1, "pitch": 2.5, "plunger_d": 0.9, "barrel_d": 1.5,
-             "pad_d": 1.6}   # pack board land: 1.6 mm rings on 0.8 mm holes (pack/makePack.py)
+             "pad_d": 1.5}   # pack board land: 1.5 mm rings on 0.8 mm holes (pack/makePack.py)
 CONN_NETS = ("BAT+", "MID", "NTC", "BAT-")   # north to south
 # Where the pair goes (board coordinates, long axis north-south, the male's tab west):
 # east of the MCU, the place the device board can clear (its power-key network moves to
 # the chin, which the cell left empty); west of the MCU the SE050 and the pack's power
-# lines could not share the column. North-south it sits midway between the cells, which
-# stand just far enough apart that the male's through-hole joints pass between the east
-# clips' steel bases, under the arms (the pack board's inner face): that sets the cells' pitch.
+# lines could not share the column. North-south it sits between the cells, which stand
+# just far enough apart that the male's through-hole joints (the pack board's inner face)
+# pass between the east clips' feet: that sets the cells' pitch (pack_steel).
 CONN_X = 43.6
 CONN_CLR = 0.2        # the male's body in its window; the receptacle to the nearest part
-# The pack board's other parts on its inner face (x, y off the pack's centre; w, h,
-# height; label), where pack/pack.kicad_pcb has them, each on its pin's line west of the
-# east clips' arms: a resettable fuse in BAT+, the mid-point sense line's series resistor,
-# the thermistor (TS).
-PACK_SMALL = [(10.5, -3.75, 3.2, 1.6, 0.85, "PTC 1206"), (12.0, -1.25, 1.0, 0.5, 0.35, "R 0402"),
-              (12.0, 1.25, 1.6, 0.8, 0.8, "NTC 0603")]
+# The pack board's other parts on its inner face (x off the cells' centre, y off the pins'
+# centre; w, h, height; label), where pack/pack.kicad_pcb has them, in the strip between
+# the cans, west of the east clips' courtyards: a resettable fuse in BAT+ (along the strip), the
+# mid-point sense line's series resistor and the thermistor (TS) on their pins' lines.
+PACK_SMALL = [(8.6, 0.0, 1.6, 3.2, 0.85, "PTC 1206"), (12.2, -1.25, 1.0, 0.5, 0.35, "R 0402"),
+              (11.6, 1.25, 1.6, 0.8, 0.8, "NTC 0603")]
 
 # ── Back print ──────────────────────────────────────────────────────────────
 # The flame itself (facets, size, placement, gap) is art/flame.py, shared with the
@@ -855,21 +858,65 @@ def main():
     z_cell = z_pcb_bot - CELL_BASE - CELL_D / 2
     z_pack = z_pcb_bot - CELL_BASE - CELL_D          # open: the cells' lowest line is the pack's bottom
 
-    # North edge: outside a CAM_FOV cone from the lens's rim, at the pack's farthest face.
     lens = ((cam[0] + cam[2]) / 2, (cam[1] + cam[3]) / 2)
     z_lens = z_back - CAM_HEAD_H
-    pack_n = max(lens[1] + LENS_R + max(z_lens - z_pack, 0) * math.tan(math.radians(CAM_FOV / 2)),
-                 cam[3] + CAM_CLR + PACK_RIM)
-    pcb_n = pack_n + PACK_RIM
+    cam_n = max(lens[1] + LENS_R + max(z_lens - z_pack, 0) * math.tan(math.radians(CAM_FOV / 2)),
+                cam[3] + CAM_CLR + PACK_RIM)
     n = len(CONN_NETS)
-    cell_pitch = 2 * (CLIP_BASE_HALF + CONN_JOINT_CLR) + (n - 1) * CONN_PACK["pitch"] + CONN_PACK["pad_d"]
+    steel = pack_steel(clip_prims, clip_cy, cell_cx)
+    reach = [pin_reach(steel[i], 1 - 2 * i) for i in (0, 1)]   # first pin off the north axis, last off the south
+    cell_pitch = reach[0] + (n - 1) * CONN_PACK["pitch"] + reach[1]
     if cell_pitch < 2 * clip_half + PACK_CLR:
         raise SystemExit("the cells' clips would touch arm to arm")
+    # pack's north edge -> the pins' centre (the pair sits at CONN_X, long axis north-south)
+    pins_off = PACK_RIM + PACK_LEDGE + PACK_CLR + clip_half + reach[0] + (n - 1) * CONN_PACK["pitch"] / 2
+    hr = (CONN_DEV["wid"] / 2, CONN_DEV["len"] / 2)
+    hm = (CONN_PACK["wid"] / 2, CONN_PACK["len"] / 2)
+    tw, tl = CONN_PACK["tab"]
+
+    def pair_at(cy):
+        """The receptacle, the male's body and its tab (west), for the pins centred at CONN_X, cy."""
+        male_ = (CONN_X - hm[0], cy - hm[1], CONN_X + hm[0], cy + hm[1])
+        return (CONN_X - hr[0], cy - hr[1], CONN_X + hr[0], cy + hr[1]), male_, (male_[0] - tl, cy - tw / 2, male_[0], cy + tw / 2)
+
+    # what stands on the board's back: modelled parts, and the bounded ones by their fab outline
+    near = [(r, v[:, 0].min(), v[:, 1].min(), v[:, 0].max(), v[:, 1].max(), -v[:, 2].min()) for r, v in back.items()]
+    for r in unmodelled:
+        fw = fab_world(b["fps"][r])
+        near.append((r, *fw.min(0), *fw.max(0), UNMODELLED_MAX_H[r]))
+    overlaps = lambda e, o, m: e[1] - m < o[2] and e[3] + m > o[0] and e[2] - m < o[3] and e[4] + m > o[1]
+
+    def under(cy):
+        """The parts the pair at cy displaces (the receptacle needs bare board; the male's tab
+        passes over low parts), and those of them the board cannot simply move."""
+        recv_, _, tab_ = pair_at(cy)
+        moved = sorted({e[0] for e in near if overlaps(e, recv_, CONN_CLR)}
+                       | {e[0] for e in near if overlaps(e, tab_, CONN_CLR) and e[5] > z_back - z_body - CONN_CLR})
+        return moved, [r for r in moved if not b["fps"][r]["lib"].split(":")[-1].startswith(("R_", "C_", "SOT-23", "SOT-363", "D_SOD"))]
+
+    # North edge: outside a CAM_FOV cone from the lens's rim, at the pack's farthest face, and
+    # south enough that the receptacle clears every part the board cannot move.
+    pack_n = cam_n
+    while under(pack_n + pins_off)[1]:
+        pack_n += 0.05
+        if pack_n > cam_n + 20:
+            raise SystemExit(f"no place for the receptacle south of the camera: {under(cam_n + pins_off)[1]}")
+    north_by = "the camera's 70 deg cone" if pack_n == cam_n else f"the receptacle, clear of {', '.join(under(cam_n + pins_off)[1])}"
+    pcb_n = pack_n + PACK_RIM
     cell_ys = (pcb_n + PACK_LEDGE + PACK_CLR + clip_half, pcb_n + PACK_LEDGE + PACK_CLR + clip_half + cell_pitch)
     pcb = (0.0, pcb_n, W, cell_ys[1] + clip_half + PACK_CLR + PACK_LEDGE)
     face = outline(b, GAP + WALL - DRAFT_MM / 2)
     pack_o = (face[0], pack_n, face[2], pcb[3] + PACK_RIM)
-    y_mid = sum(cell_ys) / 2
+    y_mid = pack_n + pins_off                       # the pins' centre
+    for dx, dy, w, h, t, label in PACK_SMALL:       # each small part under the cans' curve
+        for y in cell_ys:
+            d = min(abs(y_mid + dy - h / 2 - y), abs(y_mid + dy + h / 2 - y))
+            if y_mid + dy - h / 2 < y < y_mid + dy + h / 2:
+                d = 0.0
+            if d < CELL_D / 2:
+                gap = CELL_BASE + CELL_D / 2 - math.sqrt((CELL_D / 2) ** 2 - d ** 2) - t
+                if gap < SMALL_CLR:
+                    raise SystemExit(f"the pack's {label} stands {gap:.2f} mm under a cell's can, under {SMALL_CLR}")
     if clip_boxes[0][0] < pcb[0] + PACK_CLR or clip_boxes[-1][2] > pcb[2] - PACK_CLR:
         raise SystemExit("the clips run past the pack board's ends")
     if "LS1" in b["fps"] and pack_o[1] - SOUND_R < b["fps"]["LS1"]["y"] < pack_o[3] + SOUND_R:
@@ -878,29 +925,13 @@ def main():
     # The pair at CONN_X between the cells, long axis north-south. The receptacle needs bare board under it;
     # the male's body (and its tab, west) passes a window in the back and stops over it.
     cx, cy = CONN_X, y_mid
-    hr = (CONN_DEV["wid"] / 2, CONN_DEV["len"] / 2)
-    recv = (cx - hr[0], cy - hr[1], cx + hr[0], cy + hr[1])
-    hm = (CONN_PACK["wid"] / 2, CONN_PACK["len"] / 2)
-    male = (cx - hm[0], cy - hm[1], cx + hm[0], cy + hm[1])
-    tw, tl = CONN_PACK["tab"]
-    tab = (male[0] - tl, cy - tw / 2, male[0], cy + tw / 2)
+    recv, male, tab = pair_at(cy)
     contacts = [(net, cx, cy + (i - (n - 1) / 2) * CONN_DEV["pitch"]) for i, net in enumerate(CONN_NETS)]
     pins = [(net, cx, cy + (i - (n - 1) / 2) * CONN_PACK["pitch"]) for i, net in enumerate(CONN_NETS)]
     for r_ in (male, tab, recv):
         if r_[0] < pcb[0] + 0.5 or r_[2] > pcb[2] - 0.5 or r_[1] < pcb[1] + 0.5 or r_[3] > pcb[3] - 0.5:
             raise SystemExit(f"the pair at {cx}, {cy:.2f} runs off the pack board")
-
-    # what stands on the board's back: modelled parts, and the bounded ones by their fab outline
-    near = [(r, v[:, 0].min(), v[:, 1].min(), v[:, 0].max(), v[:, 1].max(), -v[:, 2].min()) for r, v in back.items()]
-    for r in unmodelled:
-        fw = fab_world(b["fps"][r])
-        near.append((r, *fw.min(0), *fw.max(0), UNMODELLED_MAX_H[r]))
-    overlaps = lambda e, o, m: e[1] - m < o[2] and e[3] + m > o[0] and e[2] - m < o[3] and e[4] + m > o[1]
-    to_move = sorted({e[0] for e in near if overlaps(e, recv, CONN_CLR)}
-                     | {e[0] for e in near if overlaps(e, tab, CONN_CLR) and e[5] > z_back - z_body - CONN_CLR})
-    fixed = [r for r in to_move if not b["fps"][r]["lib"].split(":")[-1].startswith(("R_", "C_", "SOT-23", "SOT-363", "D_SOD"))]
-    if fixed:
-        raise SystemExit(f"the receptacle at {cx}, {cy:.2f} sits on {fixed}, which the board cannot simply move")
+    to_move = under(cy)[0]
 
     # the device's back: the male's window (its body and tab) down into the cavity
     male_win = (male[0] - CONN_CLR, male[1] - CONN_CLR, male[2] + CONN_CLR, male[3] + CONN_CLR)
@@ -916,7 +947,7 @@ def main():
     tray -= box(pcb[0], pcb[1] - FIT / 2, pcb[2], pcb[3] + FIT / 2, z_pcb_bot, z_face + 1)
 
     report.append(f"the pack {pack_o[2] - pack_o[0]:.1f} x {pack_o[3] - pack_o[1]:.1f} x {z_face - z_pack:.2f} mm, open underneath, "
-                  f"y {pack_o[1]:.1f}-{pack_o[3]:.1f} (the camera's {CAM_FOV:.0f} deg cone sets its north edge): "
+                  f"y {pack_o[1]:.1f}-{pack_o[3]:.1f} ({north_by} sets its north edge): "
                   f"{z_top - z_pack:.2f} mm with the device")
     report.append(f"the pack's board {pcb[2] - pcb[0]:.1f} x {pcb[3] - pcb[1]:.1f} x {PACK_PCB_T} mm, {out:.2f} mm off the back face "
                   f"inside the tray's rim; cells at y {cell_ys[0]:.2f} and {cell_ys[1]:.2f} ({cell_pitch:.2f} apart: the male's joints between the clips)")
@@ -1056,7 +1087,7 @@ def main():
         header, blob = board_model(BOARD, Path(tmp), T, drop=BOARD_CELL_CLIPS)
     header["bin"] = base64.b64encode(blob).decode()
     (WEB / "board.json").write_text(json.dumps(header, separators=(",", ":")), encoding="utf-8")
-    hw, hw_blob = pack_hardware(clip_prims, T, clip_cy, cell_cx, cell_ys, z_pcb_bot, z_back, pcb, (male, tab, pins))
+    hw, hw_blob = pack_hardware(clip_prims, T, clip_cy, cell_cx, cell_ys, y_mid, z_pcb_bot, z_back, pcb, (male, tab, pins))
     hw["bin"] = base64.b64encode(hw_blob).decode()
     (WEB / "pack.json").write_text(json.dumps(hw, separators=(",", ":")), encoding="utf-8")
 
@@ -1082,6 +1113,7 @@ def main():
                  "receptacle": {"part": CONN_DEV["part"], "lcsc": CONN_DEV["lcsc"], "outline": r3(recv), "h": CONN_DEV["h"],
                                 "contacts": [{"net": n_, "x": round(x, 3), "y": round(y, 3)} for n_, x, y in contacts]},
                  "male": {"part": CONN_PACK["part"], "lcsc": CONN_PACK["lcsc"], "outline": r3(male), "tab": r3(tab)},
+                 "clipSteel": [r3([x0, y + dy0, x1, y + dy1]) for i, y in enumerate(cell_ys) for x0, dy0, x1, dy1 in steel[i]],
                  "toMove": to_move,
                  "z": {"face": z_face, "boardTop": z_pcb_top, "bottom": z_pack}},
         "camera": cam,
@@ -1112,7 +1144,37 @@ def tessellated(shape, tol=0.02) -> tuple[np.ndarray, np.ndarray]:
     return np.array([[v.X, v.Y, v.Z] for v in vs]), np.array(ts, dtype=np.int64)
 
 
-def pack_hardware(clip_prims, T, clip_cy, cell_cx, cell_ys, z_pcb_bot, z_back, pcb, conn) -> tuple[dict, bytes]:
+def pack_steel(clip_prims, clip_cy, cell_cx) -> list[list[tuple]]:
+    """The clips' steel lying on the pack board, per cell (north, south), placed as
+    pack_hardware places them: for each clip the foot's body and its tab, as rectangles
+    (x0, dy0, x1, dy1) with dy off the cell's axis (board y, south positive)."""
+    V = np.vstack([v for _, _, v, _ in clip_prims])
+    V = V[V[:, 2] > -LOW_STEEL]                      # the clips stand on the board's back, z 0
+    out = []
+    for i in (0, 1):
+        x, dy = V[:, 0], V[:, 1] - clip_cy
+        if i == 0:                                   # the north cell, turned end for end
+            x, dy = 2 * cell_cx - x, -dy
+        rects = []
+        for side in (x < cell_cx, x >= cell_cx):
+            for part in (np.abs(dy) <= CLIP_BODY_HALF, np.abs(dy) > CLIP_BODY_HALF):
+                m = side & part
+                if m.any():
+                    rects.append((x[m].min(), dy[m].min(), x[m].max(), dy[m].max()))
+        out.append(rects)
+    return out
+
+
+def pin_reach(rects, toward) -> float:
+    """How far off a cell's axis, toward the pins (+1 south, -1 north), the nearest pin's
+    centre must stand for its pad to keep CONN_JOINT_CLR from every rectangle of steel
+    in the pins' column."""
+    m = CONN_PACK["pad_d"] / 2 + CONN_JOINT_CLR
+    near = [max(toward * dy0, toward * dy1) for x0, dy0, x1, dy1 in rects if x0 - m < CONN_X < x1 + m]
+    return max(near) + m
+
+
+def pack_hardware(clip_prims, T, clip_cy, cell_cx, cell_ys, y_mid, z_pcb_bot, z_back, pcb, conn) -> tuple[dict, bytes]:
     """The pack's board for the preview, packed like board.json: the board (its mask
     follows the print scheme), the magnetic male on its outer face with its pins at
     working height, the board's own clip models moved onto its inner face (the north
@@ -1145,7 +1207,6 @@ def pack_hardware(clip_prims, T, clip_cy, cell_cx, cell_ys, z_pcb_bot, z_back, p
         add(("part", 0.86, 0.87, 0.9), Pos(cell_cx, -y, z_cell) * Rot(0, 90, 0) * Cylinder(CELL_D / 2, CELL_L - 1.0))
         end = cell_cx + (-1 if i == 0 else 1) * (CELL_L / 2 - 0.5)   # the + terminal: west on the north cell, east on the south
         add(("part", 0.62, 0.63, 0.66), Pos(end, -y, z_cell) * Rot(0, 90, 0) * Cylinder(1.9, 1.0))
-    y_mid = sum(cell_ys) / 2
     for dx, dy, w, h, t, label in PACK_SMALL:
         colour = (0.78, 0.62, 0.22) if label.startswith("PTC") else (0.13, 0.13, 0.15)
         add(("part", *colour), box(cell_cx + dx - w / 2, y_mid + dy - h / 2, cell_cx + dx + w / 2, y_mid + dy + h / 2,
