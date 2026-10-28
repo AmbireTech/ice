@@ -9,8 +9,9 @@ a flat front and back.
 
 **Status (2026-10-28): concept.** The /v4/ page's 3D preview (`docs/v4/`, from
 `enclosure/generate.py`) is built from today's board with the cell clips left off; the
-generator puts the connector where `CONN_AT` says. The two boards are being laid out on
-their own branches for review: `v4-device-board` and `v4-pack-board`.
+generator puts the connector at `CONN_X`, midway between the cells. The pack board is
+`pack/` (built by `pack/makePack.py`, order set in `production/pack-order/`); the device
+board is being re-laid for it.
 
 ## What it comes to
 
@@ -24,8 +25,11 @@ All numbers come from the generated model (`enclosure/generate.py`, 2026-10-28).
 | Back face | the cell stands out | flat; a window for the connector; the camera head stands 1.5 mm out |
 | Without the cells | — | runs from USB |
 
-The pack is 51.2 × 30.9 × 12.25 mm. It spans the back from 21 to 52 mm below the top edge
-(the device is 91.2 mm tall), just south of the camera.
+The pack is 51.2 × 37.5 × 12.25 mm. It spans the back from 21 to 58.5 mm below the top
+edge (the device is 91.2 mm tall), just south of the camera. Its two cells are 21.1 mm
+apart, axis to axis. The male's through-hole joints on the pack board's inner face pass
+between the east clips' arms, which sets that spacing. With the cells closer, the pins
+would land on the clips' steel bases.
 
 - **The camera sees past it.** Its north edge sits outside a 70° cone from the lens's rim,
   measured at the pack's far face. The lens is about 66°, and the stock candidate module
@@ -61,7 +65,7 @@ back; a flat back needs a lower camera module.
   - It is 22.3 × 7.7 mm and 2.0 mm tall, with flat gold contacts at 2.54 mm.
   - It has NdFeB magnets in its ends and two locating bosses underneath, which need slots
     in the board.
-  - It sits east of the MCU at (43.6, 35.4), long axis north-south.
+  - It sits east of the MCU at (43.6, 37.6), long axis north-south.
 - **The pack's half: Xinyangze's 4-pin magnetic male**, YZP0048-20048-04025-03 (LCSC
   C5126845, through-hole), on the pack board's outer face.
   - Its body is 21.2 × 6.86 mm with a 5.03 mm tab, 2.8 mm thick, with magnets in its ends.

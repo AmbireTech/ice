@@ -18,7 +18,7 @@ v4 takes the cell off the board (docs/pack.md): two AAA cells in series ride in 
 high on the device's back, just below the camera. A magnetic pogo pair connects and holds
 it: a receptacle on the device board's back, a male on the pack's own board, their own
 magnets the only ones. The board file still carries proto 1's clips; this script leaves
-them off the device and uses their models for the pack, and puts the pair at CONN_AT
+them off the device and uses their models for the pack, and puts the pair at CONN_X, midway between the cells,
 until the board has it.
 
 Parts (Z = 0 is the board's front face, +Z toward the screen; X east, Y north):
@@ -861,7 +861,7 @@ def main():
     if "LS1" in b["fps"] and pack_o[1] - SOUND_R < b["fps"]["LS1"]["y"] < pack_o[3] + SOUND_R:
         raise SystemExit("the pack covers the buzzer's port")
 
-    # The pair at CONN_AT, long axis north-south. The receptacle needs bare board under it;
+    # The pair at CONN_X between the cells, long axis north-south. The receptacle needs bare board under it;
     # the male's body (and its tab, west) passes a window in the back and stops over it.
     cx, cy = CONN_X, y_mid
     hr = (CONN_DEV["wid"] / 2, CONN_DEV["len"] / 2)

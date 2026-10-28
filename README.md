@@ -16,7 +16,7 @@ screen, a buzzer, and the flame on the back. Proto 1, the same with the cell on
 the front, was never ordered. **v4** (concept, 2026-10-28) takes the cells off
 the device: two AAA cells in a pack that snaps onto the back just below the
 camera on a ready-made magnetic pogo connector pair (no loose magnets), a 10.7 mm
-device, 23 mm across the pack: [docs/pack.md](docs/pack.md). Its boards are on review branches. Why and
+device, 23 mm across the pack: [docs/pack.md](docs/pack.md). Its boards are being laid out. Why and
 how: [docs/power-aaa.md](docs/power-aaa.md). The firmware port has started on the
 fork (below), for proto 0.
 
