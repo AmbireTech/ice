@@ -44,14 +44,15 @@ CORNER_R = 1.0
 THICKNESS = 0.8
 CLIP_X = (5.5, 42.5)                      # the clips' base centres, west and east (proto 1's)
 CLIP_BASE = (10.0, 7.0)                   # MY-AAA-19-J / -20-J steel base, x by y (the footprint's descr)
-# The connector. The case put its pin column at x 43.6 (over the device's receptacle), but
-# there the column lands on the east clips' steel bases (x 37.5-47.5, 3.5 mm each side of
-# a cell's axis): the BAT- pin on the south clip's pad, BAT+ under the north clip's base,
-# and its through-hole joints could not be soldered under the clips' arms. Clear of the
-# bases the column fits from x 11.5 to 36.5: CONN_X is the nearest to the case's.
-CONN_X, CONN_Y = 36.5, 35.4
+CLIP_ARMS = 11.0                          # the arms' span across the cell, over the base's length
+# The connector, where the case puts it (over the device's receptacle, east): its pin
+# column passes between the east clips, whose cells the case spreads apart for it. Its
+# joints on the inner face must clear the clips' bases and arms (check_pins_clear_clips).
+_MALE = _PACK["male"]["outline"]
+CONN_X, CONN_Y = round((_MALE[0] + _MALE[2]) / 2, 3), round((_MALE[1] + _MALE[3]) / 2, 3)
 CONN_ROT = 270                            # long axis north-south, tab west
 CONN_PAD = 1.6                            # the land's pad (see the footprint)
+JOINT_CLR = 0.4                           # a joint's pad to a clip's arm, at least
 PITCH = 2.5
 PIN_NETS = ["BAT+", "MID_SENSE", "NTC", "BAT-"]   # north to south: the one place the pin order lives
 PIN_YS = [round(CONN_Y + (i - 1.5) * PITCH, 3) for i in range(4)]
@@ -59,14 +60,14 @@ PIN = dict(zip(PIN_NETS, PIN_YS))
 
 # ── parts ───────────────────────────────────────────────────────────────────
 # (ref, library, footprint, value, LCSC, mpn, at, rotation, (west pad's net, east pad's net))
-# Each sits west of the pins, on its pin's line.
+# Each sits on its pin's line, west of the east clips' arms (their courtyard starts at x 37.2).
 SMALL = [
     ("F_BAT", f"{KICAD_FP}/Fuse.pretty", "Fuse_1206_3216Metric", "0.75A hold", "C976305", "BSMD1206-075-30V",
-     (31.0, PIN["BAT+"]), 0, ("CELL+", "BAT+")),
+     (34.5, PIN["BAT+"]), 0, ("CELL+", "BAT+")),
     ("R_MID", f"{KICAD_FP}/Resistor_SMD.pretty", "R_0402_1005Metric", "1k", "C11702", "0402WGF1001TCE",
-     (34.0, PIN["MID_SENSE"]), 0, ("MID", "MID_SENSE")),
+     (36.0, PIN["MID_SENSE"]), 0, ("MID", "MID_SENSE")),
     ("RT_PACK", f"{KICAD_FP}/Resistor_SMD.pretty", "R_0603_1608Metric", "10k NTC B3380", "C13564", "NCP18XH103F03RB",
-     (34.0, PIN["NTC"]), 0, ("BAT-", "NTC")),
+     (36.0, PIN["NTC"]), 0, ("BAT-", "NTC")),
 ]
 CONN = ("J_PACK", os.path.join(HERE, "pack.pretty"), "Xinyangze_YZP0048-20048-04025-03", "YZP0048-20048-04025-03",
         "C5126845", "YZP0048-20048-04025-03")
@@ -80,21 +81,23 @@ VIA = (0.6, 0.3)
 # clip; the mid-point crosses from the west clips on the outer face, under the
 # connector's tab; BAT- reaches the outer face's pour.
 _cn, _cs = CELL_YS
+_fx, _rx = SMALL[0][6][0], SMALL[1][6][0]          # the fuse's and the resistors' x
 TRACKS = [
-    ("BAT+", "B", W_PWR, [(32.4, PIN["BAT+"]), (CONN_X, PIN["BAT+"])]),
-    ("MID_SENSE", "B", W_SIG, [(34.51, PIN["MID_SENSE"]), (CONN_X, PIN["MID_SENSE"])]),
-    ("NTC", "B", W_SIG, [(34.825, PIN["NTC"]), (CONN_X, PIN["NTC"])]),
-    ("BAT-", "B", W_SIG, [(33.175, PIN["NTC"]), (32.2, PIN["NTC"] + 0.95)]),
-    ("CELL+", "B", W_PWR, [(29.6, PIN["BAT+"]), (28.4, PIN["BAT+"] + 1.2), (28.4, _cs + 0.7), (38.6, _cs + 0.7)]),
-    ("BAT-", "B", W_PWR, [(40.0, _cn + 2.0), (40.0, _cn + 3.5)]),    # north cell - -> vias into the pour
-    ("BAT-", "B", W_PWR, [(45.0, _cn + 2.0), (45.0, _cn + 3.5)]),
+    ("BAT+", "B", W_PWR, [(_fx + 1.4, PIN["BAT+"]), (CONN_X, PIN["BAT+"])]),
+    ("MID_SENSE", "B", W_SIG, [(_rx + 0.51, PIN["MID_SENSE"]), (CONN_X, PIN["MID_SENSE"])]),
+    ("NTC", "B", W_SIG, [(_rx + 0.825, PIN["NTC"]), (CONN_X, PIN["NTC"])]),
+    ("BAT-", "B", W_SIG, [(_rx - 0.825, PIN["NTC"]), (_rx - 2.0, PIN["NTC"] + 1.0)]),
+    ("CELL+", "B", W_PWR, [(_fx - 1.4, PIN["BAT+"]), (_fx - 2.5, PIN["BAT+"] + 1.1), (_fx - 2.5, _cs - 2.0),
+                           (38.6, _cs - 2.0)]),     # round the parts to the south-east clip's pad
+    ("BAT-", "B", W_PWR, [(40.0, _cn + 2.0), (40.0, _cn + 3.8)]),    # north cell - -> vias into the pour
+    ("BAT-", "B", W_PWR, [(45.0, _cn + 2.0), (45.0, _cn + 3.8)]),
     ("MID", "B", 1.0, [(2.2, _cn + 2.0), (2.2, _cs - 2.0)]),         # the cells' link, west
     ("MID", "B", 0.4, [(2.2, PIN["MID_SENSE"]), (5.0, PIN["MID_SENSE"])]),
-    ("MID", "F", 0.4, [(5.0, PIN["MID_SENSE"]), (31.6, PIN["MID_SENSE"])]),
-    ("MID", "B", 0.4, [(31.6, PIN["MID_SENSE"]), (33.49, PIN["MID_SENSE"])]),
+    ("MID", "F", 0.4, [(5.0, PIN["MID_SENSE"]), (_rx - 1.4, PIN["MID_SENSE"])]),
+    ("MID", "B", 0.4, [(_rx - 1.4, PIN["MID_SENSE"]), (_rx - 0.51, PIN["MID_SENSE"])]),
 ]
-VIAS = [("BAT-", 32.2, PIN["NTC"] + 0.95), ("BAT-", 40.0, _cn + 3.5), ("BAT-", 45.0, _cn + 3.5),
-        ("MID", 5.0, PIN["MID_SENSE"]), ("MID", 31.6, PIN["MID_SENSE"])]
+VIAS = [("BAT-", _rx - 2.0, PIN["NTC"] + 1.0), ("BAT-", 40.0, _cn + 3.8), ("BAT-", 45.0, _cn + 3.8),
+        ("MID", 5.0, PIN["MID_SENSE"]), ("MID", _rx - 1.4, PIN["MID_SENSE"])]
 
 LAYERS = """	(layers
 		(0 "F.Cu" signal)
@@ -195,20 +198,26 @@ def rules_of(path):
 
 
 def check_pins_clear_clips():
-    """The connector's pads stay off every clip's steel base, with the board's clearance."""
-    clr = 0.2
+    """The connector's joints on the inner face stay off every clip's steel base and out
+    from under its arms (the arms span CLIP_ARMS across the cell, over the base's length).
+    Returns the least clearance to an arm."""
+    least = 99.0
     for cx in CLIP_X:
         for cy in CELL_YS:
             bx0, bx1 = cx - CLIP_BASE[0] / 2, cx + CLIP_BASE[0] / 2
-            by0, by1 = cy - CLIP_BASE[1] / 2, cy + CLIP_BASE[1] / 2
-            for net, y in PIN.items():
-                d = ((max(bx0 - CONN_X, 0, CONN_X - bx1)) ** 2 + (max(by0 - y, 0, y - by1)) ** 2) ** 0.5
-                if d < CONN_PAD / 2 + clr:
-                    sys.exit(f"pin {net} at {CONN_X}, {y} is {d:.2f} mm from the clip base at {cx}, {cy}")
+            for half, clr, what in ((CLIP_BASE[1] / 2, 0.2, "base"), (CLIP_ARMS / 2, JOINT_CLR, "arms")):
+                by0, by1 = cy - half, cy + half
+                for net, y in PIN.items():
+                    d = ((max(bx0 - CONN_X, 0, CONN_X - bx1)) ** 2 + (max(by0 - y, 0, y - by1)) ** 2) ** 0.5 - CONN_PAD / 2
+                    if what == "arms":
+                        least = min(least, d)
+                    if d < clr:
+                        sys.exit(f"pin {net} at {CONN_X}, {y} is {d:.2f} mm from the {what} of the clip at {cx}, {cy}")
+    return least
 
 
 def main():
-    check_pins_clear_clips()
+    print(f"connector at {CONN_X}, {CONN_Y}; pins {PIN}; its joints {check_pins_clear_clips():.2f} mm from the clips' arms")
     pro_before = rules_of(PRO)
     start_file()
     board = pcbnew.LoadBoard(OUT)
