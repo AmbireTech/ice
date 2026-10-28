@@ -228,11 +228,12 @@ MAG_PACK = (6.0, 2.0)     # diameter, thickness
 MAG_DEV = (8.0, 1.5)
 MAG_SKIN, MAG_WALL, MAG_CLR = 0.4, 0.8, 0.1
 MAG_PART_CLR = 0.2        # a part under a magnet's boss
-# The pack board's other parts, on its inner face between the cells (x, y off the pack's
-# centre; w, h, height; label): a resettable fuse in BAT+, the charger's thermistor (TS),
-# the series resistor in the mid-point sense line.
-PACK_SMALL = [(0.0, -2.4, 3.2, 1.6, 0.85, "PTC 1206"), (-3.0, 2.4, 1.6, 0.8, 0.8, "NTC 0603"),
-              (3.0, 2.4, 1.0, 0.5, 0.35, "R 0402")]
+# The pack board's other parts on its inner face (x, y off the pack's centre; w, h,
+# height; label), where pack/pack.kicad_pcb (branch v4-pack-board) has them: a resettable
+# fuse in BAT+ between the magnets, the thermistor (TS) and the mid-point sense line's
+# series resistor in the gap the west clips' arms leave.
+PACK_SMALL = [(1.2, 0.0, 3.2, 1.6, 0.85, "PTC 1206"), (-16.4, 0.513, 1.6, 0.8, 0.8, "NTC 0603"),
+              (-16.4, -0.777, 1.0, 0.5, 0.35, "R 0402")]
 
 # ── Back print ──────────────────────────────────────────────────────────────
 # The flame itself (facets, size, placement, gap) is art/flame.py, shared with the
