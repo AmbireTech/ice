@@ -195,7 +195,11 @@ LEVER_TRAVEL = 1.5   # MSK12C02 slide travel; its lever stops inside the wall, a
 # clips hold the cells, as v3's cell was held.
 BOARD_CELL_CLIPS = ("BT_N", "BT_P")   # proto 1's clips: off the device in v4; their models shape the pack's
 CELL_D, CELL_L, CELL_BASE = 10.5, 44.5, 0.25   # AAA (Energizer E92/L92, eneloop BK-4MCCE), on the clips' 0.25 mm steel base
-CONN_JOINT_CLR = 0.5  # the male's through-hole joints (inner face) to the clips' arms
+# Only the clips' steel base (7 mm across the cell) lies on the board; their arms leave it
+# at the base's edge and curve up (the clips' models: 0.66 mm up 0.3 mm out, 1.36 mm up
+# 0.9 mm out, 2.4 mm up at 1.5), and the cell's can is 1.9 mm up there.
+CLIP_BASE_HALF = 3.5
+CONN_JOINT_CLR = 0.3  # the male's through-hole joints (inner face, flat: their tails end in the board) to a clip's base
 PACK_PCB_T = 0.8      # the pack's board
 PACK_LEDGE = 1.0      # its north and south edges rest on the tray's walls this far
 PACK_CLR = 0.3        # the clips to the tray's walls
@@ -224,8 +228,8 @@ CONN_NETS = ("BAT+", "MID", "NTC", "BAT-")   # north to south
 # east of the MCU, the place the device board can clear (its power-key network moves to
 # the chin, which the cell left empty); west of the MCU the SE050 and the pack's power
 # lines could not share the column. North-south it sits midway between the cells, which
-# stand far enough apart that the male's through-hole joints pass between the east clips'
-# arms (the pack board's inner face): that sets the cells' pitch.
+# stand just far enough apart that the male's through-hole joints pass between the east
+# clips' steel bases, under the arms (the pack board's inner face): that sets the cells' pitch.
 CONN_X = 43.6
 CONN_CLR = 0.2        # the male's body in its window; the receptacle to the nearest part
 # The pack board's other parts on its inner face (x, y off the pack's centre; w, h,
@@ -858,7 +862,9 @@ def main():
                  cam[3] + CAM_CLR + PACK_RIM)
     pcb_n = pack_n + PACK_RIM
     n = len(CONN_NETS)
-    cell_pitch = 2 * clip_half + (n - 1) * CONN_PACK["pitch"] + CONN_PACK["pad_d"] + 2 * CONN_JOINT_CLR
+    cell_pitch = 2 * (CLIP_BASE_HALF + CONN_JOINT_CLR) + (n - 1) * CONN_PACK["pitch"] + CONN_PACK["pad_d"]
+    if cell_pitch < 2 * clip_half + PACK_CLR:
+        raise SystemExit("the cells' clips would touch arm to arm")
     cell_ys = (pcb_n + PACK_LEDGE + PACK_CLR + clip_half, pcb_n + PACK_LEDGE + PACK_CLR + clip_half + cell_pitch)
     pcb = (0.0, pcb_n, W, cell_ys[1] + clip_half + PACK_CLR + PACK_LEDGE)
     face = outline(b, GAP + WALL - DRAFT_MM / 2)

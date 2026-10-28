@@ -25,11 +25,13 @@ All numbers come from the generated model (`enclosure/generate.py`, 2026-10-28).
 | Back face | the cell stands out | flat; a window for the connector; the camera head stands 1.5 mm out |
 | Without the cells | — | runs from USB |
 
-The pack is 51.2 × 37.5 × 12.25 mm. It spans the back from 21 to 58.5 mm below the top
-edge (the device is 91.2 mm tall), just south of the camera. Its two cells are 21.1 mm
-apart, axis to axis. The male's through-hole joints on the pack board's inner face pass
-between the east clips' arms, which sets that spacing. With the cells closer, the pins
-would land on the clips' steel bases.
+The pack is 51.2 × 33.1 × 12.25 mm. It spans the back from 21 to 54.1 mm below the top
+edge (the device is 91.2 mm tall), just south of the camera. Its two cells are 16.7 mm
+apart, axis to axis, 6.2 mm between them. The connector's four pins stand in a row
+between the cells, at the east clips, and their solder joints on the pack board need bare
+board between the two clips' steel feet. That sets the spacing: with the cells closer,
+the outer pins would land on the clips' feet. The clips' arms reach over the outer two
+joints, well clear of them.
 
 - **The camera sees past it.** Its north edge sits outside a 70° cone from the lens's rim,
   measured at the pack's far face. The lens is about 66°, and the stock candidate module
@@ -65,7 +67,7 @@ back; a flat back needs a lower camera module.
   - It is 22.3 × 7.7 mm and 2.0 mm tall, with flat gold contacts at 2.54 mm.
   - It has NdFeB magnets in its ends and two locating bosses underneath, which need slots
     in the board.
-  - It sits east of the MCU at (43.6, 37.6), long axis north-south.
+  - It sits east of the MCU at (43.6, 35.4), long axis north-south.
 - **The pack's half: Xinyangze's 4-pin magnetic male**, YZP0048-20048-04025-03 (LCSC
   C5126845, through-hole), on the pack board's outer face.
   - Its body is 21.2 × 6.86 mm with a 5.03 mm tab, 2.8 mm thick, with magnets in its ends.
@@ -144,7 +146,7 @@ JLC lists 13 magnetic pogo connectors, all from Xinyangze. The stock below was c
 
 ## The pack's board
 
-48.0 × 28.1 mm, the same width as the device's board, 0.8 mm thick.
+48.0 × 30.3 mm, the same width as the device's board, 0.8 mm thick.
 
 - The south cell's plus goes through the fuse to the plus pin.
 - The south cell's minus joins the north cell's plus at the west end: the mid-point. It
