@@ -6,7 +6,7 @@
   "pins": {
    "1": [
     "IN",
-    "V3V3_USB"
+    "VBUS"
    ],
    "2": [
     "ISET",

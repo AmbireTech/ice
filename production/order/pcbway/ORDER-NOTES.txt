@@ -17,7 +17,7 @@ Tell PCBWay in the order remark
    no ink. Print the bottom white silkscreen Gerber as usual; the image already
    leaves pads and holes clear. Top side: normal white silkscreen, no UV print."
 
-Assembly (turnkey, both sides: 104 bottom + 31 top (C_3V3, C_BAT, C_BOOST, C_BOOST2, C_FFB, C_IN_BOOST, C_RADIO1, C_RADIO2, C_USB3V3, C_VBUS, L_BOOST, L_BUCK, Q_PWRJ, R_FB1, R_FB2, R_FBU1, R_FBU2, R_JA, R_JB, R_JC, R_JD, R_JPU, R_PG, R_PGB, R_PWRJB, R_PWRJBE, SW_JOY, U10, U11, U2, U3), 135 placements, 65 BOM lines)
+Assembly (turnkey, both sides: 105 bottom + 31 top (C_3V3, C_BAT, C_BOOST, C_BOOST2, C_FFB, C_IN_BOOST, C_RADIO1, C_RADIO2, C_USB3V3, C_VBUS, L_BOOST, L_BUCK, Q_PWRJ, R_FB1, R_FB2, R_FBU1, R_FBU2, R_JA, R_JB, R_JC, R_JD, R_JPU, R_PG, R_PGB, R_PWRJB, R_PWRJBE, SW_JOY, U10, U11, U2, U3), 136 placements, 62 BOM lines)
   BOM:      wallet_bom-pcbway.csv  (manufacturer + MPN; LCSC code as distributor PN)
   Centroid: wallet_centroid-pcbway.csv  (mm, origin = outline bottom-left, as the
             Gerbers; Layer column per part; rotation in KiCad's convention, parts on the

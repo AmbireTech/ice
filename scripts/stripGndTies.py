@@ -17,7 +17,8 @@ Kept, because the part asks for a short path to the plane:
   - the USBLC6 ESD clamp's ground (surge current);
   - the air-gap switch's west shield tabs: boxed in by the board edge and the MCU USB
     pair, no pour reaches them; the owner tied each to a via (2026-10-23);
-  - the owner's ties where the pour would reach a pad only by fragmenting (2026-10-25):
+  - the owner's ties where the pour would reach a pad only by fragmenting (2026-10-25;
+    v4 added C_NOR.2 and J_TFT.10):
     the charger's 2N7002DW gate FET and its ISET/VSET resistors and input cap, the
     TXU0202 radio-UART translator, the SE050's ground pins to its exposed pad, and
     the camera's 1.3 V LDO to its decap.
@@ -37,7 +38,10 @@ KEEP = {"U2.2", "U2.3", "U2.9", "C_IN_BOOST.2", "C_BOOST.2", "U3.2", "C_USB3V3.2
         "Q_REV.2", "U13.7", "U13.14", "U13.17", "U1.4", "U1.9", "U11.5", "U11.21", "U11.24", "D_ESD.2",
         "SW_AIR.SH",
         "Q_CHG.4", "R_ISET.2", "C_CHGIN.2", "R_VSET.2", "U9.2", "U5.14", "U5.17", "U5.19", "U5.21",
-        "U14.4", "C_DOVDD.2", "C_U9A.2"}
+        "U14.4", "C_DOVDD.2", "C_U9A.2",
+        # v4 (2026-10-28): the pour reaches these only by fragmenting once the pack's
+        # receptacle, the display connector and the radio switch moved
+        "C_NOR.2", "J_TFT.10"}
 
 
 def touches(t, p):

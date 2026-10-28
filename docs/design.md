@@ -12,18 +12,19 @@ seed-phrase wallet; how the two fit is open ([direction.md](direction.md)).
 
 ```
  front ─┬─ glass: Newhaven 2.4" IPS 240x320, capacitive touch (same panel as the GridCore Nano),
-        │  on foam tape straight on the board; one AAA cell in two clips across the chin,
-        │  standing out of the case
-        ├─ PCB 48 x 87 mm, 4 layers, 1.0 mm  — every part on the back face but the cell's
-        │  clips and the joystick
+        │  on foam tape straight on the board
+        ├─ PCB 48 x 87 mm, 4 layers, 1.0 mm  — every part on the back face but the chin's
+        │  power parts, the radio and the joystick
  back  ─┴─ clear case: the back face, the radio light and the camera head (standing out
-           through an open window) are what you see
+           through an open window) are what you see; the battery pack (two AAA) snaps on
+           high on the back, on a magnetic pogo connector
 ```
 
 Proto 0 (the first three boards, ordered) had a 1S LiPo pouch under the screen.
 Proto 1 replaces it with one AAA cell of any chemistry, which makes the device
 6.5 mm thinner (11.5 mm without the cell and camera). The research behind it:
-[power-aaa.md](power-aaa.md).
+[power-aaa.md](power-aaa.md). v4 moves the cells off the board into a two-cell pack on
+the back ([pack.md](pack.md)).
 
 | Block | Part | JLC (stock on 2026-10-18) |
 |---|---|---|
@@ -34,9 +35,9 @@ Proto 1 replaces it with one AAA cell of any chemistry, which makes the device
 | Airgap | MSK12C02 slide switch → TS3USB221A (USB data) + 74LVC1G02 / TPS22917 (radio power) + TXU0202 (radio UART isolation) | all JLC |
 | Display | NHD-2.4-240320AF-CSXP-CTP on Molex 54132-4062 + 6-pin 1.0 mm touch FPC | connectors JLC, panel hand-fitted |
 | Camera | OV2640 24-pin DVP module, ~66° lens refocused to ~15 cm, on a Jushuo AFC07 FPC connector; AVDD 2.8 V / DVDD 1.3 V (fixed TLV70313) / DOVDD 3.3 V | connector JLC, module hand-fitted |
-| Power | One AAA cell (NiMH, lithium or alkaline; a 10440 Li-ion survives) in two SMT clips (MYOUNG MY-AAA-19-J / -20-J) → AO3416 reverse-cell blocker → LTC3539-2 boost to 3.3 V; USB-C → TLV62569P buck → TPS2116 picks USB first; BQ25172 NiMH charger, MCU-gated; soft latch on the joystick's centre press | all JLC (LTC3539-2: 2,400) |
+| Power | Two AAA cells in series (NiMH, lithium or alkaline) in a pack on the back, on a Xinyangze magnetic pogo receptacle (YZ103915020T-04025-02, C6276862) → AO3416 reverse-cell blocker → LTC3539-2 boost to 3.3 V; USB-C → TLV62569P buck → TPS2116 picks USB first; BQ25172 NiMH charger set for two cells, fed from VBUS, MCU-gated; soft latch on the joystick's centre press | all JLC (LTC3539-2: 2,400; the receptacle: 125) |
 | Sound | Huaneng MLT-5020 magnetic transducer (5 × 5.5 × 2 mm, 75 dB at 10 cm), AO3416 low-side, LPTIM3 PWM | JLC |
-| Joystick | ALPS SKRHAAE010: four directions + centre push, 7.5 mm, on the front, centred below the cell | JLC C202423 (521) |
+| Joystick | ALPS SKRHAAE010: four directions + centre push, 7.5 mm, on the front, centred in the chin | JLC C202423 (521) |
 
 Overlap with GridCore: USB-C and ESD, the display panel with its connector and
 backlight pump, the slide switch, the netlist → KiCad flow and every gate script.
@@ -156,10 +157,13 @@ touch flex is merged into the TFT flex.
   the 3.0 mm radio module, under a 5.33 mm screen stack.
   The **programming pads** (MCU SWD under the panel, the radio's SWDIO/SWCLK on the
   back beside the module's SWD pins) are reachable by pogo pins before assembly.
-- **The chin's back** holds the AAA cell across the board in its two clips (their
-  bases span 47 mm of the 48), USB-C (mouth south) with the USB switch and ESD clamp
-  beside it, and under the cell's flanks only low parts (0402s at least 2 mm off its
-  axis): the charger's NTC, the cell-sense divider, the CC pull-downs. North of the
+- **The pack's receptacle** (v4) lies east-west on the back, south of the MCU and over
+  the display connector, which moved 5.5 mm south for it (its tail's slot 2.5 mm, so
+  the tail keeps 3.0 mm of slack). The MCU's south-side signals pass it on the front
+  copper. The east side of the back is the touch tail's lane, which rules it out there.
+- **The chin's back** holds USB-C (mouth south) with the USB switch and ESD clamp
+  beside it, the cell-sense divider and the CC pull-downs (until v3 the AAA cell lay
+  across it in two clips). North of the
   slots, between the two display tails and under them (low parts only), sits the
   charger with its control transistors, next to the middle bridge it feeds the cell
   through. The placement was chosen by trial routes with the human router: with the
@@ -288,10 +292,17 @@ touch flex is merged into the TFT flex.
   and its SCCB north and west, secure element west, radio UART (USART3) at the
   south-west corner, charger and button east. Moving the radio UART to the west
   side (USART1) was trial-routed and came out worse: the two extra pins land in
-  the camera bus's escape.
-- **The channel between the MCU's south pins and the TFT connector is a routing
-  lane** (4.6 mm, by leaving 2.5 mm of the TFT tail as a gentle bow): only
-  decoupling at its two ends, x 16–27 empty for the SPI, reset and TE drops.
+  the camera bus's escape. v4 moved two single pins: the airgap sense to PB15 on
+  the west side, beside its series resistor, and the charger's status to PA3 at the
+  south-east corner, because the pack's receptacle south of the MCU sends the
+  display lines' fan across the south side.
+- **South of the MCU sits the battery pack's receptacle** (v4), in what was a 4.6 mm
+  routing channel to the TFT connector; the connector moved 5.5 mm south for it
+  (its tail keeps 3.0 mm of slack, the slot moved 2.5 mm). The MCU's south-side
+  signals pass the receptacle on the front copper; its pads, boss slots and magnets
+  leave only a few lanes under it on the back. Moving the slot walled off the radio
+  module's north-row exits: RADIO_RX/TX leave its pads through the 0.65 mm lane
+  between its two pad rows on the front.
 - **The MCU's core runs from its internal LDO.** VDDSMPS and VLXSMPS are tied
   to GND as the datasheet asks when the SMPS is unused (DS13086 3.9.1). The SMPS
   would save a few mA at full speed, small next to the ~115 mA backlight, but
@@ -315,16 +326,16 @@ touch flex is merged into the TFT flex.
   2.7 mm. A slot stays 1.6 mm wide, for the tail's two 90-degree turns through the
   1.0 mm board.
 
-## Power: one AAA cell
+## Power: two AAA cells in a pack
 
 Why these parts, which cells and how long they last: [power-aaa.md](power-aaa.md).
 
 ```
  USB-C VBUS -> TLV62569P buck -> V3V3_USB --VIN1--+
-                                   | PG -> PR1    | TPS2116 (USB first) -> V3V3
-                                   \-> BQ25172 ----+-> BAT (NiMH only, MCU-gated)
- AAA: BAT -> LTC3539-2 boost, SHDN = soft latch -> V_BOOST --VIN2--+
-      BAT_N -> AO3416 (reverse-cell blocker) -> GND
+        |                          | PG -> PR1    | TPS2116 (USB first) -> V3V3
+        \-> BQ25172 (2 cells) ---------------------+-> BAT (NiMH only, MCU-gated)
+ pack: BAT -> LTC3539-2 boost, SHDN = soft latch -> V_BOOST --VIN2--+
+       BAT_N -> AO3416 (reverse-cell blocker) -> GND
 ```
 
 - **The boost runs from every cell that fits**: it starts at 0.88 V (max), runs to
@@ -345,15 +356,19 @@ Why these parts, which cells and how long they last: [power-aaa.md](power-aaa.md
   input and sag the rail.
 - **The charger is NiMH-only and off by default.** The BQ25172 charges constant
   current only, never starts on a cell resting above ~1.33 V, stops above 1.65–
-  1.75 V, has a 4 h safety timer and its own NTC on the cell (0–45 °C). A transistor
-  holds its TS pin low until the MCU, having identified the cell as NiMH, lets go;
-  a reset or a dead MCU puts it back. 83 mA (0.1 C, the eneloop standard charge) or
-  250 mA (0.3 C, ended by firmware on the cell's own signs). Fed from the USB 3.3 V
-  rail, not VBUS, so it dissipates 0.48 W at 250 mA instead of 0.9 W.
-- **The MCU reads the cell** at the + clip (1M/1M, its own trace from the clip pad)
-  and at the − clip (so the reverse FET is not part of the reading), and its
-  temperature through the charger's NTC (`CHG_TS`), which is biased only while USB is
-  in: there is no cell temperature on battery. No battery gauge: the MAX17048 was a Li-ion gauge.
+  1.75 V a cell (VSET 36k: two cells), has a 4 h safety timer and the pack's NTC
+  (0–45 °C; with the pack off, TS floats to its clamp and reads too cold: no
+  charging). A transistor holds its TS pin low until the MCU, having identified both
+  cells as NiMH, lets go; a reset or a dead MCU puts it back. 83 mA (0.1 C, the eneloop
+  standard charge) or 250 mA (0.3 C, ended by firmware on the pack's own signs). Fed
+  from VBUS: a full two-cell pack (2.9–3.0 V) leaves too little headroom under the
+  3.3 V rail. It burns ~0.65 W at the start of a 250 mA charge and regulates its own die
+  at 125 °C. The pull-up holding it off stays on the USB 3.3 V rail (5 V would exceed
+  the MCU pin's rating while the MCU is unpowered).
+- **The MCU reads the pack** at the receptacle's + contact (1M/1M), its − contact (so
+  the reverse FET is not part of the reading) and its mid-point (1M/1M, PA6), so
+  firmware reads each cell on its own; and its temperature through the pack's NTC
+  (`CHG_TS`), which is biased only while USB is in. No battery gauge: the MAX17048 was a Li-ion gauge.
 - **The backlight pump runs from V3V3**: with one AAA there is no battery-level
   rail. 3.3 V is too close to the LEDs' ~3.1 V for the pump's 1x mode at full
   current, so expect ~1.5× the LED current at full brightness: the biggest load.

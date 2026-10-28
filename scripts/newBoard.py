@@ -51,6 +51,11 @@ CTP_TAIL = (PANEL[0] + PANEL[2] - 1.90 - 7.00, 7.00)
 # the board the tails drop 4 mm less, and the slots moved 2 mm south take that length
 # back (each mm south costs a tail 2 mm), so both tails land as before.
 SLOT_Y0, SLOT_Y1 = PANEL_S + 3.0, PANEL_S + 4.6
+# v4 (2026-10-28): the TFT connector moved 5.5 mm south to make room for the battery
+# pack's receptacle between it and the MCU; its slot moved 2.5 mm south with it (the
+# touch slot stayed), which leaves the TFT tail 3.0 mm of slack. The radio module's
+# pads (y 68.39) stop the slot going further.
+TFT_SLOT_DY = 2.5
 # Tail-to-slot clearance at each end. The panel is located by the bezel and the tails
 # by the panel: placement ~0.2 mm plus tail width +-0.1 is the lateral error, so 0.45
 # keeps the tail off the slot's end. Was 0.75 until 2026-10-23: every 0.1 mm here is
@@ -89,11 +94,12 @@ CTP_ABOVE_TFT = 2.55 + 0.175                  # TFT module + adhesive under the 
 SLOT_C = (SLOT_Y0 + SLOT_Y1) / 2
 TFT_DROP = ADHESIVE_T + BOARD_T
 CTP_DROP = TFT_DROP + CTP_ABOVE_TFT
-TFT_END_Y = SLOT_C - (TFT_LEN - (SLOT_C - PANEL_S) - TFT_DROP)
+TFT_SLOT_C = SLOT_C + TFT_SLOT_DY
+TFT_END_Y = TFT_SLOT_C - (TFT_LEN - (TFT_SLOT_C - PANEL_S) - TFT_DROP)
 CTP_END_Y = SLOT_C - (CTP_LEN - (SLOT_C - PANEL_S) - CTP_DROP)
 TFT_ROW, CTP_ROW = 1.35, 1.05                 # connector origin to its contact row (north of origin)
 CTP_SLACK = 1.5      # mm of touch tail slack: a nominal-length tail landing exactly on the row left no margin for stack/tail tolerance (pre-order audit)
-TFT_SLACK = 2.5      # mm of TFT tail left as a gentle bow, buying a 4.6 mm routing channel south of the MCU (checkFpc allows 3)
+TFT_SLACK = 3.0      # mm of TFT tail left as a gentle bow (checkFpc allows 3): v4's receptacle needs the room south of the MCU
 GAP = 0.5            # free board kept between courtyards: a via, or two 0.15 mm tracks
 OPT_RADIUS = 7.0     # how far the ratsnest pass may move a part from its seed (mm)
 # Footprint keep-outs on the back face (KiCad rule areas: DRC flags any part moved
@@ -437,10 +443,13 @@ def under_tail(fp, corridors):
 
 def cell_geometry(board):
     """(face, axis y, x0, x1) of the cell from its clips' pads: the face the clips are
-    on (TOP/BOT) and the span between the clips' pad centres."""
+    on (TOP/BOT) and the span between the clips' pad centres. None with no clips on the
+    board (v4: the cells are in a pack)."""
     pads = {}
     for ref in ("BT_N", "BT_P"):
         fp = board.FindFootprintByReference(ref)
+        if fp is None:
+            return None
         ps = list(fp.Pads())
         pads[ref] = (sum(pcbnew.ToMM(p.GetPosition().x) for p in ps) / len(ps),
                      sum(pcbnew.ToMM(p.GetPosition().y) for p in ps) / len(ps), BOT if fp.IsFlipped() else TOP)
@@ -454,6 +463,8 @@ def under_cell_room(fp, cell):
     """(mm left under the cell, package) for a part on the cell's face within its
     footprint; None when the part is not under the cell. The mm left is None for a
     package with no height bound in PART_H: it may not go there."""
+    if cell is None:
+        return None
     side, axis, cx0, cx1 = cell
     if (BOT if fp.IsFlipped() else TOP) != side or fp.GetReference() in ("BT_N", "BT_P"):
         return None

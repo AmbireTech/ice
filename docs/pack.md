@@ -7,11 +7,10 @@ back, high up, just below the camera.** A ready-made magnetic pogo connector pai
 and holds it: no loose magnets (owner, 2026-10-28). The device itself gets thinner, with
 a flat front and back.
 
-**Status (2026-10-28): concept.** The /v4/ page's 3D preview (`docs/v4/`, from
-`enclosure/generate.py`) is built from today's board with the cell clips left off; the
-generator puts the connector at `CONN_X`, midway between the cells. The pack board is
-`pack/` (built by `pack/makePack.py`, order set in `production/pack-order/`); the device
-board is being re-laid for it.
+**Status (2026-10-28):** the device board carries the receptacle (`board/`, the order set
+in `production/order/`), the pack board is `pack/` (built by `pack/makePack.py`, order set
+in `production/pack-order/`), and the /v4/ page's 3D preview (`docs/v4/`, from
+`enclosure/generate.py`) is built from both. Nothing is ordered yet.
 
 ## What it comes to
 
@@ -20,22 +19,19 @@ All numbers come from the generated model (`enclosure/generate.py`, 2026-10-28).
 | | v3 (one cell on the board) | v4 |
 |---|---|---|
 | Device thickness | 11.5 mm | **10.73 mm** |
-| At the cell | 17.1 mm open, 17.7 mm under its cover | **22.98 mm** with the pack on |
+| At the cell | 17.1 mm open, 17.7 mm under its cover | **23.18 mm** with the pack on |
 | Cells | one AAA | two AAA in series: twice the energy |
 | Back face | the cell stands out | flat; a window for the connector; the camera head stands 1.5 mm out |
 | Without the cells | — | runs from USB |
 
-The pack is 51.2 × 31.0 × 12.25 mm. It spans the back from 21.2 to 52.2 mm below the top
-edge (the device is 91.2 mm tall), just south of the camera. Its two cells are 14.6 mm
-apart, axis to axis, 4.1 mm between them. The connector's four pins stand in a row
-between the cells at the east clips, just beside the short tabs the clips' arms rise
-from. Their solder joints on the pack board need bare board between the two clips' flat
-steel feet, which sets the spacing: with the cells closer, the outer pins would land on
-the feet. The fuse, the resistor and the thermistor sit in the strip between the cells,
-where nothing stands over them.
-
-The receptacle sets how far north the pack can go: any further and it would land on the
-touch panel's connector. The camera's view would let the pack sit 0.25 mm higher.
+The pack is 51.2 × 28.6 × 12.45 mm. It spans the back from 21.1 to 49.7 mm below the top
+edge (the device is 91.2 mm tall), just south of the camera. Its two cells lie side by
+side, 11.8 mm apart axis to axis: their clips' courtyards touch, which leaves 0.8 mm
+between the arms of neighbouring clips (on the east side those are the pack's minus and
+the south cell's plus, so they must not touch as a cell goes in). The connector lies
+east-west along the south cell, its four pins in a row under the cell's south flank,
+clear of the clips, which hold only the cells' ends. The fuse, the resistor and the
+thermistor sit in the strip south of the south cell's can.
 
 - **The camera sees past it.** Its north edge sits outside a 70° cone from the lens's rim,
   measured at the pack's far face. The lens is about 66°, and the stock candidate module
@@ -58,20 +54,24 @@ back; a flat back needs a lower camera module.
 ## How it goes together
 
 ```
- device board (back)  ═══ receptacle (2.0 mm, its own magnets) ════════════
+ device board (back)  ═══ receptacle (2.2 mm, its own magnets) ════════════
                             ▲ ▲ ▲ ▲   0.3 mm gap; pins at 3.1 mm working height
  device back      ───┐  ┌───┴─┴─┴─┴───┐  window: the male's body drops through
                      └──┤  male body  ├──────────────────────────── back face
- pack board 0.8 mm  ════╧═════════════╧══ 0.7 mm off the back face, inside the tray's rim
+ pack board 0.8 mm  ════╧═════════════╧══ 0.9 mm off the back face, inside the tray's rim
  tray (frame)       ║  ( AAA )   ( AAA )  ║   cells in series, in clips, open underneath
 ```
 
 - **The device's half: Xinyangze's 4-pin SMT magnetic receptacle**,
   YZ103915020T-04025-02 (LCSC C6276862), on the board's back.
-  - It is 22.3 × 7.7 mm and 2.0 mm tall, with flat gold contacts at 2.54 mm.
-  - It has NdFeB magnets in its ends and two locating bosses underneath, which need slots
-    in the board.
-  - It sits east of the MCU at (43.6, 34.6), long axis north-south.
+  - It is 22.3 × 7.7 mm and 2.2 mm tall (a 2.0 mm housing on 0.2 mm feet), with flat gold
+    contacts at 2.54 mm.
+  - It has NdFeB magnets in its ends and two 5.0 × 1.5 × 0.5 mm locating bosses
+    underneath, one centred on each long side; the board has a slot for each. The maker's
+    drawing does not dimension how far in from the edge they sit: the slots take them as
+    flush with it, to check on a sample.
+  - It sits south of the MCU at (22.0, 42.28), long axis east-west, over the display
+    connector, which moved 5.5 mm south for it.
 - **The pack's half: Xinyangze's 4-pin magnetic male**, YZP0048-20048-04025-03 (LCSC
   C5126845, through-hole), on the pack board's outer face.
   - Its body is 21.2 × 6.86 mm with a 5.03 mm tab, 2.8 mm thick, with magnets in its ends.
@@ -79,20 +79,22 @@ back; a flat back needs a lower camera module.
   - It drops through a window in the device's back. Mated, its face stops 0.3 mm short of
     the receptacle's, the pins at working height. Its body keys the pack in the window.
 - **The two halves' magnets hold the pack.** There are no loose magnets.
-- **The pair sets the thickness.** The receptacle (2.0 mm) plus the male's working height
-  (3.1 mm) put the pack board 0.7 mm outside the device's back face. The tray's rim takes
+- **The pair sets the thickness.** The receptacle (2.2 mm) plus the male's working height
+  (3.1 mm) put the pack board 0.9 mm outside the device's back face. The tray's rim takes
   up that gap. The device's back has no recess, just the window.
 - **Four contacts:** the pack's plus, its minus, the point between the two cells, and the
-  pack's thermistor. They run in a column, plus at the north end and minus at the south.
+  pack's thermistor. They run in a row, plus at the east end and minus at the west.
 - **The pack charges in the device**, over USB, as the single cell did.
 
 **Where it lands on the board.** The receptacle needs a bare 22.3 × 7.7 mm patch of the
-board's back. The first site, west of the MCU beside the SE050, could not work. The SE050's
-tied VOUT/VCC pins clash with the contacts there. The pack's plus and minus also could not
-leave that column on either layer without ripping far more than locally. East of the MCU
-is clear except for the power-key network: two SOT-23s (D_OR, Q_BTN) and five passives.
-The cell clips are gone, so the chin's back is empty, and that network moves there. From
-the east, plus and minus have a near-empty run down to the charger and the boost.
+board's back, and the back has none to spare. West of the MCU sit the secure elements and
+the backlight pump. East of it lies the touch panel's tail, flat along the back (x
+36.5–43.5) up to its connector, which rules the east out (an earlier layout put the
+receptacle there, on top of the tail). South of the MCU, between it and the display
+connector, the board had a 4.6 mm routing channel. The display connector moved 5.5 mm
+south and its tail's slot 2.5 mm, which keeps the tail within its slack (3.0 mm, the
+most `checkFpc.py` allows) and the slot clear of the radio module's pads. The receptacle
+fills the channel. The MCU's south-side signals now pass it on the front copper.
 
 ## Why this pair
 
@@ -150,7 +152,7 @@ JLC lists 13 magnetic pogo connectors, all from Xinyangze. The stock below was c
 
 ## The pack's board
 
-48.0 × 28.2 mm, the same width as the device's board, 0.8 mm thick.
+48.0 × 25.8 mm, the same width as the device's board, 0.8 mm thick.
 
 - The south cell's plus goes through the fuse to the plus pin.
 - The south cell's minus joins the north cell's plus at the west end: the mid-point. It
@@ -167,9 +169,11 @@ the clips from underneath.
 
 ## What changes on the device's board
 
-- **Out: the two cell clips. In: the magnetic receptacle**, east of the MCU, and slots for
-  its locating bosses. The power-key network (D_OR, Q_BTN and its passives) moves off its
-  land.
+- **Out: the two cell clips. In: the magnetic receptacle**, south of the MCU, and slots
+  for its locating bosses. The display connector and its tail's slot move south for it; a
+  few small parts move with them (the radio's power switch and its timing cap, the
+  charger's switch and its two resistors, the display's two decaps, the airgap's series
+  resistor).
 - **Charger (the BQ25172): set for two cells.** That means 36 kΩ on VSET, where the
   datasheet's table says 2-cell. Its over-voltage stop is 1.65–1.75 V per cell, so
   3.3–3.5 V for the pack.
@@ -179,8 +183,10 @@ the clips from underneath.
   1.45 Ω, so 0.21–0.36 V. It also needs 95–175 mV above the pack to leave sleep.
   From 5 V, it burns about (5 − 2.4 V) × 0.25 A ≈ 0.65 W at the start of a charge. The
   charger regulates its own temperature at 125 °C; 200 mA is the fallback if it runs hot.
-  The pull-up that holds charging off until firmware allows it moves to 5 V too, so a pack
-  can't see a short charge before the 3.3 V rail comes up.
+  The pull-up that holds charging off stays on the USB 3.3 V rail: it also sits on an MCU
+  pin, which with the MCU unpowered is rated only to 4 V. So from plug-in until the USB
+  buck's output rises (milliseconds), charging is not held off; at most the charger's
+  83 mA base current flows that long.
 - **Thermistor input (TS):** the thermistor moves into the pack, and the board's own goes.
   With the pack off, TS floats to its 2.3–2.9 V clamp, which the charger reads as too cold:
   no charging, by construction.
@@ -191,8 +197,8 @@ the clips from underneath.
   regulating when its input is above 3.3 V (two lithium cells), which is why it was
   chosen. At twice the voltage it draws half the current from the cells.
 - **Reverse-cell FET:** stays. The cells can still go into the pack's clips backwards.
-- **Power key** (the joystick's centre press, through a PNP from the cells): unchanged in
-  function; its parts move. With the pack off, the device runs from USB only.
+- **Power key** (the joystick's centre press, through a PNP from the cells): unchanged.
+  With the pack off, the device runs from USB only.
 
 **Firmware:** read each cell on its own: plus minus mid-point, and mid-point minus minus.
 Refuse to charge unless both cells look NiMH and match each other, so a pack with one

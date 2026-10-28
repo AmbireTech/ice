@@ -5,10 +5,10 @@ Ambire Ice v4 runs from two AAA cells in a pack that snaps onto its back (why an
 one face, a magnetic pogo connector on the other, the face toward the device. The
 connector's magnets, and the matching receptacle's on the device, hold the pack.
 
-48.0 × 28.2 mm, 2 layers, 0.8 mm thick, ENIG, routed.
+48.0 × 25.8 mm, 2 layers, 0.8 mm thick, ENIG, routed.
 
-<img src="render-outer.jpg" width="430" alt="The board's outer face: the magnetic connector near the east edge, its tab to the west, its four pins labelled BAT+, MID, NTC and BAT-">
-<img src="render-cells.jpg" width="430" alt="The board's inner face: four AAA clips holding two cells in series, the connector's four joints beside the east clips, the fuse, resistor and thermistor in the strip between the cells">
+<img src="render-outer.jpg" width="430" alt="The board's outer face: the magnetic connector lying east-west near the south edge, its tab to the north, its four pins labelled BAT-, NTC, MID and BAT+">
+<img src="render-cells.jpg" width="430" alt="The board's inner face: four AAA clips holding two cells in series, the connector's four joints in a row under the south cell, the fuse, resistor and thermistor in the strip south of it">
 
 *Rendered by KiCad: the outer face (toward the device), and the inner face seen from
 behind, mirrored.*
@@ -34,31 +34,25 @@ short to MID through the 1 k resistor.
 The outer face carries only the connector, the mid-point's run under its tab and a BAT−
 pour. The pin order lives in one place, `PIN_NETS` in `makePack.py`.
 
-**Where the connector goes.** Over the device's receptacle, near the east edge (x 43.6,
-device board coordinates), so its pin column runs through the east clips. The case
-spaces the cells 14.6 mm apart for it. Each clip's steel foot is a cross: a body 5 mm
-across the cell along the clip's whole length (on its 9 × 5 mm pad), and a tab 7 mm across
-but only 4 mm along it, from which the arms rise (they span 11 mm, but only over the
-tab). The pins stand just east of the east clips' tabs, so the joints on the inner face
-need only clear the bodies: 0.3 mm to the bodies and 0.33 mm to the tabs. The case reads
-that steel from the clips' 3D models (`clipSteel` in `enclosure.json`); `makePack.py`
-refuses a joint within 0.3 mm of it. KiCad's own check for through-hole pads inside a
-courtyard is off on this board: the clips' courtyards are drawn at the arms' span along
-the whole clip, and J_PACK is its only through-hole part. Solder the joints before the
-cells go in, straight down beside the arms.
+**Where the connector goes.** Over the device's receptacle, which lies east-west south
+of the device's MCU (x 22.0, y 42.28 in device board coordinates): along the south cell,
+its tab north, its four pins in a row under the cell's south flank, plus at the east end.
+The clips hold only the cells' ends, so the joints are 7 mm from any of their steel, and
+the cells lie side by side, 11.8 mm apart with the clips' courtyards touching. The joints
+are flat (see below) and sit 0.89 mm under the south cell's can. `makePack.py` reads the
+connector's place and the clips' steel from the case (`enclosure.json`) and refuses a
+joint within 0.3 mm of the steel.
 
-**The small parts** sit in the 4.1 mm strip between the cells, where nothing stands over
-them, west of the east clips' courtyards: the fuse along the strip, with BAT+ running
-from its north end to the pin 0.3 mm outside the north clip's tab, and CELL+ from its
-south end to the south-east clip; the 1 k resistor and the thermistor on their pins'
-lines.
+**The small parts** sit in the strip south of the south cell's can, where nothing stands
+over them, each straddling its pin's line: the thermistor between BAT− and NTC, the 1 k
+resistor at MID, the fuse east of BAT+. The mid-point reaches the resistor from the
+south-west clip on the outer face, under the connector's body.
 
 **The connector's land** is ours, from Xinyangze's drawing (2022-03-24): four 0.80 mm
-holes at 2.50 mm, in 1.50 mm pads where the maker draws 2.20 mm (the inner face must clear
-the clips' feet). EasyEDA's land for C5126845 stacks a 2.2 mm SMD pad on a 0.85 mm
+holes at 2.50 mm, in 1.50 mm pads where the maker draws 2.20 mm (they were sized to
+clear the clips' feet when the pins stood between the cells; they stay small). EasyEDA's land for C5126845 stacks a 2.2 mm SMD pad on a 0.85 mm
 through-hole pad with a 0.75 mm drill, a 0.05 mm ring: not used. Its tails are 0.70 mm
-long and end inside the 0.8 mm board, so the joints on the inner face are flat; the
-outer ones sit 3.55 mm off their cells' axes, where the cans are 1.6 mm above the board. The 3D model (`3d/`, by `connModel.py`) is drawn from the same drawing.
+long and end inside the 0.8 mm board, so the joints on the inner face are flat. The 3D model (`3d/`, by `connModel.py`) is drawn from the same drawing.
 
 ## Files
 
@@ -82,7 +76,7 @@ $KICAD_PY pack/makeOrder.py                                 # the order files
 - **Assembly:** SMT on the inner face (the clips, the fuse, the thermistor, the resistor),
   and the connector is **through-hole** on the outer face. In the order form: PCBA on
   the **bottom** side for SMT, and tick **through-hole (THT) assembly** for J_PACK
-  (JLC hand-solders it after reflow, between the east clips, beside their arms), or leave J_PACK out
+  (JLC hand-solders it after reflow), or leave J_PACK out
   and solder it by hand: four joints on the inner face, done before the cells go in.
 - **Stock:** the connector had 26 in JLC's own stock on 2026-10-28: enough for a few
   boards, not a run.

@@ -1,7 +1,5 @@
 {
   "_comment": "Footprint per reference; 'wallet:' = board/wallet.pretty, anything else is KiCad's stock library. An entry with 'pads' maps netlist pad names to footprint pad names (one to many). Passives follow their netlist size. J_CAM pad = Ai-Thinker ESP32-CAM pin; if the module in hand is numbered from the other end, change this map to pad = 25 - pin (docs/design.md).",
-  "BT_N": "wallet:Battery_AAA_Clip_MYOUNG_MY-AAA-19-J",
-  "BT_P": "wallet:Battery_AAA_Clip_MYOUNG_MY-AAA-20-J",
   "C_3V3": "Capacitor_SMD:C_0805_2012Metric",
   "C_AVIN": "Capacitor_SMD:C_0402_1005Metric",
   "C_AVOUT": "Capacitor_SMD:C_0402_1005Metric",
@@ -193,7 +191,6 @@
   "Q_CHG": "Package_TO_SOT_SMD:SOT-363_SC-70-6",
   "Q_PWRJ": "Package_TO_SOT_SMD:SOT-23",
   "Q_REV": "Package_TO_SOT_SMD:SOT-23",
-  "RT_CHG": "Resistor_SMD:R_0402_1005Metric",
   "R_AIRPU": "Resistor_SMD:R_0402_1005Metric",
   "R_AIRS": "Resistor_SMD:R_0402_1005Metric",
   "R_AIRSER": "Resistor_SMD:R_0402_1005Metric",
@@ -284,9 +281,13 @@
   "U5": "wallet:NXP_SOT1969-1_HX2QFN-20_3x3mm_P0.4mm",
   "U6": "Package_DFN_QFN:Texas_UQFN-10_1.5x2mm_P0.5mm",
   "U7": "Package_TO_SOT_SMD:SOT-23-5",
-  "U8": "Package_TO_SOT_SMD:SOT-23-6",
+  "U8": "wallet:SOT-23-6_PinMarkSouth",
   "U9": "Package_SO:VSSOP-8_2.3x2mm_P0.5mm",
   "C_BOOST2": "Capacitor_SMD:C_0805_2012Metric",
   "C_FFB": "Capacitor_SMD:C_0402_1005Metric",
-  "R_PGB": "Resistor_SMD:R_0402_1005Metric"
+  "R_PGB": "Resistor_SMD:R_0402_1005Metric",
+  "J_PACK": "wallet:Xinyangze_YZ103915020T-04025-02",
+  "R_MS1": "Resistor_SMD:R_0402_1005Metric",
+  "R_MS2": "Resistor_SMD:R_0402_1005Metric",
+  "C_MS": "Capacitor_SMD:C_0402_1005Metric"
 }

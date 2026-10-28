@@ -31,14 +31,17 @@ Ambire internals into GridCore's.
   page; `docs/v2/` is proto 1 (cell on the front), published at /v2/. Both stay frozen.
   v3 (cell on the back) lives in `docs/v3/` (own `index.html`, `brand/`, `enclosure/`),
   published at /v3/, linked from neither, and is frozen since v4.
-- v4 (concept, 2026-10-28; `docs/pack.md`): the cells leave the board for a pack high on
-  the back, just below the camera (outside its view cone), open underneath (owner: as slim
-  as possible). Contacts (owner: no loose magnets): a Xinyangze magnetic pogo pair, the SMT
-  receptacle (C6276862) on the device board's back east of the MCU, the male (C5126845)
-  on the pack board through a window in the back; their own magnets hold the pack. Not
-  on the device board yet: `enclosure/generate.py` leaves the clips off (reusing their
-  models for the pack) and puts the pair at `CONN_X`, midway between the cells, whose
-  pitch it derives so the male's through-hole joints clear the clips (`PACK_*`/`CONN_*`).
+- v4 (2026-10-28; `docs/pack.md`): the cells leave the board for a pack high on the back,
+  just below the camera (outside its view cone), open underneath (owner: as slim as
+  possible). Contacts (owner: no loose magnets): a Xinyangze magnetic pogo pair, the SMT
+  receptacle (C6276862) on the device board's back, east-west between the MCU and the TFT
+  connector (which moved 5.5 mm south for it, its slot 2.5 mm), the male (C5126845) on
+  the pack board through a window in the back; their own magnets hold the pack.
+  `board/wallet.kicad_pcb` is v4 since 2026-10-28 (v3 is in git history before it):
+  routed, DRC clean. Never place anything on the back's touch-tail lane (x 36.5-43.5)
+  or the TFT tail's: they are cables, invisible to part checks. `enclosure/generate.py`
+  puts the male over the board's J_PACK and takes the pack clips' models from
+  `enclosure/pack_clips.kicad_pcb` (`PACK_*`/`CONN_*`).
   Everything lands on `main` (owner: no review branches). The pack board is `pack/`
   (`pack/makePack.py` builds it). Page `docs/v4/`, published at /v4/, linked from nowhere;
   `enclosure/generate.py` and `enclosure/render_hero.sh` write to it. The joystick's

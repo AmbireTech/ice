@@ -3,20 +3,21 @@ import { W_PWR, W_PWR_LITE } from "../widths"
 const S = "Power"
 
 /**
- * Power tree. One AAA cell of any common chemistry in clips on the front face,
- * a boost that runs from all of them, and USB that powers the board and charges
- * a cell only once the MCU has qualified it as NiMH.
+ * Power tree. Two AAA cells in series, of any common chemistry, in a pack on the
+ * back that a magnetic pogo pair connects (docs/pack.md); a boost that runs from
+ * all of them, and USB that powers the board and charges the pack only once the
+ * MCU has qualified both cells as NiMH.
  *
  *   USB-C VBUS -> TLV62569P buck -> V3V3_USB --VIN1--+
- *                                       |  PG -> PR1  | TPS2116 (USB first) -> V3V3
- *                                       \-> BQ25172 --+-> BAT (NiMH only, MCU-gated)
- *   AAA: BAT -> LTC3539-2 boost, SHDN = soft latch -> V_BOOST --VIN2--+
- *        BAT_N -> AO3416 (reverse-cell blocker) -> GND
- *   cell voltage at both clips and the charger's NTC (TS) -> MCU ADC
+ *          |                            PG -> PR1    | TPS2116 (USB first) -> V3V3
+ *          \-> BQ25172 (2 cells) ---------------------+-> BAT (NiMH only, MCU-gated)
+ *   pack: BAT -> LTC3539-2 boost, SHDN = soft latch -> V_BOOST --VIN2--+
+ *         BAT_N -> AO3416 (reverse-cell blocker) -> GND
+ *   the pack's plus, minus and mid-point, and its NTC (TS) -> MCU ADC
  *
  * The backlight pump and everything else run from V3V3; there is no battery
  * gauge (a Li-ion gauge cannot read a NiMH or alkaline cell): firmware reads the
- * cell's voltage and temperature itself.
+ * cells' voltages and the pack's temperature itself.
  */
 export const PowerBlock = () => (
   <group>
@@ -150,20 +151,22 @@ export const PowerBlock = () => (
     <trace from=".C_3V3 > .pin1" to="net.V3V3" width={W_PWR} />
     <trace from=".C_3V3 > .pin2" to="net.GND" width={W_PWR} />
 
-    {/* ---------------- The cell: one AAA in two clips on the front face ---------------- */}
-    {/* MYOUNG MY-AAA-19-J (spring, -) and MY-AAA-20-J (leaf, +): SMT clips that grip
-        the cell body, on the board's otherwise empty front face across the chin. The
-        cell may be NiMH (1.0-1.45 V), alkaline or lithium (Li-FeS2) primary (0.9-1.8 V),
-        or a 10440 Li-ion (2.5-4.2 V): the boost runs from all of them, the charger only
-        ever charges a cell the MCU has qualified as NiMH. */}
-    <chip name="BT_N" footprint="pinrow1" pinLabels={{ pin1: "C" }}
-      manufacturerPartNumber="MY-AAA-19-J" supplierPartNumbers={{ jlcpcb: ["C6937104"] }}
+    {/* ---------------- The pack: two AAA in series, on the back ---------------- */}
+    {/* Xinyangze YZ103915020T-04025-02 (C6276862): 4-pin SMT magnetic pogo receptacle on
+        the back, east of the MCU; the pack's magnetic male (pack/) lands on it and their
+        magnets hold the pack. Contacts north to south: the pack's plus, its mid-point,
+        its thermistor, its minus. Each cell may be NiMH (1.0-1.45 V) or an alkaline or
+        lithium (Li-FeS2) primary (0.9-1.8 V): the pack is 1.8-3.6 V; the boost runs
+        from all of them, the charger only ever charges a pack whose two cells the MCU
+        has qualified as NiMH. */}
+    <chip name="J_PACK" footprint="pinrow4"
+      pinLabels={{ pin1: "BAT_P", pin2: "MID", pin3: "NTC", pin4: "BAT_M" }}
+      manufacturerPartNumber="YZ103915020T-04025-02" supplierPartNumbers={{ jlcpcb: ["C6276862"] }}
       schX={-20} schY={4} schSectionName={S} />
-    <chip name="BT_P" footprint="pinrow1" pinLabels={{ pin1: "C" }}
-      manufacturerPartNumber="MY-AAA-20-J" supplierPartNumbers={{ jlcpcb: ["C6937107"] }}
-      schX={-20} schY={6} schSectionName={S} />
-    <trace from=".BT_P > .C" to="net.BAT" width={W_PWR} />
-    <trace from=".BT_N > .C" to="net.BAT_N" width={W_PWR} />
+    <trace from=".J_PACK > .BAT_P" to="net.BAT" width={W_PWR} />
+    <trace from=".J_PACK > .BAT_M" to="net.BAT_N" width={W_PWR} />
+    <trace from=".J_PACK > .MID" to="net.CELL_MID" />
+    <trace from=".J_PACK > .NTC" to="net.CHG_TS" />
     {/* Reverse cell: nothing stops a cell going in backwards, and the boost's VIN is
         rated to -0.3 V, so a reversed AAA would discharge through its internal diodes.
         AO3416 in the cell's low side: its body diode conducts a correctly inserted cell
@@ -197,11 +200,11 @@ export const PowerBlock = () => (
     <trace from=".D_REVG > .K" to="net.REV_G" />
     <trace from=".D_REVG > .NC" to="net.NC_REVG" />
 
-    {/* Cell voltage at the + clip (route its own trace from the clip pad: no load
-        current in it) and at the - clip, so firmware reads the cell itself, not the
-        reverse FET: 1M/1M halves the + side (a 10440 reads 2.1 V); 100k into the -
-        side limits what a reversed cell can push into the pin. 100 nF each: the ADC
-        sees a stiff source. Always on: 0.6 uA. */}
+    {/* The pack's voltage at the receptacle's + contact (route its own trace from the
+        pad: no load current in it) and at its - contact, so firmware reads the cells
+        themselves, not the reverse FET: 1M/1M halves the + side (two lithium cells, 3.6 V,
+        read 1.8 V); 100k into the - side limits what a reversed pack can push into the
+        pin. 100 nF each: the ADC sees a stiff source. Always on: 0.9 uA. */}
     <resistor name="R_CS1" resistance="1M" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C26083"] }}
       schX={-14} schY={0} schRotation="90deg" schSectionName={S} />
     <resistor name="R_CS2" resistance="1M" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C26083"] }}
@@ -222,6 +225,22 @@ export const PowerBlock = () => (
       schX={-11} schY={-2} schRotation="90deg" schSectionName={S} />
     <trace from=".C_CNS > .pin1" to="net.CELL_N_SENSE" />
     <trace from=".C_CNS > .pin2" to="net.GND" />
+    {/* The mid-point between the two cells, halved the same way, so firmware reads each
+        cell on its own (mid - minus, plus - mid). It draws 0.4-0.9 uA from the minus
+        cell only. With a cell in backwards the mid-point can sit below GND: 1M limits
+        what flows out of the pin's clamp to under 1 uA. */}
+    <resistor name="R_MS1" resistance="1M" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C26083"] }}
+      schX={-10} schY={-6} schRotation="90deg" schSectionName={S} />
+    <resistor name="R_MS2" resistance="1M" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C26083"] }}
+      schX={-10} schY={-8} schRotation="90deg" schSectionName={S} />
+    <trace from=".R_MS1 > .pin1" to="net.CELL_MID" />
+    <trace from=".R_MS1 > .pin2" to="net.CELL_MID_SENSE" />
+    <trace from=".R_MS2 > .pin1" to="net.CELL_MID_SENSE" />
+    <trace from=".R_MS2 > .pin2" to="net.GND" />
+    <capacitor name="C_MS" capacitance="100nF" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C1525"] }}
+      schX={-9} schY={-8} schRotation="90deg" schSectionName={S} />
+    <trace from=".C_MS > .pin1" to="net.CELL_MID_SENSE" />
+    <trace from=".C_MS > .pin2" to="net.GND" />
 
     {/* ---------------- Cell boost (LTC3539-2) ---------------- */}
     {/* LTC3539-2, DCB8 (datasheet Pin Functions): 1 SW, 2 PGND, 3 GND, 4 VIN, 5 SHDN,
@@ -359,26 +378,31 @@ export const PowerBlock = () => (
 
     {/* ---------------- NiMH charger (BQ25172) ---------------- */}
     {/* BQ25172DSG, WSON-8 2x2 (SLUSDY5 Table 5-1): 1 IN, 2 ISET, 3 TS, 4 GND, 5 STAT,
-        6 TMR, 7 VSET, 8 OUT, EP = GND. Constant current only, ends on its safety timer or
-        when the cell passes VOUT_OVP (1.65-1.75 V): a Li-ion or lithium primary cell is
-        never charged, by construction. Fed from the USB 3.3 V rail, not from VBUS: at
-        250 mA it dissipates (3.3 - 1.4) x 0.25 = 0.48 W instead of 0.9 W.
-        The MCU decides whether a cell is NiMH (resting voltage, internal resistance
-        from an 83 -> 250 mA step, a timed trial) and terminates on the cell's own signs
-        (zero/negative dV, dT/dt from the TS node); the IC is the hardware backstop:
+        6 TMR, 7 VSET, 8 OUT, EP = GND. Set for two NiMH cells (VSET). Constant current
+        only, ends on its safety timer or when the pack passes VOUT_OVP (1.65-1.75 V a
+        cell, 3.3-3.5 V): lithium primary cells are never charged, by construction. Fed
+        from VBUS: a full two-cell pack (2.9-3.0 V) leaves too little headroom under the
+        3.3 V rail for the charge path (0.21-0.36 V at 250 mA, plus 95-175 mV to leave
+        sleep). From 5 V it burns about (5 - 2.4) x 0.25 = 0.65 W at the start of a
+        charge; it regulates its own die at 125 C (200 mA is the fallback if it runs hot).
+        The MCU decides whether both cells are NiMH and match (resting voltages, internal
+        resistance from an 83 -> 250 mA step, a timed trial) and terminates on the pack's
+        own signs (zero/negative dV, dT/dt from the TS node); the IC is the hardware backstop:
           - TS held low by Q_CHG's FET B (gate pulled up) = charging OFF by default, and off
             again whenever the MCU is in reset or unpowered; the MCU enables it by
             driving CHG_OFF low;
-          - TS's own NTC on the cell: suspends outside 0-45 C;
+          - TS's NTC in the pack: suspends outside 0-45 C; with the pack off TS floats to
+            its 2.3-2.9 V clamp, which reads as too cold: no charging, by construction;
           - TMR 36k: 4 h, ~125 % of an 800 mAh cell at 250 mA (a 0.1 C charge restarts
             it by toggling TS: NiMH takes 0.1 C overcharge);
-          - the IC will not start on a cell resting above ~1.33 V (VRECHG). */}
+          - the IC will not start on a pack resting above its recharge threshold (VRECHG,
+            ~1.33 V a cell). */}
     <chip name="U1" footprint="pinrow9"
       pinLabels={{ pin1: "IN", pin2: "ISET", pin3: "TS", pin4: "GND", pin5: "STAT", pin6: "TMR", pin7: "VSET",
         pin8: "OUT", pin9: "EP" }}
       manufacturerPartNumber="BQ25172DSGR" supplierPartNumbers={{ jlcpcb: ["C5189434"] }}
       schX={-8} schY={2} schSectionName={S} />
-    <trace from=".U1 > .IN" to="net.V3V3_USB" width={W_PWR_LITE} />
+    <trace from=".U1 > .IN" to="net.VBUS" width={W_PWR_LITE} />
     <trace from=".U1 > .OUT" to="net.BAT" width={W_PWR_LITE} />
     <trace from=".U1 > .GND" to="net.GND" />
     <trace from=".U1 > .EP" to="net.GND" />
@@ -390,7 +414,7 @@ export const PowerBlock = () => (
     {/* IN and OUT >= 1 uF each, close to the IC. */}
     <capacitor name="C_CHGIN" capacitance="1uF" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C52923"] }}
       schX={-10} schY={4} schRotation="90deg" schSectionName={S} />
-    <trace from=".C_CHGIN > .pin1" to="net.V3V3_USB" />
+    <trace from=".C_CHGIN > .pin1" to="net.VBUS" />
     <trace from=".C_CHGIN > .pin2" to="net.GND" />
     <capacitor name="C_BAT" capacitance="10uF" footprint="0805" supplierPartNumbers={{ jlcpcb: ["C15850"] }}
       schX={-10} schY={0} schRotation="90deg" schSectionName={S} />
@@ -423,30 +447,30 @@ export const PowerBlock = () => (
       schX={-3} schY={-2} schRotation="90deg" schSectionName={S} />
     <trace from=".R_CHGHI > .pin1" to="net.CHG_HI" />
     <trace from=".R_CHGHI > .pin2" to="net.GND" />
-    {/* TS: 10k NTC (B 3380) on the back under the cell; ITS 38 uA trips at ~0 and ~45 C.
-        The MCU reads the same node (CHG_TS, an ADC pin in analog mode: high impedance, so
-        the charger's own limits are untouched) for its dT/dt termination: while charging,
-        the 38 uA bias makes V_TS = 38 uA x R_NTC. */}
-    <resistor name="RT_CHG" resistance="10k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C77131"] }}
-      schX={-7} schY={-2} schRotation="90deg" schSectionName={S} />
-    <trace from=".RT_CHG > .pin1" to="net.CHG_TS" />
-    <trace from=".RT_CHG > .pin2" to="net.GND" />
+    {/* TS: the pack's 10k NTC (B 3380), between its NTC contact and its minus; ITS 38 uA
+        trips at ~0 and ~45 C. The MCU reads the same node (CHG_TS, an ADC pin in analog
+        mode: high impedance, so the charger's own limits are untouched) for its dT/dt
+        termination: while charging, the 38 uA bias makes V_TS = 38 uA x R_NTC. An open
+        TS line tells firmware the pack is off. */}
     <trace from=".Q_CHG > .D_B" to="net.CHG_TS" />
     <trace from=".Q_CHG > .S_B" to="net.GND" />
     <trace from=".Q_CHG > .G_B" to="net.CHG_OFF" />
     <resistor name="R_CHGOFF" resistance="100k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C25741"] }}
       schX={-9} schY={-4} schRotation="90deg" schSectionName={S} />
     <trace from=".R_CHGOFF > .pin1" to="net.CHG_OFF" />
-    {/* to the charger's own input, not V3V3: the hold is on whenever the charger has
-        power, also in the window after a USB plug-in before V3V3 comes up. PB0 is an FT
-        pin, so 3.3 V through 100k into an unpowered MCU is within its rating. */}
+    {/* to the USB 3.3 V rail, not V3V3: the hold is on as soon as the buck starts, also
+        before V3V3 comes up. Not VBUS, though the charger runs from it: PB0 is an FT pin,
+        rated VDD + 4 V, so 5 V through 100k into an unpowered MCU is outside it; 3.3 V
+        is within it. The cost: from plug-in until the buck's output rises (ms), TS is
+        not held, and the charger could start at its 83 mA base current. */}
     <trace from=".R_CHGOFF > .pin2" to="net.V3V3_USB" />
     {/* 1 % parts (SLUSDY5: +-1 %, <= 200 ppm/C). */}
     <resistor name="R_TMR" resistance="36k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C43676"] }}
       schX={-11} schY={-4} schRotation="90deg" schSectionName={S} />
     <trace from=".R_TMR > .pin1" to="net.CHG_TMR" />
     <trace from=".R_TMR > .pin2" to="net.GND" />
-    <resistor name="R_VSET" resistance="62k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C37825"] }}
+    {/* 36k: two cells (SLUSDY5's VSET table). */}
+    <resistor name="R_VSET" resistance="36k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C43676"] }}
       schX={-12} schY={-4} schRotation="90deg" schSectionName={S} />
     <trace from=".R_VSET > .pin1" to="net.CHG_VSET" />
     <trace from=".R_VSET > .pin2" to="net.GND" />

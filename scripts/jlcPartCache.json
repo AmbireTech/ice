@@ -3187,6 +3187,38 @@
   "package": "SOT-23-8",
   "stock": 239
  },
+ "C6276862": {
+  "describe": "-40\u2103~+85\u2103 10000 times 2.54mm 2mm 4P 50m\u03a9 Brass Gold Magnetic Spring Pogo Pin Receptacle - Pogo Pin Spring Probe Connector ROHS",
+  "land": {
+   "pads": 4,
+   "pitch": 2.54,
+   "sizes": [
+    [
+     2.3,
+     2.3
+    ],
+    [
+     2.3,
+     2.3
+    ],
+    [
+     2.3,
+     2.3
+    ],
+    [
+     2.3,
+     2.3
+    ]
+   ],
+   "span": [
+    0.0,
+    7.62
+   ]
+  },
+  "model": "YZ103915020T-04025-02",
+  "package": "-",
+  "stock": 125
+ },
  "C6296715": {
   "describe": "-20\u2103~+85\u2103 1.42mm 125V Connector and Ejector Hinged Lid Nano-SIM Card SMD SIM Card Connectors ROHS",
   "land": {

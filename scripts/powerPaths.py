@@ -31,21 +31,21 @@ VIA_MM = 5.0
 
 # (name, net, sources, sinks, amps, why); sources/sinks are REF.PAD, or REF for every pad of the net
 PATHS = [
-    ("cell + to boost inductor", "BAT", ["BT_P"], ["L_BOOST.1"], 1.2,
-     "full use 0.64 W / 85 % at a 0.9-1.0 V cell (docs/power-aaa.md: ~1.2 A)"),
-    ("cell + to boost input cap", "BAT", ["BT_P"], ["C_IN_BOOST.1"], 1.2, "the inductor's ripple and start-up"),
-    ("charger to cell +", "BAT", ["U1.8"], ["BT_P"], 0.25, "fast charge, 0.3 C (ISET 3.6 k || 1.8 k = 1.2 k)"),
-    ("cell - to reverse FET", "BAT_N", ["BT_N"], ["Q_REV.3"], 1.2, "the cell's whole current, charge and discharge"),
-    ("boost switch node", "SW_BOOST", ["L_BOOST.2"], ["U2.1"], 1.25, "inductor RMS at 1.2 A in (2 A switch peak)"),
+    ("pack + to boost inductor", "BAT", ["J_PACK.1"], ["L_BOOST.1"], 0.6,
+     "full use 0.64 W / 85 % at a 1.8-2.0 V two-cell pack: half the one-cell ~1.2 A (docs/power-aaa.md)"),
+    ("pack + to boost input cap", "BAT", ["J_PACK.1"], ["C_IN_BOOST.1"], 0.6, "the inductor's ripple and start-up"),
+    ("charger to pack +", "BAT", ["U1.8"], ["J_PACK.1"], 0.25, "fast charge, 0.3 C (ISET 3.6 k || 1.8 k = 1.2 k)"),
+    ("pack - to reverse FET", "BAT_N", ["J_PACK.4"], ["Q_REV.3"], 0.6, "the pack's whole current, charge and discharge"),
+    ("boost switch node", "SW_BOOST", ["L_BOOST.2"], ["U2.1"], 0.65, "inductor RMS at 0.6 A in from two cells (2 A switch peak)"),
     ("boost output to mux", "V_BOOST", ["U2.7", "U2.8"], ["U10.6"], 0.2, "0.64 W at 3.3 V"),
     ("USB-C to buck", "VBUS", ["J1"], ["U3.1", "U3.4"], 0.5, "buck input: 1.5 W out / 90 % at 5 V = 0.33 A, margin"),
     ("buck switch node", "SW_USB", ["U3.3"], ["L_BUCK.1"], 0.6, "0.45 A out plus ripple"),
     ("buck output to mux", "V3V3_USB", ["L_BUCK.2"], ["U10.3", "U10.5"], 0.25, "system load on USB, 0.2 A"),
-    ("buck output to charger", "V3V3_USB", ["L_BUCK.2"], ["U1.1"], 0.25, "charge current is the charger's input current"),
+    ("USB-C to charger", "VBUS", ["J1"], ["U1.1"], 0.25, "charge current is the charger's input current (from VBUS since v4)"),
 ]
 # pads whose return current must reach the GND planes, and how much
-GND_SINKS = [("Q_REV.2", 1.2, "the cell's return"), ("C_IN_BOOST.2", 1.2, "boost input loop"),
-             ("U2.2", 1.25, "boost power ground"), ("U2.9", 1.25, "boost exposed pad"),
+GND_SINKS = [("Q_REV.2", 0.6, "the pack's return"), ("C_IN_BOOST.2", 0.6, "boost input loop"),
+             ("U2.2", 0.65, "boost power ground"), ("U2.9", 0.65, "boost exposed pad"),
              ("U1.4", 0.25, "charger ground"), ("U1.9", 0.25, "charger exposed pad (heat too)"),
              ("U3.2", 0.5, "buck ground"), ("C_USB3V3.2", 0.45, "buck output cap")]
 

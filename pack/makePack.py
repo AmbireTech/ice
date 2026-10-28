@@ -46,64 +46,65 @@ CLIP_X = (5.5, 42.5)                      # the clips' base centres, west and ea
 # The clips' steel lying on this board (each foot: a body along the clip, a short tab across
 # it that the arms rise from), as the case reads it from their models: x0, y0, x1, y1.
 CLIP_STEEL = [tuple(r) for r in _PACK["clipSteel"]]
-# The connector, where the case puts it (over the device's receptacle, east): its pin
-# column passes between the east clips, east of their tabs, whose cells the case spaces
-# for it. Its joints on the inner face (flat: the tails end in the board) must clear that
-# steel (check_pins_clear_clips).
+# The connector, where the case puts it: over the device's receptacle, long axis east-west
+# along the south cell, its tab north. Its pins stand in a row under the cell's south
+# flank, clear of the clips (they hold the cells' ends). Its joints on the inner face (flat:
+# the tails end in the board) must clear the clips' steel (check_pins_clear_clips).
 _MALE = _PACK["male"]["outline"]
 CONN_X, CONN_Y = round((_MALE[0] + _MALE[2]) / 2, 3), round((_MALE[1] + _MALE[3]) / 2, 3)
-CONN_ROT = 270                            # long axis north-south, tab west
+CONN_ROT = 180                            # long axis east-west, tab north
 CONN_PAD = 1.5                            # the land's pad (see the footprint)
 JOINT_CLR = 0.3                           # a joint's pad to a clip's steel, at least
 PITCH = 2.5
-PIN_NETS = ["BAT+", "MID_SENSE", "NTC", "BAT-"]   # north to south: the one place the pin order lives
-PIN_YS = [round(CONN_Y + (i - 1.5) * PITCH, 3) for i in range(4)]
-PIN = dict(zip(PIN_NETS, PIN_YS))
+PIN_NETS = ["BAT-", "NTC", "MID_SENSE", "BAT+"]   # west to east: the one place the pin order lives
+PIN_XS = [round(CONN_X + (i - 1.5) * PITCH, 3) for i in range(4)]
+PIN = dict(zip(PIN_NETS, PIN_XS))
 
 # ── parts ───────────────────────────────────────────────────────────────────
 # (ref, library, footprint, value, LCSC, mpn, at, rotation, (west/north pad's net, east/south pad's net))
-# All in the strip between the cans, where nothing stands over them (the case checks it,
-# PACK_SMALL), west of the east clips' courtyards: the fuse along the strip, the resistor
-# and the thermistor on their pins' lines.
+# In the strip south of the south cell's can, where nothing stands over them (the case
+# checks it, PACK_SMALL), each straddling its pin's line: the thermistor between BAT- and
+# NTC, the resistor at MID, the fuse east of BAT+.
+_SY = round(CONN_Y + 2.5, 3)              # the strip's centre line
 SMALL = [
     ("F_BAT", f"{KICAD_FP}/Fuse.pretty", "Fuse_1206_3216Metric", "0.75A hold", "C976305", "BSMD1206-075-30V",
-     (32.6, CONN_Y), 90, ("BAT+", "CELL+")),
+     (round(CONN_X + 6.5, 3), _SY), 0, ("BAT+", "CELL+")),
     ("R_MID", f"{KICAD_FP}/Resistor_SMD.pretty", "R_0402_1005Metric", "1k", "C11702", "0402WGF1001TCE",
-     (36.2, PIN["MID_SENSE"]), 0, ("MID", "MID_SENSE")),
+     (CONN_X, _SY), 0, ("MID", "MID_SENSE")),
     ("RT_PACK", f"{KICAD_FP}/Resistor_SMD.pretty", "R_0603_1608Metric", "10k NTC B3380", "C13564", "NCP18XH103F03RB",
-     (35.6, PIN["NTC"]), 0, ("BAT-", "NTC")),
+     (round(CONN_X - 2.5, 3), _SY), 0, ("BAT-", "NTC")),
 ]
 CONN = ("J_PACK", os.path.join(HERE, "pack.pretty"), "Xinyangze_YZP0048-20048-04025-03", "YZP0048-20048-04025-03",
         "C5126845", "YZP0048-20048-04025-03")
 CLIPS = {"BT_N": ("C6937104", "MY-AAA-19-J"), "BT_P": ("C6937107", "MY-AAA-20-J")}
 
 W_PWR, W_SIG = 0.8, 0.25
-W_FAN = 0.4                # a power pad's fanout to its plane via: thick, capped at the pad's narrow side
+W_FAN = 0.4                # a power pad's fanout: thick, capped at the pad's narrow side
 VIA = (0.6, 0.3)
 
 # ── copper, by hand: (net, layer, width, points) and (net, x, y) vias ───────
-# A straight run from the resistor and the thermistor to their pins; BAT+ from the fuse's
-# north end to its pin, outside the north clip's tab, and CELL+ from its south end to the
-# south-east clip; the mid-point crosses from the west clips on the outer face, under the
-# connector's tab; BAT- reaches the outer face's pour.
+# From each small part up to its pin; CELL+ from the fuse's east end to the south-east
+# clip; the mid-point from the south-west clip on the outer face, under the connector's
+# body, to the resistor; BAT- reaches the outer face's pour (the BAT- pin's joint is in it).
 _cn, _cs = CELL_YS
 _fx, _rx, _tx = (p[6][0] for p in SMALL)          # the fuse's, the resistor's, the thermistor's x
-_bp = PIN["BAT+"] + 0.65                            # BAT+'s run west of its pin: 0.3 mm off the north clip's tab
+_up = lambda x0, x1: [(x0, _SY), (x1, _SY - abs(x1 - x0)), (x1, CONN_Y)]   # 45 deg off the pad, then up to the pin
+_mv = round(CONN_Y + 1.67, 3)                        # MID's crossing on the outer face, between the joints and the strip
 TRACKS = [
-    ("BAT+", "B", W_PWR, [(_fx, CONN_Y - 1.4), (_fx, _bp), (CONN_X - 0.65, _bp), (CONN_X, PIN["BAT+"])]),
-    ("MID_SENSE", "B", W_SIG, [(_rx + 0.51, PIN["MID_SENSE"]), (CONN_X, PIN["MID_SENSE"])]),
-    ("NTC", "B", W_SIG, [(_tx + 0.825, PIN["NTC"]), (CONN_X, PIN["NTC"])]),
-    ("BAT-", "B", W_FAN, [(_tx - 0.825, PIN["NTC"]), (_tx - 0.825, PIN["NTC"] + 1.2)]),   # a power fanout into the pour
-    ("CELL+", "B", W_PWR, [(_fx, CONN_Y + 1.4), (_fx, _cs - 2.0), (38.6, _cs - 2.0)]),   # to the south-east clip's pad
+    ("BAT+", "B", W_PWR, _up(_fx - 1.4, PIN["BAT+"])),
+    ("MID_SENSE", "B", W_SIG, _up(_rx + 0.51, PIN["MID_SENSE"])),
+    ("NTC", "B", W_SIG, _up(_tx + 0.825, PIN["NTC"])),
+    ("BAT-", "B", W_FAN, _up(_tx - 0.825, PIN["BAT-"])),
+    ("CELL+", "B", W_PWR, [(_fx + 1.4, _SY), (34.5, _SY), (38.6, _SY - 4.1)]),   # into the south-east clip's pad
     ("BAT-", "B", W_PWR, [(40.0, _cn - 2.0), (40.0, _cn - 3.8)]),    # north cell - -> vias into the pour, north
-    ("BAT-", "B", W_PWR, [(45.0, _cn - 2.0), (45.0, _cn - 3.8)]),    # of its clip (the pins' column is south)
+    ("BAT-", "B", W_PWR, [(45.0, _cn - 2.0), (45.0, _cn - 3.8)]),    # of its clip
     ("MID", "B", 1.0, [(2.2, _cn + 2.0), (2.2, _cs - 2.0)]),         # the cells' link, west
-    ("MID", "B", 0.4, [(2.2, PIN["MID_SENSE"]), (5.0, PIN["MID_SENSE"])]),
-    ("MID", "F", 0.4, [(5.0, PIN["MID_SENSE"]), (_rx - 1.4, PIN["MID_SENSE"])]),
-    ("MID", "B", 0.4, [(_rx - 1.4, PIN["MID_SENSE"]), (_rx - 0.51, PIN["MID_SENSE"])]),
+    ("MID", "B", 0.4, [(5.5, _cs + 2.0), (5.5, _mv)]),                # down from the south-west clip's pad
+    ("MID", "F", 0.4, [(5.5, _mv), (_rx - 0.51, _mv)]),               # east under the connector's body
 ]
-VIAS = [("BAT-", _tx - 0.825, PIN["NTC"] + 1.2), ("BAT-", 40.0, _cn - 3.8), ("BAT-", 45.0, _cn - 3.8),
-        ("MID", 5.0, PIN["MID_SENSE"]), ("MID", _rx - 1.4, PIN["MID_SENSE"])]
+VIAS = [("BAT-", 40.0, _cn - 3.8), ("BAT-", 45.0, _cn - 3.8), ("MID", 5.5, _mv), ("MID", _rx - 0.51, _mv)]
+# the resistor's MID pad sits straight under its via
+TRACKS.append(("MID", "B", 0.4, [(_rx - 0.51, _mv), (_rx - 0.51, _SY)]))
 
 LAYERS = """	(layers
 		(0 "F.Cu" signal)
@@ -208,11 +209,11 @@ def check_pins_clear_clips():
     (CLIP_STEEL). Returns the least clearance."""
     least = 99.0
     for x0, y0, x1, y1 in CLIP_STEEL:
-        for net, y in PIN.items():
-            d = ((max(x0 - CONN_X, 0, CONN_X - x1)) ** 2 + (max(y0 - y, 0, y - y1)) ** 2) ** 0.5 - CONN_PAD / 2
+        for net, x in PIN.items():
+            d = ((max(x0 - x, 0, x - x1)) ** 2 + (max(y0 - CONN_Y, 0, CONN_Y - y1)) ** 2) ** 0.5 - CONN_PAD / 2
             least = min(least, d)
             if d < JOINT_CLR - 1e-6:
-                sys.exit(f"pin {net} at {CONN_X}, {y} is {d:.2f} mm from clip steel at {x0}..{x1}, {y0}..{y1}")
+                sys.exit(f"pin {net} at {x}, {CONN_Y} is {d:.2f} mm from clip steel at {x0}..{x1}, {y0}..{y1}")
     return least
 
 
@@ -252,14 +253,14 @@ def main():
     board.Add(c)
     c.SetPosition(pt(CONN_X, CONN_Y)); c.SetOrientationDegrees(CONN_ROT)
     silk = [g.GetBoundingBox() for g in c.GraphicalItems() if g.GetLayer() == pcbnew.F_SilkS]
-    tab_x = (min(b.GetLeft() for b in silk) + max(b.GetRight() for b in silk)) / 2e6   # the outline with its tab
-    if tab_x >= CONN_X:
-        sys.exit(f"the connector's tab does not point west (outline centre x {tab_x:.2f}): change CONN_ROT")
+    tab_y = (min(b.GetTop() for b in silk) + max(b.GetBottom() for b in silk)) / 2e6   # the outline with its tab
+    if tab_y >= CONN_Y:
+        sys.exit(f"the connector's tab does not point north (outline centre y {tab_y:.2f}): change CONN_ROT")
     for p in c.Pads():
-        y = round(p.GetPosition().y / 1e6, 3)
-        hit = [n for n, py in PIN.items() if abs(py - y) < 0.01]
-        if len(hit) != 1 or abs(p.GetPosition().x / 1e6 - CONN_X) > 0.01:
-            sys.exit(f"connector pad {p.GetNumber()} at {p.GetPosition().x/1e6:.3f}, {y} is not one of {PIN}")
+        x = round(p.GetPosition().x / 1e6, 3)
+        hit = [n for n, px in PIN.items() if abs(px - x) < 0.01]
+        if len(hit) != 1 or abs(p.GetPosition().y / 1e6 - CONN_Y) > 0.01:
+            sys.exit(f"connector pad {p.GetNumber()} at {x}, {p.GetPosition().y/1e6:.3f} is not one of {PIN}")
         p.SetNet(net(hit[0]))
 
     # the small parts on the inner face; nets by pad, west and east
@@ -302,9 +303,9 @@ def main():
         text(board, w_, 12.5, y, pcbnew.B_SilkS, 1.6, mirrored=True)
         text(board, e_, 35.5, y, pcbnew.B_SilkS, 1.6, mirrored=True)
         text(board, "AAA", 24.0, y, pcbnew.B_SilkS, 1.2, mirrored=True)
-    for n, py in PIN.items():
-        text(board, n.replace("_SENSE", ""), 27.6, py, pcbnew.F_SilkS, 0.8)
-    text(board, "AMBIRE ICE BATTERY PACK v4", 20.0, OUTLINE[3] - 2.2, pcbnew.F_SilkS, 0.9)
+    for n, px in PIN.items():                 # north of the connector's tab
+        text(board, n.replace("_SENSE", ""), px, _MALE[1] - 2.31 - 0.9, pcbnew.F_SilkS, 0.7)
+    text(board, "AMBIRE ICE BATTERY PACK v4", 24.0, OUTLINE[1] + 2.2, pcbnew.F_SilkS, 0.9)
 
     pcbnew.ZONE_FILLER(board).Fill(board.Zones())
     pcbnew.SaveBoard(OUT, board)

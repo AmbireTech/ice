@@ -94,6 +94,10 @@ if ant is None:
 else:
     ab = ant.GetBoundingBox()
     ax0, ay0, ax1, ay1 = (pcbnew.ToMM(v) for v in (ab.GetLeft(), ab.GetTop(), ab.GetRight(), ab.GetBottom()))
+has_cell = ant is not None and "BT_N" in fp and "BT_P" in fp    # v4: the cells are in a pack, off the board
+cell_front = False
+cy0 = None
+if has_cell:
     (nx, ny), (px, py) = centre(list(fp["BT_N"].Pads())), centre(list(fp["BT_P"].Pads()))
     expect(fp["BT_N"].GetLayer() == fp["BT_P"].GetLayer(), "the cell clips BT_N/BT_P must be on the same face")
     cell_front = fp["BT_N"].GetLayer() == pcbnew.F_Cu
@@ -116,8 +120,8 @@ import newBoard as nb  # noqa: E402
 
 # The tails' drop on the front: from the panel's south edge into the north half of
 # each slot. No front part's body (its fab outline) and not the cell may reach into it.
-drop_s = nb.SLOT_Y0 + nb.TAIL_BEND + nb.TAIL_CLR
-for name, (tx0, tw) in (("TFT tail", nb.TFT_TAIL), ("touch tail", nb.CTP_TAIL)):
+for name, (tx0, tw), dy in (("TFT tail", nb.TFT_TAIL, nb.TFT_SLOT_DY), ("touch tail", nb.CTP_TAIL, 0.0)):
+    drop_s = nb.SLOT_Y0 + dy + nb.TAIL_BEND + nb.TAIL_CLR
     x0, x1 = tx0 - nb.SLOT_MARGIN, tx0 + tw + nb.SLOT_MARGIN
     bodies = []
     for f in board.GetFootprints():
@@ -128,17 +132,17 @@ for name, (tx0, tw) in (("TFT tail", nb.TFT_TAIL), ("touch tail", nb.CTP_TAIL)):
             bodies.append((f.GetReference(), min(pcbnew.ToMM(b.GetLeft()) for b in fab),
                            min(pcbnew.ToMM(b.GetTop()) for b in fab), max(pcbnew.ToMM(b.GetRight()) for b in fab),
                            max(pcbnew.ToMM(b.GetBottom()) for b in fab)))
-    if ant is not None and cell_front:
+    if has_cell and cell_front:
         bodies.append(("the cell", cx0, cy0, cx1, cy1))
     for ref, bx0, by0, bx1, by1 in bodies:
         expect(not (bx0 < x1 and x0 < bx1 and by0 < drop_s and nb.PANEL_S < by1),
                f"{ref} (y {by0:.2f}..{by1:.2f}) stands in the {name}'s drop (y {nb.PANEL_S:.2f}..{drop_s:.2f}, "
                f"x {x0:.1f}..{x1:.1f})")
-print(f"tails' drop y {nb.PANEL_S:.2f}..{drop_s:.2f}: clear of the front parts and the cell (north edge {cy0:.2f})")
+print(f"tails' drop from y {nb.PANEL_S:.2f}: clear of the front parts" + (f" and the cell (north edge {cy0:.2f})" if has_cell else ""))
 
 # Parts under the cell, on the clips' face (newBoard.under_cell_room): the owner's
 # ladder row under the front cell (2026-10-23), the chin's back parts under the back one.
-if ant is not None:
+if has_cell:
     cell = nb.cell_geometry(board)
     under = []
     for f in board.GetFootprints():
@@ -159,7 +163,7 @@ for ref, end_y, row in (("J_TFT", nb.TFT_END_Y, nb.TFT_ROW), ("J_CTP", nb.CTP_EN
     slack = end_y - row_y      # positive: the tail end would sit south of the row
     if slack > 0.5:
         errors.append(f"{ref}: tail ends {slack:.1f} mm short of the contact row; move the connector south")
-    elif slack < -3.0:
+    elif slack < -3.0 - 1e-6:
         errors.append(f"{ref}: {-slack:.1f} mm of tail slack; move the connector north")
     else:
         print(f"{ref}: tail end within {abs(slack):.1f} mm of the contact row")
