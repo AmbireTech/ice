@@ -227,11 +227,11 @@ CONN_NETS = ("BAT+", "MID", "NTC", "BAT-")   # north to south
 CONN_X = 43.6
 CONN_CLR = 0.2        # the male's body in its window; the receptacle to the nearest part
 # The pack board's other parts on its inner face (x, y off the pack's centre; w, h,
-# height; label), where pack/pack.kicad_pcb (branch v4-pack-board) has them: a resettable
-# fuse in BAT+ between the cells, the thermistor (TS) and the mid-point sense line's
-# series resistor in the gap the west clips' arms leave.
-PACK_SMALL = [(1.2, 0.0, 3.2, 1.6, 0.85, "PTC 1206"), (-16.4, 0.513, 1.6, 0.8, 0.8, "NTC 0603"),
-              (-16.4, -0.777, 1.0, 0.5, 0.35, "R 0402")]
+# height; label), where pack/pack.kicad_pcb has them, each on its pin's line west of the
+# east clips' arms: a resettable fuse in BAT+, the mid-point sense line's series resistor,
+# the thermistor (TS).
+PACK_SMALL = [(10.5, -3.75, 3.2, 1.6, 0.85, "PTC 1206"), (12.0, -1.25, 1.0, 0.5, 0.35, "R 0402"),
+              (12.0, 1.25, 1.6, 0.8, 0.8, "NTC 0603")]
 
 # ── Back print ──────────────────────────────────────────────────────────────
 # The flame itself (facets, size, placement, gap) is art/flame.py, shared with the
