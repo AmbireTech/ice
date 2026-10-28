@@ -14,9 +14,9 @@ standing out across the bottom of the back (17.1 mm there, 17.7 mm under its opt
 slide-on cover), a joystick below the
 screen, a buzzer, and the flame on the back. Proto 1, the same with the cell on
 the front, was never ordered. **v4** (concept, 2026-10-28) takes the cells off
-the device: two AAA cells in a pack that snaps onto the back with magnets and
-four spring pins, a 10.7 mm device, 23 mm across the pack: [docs/pack.md](docs/pack.md).
-The board is not laid out for it yet. Why and
+the device: two AAA cells in a pack that snaps onto the back just below the
+camera, with magnets and a ready-made magnetic pogo connector, a 10.7 mm device,
+21.9 mm across the pack: [docs/pack.md](docs/pack.md). Its boards are on review branches. Why and
 how: [docs/power-aaa.md](docs/power-aaa.md). The firmware port has started on the
 fork (below), for proto 0.
 
@@ -36,8 +36,8 @@ and [KiCadRoutingTools](https://github.com/drandyhaas/KiCadRoutingTools).
   incumbents are built, why this architecture
 - [docs/power-aaa.md](docs/power-aaa.md) — one AAA cell: which cells, how long
   they last, charging only NiMH, the power parts
-- [docs/pack.md](docs/pack.md) — v4's battery pack: two AAA cells on magnets and
-  spring pins, what JLC can build, what changes on the board
+- [docs/pack.md](docs/pack.md) — v4's battery pack: two AAA cells on magnets and a
+  magnetic pogo connector, what JLC can build, what changes on the board
 - [docs/design.md](docs/design.md) — the board, block by block, the case, and
   the bring-up checks that need parts in hand
 - [docs/direction.md](docs/direction.md) — open hardware, starting from Trezor's

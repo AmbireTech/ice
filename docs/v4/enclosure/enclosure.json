@@ -47,7 +47,7 @@
   "floorIn": -4.195000016726553,
   "boardBack": -1.0,
   "split": 0.0,
-  "pack": -17.645000016726552,
+  "pack": -17.65,
   "panel": [
    0.3,
    4.43
@@ -70,82 +70,92 @@
  "pack": {
   "outline": [
    -1.6,
-   48.595,
+   18.877,
    49.6,
-   79.895
+   49.777
   ],
   "r": 4.0,
   "board": [
    0.0,
-   50.195,
+   20.277,
    48.0,
-   78.295
+   48.377
   ],
-  "boardT": 1.0,
+  "boardT": 0.8,
   "cells": {
    "x": [
     1.75,
     46.25
    ],
    "y": [
-    56.995,
-    71.495
+    27.077,
+    41.577
    ],
-   "z": -10.895,
+   "z": -12.4,
    "d": 10.5
   },
-  "pins": [
-   {
-    "net": "BAT+",
-    "x": 22.0,
-    "y": 62.245
-   },
-   {
-    "net": "MID",
-    "x": 26.0,
-    "y": 62.245
-   },
-   {
-    "net": "NTC",
-    "x": 22.0,
-    "y": 66.245
-   },
-   {
-    "net": "BAT-",
-    "x": 26.0,
-    "y": 66.245
-   }
-  ],
-  "pogo": {
-   "part": "BWCD-L4.0W2.0H1.0",
-   "lcsc": "C2826548",
-   "L": 4.0,
-   "barrel": 3.0,
-   "barrel_d": 1.5,
-   "flange_d": 2.0,
-   "flange_t": 0.5,
-   "plunger_d": 0.9,
-   "tip": -5.0
-  },
-  "magnets": [
-   [
-    14.5,
-    64.245
+  "receptacle": {
+   "part": "YZ103915020T-04025-02",
+   "lcsc": "C6276862",
+   "outline": [
+    39.75,
+    24.25,
+    47.45,
+    46.55
    ],
-   [
-    33.5,
-    64.245
+   "h": 2.0,
+   "contacts": [
+    {
+     "net": "BAT+",
+     "x": 43.6,
+     "y": 31.59
+    },
+    {
+     "net": "MID",
+     "x": 43.6,
+     "y": 34.13
+    },
+    {
+     "net": "NTC",
+     "x": 43.6,
+     "y": 36.67
+    },
+    {
+     "net": "BAT-",
+     "x": 43.6,
+     "y": 39.21
+    }
    ]
-  ],
-  "magnet": {
-   "d": 6.0,
-   "t": 2.0,
-   "device": -3.895
   },
+  "male": {
+   "part": "YZP0048-20048-04025-03",
+   "lcsc": "C5126845",
+   "outline": [
+    40.17,
+    24.8,
+    47.03,
+    46.0
+   ],
+   "tab": [
+    37.86,
+    32.885,
+    40.17,
+    37.915
+   ]
+  },
+  "toMove": [
+   "C_EN",
+   "D_OR",
+   "Q_BTN",
+   "R_BTN",
+   "R_BTNB",
+   "R_EN",
+   "R_HOLD"
+  ],
   "z": {
    "face": -5.395000016726553,
-   "recess": -4.295000016726553,
-   "bottom": -17.645000016726552
+   "boardTop": -6.1,
+   "bottom": -17.65
   }
  },
  "camera": [
@@ -159,7 +169,7 @@
   "shell": "enclosure/shell.json",
   "bezel": "enclosure/bezel.json",
   "tray": "enclosure/tray.json",
-  "door": "enclosure/door.json"
+  "joycap": "enclosure/joycap.json"
  },
  "board3d": "enclosure/board.json",
  "pack3d": "enclosure/pack.json",
@@ -244,7 +254,7 @@
    {
     "label": "Case and battery pack: 3MF, STL and STEP (zip)",
     "filename": "ambire-signer-case.zip",
-    "bytes": 612239,
+    "bytes": 615818,
     "part": "enclosure/files/ambire-signer-case.zip.b64.txt",
     "b64": true
    }
