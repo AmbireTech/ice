@@ -235,7 +235,7 @@ footer svg { width: 18px; height: 27px; color: var(--violet); }
           <a class="btn ghost" href="#configure" data-open-diy>Build it yourself</a>
         </div>
       </div>
-      <div class="hero-shot"><img src="brand/signer.webp" alt="Ambire Signer from the front in its see-through ice blue case: a flat front with the screen and the joystick" width="697" height="1046"></div>
+      <div class="hero-shot"><img src="brand/signer.webp" alt="Ambire Signer from the front in its see-through ice blue case: a flat front with the screen and the joystick" width="673" height="1046"></div>
     </div>
   </header>
 
@@ -299,7 +299,7 @@ footer svg { width: 18px; height: 27px; color: var(--violet); }
           <button type="button" class="tog onstage" id="explode" aria-pressed="false">Take apart</button>
           <button type="button" class="tog onstage" id="packTog" aria-pressed="true">Battery pack</button>
         </div>
-        <figcaption>Drag to turn it, or take it apart. The battery pack snaps onto the back with magnets; four spring pins in the back meet gold pads on the pack. The airgap switch is on the left edge, the joystick (its centre press is the power key) and USB-C at the bottom; the QR camera looks out through a window in the back. <span id="dims"></span></figcaption>
+        <figcaption>Drag to turn it, or take it apart. The battery pack snaps onto the back just below the camera, with magnets; its magnetic connector reaches through the back onto gold pads on the board. The airgap switch is on the left edge, the joystick (its centre press is the power key) and USB-C at the bottom; the QR camera looks out through a window in the back. <span id="dims"></span></figcaption>
       </figure>
 
       <div class="config">
@@ -347,7 +347,7 @@ footer svg { width: 18px; height: 27px; color: var(--violet); }
             <h3 class="dlh">Case and battery pack</h3>
             <div class="dl" id="diyCaseFiles"></div>
           </div>
-          <p class="note">The case and the battery pack's tray and door, to print at home. The pack also needs its own small board and four 6 × 2 mm disc magnets; its board comes with the v4 board.</p>
+          <p class="note">The case, the battery pack's tray and the joystick's cap, to print at home. The pack also needs its own small board and four disc magnets; its board comes with the v4 board.</p>
           <p class="note err" id="dlNote" hidden></p>
         </div>
       </div>
@@ -456,7 +456,7 @@ footer svg { width: 18px; height: 27px; color: var(--violet); }
         <h3>Built to be looked at</h3>
         <ul class="plain sub">
           <li>About the size of a credit card, and every part sits on the back, where the see-through case shows it.</li>
-          <li>The front is flat: the screen and the joystick, nothing standing out. The back is flat too, apart from the camera: two AAA cells, rechargeable or not, ride in a pack that snaps onto it with magnets.</li>
+          <li>The front is flat: the screen and a low joystick cap. The back is flat too, apart from the camera: two AAA cells, rechargeable or not, ride in a pack that snaps onto it just below the camera.</li>
           <li>Carefully designed and audited in-house: the board passes a full set of checks before every order.</li>
           <li>A factory assembles it. Only the screen and camera go in by hand. DIY friendly, fully open source.</li>
         </ul>
@@ -495,20 +495,21 @@ footer svg { width: 18px; height: 27px; color: var(--violet); }
     </div>
     <div class="status">
       <span class="badge">Concept</span>
-      <p><b>The cells move off the device.</b> Two AAA cells ride in a pack that snaps onto the back with magnets and connects through four spring pins. The device itself is 10.7 mm thick, flat front and back apart from the camera; with the pack on it is 23 mm across the pack. The board for this is not laid out yet: this page is the plan, built from the current board.</p>
+      <p><b>The cells move off the device.</b> Two AAA cells ride in a pack that snaps onto the back just below the camera, clear of its view, held by magnets and connected through a magnetic pogo connector. The device itself is 10.7 mm thick, flat front and back apart from the camera; with the pack on it is 21.9 mm across the pack, which is open underneath to stay as thin as two cells allow.</p>
       <h3>What changes from v3</h3>
       <ul class="plain">
         <li>Two AAA cells in series, in a pack, instead of one cell on the board: twice the energy.</li>
-        <li>The pack holds by two pairs of magnets with opposite poles, so it only goes on one way round, and sits in a shallow recess in the back, so it cannot slide.</li>
-        <li>Four gold spring pins in the back, recessed under its surface: the pack's plus and minus, the point between its two cells, and its temperature sensor.</li>
-        <li>The device is 0.8 mm thinner: USB-C no longer sets the depth of the back and stands into it.</li>
-        <li>The pack charges over USB in the device, NiMH only, each cell checked on its own.</li>
+        <li>The pack sits high on the back, under the camera, and its cells show underneath: no door, no extra thickness.</li>
+        <li>A ready-made magnetic pogo connector on the pack reaches through a window in the back and presses on gold pads on the board: the pack's plus and minus, the point between its two cells, and its temperature sensor.</li>
+        <li>Two pairs of magnets with opposite poles: the pack goes on one way round only.</li>
+        <li>The device is 0.8 mm thinner: USB-C no longer sets the depth of the back.</li>
+        <li>A printed cap on the joystick: an 8 mm dished pad in a countersunk well, which stops its tilt before the switch can be strained.</li>
       </ul>
       <h3>Next</h3>
       <ul class="plain">
-        <li>Lay out the board: the spring pins in place of the cell clips, the charger set for two cells.</li>
-        <li>The pack's own board: the clips, the gold pads, a fuse and a temperature sensor.</li>
-        <li>Print the case and the pack and check how firmly the magnets hold against the spring pins.</li>
+        <li>The board: gold pads for the connector in place of the cell clips, the charger set for two cells.</li>
+        <li>The pack's own board: the connector, the clips, a fuse and a temperature sensor.</li>
+        <li>Print the case and the pack and check how firmly the magnets hold against the connector's pins.</li>
       </ul>
     </div>
   </section>
@@ -565,7 +566,7 @@ const CASE = {
 // Take apart: the stack opens along Z, the front half lifts out above it with its inside
 // (bosses, screen fills, chin) facing the viewer, the screws back out of the shell.
 const EXPLODE = { bezel: [0, 104, -26], panel: [0, 0, 24], board: [0, 0, 0], shell: [0, 0, -20], screws: [0, 0, -44],
-  pack: [0, 0, -50], door: [0, 0, -68] };   // the pack drops away from the back, its door further
+  pack: [0, 0, -50] };   // the pack drops away from the back
 const APART_CENTRE = [0, 48, 0];   // the camera re-centres between the stack and the front half
 const APART_SOLIDITY = 0.45;
 const APART_ZOOM = 1.05;           // the camera backs off this much more while apart       // apart, the case is less see-through so its bosses and fills read
@@ -827,8 +828,8 @@ async function main() {
     return new THREE.Group().add(new THREE.Mesh(merged, caseMat));
   };
   await document.fonts.ready;
-  const [shell, bezel, tray, door, boardData, packData] = await Promise.all([loadPart(d.parts.shell), loadPart(d.parts.bezel),
-    loadPart(d.parts.tray), loadPart(d.parts.door), fetchJson(d.board3d), fetchJson(d.pack3d)]);
+  const [shell, bezel, tray, joycap, boardData, packData] = await Promise.all([loadPart(d.parts.shell), loadPart(d.parts.bezel),
+    loadPart(d.parts.tray), loadPart(d.parts.joycap), fetchJson(d.board3d), fetchJson(d.pack3d)]);
 
   // Each part sits in its own group: the take-apart animation moves the groups, never the meshes.
   const board = new THREE.Group().add(boardMesh(boardData, maskMat));
@@ -862,27 +863,25 @@ async function main() {
     shank.position.set(hx, -hy, sc.seat + sc.length / 2);
     screws.add(head, shank);
   }
-  // The battery pack: its board (the mask follows the print scheme), clips, cells and
-  // magnets, then the tray round them; the door is its own part. The device's spring
-  // pins stand on the board's back; its magnets sit in the shell.
+  // The battery pack: its board (the mask follows the print scheme), its magnetic
+  // connector, clips, cells and magnets, then the tray round them. The connector's pins
+  // press on gold pads on the device board's back; the device's magnets sit in the shell.
   const pk = d.pack;
   const gold = new THREE.MeshStandardMaterial({ color: 0xd8b25a, metalness: 1, roughness: 0.3 });
   const magnetMat = new THREE.MeshStandardMaterial({ color: 0xb9bcc4, metalness: 0.9, roughness: 0.35 });
   const pack = new THREE.Group().add(boardMesh(packData, maskMat), tray);
-  const po = pk.pogo;
   const rod = (r, z0, z1, x, y, mat) => {
-    const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, Math.abs(z1 - z0), 24), mat);
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, Math.abs(z1 - z0), 32), mat);
     m.rotation.x = Math.PI / 2;
     m.position.set(x, -y, (z0 + z1) / 2);
     return m;
   };
-  for (const { x, y } of pk.pins) {
-    board.add(rod(po.flange_d / 2, z.boardBack - po.flange_t, z.boardBack, x, y, gold),
-      rod(po.barrel_d / 2, z.boardBack - po.barrel, z.boardBack - po.flange_t, x, y, gold),
-      rod(po.plunger_d / 2, po.tip, z.boardBack - po.barrel, x, y, gold));
-  }
+  for (const { x, y } of pk.pads) board.add(rod(pk.padD / 2, z.boardBack - 0.04, z.boardBack, x, y, gold));
   for (const [x, y] of pk.magnets) shell.add(rod(pk.magnet.d / 2, pk.magnet.device, pk.magnet.device + pk.magnet.t, x, y, magnetMat));
-  const parts = { shell, bezel, panel, board, screws, pack, door };
+  // The joystick's printed cap rides on the stem, so it moves with the board; solid brand Volt.
+  joycap.children[0].material = new THREE.MeshPhysicalMaterial({ color: 0xd7ff00, roughness: 0.42, clearcoat: 0.35, clearcoatRoughness: 0.3 });
+  board.add(joycap);
+  const parts = { shell, bezel, panel, board, screws, pack };
   for (const p of Object.values(parts)) device.add(p);
   msg.hidden = true;
 
@@ -912,13 +911,11 @@ async function main() {
   // case
   let exploded = 0, target = 0;   // take-apart progress, 0 = assembled
   let caseTransmission = 1;
-  let packOn = true, caseNone = false;
+  let packOn = true;
   const setCase = (name) => {
     const none = name === "none";
-    caseNone = none;
     shell.visible = bezel.visible = screws.visible = !none;
-    tray.visible = !none;
-    door.visible = packOn && !none;
+    tray.visible = joycap.visible = !none;
     $("caseFiles").hidden = !none;
     if (!none) {
       const c = CASE[name];
@@ -954,7 +951,6 @@ async function main() {
   packBtn.addEventListener("click", () => {
     packOn = !packOn;
     pack.visible = packOn;
-    door.visible = packOn && !caseNone;
     packBtn.setAttribute("aria-pressed", String(packOn));
   });
 

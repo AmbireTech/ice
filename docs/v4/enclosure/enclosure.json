@@ -174,7 +174,8 @@
  "parts": {
   "shell": "enclosure/shell.json",
   "bezel": "enclosure/bezel.json",
-  "tray": "enclosure/tray.json"
+  "tray": "enclosure/tray.json",
+  "joycap": "enclosure/joycap.json"
  },
  "board3d": "enclosure/board.json",
  "pack3d": "enclosure/pack.json",
@@ -259,7 +260,7 @@
    {
     "label": "Case and battery pack: 3MF, STL and STEP (zip)",
     "filename": "ambire-signer-case.zip",
-    "bytes": 568616,
+    "bytes": 660846,
     "part": "enclosure/files/ambire-signer-case.zip.b64.txt",
     "b64": true
    }

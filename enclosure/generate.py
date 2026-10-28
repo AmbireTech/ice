@@ -102,15 +102,16 @@ OUT = HERE / "enclosure/out"
 WEB = HERE / "docs/v4/enclosure"   # v4 (the battery pack): the /v4/ page; docs/enclosure (proto 0), docs/v2 (proto 1, front cell) and docs/v3 (cell on the back) are frozen
 sys.path.insert(0, str(HERE / "art"))
 import flame as flame_art  # noqa: E402  (art/flame.py, shared with scripts/silkFlame.py)
+import joycap  # noqa: E402  (enclosure/joycap.py: the joystick's printed cap)
 KICAD_3D = os.environ.get("KICAD_3DMODEL_DIR", "/Applications/KiCad/KiCad.app/Contents/SharedSupport/3dmodels")
 
 # ── Stack in front of the board ─────────────────────────────────────────────
 FOAM_T = 0.3          # foam tape under the screen, on the board (newBoard.py budgets the tails with it)
-# The joystick (ALPS SKRHAAE010, 7.5 x 7.5 mm housing 2.23 mm tall, a 3 mm stem to
-# 5.08 mm: EasyEDA's model) on the front, below the cell: a pocket over its housing in
+# The joystick (ALPS SKRHAAE010, 7.5 x 7.5 mm housing 2.23 mm tall, its stem to 5.0 mm:
+# ALPS's drawing and 3d/SW_ALPS_SKRHAAE010.step agree; EasyEDA's model said 5.08) on the front, below the cell: a pocket over its housing in
 # the bezel's solid chin, and a hole wide enough for the stem to rock. The stem stops
 # just under the front face: a printed cap goes on it.
-JOY_REF, JOY_BODY, JOY_HOUSING_H, JOY_H, JOY_HOLE_D = "SW_JOY", 7.5, 2.23, 5.08, 6.0
+JOY_REF, JOY_BODY, JOY_HOUSING_H, JOY_H, JOY_HOLE_D = "SW_JOY", 7.5, 2.23, 5.0, 6.0
 JOY_CLR = 0.3        # around the housing, and over it
 # Other parts on the front (proto 1 put power parts there, in the chin): one pocket in
 # the bezel's chin covers them all, as deep as the tallest plus FRONT_CLR; FRONT_SKIN is
@@ -252,12 +253,14 @@ PRINT_SCHEMES = [
 
 CASE_README = """Ambire signer v4 case and battery pack
 
-case.3mf     the three parts laid out for printing: the shell on its back, the bezel face
-             down, the tray on its top face
+case.3mf     the four parts laid out for printing: the shell on its back, the bezel face
+             down, the tray on its top face, the joystick's cap on its sleeve
 shell.stl    back shell (standoffs, locating pins, the screw hole, the camera window, the
              shallow recess the pack's board sits in, the connector's window, two magnet pockets)
 bezel.stl    front bezel (the screen sits in it; the screw threads into its chin)
 tray.stl     the battery pack's frame: the pack's board sits in its top, the cells show underneath
+joycap.stl   the joystick's cap: print it standing on its sleeve, dish up; press it straight
+             onto the stem (a drop of glue if it comes loose)
 *.step       the same parts for CAD
 
 Assembly: stick the screen to the board's front face with 0.3 mm foam tape, its
@@ -993,8 +996,13 @@ def main():
             raise SystemExit("no room for the joystick's housing under the bezel's front skin")
         bezel -= box(*joy_box, z_split - 1, JOY_HOUSING_H + JOY_CLR)
         bezel -= Pos(joy["x"], -joy["y"], (z_split + z_top) / 2 + 0.5) * Cylinder(JOY_HOLE_D / 2, z_top - z_split + 2)
+        if JOY_HOLE_D != joycap.HOLE_D or JOY_H != joycap.STEM_TOP:
+            raise SystemExit("joycap.py's hole and stem must match JOY_HOLE_D and JOY_H")
+        bezel -= joycap.bezel_well(joy["x"], joy["y"], z_top)
+        joy_cap = joycap.joystick_cap(joy["x"], joy["y"], z_top)
+        report += joycap.cap_report(z_top)
         report.append(f"joystick at {joy['x']:.1f}, {joy['y']:.1f}: pocket {2 * h:.1f} mm square, a {JOY_HOLE_D} mm hole; "
-                      f"its stem stops {z_top - JOY_H:.2f} mm under the front face (a cap goes on it)")
+                      f"its stem stops {z_top - JOY_H:.2f} mm under the front face, under the printed cap")
     front = sorted(ref for ref, f in b["fps"].items()
                    if f["layer"] == "F.Cu" and not f["dnp"] and ref != JOY_REF
                    and not f["lib"].startswith(("TestPoint", "MountingHole")))
@@ -1066,11 +1074,11 @@ def main():
     # ── checks that the geometry, not prose, has to satisfy ──
     if win[0] < panel[0] or win[2] > panel[2] or win[1] < panel[1] or win[3] > panel[3]:
         raise SystemExit("display window is larger than the glass")
-    assert shell.is_valid and bezel.is_valid and tray.is_valid, "invalid solid"
+    assert shell.is_valid and bezel.is_valid and tray.is_valid and joy_cap.is_valid, "invalid solid"
 
     size = (out_o[2] - out_o[0], out_o[3] - out_o[1], z_top - z_floor_out)   # the device; the pack adds to it
-    print_3mf(shell, bezel, tray, OUT / "case.3mf")
-    for name, part in (("shell", shell), ("bezel", bezel), ("tray", tray)):
+    print_3mf(shell, bezel, tray, joy_cap, OUT / "case.3mf")
+    for name, part in (("shell", shell), ("bezel", bezel), ("tray", tray), ("joycap", joy_cap)):
         export_step(part, str(OUT / f"{name}.step"))
         export_stl(part, str(OUT / f"{name}.stl"), tolerance=MESH_TOL, angular_tolerance=0.2)
         glb = OUT / f"{name}.glb"
@@ -1113,7 +1121,8 @@ def main():
                  "z": {"face": z_face, "boardTop": z_pcb_top, "recess": z_recess, "bottom": z_pack}},
         "camera": cam,
         "depthDriver": driver,
-        "parts": {"shell": "enclosure/shell.json", "bezel": "enclosure/bezel.json", "tray": "enclosure/tray.json"},
+        "parts": {"shell": "enclosure/shell.json", "bezel": "enclosure/bezel.json", "tray": "enclosure/tray.json",
+                  "joycap": "enclosure/joycap.json"},
         "board3d": "enclosure/board.json",
         "pack3d": "enclosure/pack.json",
         "screws": {"length": screw, "d": 2.0, "head": [3.8, 1.6], "seat": seat,
@@ -1191,12 +1200,12 @@ def gltf_json(glb: Path, dest: Path):
     dest.write_text(json.dumps({"glb": base64.b64encode(glb.read_bytes()).decode()}))
 
 
-def print_3mf(shell, bezel, tray, dest: Path):
+def print_3mf(shell, bezel, tray, cap, dest: Path):
     """The parts laid out for printing in a row: the shell on its back, the bezel face
-    down, the tray on its top face."""
+    down, the tray on its top face, the joystick's cap standing on its sleeve."""
     m = Mesher()
     x = 0.0
-    for name, part in (("shell", shell), ("bezel", Rot(180, 0, 0) * bezel), ("tray", Rot(180, 0, 0) * tray)):
+    for name, part in (("shell", shell), ("bezel", Rot(180, 0, 0) * bezel), ("tray", Rot(180, 0, 0) * tray), ("joycap", cap)):
         bb = part.bounding_box()
         m.add_shape(Pos(x - bb.min.X, -bb.min.Y, -bb.min.Z) * part, linear_deflection=MESH_TOL, angular_deflection=0.2, part_number=name)
         x += bb.size.X + 8
@@ -1215,7 +1224,8 @@ def write_downloads() -> dict:
     # The viewer saves only allowlisted types (zip, csv, ...), so the case goes as one zip.
     case_zip = OUT / "ambire-signer-case.zip"
     with zipfile.ZipFile(case_zip, "w", zipfile.ZIP_DEFLATED) as z:
-        for name in ("case.3mf", "shell.stl", "bezel.stl", "tray.stl", "shell.step", "bezel.step", "tray.step"):
+        for name in ("case.3mf", "shell.stl", "bezel.stl", "tray.stl", "joycap.stl",
+                     "shell.step", "bezel.step", "tray.step", "joycap.step"):
             z.write(OUT / name, name)
         z.writestr("README.txt", CASE_README)
     raw = case_zip.read_bytes()
