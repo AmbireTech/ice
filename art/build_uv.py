@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the full-colour UV print for the back (B.*) face of the Ambire signer board:
+"""Build the full-colour UV print for the back (B.*) face of the Ambire Ice board:
 the Ambire flame in Purple (art/flame.py, the same flame scripts/silkFlame.py puts in the
 silkscreen) over the base of one of the purple schemes, with the functional labels.
 

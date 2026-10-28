@@ -6,7 +6,7 @@ import { RadioBlock } from "./src/blocks/Radio"
 import { CameraBlock } from "./src/blocks/Camera"
 
 /**
- * Ambire hardware signer — the NETLIST.
+ * Ambire Ice — the NETLIST.
  *
  * Same split as the GridCore Nano and the OBD2 adapter: the circuit lives here,
  * the board lives in KiCad (board/wallet.kicad_pcb), placed by script once and

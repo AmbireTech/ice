@@ -2,7 +2,7 @@
   "name": "ambire-wallet",
   "version": "0.1.0",
   "private": true,
-  "description": "Ambire hardware signer — netlist (tscircuit) for the KiCad board",
+  "description": "Ambire Ice — netlist (tscircuit) for the KiCad board",
   "scripts": {
     "dev": "tsci dev",
     "start": "tsci dev",

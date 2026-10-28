@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ambire signer JLC fab export, modelled on hardware/carrier/production/{plot_fab,export_fab_inputs}.py.
+"""Ambire Ice JLC fab export, modelled on hardware/carrier/production/{plot_fab,export_fab_inputs}.py.
 
 One LoadBoard, one process:
   * gerbers (4 Cu, mask, paste, silk, Edge.Cuts) + Excellon PTH/NPTH + drill maps -> gerbers/ and the zip

@@ -1,4 +1,4 @@
-Ambire signer proto 1 - PCBWay order notes
+Ambire Ice proto 1 - PCBWay order notes
 ==========================================
 
 PCB (upload wallet_pcbway_fab.zip)

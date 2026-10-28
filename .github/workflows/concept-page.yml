@@ -7,7 +7,7 @@ name: Concept page
 # docs/v4/) at /v4/, which the index does not link. The
 # rest of docs/ (design notes, research) stays out of the public site.
 # Needs Settings -> Pages -> Source: GitHub Actions.
-# Live at https://ambiretech.github.io/secure-signer/
+# Live at https://ambiretech.github.io/ice/
 
 on:
   push:

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ambire signer enclosure (v4): a two-part see-through case generated from the board,
+"""Ambire Ice enclosure (v4): a two-part see-through case generated from the board,
 and the battery pack that snaps onto its back on a magnetic pogo connector.
 
 Every feature that has to line up with the board is read from the board, not typed in:
@@ -247,7 +247,7 @@ PRINT_SCHEMES = [
     {"id": "incognito", "label": "Incognito", "ink": None, "mask": "#181A1F", "colour": False},   # plain black, no print
 ]
 
-CASE_README = """Ambire signer v4 case and battery pack
+CASE_README = """Ambire Ice v4 case and battery pack
 
 case.3mf     the four parts laid out for printing: the shell on its back, the bezel face
              down, the tray on its top face, the joystick's cap on its sleeve
@@ -1159,7 +1159,7 @@ def write_downloads() -> dict:
         shutil.rmtree(files_dir)
     files_dir.mkdir()
     # The viewer saves only allowlisted types (zip, csv, ...), so the case goes as one zip.
-    case_zip = OUT / "ambire-signer-case.zip"
+    case_zip = OUT / "ambire-ice-case.zip"
     with zipfile.ZipFile(case_zip, "w", zipfile.ZIP_DEFLATED) as z:
         for name in ("case.3mf", "shell.stl", "bezel.stl", "tray.stl", "joycap.stl",
                      "shell.step", "bezel.step", "tray.step", "joycap.step"):

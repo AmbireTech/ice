@@ -8,7 +8,7 @@
 	)
 	(paper "A4")
 	(title_block
-		(title "Ambire hardware signer")
+		(title "Ambire Ice")
 		(rev "proto 0")
 	)
 	(layers

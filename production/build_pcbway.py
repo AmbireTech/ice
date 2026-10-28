@@ -127,7 +127,7 @@ def bom_and_centroid(order, src, out):
     return rows, refs_all, cen, notes
 
 
-NOTES = """Ambire signer proto 1 - PCBWay order notes
+NOTES = """Ambire Ice proto 1 - PCBWay order notes
 ==========================================
 
 PCB (upload wallet_pcbway_fab.zip)

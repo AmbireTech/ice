@@ -198,7 +198,7 @@ def main():
 
 
 def finish(order):
-    text = "Ambire signer pre-fab checks\n" + "\n".join(lines) + f"\n\n{'FAILED: ' + ', '.join(failed) if failed else 'all checks passed'}\n"
+    text = "Ambire Ice pre-fab checks\n" + "\n".join(lines) + f"\n\n{'FAILED: ' + ', '.join(failed) if failed else 'all checks passed'}\n"
     open(os.path.join(order, "PREFAB-CHECKS.txt"), "w").write(text)
     print(text)
     sys.exit(1 if failed else 0)

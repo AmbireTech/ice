@@ -253,9 +253,9 @@
   "case": [
    {
     "label": "Case and battery pack: 3MF, STL and STEP (zip)",
-    "filename": "ambire-signer-case.zip",
-    "bytes": 615818,
-    "part": "enclosure/files/ambire-signer-case.zip.b64.txt",
+    "filename": "ambire-ice-case.zip",
+    "bytes": 615817,
+    "part": "enclosure/files/ambire-ice-case.zip.b64.txt",
     "b64": true
    }
   ]

@@ -1,4 +1,4 @@
-# Back print: Ambire signer
+# Back print: Ambire Ice
 
 The back face is the one the case shows, so it carries the brand: the Ambire
 flame alone, with no wordmark. It comes in two forms, drawn from the same geometry

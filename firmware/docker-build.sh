@@ -26,7 +26,7 @@ DOCKER="${DOCKER:-docker}"
 
 # The image is keyed by shell.nix: a new toolchain pin means a new image.
 nix_hash="$(shasum -a 256 "$tree/shell.nix" | cut -c1-12)"
-IMAGE="ambire-signer-fw-env:$nix_hash"
+IMAGE="ambire-ice-fw-env:$nix_hash"
 
 case "$(uname -m)" in
   arm64|aarch64) arch=aarch64 sum=1be50ae27c8463d005c4de16558d239e11a88ac6b2f8721c47e660fbeead69bf ;;
@@ -83,8 +83,8 @@ workdir="/repo/${tree#"$repo"/}"
 echo ">>> in $IMAGE at $workdir: $cmd"
 "$DOCKER" run --rm \
   -v "$repo:/repo" \
-  -v "ambire-signer-fw-venv-$nix_hash:/venv" \
-  -v "ambire-signer-fw-cargo-$nix_hash:/root/.cargo" \
+  -v "ambire-ice-fw-venv-$nix_hash:/venv" \
+  -v "ambire-ice-fw-cargo-$nix_hash:/root/.cargo" \
   -e UV_PROJECT_ENVIRONMENT=/venv \
   -w "$workdir" \
   "$IMAGE" \

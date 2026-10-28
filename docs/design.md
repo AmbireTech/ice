@@ -1,4 +1,4 @@
-# Ambire hardware signer — proto 1 design
+# Ambire Ice — proto 1 design
 
 Why this architecture: [research.md](research.md). This file is what the board
 is and the decisions behind each block.

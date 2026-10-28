@@ -1,4 +1,4 @@
-Ambire signer pre-fab checks
+Ambire Ice pre-fab checks
 PASS  KiCad DRC as saved: 0 violations [], 0 unconnected
 PASS  KiCad DRC after a zone refill: 0 violations [], 0 unconnected
 PASS  nets: every named net reaches two pads: 120 nets, 533 pad connections: ok

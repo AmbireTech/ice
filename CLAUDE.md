@@ -1,4 +1,4 @@
-# Ambire hardware signer — agent notes
+# Ambire Ice — agent notes
 
 Read first: `README.md` (what the device is, firmware fork), `docs/design.md`
 (block by block, bring-up checks), `docs/board-flow.md` (the commands, the order

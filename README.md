@@ -1,4 +1,4 @@
-# Ambire hardware signer
+# Ambire Ice
 
 A Safe-owner signing device: STM32U585 + two secure elements from two vendors,
 NXP SE050 and Infineon OPTIGA Trust M, BLE behind a hardware airgap switch, QR
@@ -52,13 +52,13 @@ and [KiCadRoutingTools](https://github.com/drandyhaas/KiCadRoutingTools).
   candidates and how they were judged
 - [docs/ambire-signer.html](docs/ambire-signer.html) — the concept page shared
   with the team (3D model, configurator with DIY downloads, clear signing,
-  architecture, status); public copy: https://ambiretech.github.io/secure-signer/
+  architecture, status); public copy: https://ambiretech.github.io/ice/
   (deployed by `.github/workflows/concept-page.yml`); the old Claude artifact
   link (https://claude.ai/artifact/LLUtmWoVMm4PUxiSL7d5Ad) now points there.
   That page shows proto 0 and stays as it is.
 - [docs/v2/index.html](docs/v2/index.html) — the same page for proto 1 (the AAA
   cell, the joystick, the thinner case), with its own model and downloads:
-  https://ambiretech.github.io/secure-signer/v2/ (the proto 0 page does not link it)
+  https://ambiretech.github.io/ice/v2/ (the proto 0 page does not link it)
 
 ## Firmware
 

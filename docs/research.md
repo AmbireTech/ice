@@ -1,4 +1,4 @@
-# Ambire hardware signer — research and architecture (2026-10-14)
+# Ambire Ice — research and architecture (2026-10-14)
 
 Three research passes (threat landscape, protocol and integration, JLC
 sourcing). Sources are inline. "Inference" marks a judgement rather than a

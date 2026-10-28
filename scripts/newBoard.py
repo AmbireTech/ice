@@ -803,7 +803,7 @@ def main():
     board.SetCopperLayerCount(4)
     board.GetDesignSettings().SetBoardThickness(pcbnew.FromMM(1.0))
     tb = board.GetTitleBlock()
-    tb.SetTitle("Ambire hardware signer")
+    tb.SetTitle("Ambire Ice")
     tb.SetRevision("proto 0")
     rounded_rect(board, 0, 0, W, H, R)
     slot(board, TFT_TAIL[0] - SLOT_MARGIN, TFT_TAIL[0] + TFT_TAIL[1] + SLOT_MARGIN)
