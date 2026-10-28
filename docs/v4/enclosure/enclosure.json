@@ -169,7 +169,8 @@
   "shell": "enclosure/shell.json",
   "bezel": "enclosure/bezel.json",
   "tray": "enclosure/tray.json",
-  "joycap": "enclosure/joycap.json"
+  "joycap": "enclosure/joycap.json",
+  "airslider": "enclosure/airslider.json"
  },
  "board3d": "enclosure/board.json",
  "pack3d": "enclosure/pack.json",
@@ -254,7 +255,7 @@
    {
     "label": "Case and battery pack: 3MF, STL and STEP (zip)",
     "filename": "ambire-ice-case.zip",
-    "bytes": 615912,
+    "bytes": 633081,
     "part": "enclosure/files/ambire-ice-case.zip.b64.txt",
     "b64": true
    }

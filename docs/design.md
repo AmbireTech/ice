@@ -435,9 +435,12 @@ purple (all transparent tints) and clear.
 - **Draft:** both halves are 1 mm narrower at the back and front faces than at
   the parting line (about 3°): softer, mouldable, still printable without
   supports (the shell on its back, the bezel face down).
-- **Airgap lever:** its tip sits about 1 mm inside the wall, in a slot sized for
-  the lever plus its full travel. Operated with a pen tip, so it is hard to flip
-  by accident.
+- **Airgap switch:** its lever stops about 1 mm inside the wall, so a printed
+  slider works it from outside. The slider sits in a window in the left wall,
+  held in by a flange on the inside, and its fork takes the lever as the board
+  goes in. Its ribbed grip stands 0.6 mm out of the wall between two guard
+  ridges just as tall: a thumbnail moves it, a pocket does not. The window lets
+  it go only just past the switch's own end stops.
 - **Joystick:** a pocket over its housing in the solid chin and a 6 mm hole its
   stem rocks in; the stem stops 0.25 mm under the front face, so a printed cap goes
   on it. Between the clips the cell opening is only the cell's width plus 0.3 mm,

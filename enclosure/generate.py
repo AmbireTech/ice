@@ -26,7 +26,7 @@ Parts (Z = 0 is the board's front face, +Z toward the screen; X east, Y north):
   shell   back + walls up to the board's front face; a standoff under each board
           hole: a locating pin where the hole sits under the screen, a clearance hole
           and a counterbore (the screw head sits flush) where the front half is solid;
-          USB-C opening, airgap-lever slot, an open window the camera head stands
+          USB-C opening, the airgap slider's window, an open window the camera head stands
           through, a hole over the buzzer, a groove along the north tongue; a window in
           the back the pack's connector drops through onto the receptacle
   bezel   front plate with the display window and walls down to the parting line;
@@ -38,21 +38,22 @@ Parts (Z = 0 is the board's front face, +Z toward the screen; X east, Y north):
   tray    the pack's frame: the pack's board sits on its north and south walls, its
           connector standing out toward the device; the cells show underneath
   joycap  the joystick's printed cap (enclosure/joycap.py)
+  airslider  the airgap switch's printed slider in the west wall (enclosure/airslider.py)
 
-Assembly: screen onto the board's front face on foam tape (ribbons through the slots
-into their connectors), board onto the shell's pins and standoffs, bezel hooked in at
+Assembly: the airgap slider into its window from inside the shell, screen onto the
+board's front face on foam tape (ribbons through the slots into their connectors), board onto the shell's pins and standoffs, bezel hooked in at
 the north and swung down, the M2 screws from the back through shell and board into the
 bezel's bosses. The pack: its board glued onto the tray's walls, the cells pressed into
 their clips from underneath.
 
 Outputs:
-  enclosure/out/{shell,bezel,tray,joycap}.{step,stl}, case.3mf   for print / quote (the 3MF lays all
-                                                      four parts out for printing)
+  enclosure/out/{shell,bezel,tray,joycap,airslider}.{step,stl}, case.3mf   for print / quote (the 3MF
+                                                      lays all five parts out for printing)
   docs/v4/enclosure/                                  the /v4/ concept page's 3D preview and configurator:
     enclosure.json    the numbers the preview draws from, the flame, the print schemes, the pack
     board.json        the populated board, from KiCad's own 3D export (without the clips)
     pack.json         the pack's board, its connector, clips and cells, packed the same way
-    {shell,bezel,tray,joycap}.json  the case parts (GLB as base64: the artifact host serves no .glb)
+    {shell,bezel,tray,joycap,airslider}.json  the case parts (GLB as base64: the artifact host serves no .glb)
     files/            the DIY set: the case and the pack (the v4 board is not laid out yet)
 
 Run from hardware/ambire-wallet:
@@ -102,6 +103,7 @@ WEB = HERE / "docs/v4/enclosure"   # v4 (the battery pack): the /v4/ page; docs/
 sys.path.insert(0, str(HERE / "art"))
 import flame as flame_art  # noqa: E402  (art/flame.py, shared with scripts/silkFlame.py)
 import joycap  # noqa: E402  (enclosure/joycap.py: the joystick's printed cap)
+import airslider  # noqa: E402  (enclosure/airslider.py: the airgap switch's printed slider)
 KICAD_3D = os.environ.get("KICAD_3DMODEL_DIR", "/Applications/KiCad/KiCad.app/Contents/SharedSupport/3dmodels")
 
 # ── Stack in front of the board ─────────────────────────────────────────────
@@ -182,7 +184,7 @@ MIN_SHANK_CLR = 0.3  # screw shank to the nearest part; a standoff notched for a
 SCREEN_CLR = 0.15    # bezel fills to the screen's glass edge
 RIBBON_CLR = 0.3     # around the display ribbons' slots
 USB_PLUG = (12.6, 6.8, 2.2)  # opening for a USB-C plug overmold (w, h, corner r); common overmolds are <= 12.35 x 6.5
-LEVER_TRAVEL, LEVER_CLR = 1.5, 0.5   # MSK12C02 slide travel; clearance around the lever (it sits ~1 mm inside the wall: a pen tip, not a thumb)
+LEVER_TRAVEL = 1.5   # MSK12C02 slide travel; its lever stops inside the wall, a printed slider (airslider.py) brings it out
 
 
 # ── The battery pack (docs/pack.md) ─────────────────────────────────────────
@@ -252,17 +254,21 @@ PRINT_SCHEMES = [
 
 CASE_README = """Ambire Ice v4 case and battery pack
 
-case.3mf     the four parts laid out for printing: the shell on its back, the bezel face
-             down, the tray on its top face, the joystick's cap on its sleeve
+case.3mf     the five parts laid out for printing: the shell on its back, the bezel face
+             down, the tray on its top face, the joystick's cap on its sleeve, the airgap
+             slider on its flange
 shell.stl    back shell (standoffs, locating pins, the screw hole, the camera window, the
              window the pack's connector drops through)
 bezel.stl    front bezel (the screen sits in it; the screw threads into its chin)
 tray.stl     the battery pack's frame: the pack's board sits in its top, the cells show underneath
 joycap.stl   the joystick's cap: print it standing on its sleeve, dish up; press it straight
              onto the stem (a drop of glue if it comes loose)
+airslider.stl  the airgap switch's slider: print it on its flange, grip up; it goes into its
+             window in the shell's west wall from inside, grip out, before the board
 *.step       the same parts for CAD
 
-Assembly: stick the screen to the board's front face with 0.3 mm foam tape, its
+Assembly: push the airgap slider into its window in the shell's west wall from inside,
+grip out. Stick the screen to the board's front face with 0.3 mm foam tape, its
 ribbons through the board's slots into their connectors. Lay the board in the shell (its
 two top holes onto the pins). Hook the bezel's top edge under the shell's top lip, swing
 it down over the screen, then the M2 pan-head screw from the back.
@@ -711,6 +717,7 @@ def main():
 
     # ── openings from whatever crosses the board edge ──
     openings = []
+    air = None
     for ref, v in parts.items():
         beyond = {
             "W": v[v[:, 0] < -0.05], "E": v[v[:, 0] > W + 0.05],
@@ -727,12 +734,13 @@ def main():
                 openings.append((ref, side, wall_cut(side, b, cx, cz, USB_PLUG[0], USB_PLUG[1], USB_PLUG[2])))
                 report.append(f"USB-C opening {USB_PLUG[0]} x {USB_PLUG[1]} at x {cx:.2f}, Z {cz:.2f}")
             elif ref.startswith("SW_AIR"):
-                ya, yb = pts[:, 1].min(), pts[:, 1].max()
-                along = (ya + yb) / 2
-                size_y = yb - ya + 2 * LEVER_TRAVEL + 2 * LEVER_CLR
-                size_z = zhi - zlo + 2 * LEVER_CLR
-                openings.append((ref, side, wall_cut(side, b, along, (zlo + zhi) / 2, size_y, size_z, 0.6)))
-                report.append(f"airgap lever slot {size_y:.1f} x {size_z:.1f} at y {along:.2f}")
+                if side != "W":
+                    raise SystemExit(f"{ref}: the airgap slider is drawn for the west wall, the lever leaves {side}")
+                x_out = lambda z: -(GAP + WALL) + DRAFT_MM / 2 * (z_split - z) / (z_split - z_floor_out)
+                lever = {"tip": pts[:, 0].min(), "y": (pts[:, 1].min(), pts[:, 1].max()), "z": (zlo, zhi)}
+                air = airslider.plan(lever, b["fps"][ref]["y"], LEVER_TRAVEL, GAP, x_out, z_floor_in, z_back)
+                openings.append((ref, side, airslider.wall_cuts(air)))
+                report += airslider.report(air)
             else:
                 raise SystemExit(f"{ref} crosses the {side} board edge and has no opening rule")
 
@@ -913,6 +921,10 @@ def main():
 
     for _, _, cut in openings:
         shell -= cut
+    if air is None:
+        raise SystemExit("no airgap switch lever crosses the board edge: nothing for the slider to move")
+    shell += airslider.guards(air)
+    air_slider = airslider.slider(air)
 
     # ── bezel ──
     bezel = rr_prism_drafted(*out_o[:4], out_o[4], z_split, z_top, draft_front)
@@ -1022,11 +1034,11 @@ def main():
     # ── checks that the geometry, not prose, has to satisfy ──
     if win[0] < panel[0] or win[2] > panel[2] or win[1] < panel[1] or win[3] > panel[3]:
         raise SystemExit("display window is larger than the glass")
-    assert shell.is_valid and bezel.is_valid and tray.is_valid and joy_cap.is_valid, "invalid solid"
+    assert shell.is_valid and bezel.is_valid and tray.is_valid and joy_cap.is_valid and air_slider.is_valid, "invalid solid"
 
     size = (out_o[2] - out_o[0], out_o[3] - out_o[1], z_top - z_floor_out)   # the device; the pack adds to it
-    print_3mf(shell, bezel, tray, joy_cap, OUT / "case.3mf")
-    for name, part in (("shell", shell), ("bezel", bezel), ("tray", tray), ("joycap", joy_cap)):
+    print_3mf(shell, bezel, tray, joy_cap, air_slider, OUT / "case.3mf")
+    for name, part in (("shell", shell), ("bezel", bezel), ("tray", tray), ("joycap", joy_cap), ("airslider", air_slider)):
         export_step(part, str(OUT / f"{name}.step"))
         export_stl(part, str(OUT / f"{name}.stl"), tolerance=MESH_TOL, angular_tolerance=0.2)
         glb = OUT / f"{name}.glb"
@@ -1069,7 +1081,7 @@ def main():
         "camera": cam,
         "depthDriver": driver,
         "parts": {"shell": "enclosure/shell.json", "bezel": "enclosure/bezel.json", "tray": "enclosure/tray.json",
-                  "joycap": "enclosure/joycap.json"},
+                  "joycap": "enclosure/joycap.json", "airslider": "enclosure/airslider.json"},
         "board3d": "enclosure/board.json",
         "pack3d": "enclosure/pack.json",
         "screws": {"length": screw, "d": 2.0, "head": [3.8, 1.6], "seat": seat,
@@ -1141,12 +1153,14 @@ def gltf_json(glb: Path, dest: Path):
     dest.write_text(json.dumps({"glb": base64.b64encode(glb.read_bytes()).decode()}))
 
 
-def print_3mf(shell, bezel, tray, cap, dest: Path):
+def print_3mf(shell, bezel, tray, cap, slider, dest: Path):
     """The parts laid out for printing in a row: the shell on its back, the bezel face
-    down, the tray on its top face, the joystick's cap standing on its sleeve."""
+    down, the tray on its top face, the joystick's cap standing on its sleeve, the airgap
+    slider on its flange."""
     m = Mesher()
     x = 0.0
-    for name, part in (("shell", shell), ("bezel", Rot(180, 0, 0) * bezel), ("tray", Rot(180, 0, 0) * tray), ("joycap", cap)):
+    for name, part in (("shell", shell), ("bezel", Rot(180, 0, 0) * bezel), ("tray", Rot(180, 0, 0) * tray), ("joycap", cap),
+                       ("airslider", airslider.print_pose(slider))):
         bb = part.bounding_box()
         m.add_shape(Pos(x - bb.min.X, -bb.min.Y, -bb.min.Z) * part, linear_deflection=MESH_TOL, angular_deflection=0.2, part_number=name)
         x += bb.size.X + 8
@@ -1165,8 +1179,8 @@ def write_downloads() -> dict:
     # The viewer saves only allowlisted types (zip, csv, ...), so the case goes as one zip.
     case_zip = OUT / "ambire-ice-case.zip"
     with zipfile.ZipFile(case_zip, "w", zipfile.ZIP_DEFLATED) as z:
-        for name in ("case.3mf", "shell.stl", "bezel.stl", "tray.stl", "joycap.stl",
-                     "shell.step", "bezel.step", "tray.step", "joycap.step"):
+        for name in ("case.3mf", "shell.stl", "bezel.stl", "tray.stl", "joycap.stl", "airslider.stl",
+                     "shell.step", "bezel.step", "tray.step", "joycap.step", "airslider.step"):
             z.write(OUT / name, name)
         z.writestr("README.txt", CASE_README)
     raw = case_zip.read_bytes()
