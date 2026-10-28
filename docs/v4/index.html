@@ -299,7 +299,7 @@ footer svg { width: 18px; height: 27px; color: var(--violet); }
           <button type="button" class="tog onstage" id="explode" aria-pressed="false">Take apart</button>
           <button type="button" class="tog onstage" id="packTog" aria-pressed="false">Battery pack</button>
         </div>
-        <figcaption>Drag to turn it, or take it apart. The battery pack snaps onto the back just below the camera, with magnets; its magnetic connector reaches through the back onto gold pads on the board. The airgap switch is on the left edge, the joystick (its centre press is the power key) and USB-C at the bottom; the QR camera looks out through a window in the back. <span id="dims"></span></figcaption>
+        <figcaption>Drag to turn it, or take it apart. The battery pack snaps onto the back just below the camera: a magnetic pogo connector on the pack reaches through the back into its magnetic partner on the board, and their magnets hold it. The airgap switch is on the left edge, the joystick (its centre press is the power key) and USB-C at the bottom; the QR camera looks out through a window in the back. <span id="dims"></span></figcaption>
       </figure>
 
       <div class="config">
@@ -347,7 +347,7 @@ footer svg { width: 18px; height: 27px; color: var(--violet); }
             <h3 class="dlh">Case and battery pack</h3>
             <div class="dl" id="diyCaseFiles"></div>
           </div>
-          <p class="note">The case, the battery pack's tray and the joystick's cap, to print at home. The pack also needs its own small board and four disc magnets; its board comes with the v4 board.</p>
+          <p class="note">The case, the battery pack's tray and the joystick's cap, to print at home. The pack also needs its own small board, which comes with the v4 board.</p>
           <p class="note err" id="dlNote" hidden></p>
         </div>
       </div>
@@ -495,21 +495,20 @@ footer svg { width: 18px; height: 27px; color: var(--violet); }
     </div>
     <div class="status">
       <span class="badge">Concept</span>
-      <p><b>The cells move off the device.</b> Two AAA cells ride in a pack that snaps onto the back just below the camera, clear of its view, held by magnets and connected through a magnetic pogo connector. The device itself is 10.7 mm thick, flat front and back apart from the camera; with the pack on it is 21.9 mm across the pack, which is open underneath to stay as thin as two cells allow.</p>
+      <p><b>The cells move off the device.</b> Two AAA cells ride in a pack that snaps onto the back just below the camera, clear of its view, held and connected by a magnetic pogo connector, with no loose magnets. The device itself is 10.7 mm thick, flat front and back apart from the camera; with the pack on it is 23 mm across the pack, which is open underneath to stay as thin as two cells allow.</p>
       <h3>What changes from v3</h3>
       <ul class="plain">
         <li>Two AAA cells in series, in a pack, instead of one cell on the board: twice the energy.</li>
         <li>The pack sits high on the back, under the camera, and its cells show underneath: no door, no extra thickness.</li>
-        <li>A ready-made magnetic pogo connector on the pack reaches through a window in the back and presses on gold pads on the board: the pack's plus and minus, the point between its two cells, and its temperature sensor.</li>
-        <li>Two pairs of magnets with opposite poles: the pack goes on one way round only.</li>
+        <li>A ready-made magnetic pogo pair: the male on the pack reaches through a window in the back into the receptacle on the board, and their magnets hold the pack. Four contacts: the pack's plus and minus, the point between its two cells, and its temperature sensor.</li>
         <li>The device is 0.8 mm thinner: USB-C no longer sets the depth of the back.</li>
         <li>A printed cap on the joystick: an 8 mm dished pad in a countersunk well, which stops its tilt before the switch can be strained.</li>
       </ul>
       <h3>Next</h3>
       <ul class="plain">
-        <li>The board: gold pads for the connector in place of the cell clips, the charger set for two cells.</li>
+        <li>The board: the connector's receptacle in place of the cell clips, the charger set for two cells.</li>
         <li>The pack's own board: the connector, the clips, a fuse and a temperature sensor.</li>
-        <li>Print the case and the pack and check how firmly the magnets hold against the connector's pins.</li>
+        <li>Samples of the connector pair: the two halves are from different families, so check that their magnets line up and hold the pack against its pins.</li>
       </ul>
     </div>
   </section>
@@ -863,12 +862,11 @@ async function main() {
     shank.position.set(hx, -hy, sc.seat + sc.length / 2);
     screws.add(head, shank);
   }
-  // The battery pack: its board (the mask follows the print scheme), its magnetic
-  // connector, clips, cells and magnets, then the tray round them. The connector's pins
-  // press on gold pads on the device board's back; the device's magnets sit in the shell.
+  // The battery pack: its board (the mask follows the print scheme), its magnetic male,
+  // clips and cells, then the tray round them. The male's pins press on the magnetic
+  // receptacle on the device board's back; their own magnets hold the pack.
   const pk = d.pack;
   const gold = new THREE.MeshStandardMaterial({ color: 0xd8b25a, metalness: 1, roughness: 0.3 });
-  const magnetMat = new THREE.MeshStandardMaterial({ color: 0xb9bcc4, metalness: 0.9, roughness: 0.35 });
   const pack = new THREE.Group().add(boardMesh(packData, maskMat), tray);
   pack.visible = false;
   const rod = (r, z0, z1, x, y, mat) => {
@@ -877,10 +875,18 @@ async function main() {
     m.position.set(x, -y, (z0 + z1) / 2);
     return m;
   };
-  for (const { x, y } of pk.pads) board.add(rod(pk.padD / 2, z.boardBack - 0.04, z.boardBack, x, y, gold));
-  for (const [x, y] of pk.magnets) shell.add(rod(pk.magnet.d / 2, pk.magnet.device, pk.magnet.device + pk.magnet.t, x, y, magnetMat));
-  // The joystick's printed cap rides on the stem, so it moves with the board; solid brand Volt.
-  joycap.children[0].material = new THREE.MeshPhysicalMaterial({ color: 0xd7ff00, roughness: 0.42, clearcoat: 0.35, clearcoatRoughness: 0.3 });
+  // the receptacle: a black stadium on the board's back, its gold contacts on its face
+  const rc = pk.receptacle, [rx0, ry0, rx1, ry1] = rc.outline, rw = rx1 - rx0, rr = rw / 2;
+  const stadium = new THREE.Shape();
+  stadium.absarc(0, (ry1 - ry0) / 2 - rr, rr, 0, Math.PI, false);
+  stadium.absarc(0, -((ry1 - ry0) / 2 - rr), rr, Math.PI, 2 * Math.PI, false);
+  const recv = new THREE.Mesh(new THREE.ExtrudeGeometry(stadium, { depth: rc.h, bevelEnabled: false, curveSegments: 24 }),
+    new THREE.MeshStandardMaterial({ color: 0x17181c, roughness: 0.6 }));
+  recv.position.set((rx0 + rx1) / 2, -(ry0 + ry1) / 2, z.boardBack - rc.h);
+  board.add(recv);
+  for (const { x, y } of rc.contacts) board.add(rod(0.75, z.boardBack - rc.h - 0.02, z.boardBack - rc.h + 0.2, x, y, gold));
+  // The joystick's printed cap rides on the stem, so it moves with the board; solid #5446e5.
+  joycap.children[0].material = new THREE.MeshPhysicalMaterial({ color: 0x5446e5, roughness: 0.42, clearcoat: 0.35, clearcoatRoughness: 0.3 });
   board.add(joycap);
   const parts = { shell, bezel, panel, board, screws, pack };
   for (const p of Object.values(parts)) device.add(p);

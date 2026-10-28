@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Ambire signer enclosure (v4): a two-part see-through case generated from the board,
-and the battery pack that clips onto its back with magnets.
+and the battery pack that snaps onto its back on a magnetic pogo connector.
 
 Every feature that has to line up with the board is read from the board, not typed in:
 
@@ -15,11 +15,11 @@ Every feature that has to line up with the board is read from the board, not typ
 The rest are datasheet constants, each with its source below.
 
 v4 takes the cell off the board (docs/pack.md): two AAA cells in series ride in a pack
-on the device's back, held by two pairs of magnets, connected by four pogo pins on the
-board's back pressing on gold pads on the pack's own board. The board file still carries
-proto 1's clips; this script leaves them off the device and uses their models for the
-pack. The pins and the device's magnets go where this script puts them (PACK_* below)
-until the board gets them.
+high on the device's back, just below the camera. A magnetic pogo pair connects and holds
+it: a receptacle on the device board's back, a male on the pack's own board, their own
+magnets the only ones. The board file still carries proto 1's clips; this script leaves
+them off the device and uses their models for the pack, and puts the pair at CONN_AT
+until the board has it.
 
 Parts (Z = 0 is the board's front face, +Z toward the screen; X east, Y north):
 
@@ -27,33 +27,32 @@ Parts (Z = 0 is the board's front face, +Z toward the screen; X east, Y north):
           hole: a locating pin where the hole sits under the screen, a clearance hole
           and a counterbore (the screw head sits flush) where the front half is solid;
           USB-C opening, airgap-lever slot, an open window the camera head stands
-          through, a hole over the buzzer, a groove along the north tongue; a recess in
-          the back the pack's board nests in, the pogo pins standing in it under the back
-          face, the device's two magnets under a skin beside them
+          through, a hole over the buzzer, a groove along the north tongue; a window in
+          the back the pack's connector drops through onto the receptacle
   bezel   front plate with the display window and walls down to the parting line;
           its skirt laps over a tongue on the shell, with a ridge along the north side
           that hooks into the tongue's groove. Inside: solid fills that locate the
           screen, a chin with windows for the display ribbons, one pocket over all the
           front parts (the radio module, the power parts, the joystick's housing) with a
           hole for the joystick, and a threaded boss at each screw hole
-  tray    the pack's body: the two cells under the pack's board, which sits on its
-          north and south walls and stands out of it into the device's recess
-  door    the pack's bottom: slides in from the east in grooves, like a remote's
+  tray    the pack's frame: the pack's board sits on its north and south walls, its
+          connector standing out toward the device; the cells show underneath
+  joycap  the joystick's printed cap (enclosure/joycap.py)
 
 Assembly: screen onto the board's front face on foam tape (ribbons through the slots
 into their connectors), board onto the shell's pins and standoffs, bezel hooked in at
 the north and swung down, the M2 screws from the back through shell and board into the
-bezel's bosses. The pack: its board glued onto the tray's walls, the magnets glued into
-the shell's pockets and onto the pack board, the cells in through the door.
+bezel's bosses. The pack: its board glued onto the tray's walls, the cells pressed into
+their clips from underneath.
 
 Outputs:
-  enclosure/out/{shell,bezel,tray,door}.{step,stl}, case.3mf   for print / quote (the 3MF lays all
+  enclosure/out/{shell,bezel,tray,joycap}.{step,stl}, case.3mf   for print / quote (the 3MF lays all
                                                       four parts out for printing)
   docs/v4/enclosure/                                  the /v4/ concept page's 3D preview and configurator:
     enclosure.json    the numbers the preview draws from, the flame, the print schemes, the pack
     board.json        the populated board, from KiCad's own 3D export (without the clips)
-    pack.json         the pack's board, clips, cells and magnets, packed the same way
-    {shell,bezel,tray,door}.json  the case parts (GLB as base64: the artifact host serves no .glb)
+    pack.json         the pack's board, its connector, clips and cells, packed the same way
+    {shell,bezel,tray,joycap}.json  the case parts (GLB as base64: the artifact host serves no .glb)
     files/            the DIY set: the case and the pack (the v4 board is not laid out yet)
 
 Run from hardware/ambire-wallet:
@@ -153,7 +152,7 @@ LIP = 0.8             # bezel over the glass
 GAP = 0.3             # board edge to wall
 # Sliding and snapping fits, for an FDM print (0.4 mm nozzle; the first print, 2026-10-26,
 # at 0-0.1 mm would not go together): the tongue in the bezel's skirt and inside its
-# fill, the north hook in its groove, the pack's door in its grooves.
+# fill, the north hook in its groove.
 FIT = 0.2
 TONGUE_T, TONGUE_H, TONGUE_CLR = 0.8, 1.8, FIT
 BACK_FILLET, FRONT_FILLET = 1.5, 1.2
@@ -194,43 +193,39 @@ LEVER_TRAVEL, LEVER_CLR = 1.5, 0.5   # MSK12C02 slide travel; clearance around t
 # clips hold the cells, as v3's cell was held.
 BOARD_CELL_CLIPS = ("BT_N", "BT_P")   # proto 1's clips: off the device in v4; their models shape the pack's
 CELL_D, CELL_L, CELL_BASE = 10.5, 44.5, 0.25   # AAA (Energizer E92/L92, eneloop BK-4MCCE), on the clips' 0.25 mm steel base
-CELL_PITCH = 14.5     # axis to axis: the pack's magnets lie between the two cells
+CELL_PITCH = 14.5     # axis to axis: the pack board's fuse lies between the two cells
 PACK_PCB_T = 0.8      # the pack's board
 PACK_LEDGE = 1.0      # its north and south edges rest on the tray's walls this far
 PACK_CLR = 0.3        # the clips to the tray's walls
-PACK_RIM = 1.4        # the device's back face left round the recess, where the tray seats
+PACK_RIM = 1.4        # the tray's walls round the pack board, where the tray seats on the back face
 PACK_R, PACK_FILLET = 4.0, 1.5
-RECESS_CLR = 0.2      # the pack's board to the recess, each side
-RECESS_PLAY = 0.1     # the recess is deeper than the board stands proud: the tray seats on the back face
-RECESS_R = 1.0
 # The camera must see past the pack: a cone of CAM_FOV from the lens's rim (~66 deg lens,
 # design.md; the stock candidate is 68.7 deg diagonal), taken as a full cone.
 CAM_FOV, LENS_R = 70.0, 2.6
-# The contacts (owner, 2026-10-28: a readymade magnetic pogo connector, its pins standing
-# out of the pack): Xinyangze YZR0158-20050-04025-01 (LCSC C5126843), a 4-pin SMT magnetic
-# male on the pack board's outer face. Drawing (2022-03-24): body 21.20 x 6.86 mm with a
-# 5.03 mm tab (9.17 over the tab), 2.80 thick, NdFeB magnets in its ends; pins at 2.50,
-# 5.00 free, 4.00 working, 3.70 pressed; 60 +-20 g each at working height; 1 A, 50 mohm;
-# pads 4 x 2.20. It drops through a window in the device's back and presses on four gold
-# pads on the device board's back: the device side is copper only.
-CONN = {"part": "YZR0158-20050-04025-01", "lcsc": "C5126843", "len": 21.2, "wid": 6.86, "tab": (5.03, 2.31),
-        "body_t": 2.8, "free": 5.0, "work": 4.0, "pressed": 3.7, "pitch": 2.5, "pad_d": 2.2,
-        "plunger_d": 0.9, "barrel_d": 1.5}
-CONN_NETS = ("BAT+", "MID", "NTC", "BAT-")   # along the row: + and - at the ends
-CONN_CLR = 0.2        # the body and its window; and over a part under the body
-CONN_PAD_CLR = 0.3    # a pad to the nearest part
-MOVABLE = (":R_0402_1005Metric", ":C_0402_1005Metric")   # parts the board may move out of the pads' way
-# Magnets: N52 discs in two pairs, opposite poles east and west so the pack goes on one way
-# only (the connector's body in its window keys it too). The pack's are glued to its
-# board's inner face between the cells; the device's sit in pockets in its back under
-# MAG_SKIN, thinner, so their bosses clear the parts on the board.
-MAG_PACK = (6.0, 2.0)     # diameter, thickness
-MAG_DEV = (8.0, 1.5)
-MAG_SKIN, MAG_WALL, MAG_CLR = 0.4, 0.8, 0.1
-MAG_PART_CLR = 0.2        # a part under a magnet's boss
+# The contacts (owner, 2026-10-28): a readymade magnetic pogo pair whose own magnets hold
+# the pack, no loose magnets. On the device board's back, Xinyangze's 4-pin SMT magnetic
+# receptacle YZ103915020T-04025-02 (LCSC C6276862; drawing 2015-07-08): 22.30 x 7.70 mm,
+# 2.00 mm tall, flat gold contacts at 2.54 mm, two NdFeB magnets in its ends, two 5.00 x
+# 1.50 x 0.50 mm locating bosses underneath (slots in the board). On the pack board's outer
+# face, Xinyangze's 4-pin magnetic male YZP0048-20048-04025-03 (LCSC C5126845, through-
+# hole; drawing 2022-03-24): body 21.20 x 6.86 mm with a 5.03 x 2.31 mm tab, 2.80 thick,
+# pins at 2.50 mm, 4.10 free, 3.10 working; 30 +-20 g each. Two families: their pitches
+# (2.54 / 2.50) and magnet spacing (~14.6 / 15.41) differ slightly, and whether the
+# magnets attract is for samples to show.
+CONN_DEV = {"part": "YZ103915020T-04025-02", "lcsc": "C6276862", "len": 22.3, "wid": 7.7, "h": 2.0,
+            "pitch": 2.54, "boss": (5.0, 1.5, 0.5)}
+CONN_PACK = {"part": "YZP0048-20048-04025-03", "lcsc": "C5126845", "len": 21.2, "wid": 6.86, "tab": (5.03, 2.31),
+             "body_t": 2.8, "free": 4.1, "work": 3.1, "pitch": 2.5, "plunger_d": 0.9, "barrel_d": 1.5}
+CONN_NETS = ("BAT+", "MID", "NTC", "BAT-")   # north to south
+# Where the pair goes (board coordinates, long axis north-south, the male's tab west):
+# east of the MCU, the place the device board can clear (its power-key network moves to
+# the chin, which the cell left empty); west of the MCU the SE050 and the pack's power
+# lines could not share the column.
+CONN_AT = (43.6, 35.4)
+CONN_CLR = 0.2        # the male's body in its window; the receptacle to the nearest part
 # The pack board's other parts on its inner face (x, y off the pack's centre; w, h,
 # height; label), where pack/pack.kicad_pcb (branch v4-pack-board) has them: a resettable
-# fuse in BAT+ between the magnets, the thermistor (TS) and the mid-point sense line's
+# fuse in BAT+ between the cells, the thermistor (TS) and the mid-point sense line's
 # series resistor in the gap the west clips' arms leave.
 PACK_SMALL = [(1.2, 0.0, 3.2, 1.6, 0.85, "PTC 1206"), (-16.4, 0.513, 1.6, 0.8, 0.8, "NTC 0603"),
               (-16.4, -0.777, 1.0, 0.5, 0.35, "R 0402")]
@@ -257,7 +252,7 @@ CASE_README = """Ambire signer v4 case and battery pack
 case.3mf     the four parts laid out for printing: the shell on its back, the bezel face
              down, the tray on its top face, the joystick's cap on its sleeve
 shell.stl    back shell (standoffs, locating pins, the screw hole, the camera window, the
-             shallow recess the pack's board sits in, the connector's window, two magnet pockets)
+             window the pack's connector drops through)
 bezel.stl    front bezel (the screen sits in it; the screw threads into its chin)
 tray.stl     the battery pack's frame: the pack's board sits in its top, the cells show underneath
 joycap.stl   the joystick's cap: print it standing on its sleeve, dish up; press it straight
@@ -269,13 +264,10 @@ ribbons through the board's slots into their connectors. Lay the board in the sh
 two top holes onto the pins). Hook the bezel's top edge under the shell's top lip, swing
 it down over the screen, then the M2 pan-head screw from the back.
 
-The pack: two 8 x 1.5 mm N52 disc magnets glue into the pockets inside the shell's back,
-two 6 x 2 mm ones onto the marked circles on the pack board's inner face, poles opposite:
-test each pair before the glue sets, the pack must snap on one way round and push off the
-other. Glue the pack board into the tray's top, the magnetic connector out. Two AAA cells
-press into the clips from underneath, as marked on the board. The pack snaps onto the
-back below the camera, the connector into its window; the cells charge over USB in the
-device.
+The pack: glue the pack board into the tray's top, its magnetic connector out. Two AAA
+cells press into the clips from underneath, as marked on the board. The pack snaps onto
+the back below the camera, its connector through the window onto the receptacle on the
+device's board, whose magnets hold it; the cells charge over USB in the device.
 
 Print the shell on its back, the bezel face down and the tray on its top face: none needs
 supports. Units are millimetres. Print in see-through resin or PETG (ice blue, orange,
@@ -830,120 +822,75 @@ def main():
     cell_cx = sum((c[0] + c[2]) / 2 for c in clip_boxes) / 2
     clip_cy = sum((c[1] + c[3]) / 2 for c in clip_boxes) / 2          # the cell's axis on today's board
     clip_half = max((c[3] - c[1]) / 2 for c in clip_boxes)
-    clip_in = (clip_boxes[0][2], clip_boxes[-1][0])                   # the free band between the clips
 
-    # Z: the connector's pins work against pads on the device board, which sets the pack
-    # board's height; it stands into a shallow recess in the back. The cells hang under it.
+    # Z: the receptacle's contacts on the device board, the male's pins at their working
+    # height on them, which puts the pack board this far out; the cells hang under it.
     z_face = z_floor_out
-    z_pcb_top = z_back - CONN["work"]
-    proud = z_pcb_top - z_face
-    if proud < 0:
-        raise SystemExit(f"the connector works {CONN['work']} mm off the board, past the back face: the pack would stand off it")
-    z_recess = z_pcb_top + RECESS_PLAY
-    if z_floor_in - z_recess < MIN_SKIN:
-        raise SystemExit(f"the recess leaves {z_floor_in - z_recess:.2f} mm of back, under {MIN_SKIN}")
+    z_recv = z_back - CONN_DEV["h"]                   # the receptacle's contact face
+    z_pcb_top = z_recv - CONN_PACK["work"]
+    z_body = z_pcb_top + CONN_PACK["body_t"]          # the male's face, in the device's cavity
+    if z_body >= z_recv:
+        raise SystemExit("the male's body would sit on the receptacle before its pins reach working height")
+    if z_recv < z_floor_in + 0.2:
+        raise SystemExit("the receptacle does not fit under the back's inside")
+    out = z_face - z_pcb_top                          # the pack board stands this far off the back face
+    if out < 0:
+        raise SystemExit("the pair is shorter than the back is deep: the pack board would sit inside the back")
     z_pcb_bot = z_pcb_top - PACK_PCB_T
     z_cell = z_pcb_bot - CELL_BASE - CELL_D / 2
     z_pack = z_pcb_bot - CELL_BASE - CELL_D          # open: the cells' lowest line is the pack's bottom
-    z_body = z_pcb_top + CONN["body_t"]              # the connector body's face, in the device's cavity
 
     # North edge: outside a CAM_FOV cone from the lens's rim, at the pack's farthest face.
     lens = ((cam[0] + cam[2]) / 2, (cam[1] + cam[3]) / 2)
     z_lens = z_back - CAM_HEAD_H
     pack_n = max(lens[1] + LENS_R + max(z_lens - z_pack, 0) * math.tan(math.radians(CAM_FOV / 2)),
                  cam[3] + CAM_CLR + PACK_RIM)
-    rec_n = pack_n + PACK_RIM
-    pcb_n = rec_n + RECESS_CLR
+    pcb_n = pack_n + PACK_RIM
     cell_ys = (pcb_n + PACK_LEDGE + PACK_CLR + clip_half, pcb_n + PACK_LEDGE + PACK_CLR + clip_half + CELL_PITCH)
     pcb = (0.0, pcb_n, W, cell_ys[1] + clip_half + PACK_CLR + PACK_LEDGE)
-    rec = (pcb[0] - RECESS_CLR, pcb[1] - RECESS_CLR, pcb[2] + RECESS_CLR, pcb[3] + RECESS_CLR)
     face = outline(b, GAP + WALL - DRAFT_MM / 2)
-    pack_o = (face[0], pack_n, face[2], rec[3] + PACK_RIM)
+    pack_o = (face[0], pack_n, face[2], pcb[3] + PACK_RIM)
     y_mid = sum(cell_ys) / 2
     if clip_boxes[0][0] < pcb[0] + PACK_CLR or clip_boxes[-1][2] > pcb[2] - PACK_CLR:
         raise SystemExit("the clips run past the pack board's ends")
-    if rec[0] - face[0] < PACK_RIM - RECESS_CLR - 0.01:
-        raise SystemExit(f"the back face leaves only {rec[0] - face[0]:.2f} mm beside the recess for the tray")
     if "LS1" in b["fps"] and pack_o[1] - SOUND_R < b["fps"]["LS1"]["y"] < pack_o[3] + SOUND_R:
         raise SystemExit("the pack covers the buzzer's port")
+
+    # The pair at CONN_AT, long axis north-south. The receptacle needs bare board under it;
+    # the male's body (and its tab, west) passes a window in the back and stops over it.
+    cx, cy = CONN_AT
+    hr = (CONN_DEV["wid"] / 2, CONN_DEV["len"] / 2)
+    recv = (cx - hr[0], cy - hr[1], cx + hr[0], cy + hr[1])
+    hm = (CONN_PACK["wid"] / 2, CONN_PACK["len"] / 2)
+    male = (cx - hm[0], cy - hm[1], cx + hm[0], cy + hm[1])
+    tw, tl = CONN_PACK["tab"]
+    tab = (male[0] - tl, cy - tw / 2, male[0], cy + tw / 2)
+    n = len(CONN_NETS)
+    contacts = [(net, cx, cy + (i - (n - 1) / 2) * CONN_DEV["pitch"]) for i, net in enumerate(CONN_NETS)]
+    pins = [(net, cx, cy + (i - (n - 1) / 2) * CONN_PACK["pitch"]) for i, net in enumerate(CONN_NETS)]
+    for r_ in (male, tab, recv):
+        if r_[0] < pcb[0] + 0.5 or r_[2] > pcb[2] - 0.5 or r_[1] < pcb[1] + 0.5 or r_[3] > pcb[3] - 0.5:
+            raise SystemExit(f"the pair at {CONN_AT} runs off the pack board")
 
     # what stands on the board's back: modelled parts, and the bounded ones by their fab outline
     near = [(r, v[:, 0].min(), v[:, 1].min(), v[:, 0].max(), v[:, 1].max(), -v[:, 2].min()) for r, v in back.items()]
     for r in unmodelled:
         fw = fab_world(b["fps"][r])
         near.append((r, *fw.min(0), *fw.max(0), UNMODELLED_MAX_H[r]))
-    gap_to = lambda e, x, y: math.hypot(max(e[1] - x, 0, x - e[3]), max(e[2] - y, 0, y - e[4]))
     overlaps = lambda e, o, m: e[1] - m < o[2] and e[3] + m > o[0] and e[2] - m < o[3] and e[4] + m > o[1]
+    to_move = sorted({e[0] for e in near if overlaps(e, recv, CONN_CLR)}
+                     | {e[0] for e in near if overlaps(e, tab, CONN_CLR) and e[5] > z_back - z_body - CONN_CLR})
+    fixed = [r for r in to_move if not b["fps"][r]["lib"].split(":")[-1].startswith(("R_", "C_", "SOT-23", "SOT-363", "D_SOD"))]
+    if fixed:
+        raise SystemExit(f"the receptacle at {CONN_AT} sits on {fixed}, which the board cannot simply move")
 
-    # The connector: the place on the pack board where the device board under its body
-    # carries nothing taller than the body leaves room for, and nothing at all under its
-    # pins (they press on pads there): no such place is free on today's board, so small
-    # passives in the pads' way count as parts to move, and the place with the fewest
-    # moves (then nearest the pack's centre) wins. The tab points the way `rot` says.
-    room_conn = z_back - z_body - CONN_CLR
-    def conn_layout(cx, cy, rot):
-        along = rot in (0, 180)                     # the body's long axis east-west
-        hl, hw = (CONN["len"] / 2, CONN["wid"] / 2)
-        body = (cx - hl, cy - hw, cx + hl, cy + hw) if along else (cx - hw, cy - hl, cx + hw, cy + hl)
-        tw, tl = CONN["tab"]
-        tab = {0: (cx - tw / 2, cy + hw, cx + tw / 2, cy + hw + tl), 180: (cx - tw / 2, cy - hw - tl, cx + tw / 2, cy - hw),
-               90: (cx + hw, cy - tw / 2, cx + hw + tl, cy + tw / 2), 270: (cx - hw - tl, cy - tw / 2, cx - hw, cy + tw / 2)}[rot]
-        offs = [(i - (len(CONN_NETS) - 1) / 2) * CONN["pitch"] for i in range(len(CONN_NETS))]
-        pads = [(n, cx + o, cy) if along else (n, cx, cy + o) for n, o in zip(CONN_NETS, offs)]
-        return body, tab, pads
-    best = None
-    for rot in (0, 90, 180, 270):
-        for cx in np.arange(pcb[0] + 4, pcb[2] - 4 + 0.01, 0.5):
-            for cy in np.arange(pcb[1] + 4, pcb[3] - 4 + 0.01, 0.5):
-                body, tab, pads = conn_layout(cx, cy, rot)
-                outl = (min(body[0], tab[0]), min(body[1], tab[1]), max(body[2], tab[2]), max(body[3], tab[3]))
-                if outl[0] < pcb[0] + 0.5 or outl[2] > pcb[2] - 0.5 or outl[1] < pcb[1] + 0.5 or outl[3] > pcb[3] - 0.5:
-                    continue
-                if any(e[5] > room_conn and (overlaps(e, body, CONN_CLR) or overlaps(e, tab, CONN_CLR)) for e in near):
-                    continue
-                in_way = {e[0] for e in near for _, px, py in pads if gap_to(e, px, py) < CONN["pad_d"] / 2 + CONN_PAD_CLR}
-                if any(not b["fps"][r]["lib"].endswith(MOVABLE) for r in in_way):
-                    continue
-                score = (len(in_way), math.hypot(cx - cell_cx, cy - y_mid))
-                if best is None or score < best[0]:
-                    best = (score, cx, cy, rot, body, tab, pads, sorted(in_way))
-    if best is None:
-        raise SystemExit(f"no place under the pack where the board's back leaves the connector {room_conn:.2f} mm")
-    _, conn_x, conn_y, conn_rot, conn_body, conn_tab, pads, to_move = best
+    # the device's back: the male's window (its body and tab) down into the cavity
+    male_win = (male[0] - CONN_CLR, male[1] - CONN_CLR, male[2] + CONN_CLR, male[3] + CONN_CLR)
+    shell -= rr_prism(*male_win, (male_win[2] - male_win[0]) / 2 - 0.01, z_face - 1, z_floor_in + 1)
+    shell -= box(tab[0] - CONN_CLR, tab[1] - CONN_CLR, tab[2] + 0.01, tab[3] + CONN_CLR, z_face - 1, z_floor_in + 1)
 
-    # The magnets: pairs on the line between the cells, as far apart as the board allows.
-    pr = MAG_PACK[0] / 2
-    reach = CELL_D / 2 + CELL_BASE - MAG_PACK[1]          # the cans' axis to the pack magnets' far face
-    chord = math.sqrt(max((CELL_D / 2) ** 2 - reach * reach, 0.0))
-    if CELL_PITCH - 2 * chord < MAG_PACK[0] + 2 * PACK_CLR:
-        raise SystemExit(f"the pack's magnets ({MAG_PACK[0]} mm) do not fit between the cells ({CELL_PITCH - 2 * chord:.2f} mm there)")
-    z_mag_out = z_recess + MAG_SKIN
-    z_mag_in = z_mag_out + MAG_DEV[1]
-    boss_r = MAG_DEV[0] / 2 + MAG_CLR + MAG_WALL
-    mag_room = z_back - z_mag_in - MAG_PART_CLR
-    window = [tuple(np.add(r_, (-CONN_CLR, -CONN_CLR, CONN_CLR, CONN_CLR))) for r_ in (conn_body, conn_tab)]
-    def mag_ok(mx):
-        if any(gap_to(e, mx, y_mid) < boss_r and e[5] > mag_room for e in near):
-            return False
-        return all(gap_to(("w", *w, 0), mx, y_mid) > boss_r + MAG_WALL for w in window)
-    xs = [x for x in np.arange(clip_in[0] + PACK_CLR + pr, clip_in[1] - PACK_CLR - pr + 0.01, 0.25) if mag_ok(x)]
-    if len(xs) < 2 or xs[-1] - xs[0] < 2 * boss_r + 1:
-        raise SystemExit("no room for two magnet pairs between the cells")
-    mags = [(xs[0], y_mid), (xs[-1], y_mid)]
-
-    # the device's back: the recess, the connector's window, the magnets' pockets
-    shell -= rr_prism(*rec, RECESS_R, z_face - 1, z_recess)
-    r_win = min(window[0][2] - window[0][0], window[0][3] - window[0][1]) / 2
-    shell -= rr_prism(*window[0], r_win, z_face - 1, z_floor_in + 1)
-    shell -= box(*window[1], z_face - 1, z_floor_in + 1)
-    for mx, my in mags:
-        shell += Pos(mx, -my, (z_floor_in + z_mag_in) / 2) * Cylinder(boss_r, z_mag_in - z_floor_in + 0.02)
-        shell -= Pos(mx, -my, (z_mag_out + z_mag_in + 1) / 2) * Cylinder(MAG_DEV[0] / 2 + MAG_CLR, z_mag_in + 1 - z_mag_out)
-    inductors = [(r, f["x"], f["y"]) for r, f in b["fps"].items() if r.startswith("L_") and not f["dnp"]]
-    mag_l = min((math.hypot(mx - lx, my - ly), r) for mx, my in mags for r, lx, ly in inductors)
-
-    # ── the pack's tray (print part): a frame round the cells, open underneath; the board
-    # sits PACK_PCB_T - proud deep in its top, on the north and south walls
+    # ── the pack's tray (print part): a frame round the cells, open underneath; the pack
+    # board sits on its north and south walls, `out` below its top
     cav = (pcb[0], pcb[1] + PACK_LEDGE, pcb[2], pcb[3] - PACK_LEDGE)
     tray = rr_prism(*pack_o, PACK_R, z_pack, z_face)
     tray = fillet(tray.edges().group_by(Axis.Z)[0], PACK_FILLET)
@@ -953,16 +900,12 @@ def main():
     report.append(f"the pack {pack_o[2] - pack_o[0]:.1f} x {pack_o[3] - pack_o[1]:.1f} x {z_face - z_pack:.2f} mm, open underneath, "
                   f"y {pack_o[1]:.1f}-{pack_o[3]:.1f} (the camera's {CAM_FOV:.0f} deg cone sets its north edge): "
                   f"{z_top - z_pack:.2f} mm with the device")
-    report.append(f"the pack's board {pcb[2] - pcb[0]:.1f} x {pcb[3] - pcb[1]:.1f} x {PACK_PCB_T} mm, {proud:.2f} into a "
-                  f"{proud + RECESS_PLAY:.2f} mm recess; cells at y {cell_ys[0]:.1f} and {cell_ys[1]:.1f}")
-    report.append(f"connector {CONN['part']} at {conn_x:.1f}, {conn_y:.1f} (tab {conn_rot} deg), its body "
-                  f"{z_back - z_body:.2f} mm off the device board (parts up to {room_conn:.2f} under it); pads "
-                  + ", ".join(f"{n} {x:.2f},{y:.2f}" for n, x, y in pads)
-                  + f"; pins {CONN['free'] - CONN['body_t']:.1f} mm out of its body with the pack off"
-                  + (f"; MOVE off the pads: {', '.join(to_move)}" if to_move else ""))
-    report.append(f"magnets: device {MAG_DEV[0]:.0f} x {MAG_DEV[1]} mm (parts up to {mag_room:.2f} under the boss), pack "
-                  f"{MAG_PACK[0]:.0f} x {MAG_PACK[1]:.0f} mm, at x {mags[0][0]:.2f} and {mags[1][0]:.2f}, y {y_mid:.2f}: "
-                  f"{z_mag_out - z_pcb_bot:.2f} mm apart mated; {mag_l[0]:.1f} mm from {mag_l[1]} (in plan)")
+    report.append(f"the pack's board {pcb[2] - pcb[0]:.1f} x {pcb[3] - pcb[1]:.1f} x {PACK_PCB_T} mm, {out:.2f} mm off the back face "
+                  f"inside the tray's rim; cells at y {cell_ys[0]:.1f} and {cell_ys[1]:.1f}")
+    report.append(f"contacts: receptacle {CONN_DEV['part']} ({CONN_DEV['h']} mm) on the device board at {cx}, {cy}, male "
+                  f"{CONN_PACK['part']} on the pack (tab west), its face {z_recv - z_body:.2f} mm off the receptacle mated, "
+                  f"pins at {CONN_PACK['work']} mm; contacts " + ", ".join(f"{n_} {y:.2f}" for n_, _, y in contacts)
+                  + f" (y); the board moves {', '.join(to_move) or 'nothing'}")
 
     for _, _, cut in openings:
         shell -= cut
@@ -1091,7 +1034,7 @@ def main():
         header, blob = board_model(BOARD, Path(tmp), T, drop=BOARD_CELL_CLIPS)
     header["bin"] = base64.b64encode(blob).decode()
     (WEB / "board.json").write_text(json.dumps(header, separators=(",", ":")), encoding="utf-8")
-    hw, hw_blob = pack_hardware(clip_prims, T, clip_cy, cell_cx, cell_ys, z_pcb_bot, z_back, pcb, (conn_body, conn_tab, pads), mags)
+    hw, hw_blob = pack_hardware(clip_prims, T, clip_cy, cell_cx, cell_ys, z_pcb_bot, z_back, pcb, (male, tab, pins))
     hw["bin"] = base64.b64encode(hw_blob).decode()
     (WEB / "pack.json").write_text(json.dumps(hw, separators=(",", ":")), encoding="utf-8")
 
@@ -1114,12 +1057,11 @@ def main():
         "pack": {"outline": r3(pack_o), "r": PACK_R, "board": r3(pcb), "boardT": PACK_PCB_T,
                  "cells": {"x": r3([cell_cx - CELL_L / 2, cell_cx + CELL_L / 2]), "y": r3(cell_ys),
                            "z": round(z_cell, 3), "d": CELL_D},
-                 "connector": {"part": CONN["part"], "lcsc": CONN["lcsc"], "at": r3([conn_x, conn_y]), "rot": conn_rot,
-                               "body": r3(conn_body), "tab": r3(conn_tab), "bodyFace": round(z_body, 3)},
-                 "pads": [{"net": n, "x": round(x, 3), "y": round(y, 3)} for n, x, y in pads], "padD": CONN["pad_d"],
+                 "receptacle": {"part": CONN_DEV["part"], "lcsc": CONN_DEV["lcsc"], "outline": r3(recv), "h": CONN_DEV["h"],
+                                "contacts": [{"net": n_, "x": round(x, 3), "y": round(y, 3)} for n_, x, y in contacts]},
+                 "male": {"part": CONN_PACK["part"], "lcsc": CONN_PACK["lcsc"], "outline": r3(male), "tab": r3(tab)},
                  "toMove": to_move,
-                 "magnets": [r3(m) for m in mags], "magnet": {"d": MAG_DEV[0], "t": MAG_DEV[1], "device": round(z_mag_out, 3)},
-                 "z": {"face": z_face, "boardTop": z_pcb_top, "recess": z_recess, "bottom": z_pack}},
+                 "z": {"face": z_face, "boardTop": z_pcb_top, "bottom": z_pack}},
         "camera": cam,
         "depthDriver": driver,
         "parts": {"shell": "enclosure/shell.json", "bezel": "enclosure/bezel.json", "tray": "enclosure/tray.json",
@@ -1148,12 +1090,11 @@ def tessellated(shape, tol=0.02) -> tuple[np.ndarray, np.ndarray]:
     return np.array([[v.X, v.Y, v.Z] for v in vs]), np.array(ts, dtype=np.int64)
 
 
-def pack_hardware(clip_prims, T, clip_cy, cell_cx, cell_ys, z_pcb_bot, z_back, pcb, conn, mags) -> tuple[dict, bytes]:
+def pack_hardware(clip_prims, T, clip_cy, cell_cx, cell_ys, z_pcb_bot, z_back, pcb, conn) -> tuple[dict, bytes]:
     """The pack's board for the preview, packed like board.json: the board (its mask
-    follows the print scheme), the magnetic connector on its outer face with its pins
-    pressed to working height, the board's own clip models moved onto its inner face (the
-    north cell turned end for end: the cells are in series), the cells, the magnets and
-    the small parts."""
+    follows the print scheme), the magnetic male on its outer face with its pins at
+    working height, the board's own clip models moved onto its inner face (the north
+    cell turned end for end: the cells are in series), the cells and the small parts."""
     groups: dict[tuple, list] = {}
     add = lambda key, shape: groups.setdefault(key, []).append(tessellated(shape))
     dz = z_pcb_bot - z_back
@@ -1166,28 +1107,23 @@ def pack_hardware(clip_prims, T, clip_cy, cell_cx, cell_ys, z_pcb_bot, z_back, p
             groups.setdefault(("part", round(r, 3), round(g_, 3), round(b_, 3)), []).append((P, tri))
     z_top_ = z_pcb_bot + PACK_PCB_T
     add(("mask", 0, 0, 0), rr_prism(*pcb, 1.0, z_pcb_bot, z_top_))
-    body, tab, pads = conn
-    z_face_ = z_top_ + CONN["body_t"]
-    add(("part", 0.09, 0.09, 0.1), rr_prism(*body, min(body[2] - body[0], body[3] - body[1]) / 2 - 0.01, z_top_, z_face_))
+    body, tab, pins = conn
+    z_face_ = z_top_ + CONN_PACK["body_t"]
+    add(("part", 0.09, 0.09, 0.1), rr_prism(*body, (body[2] - body[0]) / 2 - 0.01, z_top_, z_face_))
     add(("part", 0.09, 0.09, 0.1), box(*tab, z_top_, z_face_))
-    long_x = body[2] - body[0] > body[3] - body[1]
     cx, cy = (body[0] + body[2]) / 2, (body[1] + body[3]) / 2
-    for s_ in (-1, 1):   # the connector's own magnets, in its ends
-        off = s_ * (CONN["len"] / 2 - CONN["wid"] / 2)
-        mx, my = (cx + off, cy) if long_x else (cx, cy + off)
-        add(("part", 0.55, 0.56, 0.6), Pos(mx, -my, z_face_ + 0.01) * Cylinder(CONN["wid"] / 2 - 1.0, 0.02))
-    for _, px, py in pads:
-        add(("pads", 0, 0, 0), Pos(px, -py, z_face_ + 0.15) * Cylinder(CONN["barrel_d"] / 2, 0.3))
-        add(("pads", 0, 0, 0), Pos(px, -py, (z_face_ + z_top_ + CONN["work"]) / 2)
-            * Cylinder(CONN["plunger_d"] / 2, z_top_ + CONN["work"] - z_face_))
+    for s_ in (-1, 1):   # its own magnets, in its ends
+        add(("part", 0.55, 0.56, 0.6), Pos(cx, -(cy + s_ * 7.7), z_face_ + 0.01) * Cylinder(CONN_PACK["wid"] / 2 - 1.0, 0.02))
+    for _, px, py in pins:
+        add(("pads", 0, 0, 0), Pos(px, -py, z_face_ + 0.15) * Cylinder(CONN_PACK["barrel_d"] / 2, 0.3))
+        add(("pads", 0, 0, 0), Pos(px, -py, (z_face_ + z_top_ + CONN_PACK["work"]) / 2)
+            * Cylinder(CONN_PACK["plunger_d"] / 2, z_top_ + CONN_PACK["work"] - z_face_))
     z_cell = z_pcb_bot - CELL_BASE - CELL_D / 2
     for i, y in enumerate(cell_ys):
         add(("part", 0.86, 0.87, 0.9), Pos(cell_cx, -y, z_cell) * Rot(0, 90, 0) * Cylinder(CELL_D / 2, CELL_L - 1.0))
         end = cell_cx + (-1 if i == 0 else 1) * (CELL_L / 2 - 0.5)   # the + terminal: west on the north cell, east on the south
         add(("part", 0.62, 0.63, 0.66), Pos(end, -y, z_cell) * Rot(0, 90, 0) * Cylinder(1.9, 1.0))
     y_mid = sum(cell_ys) / 2
-    for mx, my in mags:
-        add(("part", 0.72, 0.73, 0.77), Pos(mx, -my, z_pcb_bot - MAG_PACK[1] / 2) * Cylinder(MAG_PACK[0] / 2, MAG_PACK[1]))
     for dx, dy, w, h, t, label in PACK_SMALL:
         colour = (0.78, 0.62, 0.22) if label.startswith("PTC") else (0.13, 0.13, 0.15)
         add(("part", *colour), box(cell_cx + dx - w / 2, y_mid + dy - h / 2, cell_cx + dx + w / 2, y_mid + dy + h / 2,
