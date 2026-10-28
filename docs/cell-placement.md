@@ -8,6 +8,9 @@ one flat face with no chin, and the cell sits under a hump on the back. The boar
 carries it since 2026-10-25 (cell and clips on the back, the radio module on the front,
 antenna still south), routed.
 
+**Update (2026-10-28): v4 moves the cells off the device** into a pack on magnets and
+spring pins: [pack.md](pack.md). This page stays the record of where one cell could go.
+
 **Update (2026-10-25, v3's case): open by default, with an optional cover.** A hump
 built into the back half would have left that half unprintable without supports. So
 the case leaves the cell open: it stands 5.6 mm out of a flat back, 17.1 mm thick

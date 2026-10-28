@@ -1,16 +1,25 @@
 #!/usr/bin/env python3
-"""Ambire signer enclosure: a two-part see-through case generated from the board.
+"""Ambire signer enclosure (v4): a two-part see-through case generated from the board,
+and the battery pack that clips onto its back with magnets.
 
 Every feature that has to line up with the board is read from the board, not typed in:
 
   board/wallet.kicad_pcb    outline, slots, thickness, mounting holes, the camera
-                            keep-out, the AAA cell's clips (on the back), the joystick
+                            keep-out, the AAA clips (their shape, for the pack), the
+                            joystick, USB-C (the pack stops short of it)
   kicad-cli pcb export glb  every modelled part on the back face, as real geometry:
-                            the deepest part sets the back cavity, and whatever
-                            pokes past the board edge (USB-C mouth, airgap lever)
-                            gets a wall opening sized from it
+                            the deepest part sets the back cavity (USB-C excepted: it
+                            may stand into the floor), and whatever pokes past the board
+                            edge (USB-C mouth, airgap lever) gets a wall opening sized from it
 
 The rest are datasheet constants, each with its source below.
+
+v4 takes the cell off the board (docs/pack.md): two AAA cells in series ride in a pack
+on the device's back, held by two pairs of magnets, connected by four pogo pins on the
+board's back pressing on gold pads on the pack's own board. The board file still carries
+proto 1's clips; this script leaves them off the device and uses their models for the
+pack. The pins and the device's magnets go where this script puts them (PACK_* below)
+until the board gets them.
 
 Parts (Z = 0 is the board's front face, +Z toward the screen; X east, Y north):
 
@@ -18,32 +27,34 @@ Parts (Z = 0 is the board's front face, +Z toward the screen; X east, Y north):
           hole: a locating pin where the hole sits under the screen, a clearance hole
           and a counterbore (the screw head sits flush) where the front half is solid;
           USB-C opening, airgap-lever slot, an open window the camera head stands
-          through, a hole over the buzzer, a groove along the north tongue, and an
-          opening the AAA cell and its clips stand through, open to the east wall
-  cover   optional: a round cover over the cell that slides into that opening from
-          the east, its lips under the floor's edges
+          through, a hole over the buzzer, a groove along the north tongue; a recess in
+          the back the pack's board nests in, the pogo pins standing in it under the back
+          face, the device's two magnets under a skin beside them
   bezel   front plate with the display window and walls down to the parting line;
           its skirt laps over a tongue on the shell, with a ridge along the north side
           that hooks into the tongue's groove. Inside: solid fills that locate the
           screen, a chin with windows for the display ribbons, one pocket over all the
           front parts (the radio module, the power parts, the joystick's housing) with a
           hole for the joystick, and a threaded boss at each screw hole
+  tray    the pack's body: the two cells under the pack's board, which sits on its
+          north and south walls and stands out of it into the device's recess
+  door    the pack's bottom: slides in from the east in grooves, like a remote's
 
 Assembly: screen onto the board's front face on foam tape (ribbons through the slots
-into their connectors), the AAA cell into its clips on the board's back, board onto
-the shell's pins and standoffs, bezel hooked in at the north and swung down, the M2
-screws from the back through shell and board into the bezel's bosses. The screws and
-the north hook clamp the board between the standoffs and the screen. Changing the
-cell: the screws out, the shell off; the cell stays on the board in its clips.
+into their connectors), board onto the shell's pins and standoffs, bezel hooked in at
+the north and swung down, the M2 screws from the back through shell and board into the
+bezel's bosses. The pack: its board glued onto the tray's walls, the magnets glued into
+the shell's pockets and onto the pack board, the cells in through the door.
 
 Outputs:
-  enclosure/out/{shell,bezel,cover}.{step,stl}, case.3mf   for print / quote (the 3MF lays all
-                                                      three parts out for printing)
-  docs/v3/enclosure/                                  the /v3/ concept page's 3D preview and configurator:
-    enclosure.json    the numbers the preview draws from, the flame, the print schemes
-    board.json        the populated board, from KiCad's own 3D export
-    {shell,bezel}.json  the case parts (GLB as base64: the artifact host serves no .glb)
-    downloads.json + files/   the DIY sets: fab files as ordered, and the case
+  enclosure/out/{shell,bezel,tray,door}.{step,stl}, case.3mf   for print / quote (the 3MF lays all
+                                                      four parts out for printing)
+  docs/v4/enclosure/                                  the /v4/ concept page's 3D preview and configurator:
+    enclosure.json    the numbers the preview draws from, the flame, the print schemes, the pack
+    board.json        the populated board, from KiCad's own 3D export (without the clips)
+    pack.json         the pack's board, clips, cells and magnets, packed the same way
+    {shell,bezel,tray,door}.json  the case parts (GLB as base64: the artifact host serves no .glb)
+    files/            the DIY set: the case and the pack (the v4 board is not laid out yet)
 
 Run from hardware/ambire-wallet:
   ../../.venv-enclosure/bin/python enclosure/generate.py
@@ -88,34 +99,13 @@ from build123d import (
 HERE = Path(__file__).resolve().parent.parent
 BOARD = Path(os.environ.get("ENCLOSURE_BOARD", HERE / "board/wallet.kicad_pcb"))   # a copy for trials
 OUT = HERE / "enclosure/out"
-WEB = HERE / "docs/v3/enclosure"   # v3 (cell on the back): the /v3/ page; docs/enclosure (proto 0) and docs/v2 (proto 1, front cell) are frozen
+WEB = HERE / "docs/v4/enclosure"   # v4 (the battery pack): the /v4/ page; docs/enclosure (proto 0), docs/v2 (proto 1, front cell) and docs/v3 (cell on the back) are frozen
 sys.path.insert(0, str(HERE / "art"))
 import flame as flame_art  # noqa: E402  (art/flame.py, shared with scripts/silkFlame.py)
 KICAD_3D = os.environ.get("KICAD_3DMODEL_DIR", "/Applications/KiCad/KiCad.app/Contents/SharedSupport/3dmodels")
 
 # ── Stack in front of the board ─────────────────────────────────────────────
 FOAM_T = 0.3          # foam tape under the screen, on the board (newBoard.py budgets the tails with it)
-# The AAA cell lies across the chin on the board's back face, in two clips (MYOUNG
-# MY-AAA-19-J / -20-J: base 0.25 mm steel, 11 mm across), and stands out of the back
-# through an opening. 10.5 mm across (Energizer E92/L92, eneloop BK-4MCCE all
-# 10.1-10.5), resting on the clip bases. An optional cover, printed on its own, slides
-# in from the east over it (owner, 2026-10-25: the case is open by default).
-CELL_REFS = ("BT_N", "BT_P")
-CELL_D, CELL_BASE = 10.5, 0.25
-# The clips' real shape comes from their models on the board (MYOUNG's, board/models.json):
-# the arms wrap the cell and flare out at their tips, so the cover clears both.
-CLIP_CLR = 0.15       # the cover's inside to the clips (it slides over them)
-CELL_AIR = 0.1        # the cover's inside to the cell
-# The cover: compact, its outside the inside grown by COVER_SKIN all round, with a
-# skirt COVER_FLANGE thick over the lips (owner, 2026-10-25: compact, close to the cell,
-# thin at the top); a web down through the opening on each side and a lip under the
-# floor's edge (the floor sits between lip and skirt). It stops against the west wall;
-# it prints standing on its closed east end, with no supports.
-COVER_SKIN = 0.5      # the least plastic anywhere over the inside: the roof, over the cell
-COVER_FLANGE = 0.8    # the skirt's thickness over the lips, where it clamps the floor
-COVER_WEB = 0.8
-COVER_CAP = 1.0       # the end wall at the east, flush with the case: it closes the slot and is what the cover prints standing on
-COVER_LIP = (0.8, 0.8)   # over the floor's edge, thick
 # The joystick (ALPS SKRHAAE010, 7.5 x 7.5 mm housing 2.23 mm tall, a 3 mm stem to
 # 5.08 mm: EasyEDA's model) on the front, below the cell: a pocket over its housing in
 # the bezel's solid chin, and a hole wide enough for the stem to rock. The stem stops
@@ -149,6 +139,11 @@ CAM_CLR = 0.4         # window around the camera head's keep-out
 UNMODELLED_MAX_H = {"U1": 0.8, "U2": 0.8, "U5": 0.6, "U6": 0.6, "U10": 0.6, "U13": 1.0, "U16": 1.0,
                     "LS1": 2.0, "L_BOOST": 2.0, "L_BUCK": 1.0}
 BACK_CLEAR = 0.6      # between the deepest part and the inside of the back
+# Parts that do not set the back's depth (owner, 2026-10-28: USB-C may stand into the
+# floor or out of it): the floor gets a pocket over them, PROTRUDE_CLR clear, and opens
+# through where that would leave less than MIN_SKIN.
+PROTRUDE = ("J1",)
+PROTRUDE_CLR, MIN_SKIN = 0.3, 0.6
 
 # ── Case ────────────────────────────────────────────────────────────────────
 WALL = 1.8
@@ -157,10 +152,9 @@ LIP = 0.8             # bezel over the glass
 GAP = 0.3             # board edge to wall
 # Sliding and snapping fits, for an FDM print (0.4 mm nozzle; the first print, 2026-10-26,
 # at 0-0.1 mm would not go together): the tongue in the bezel's skirt and inside its
-# fill, the north hook in its groove, the cover in the floor.
+# fill, the north hook in its groove, the pack's door in its grooves.
 FIT = 0.2
 TONGUE_T, TONGUE_H, TONGUE_CLR = 0.8, 1.8, FIT
-COVER_CLR = FIT
 BACK_FILLET, FRONT_FILLET = 1.5, 1.2
 # Outer walls lean in toward the back and toward the front, widest at the parting
 # line, so the two halves meet flush: the back and front faces are DRAFT_MM narrower
@@ -191,6 +185,54 @@ USB_PLUG = (12.6, 6.8, 2.2)  # opening for a USB-C plug overmold (w, h, corner r
 LEVER_TRAVEL, LEVER_CLR = 1.5, 0.5   # MSK12C02 slide travel; clearance around the lever (it sits ~1 mm inside the wall: a pen tip, not a thumb)
 
 
+# ── The battery pack (docs/pack.md) ─────────────────────────────────────────
+# Two AAA cells in series, lying east-west across the back side by side, in the same
+# MYOUNG clips the board carries today (MY-AAA-19-J / -20-J, LCSC C6937104 / C6937107),
+# on the pack's own board. That board faces the device: gold pads on its outer face, the
+# clips, the thermistor and the fuse on its inner face.
+BOARD_CELL_CLIPS = ("BT_N", "BT_P")   # proto 1's clips: off the device in v4; their models shape the pack's
+USB_REF = "J1"
+CELL_D, CELL_L, CELL_BASE = 10.5, 44.5, 0.25   # AAA (Energizer E92/L92, eneloop BK-4MCCE), on the clips' 0.25 mm steel base
+CELL_AIR = 0.3        # the cells to the door
+CELL_PITCH = 14.5     # axis to axis: the pack's magnets lie between the two cells
+PACK_PCB_T = 1.0      # the pack's board
+PACK_LEDGE = 1.0      # its north and south edges rest on the tray's walls this far
+PACK_CLR = 0.3        # the clips to the tray's walls
+PACK_RIM = 1.4        # the device's back face left round the recess, where the tray seats
+PACK_R, PACK_FILLET = 4.0, 1.5
+RECESS_CLR = 0.2      # the pack's board to the recess, each side
+RECESS_PLAY = 0.1     # the recess is deeper than the board is thick: the tray seats on the back face, not the board on the recess
+RECESS_R = 1.0
+PLATE, PLATE_MARGIN = 1.0, 1.0   # the device's back over the recess, and how far it runs on past it into the cavity
+USB_MARGIN = 0.8      # the recess stops this far north of USB-C
+# Pogo pins on the device's board (BAT WIRELESS BWCD-L4.0W2.0H1.0, LCSC C2826548, SMD,
+# gold, 1.5 A): 4.0 mm free, a 3.0 mm barrel 1.5 across on a 2.0 mm flange, a 0.9 mm
+# plunger, 100 +-15 g "at working height". The drawing gives no stroke: the plunger
+# stands 1.0 mm out of the barrel, and the mated squeeze stays inside POGO_SQUEEZE.
+POGO = {"part": "BWCD-L4.0W2.0H1.0", "lcsc": "C2826548", "L": 4.0, "barrel": 3.0, "barrel_d": 1.5,
+        "flange_d": 2.0, "flange_t": 0.5, "plunger_d": 0.9}
+POGO_PITCH = 4.0      # 2 x 2 round the pack's centre, BAT+ and BAT- on a diagonal
+POGO_NETS = (("BAT+", -1, -1), ("MID", 1, -1), ("NTC", -1, 1), ("BAT-", 1, 1))
+POGO_HOLE = 1.9       # through the device's back
+POGO_PAD = 2.4        # the gold pads on the pack's board
+POGO_PART_CLR = 0.3   # the pin's flange to the nearest part on the board
+POGO_SQUEEZE = (0.3, 0.8)
+# Magnets: N52 discs, a pair either side of the pins, opposite poles east and west so the
+# pack goes on one way only. The device's sit in pockets in its back under MAG_SKIN; the
+# pack's are glued to its board's inner face, between the cells.
+MAG_D, MAG_T = 6.0, 2.0
+MAG_DX = 9.5          # off the pins' centre, east and west
+MAG_SKIN, MAG_WALL, MAG_CLR = 0.4, 0.8, 0.1
+MAG_PART_CLR = 0.2    # a part under a magnet's boss
+# The door: a plate DOOR_T thick; its upper DOOR_T - DOOR_LIP runs in grooves in the north
+# and south walls over a lip, and it stops against the west wall.
+DOOR_T, DOOR_LIP, DOOR_GROOVE = 1.2, 0.6, 0.8
+# The pack board's other parts, on its inner face between the cells (x, y off the pins'
+# centre; w, h, height; label): a resettable fuse in BAT+, the charger's thermistor (TS),
+# the series resistor in the mid-point sense line.
+PACK_SMALL = [(0.0, -2.4, 3.2, 1.6, 0.85, "PTC 1206"), (-3.0, 2.4, 1.6, 0.8, 0.8, "NTC 0603"),
+              (3.0, 2.4, 1.0, 0.5, 0.35, "R 0402")]
+
 # ── Back print ──────────────────────────────────────────────────────────────
 # The flame itself (facets, size, placement, gap) is art/flame.py, shared with the
 # board's silkscreen (scripts/silkFlame.py).
@@ -208,45 +250,38 @@ PRINT_SCHEMES = [
     {"id": "incognito", "label": "Incognito", "ink": None, "mask": "#181A1F", "colour": False},   # plain black, no print
 ]
 
-CASE_README = """Ambire signer v3 case
+CASE_README = """Ambire signer v4 case and battery pack
 
-case.3mf     all three parts laid out for printing: the shell on its back, the bezel face
-             down, the cover standing on its closed end
+case.3mf     all four parts laid out for printing: the shell on its back, the bezel face
+             down, the tray on its top face, the door flat
 shell.stl    back shell (standoffs, locating pins, the screw hole, the camera window, the
-             opening the AAA cell stands through)
+             recess the pack's board nests in, two magnet pockets)
 bezel.stl    front bezel (the screen sits in it; the screw threads into its chin)
-cover.stl    optional cell cover: slides into the cell's opening from the right-hand
-             edge (seen from the back, the left) until it stops
+tray.stl     the battery pack's body: the pack's board sits on its walls
+door.stl     the pack's bottom: slides in from the right-hand edge (seen from the back, the left)
 *.step       the same parts for CAD
 
 Assembly: stick the screen to the board's front face with 0.3 mm foam tape, its
-ribbons through the board's slots into their connectors. Press an AAA cell into its
-clips on the board's back. Lay the board in the shell (its two top holes onto the
-pins). Hook the bezel's top edge under the shell's top lip, swing it down over the
-screen, then the M2 pan-head screw from the back. The camera and the cell stand
-out of the back; slide the cover on over the cell if you want it covered. The cell
-charges over USB in the device.
+ribbons through the board's slots into their connectors. Lay the board in the shell (its
+two top holes onto the pins). Hook the bezel's top edge under the shell's top lip, swing
+it down over the screen, then the M2 pan-head screw from the back.
 
-Print the shell on its back and the bezel face down, the cover standing on its closed end:
-none of them needs supports.
+The pack: four 6 x 2 mm N52 disc magnets. Glue two into the pockets inside the shell's
+back and two onto the marked circles on the pack board's inner face, with the poles
+opposite: test each pair before the glue sets, the pack must snap on one way round and
+push off the other. Glue the pack board onto the tray's walls, gold pads out. Two AAA
+cells go in through the door, as marked on the board. The pack snaps onto the device's
+back with its board in the recess; the cells charge over USB in the device.
 
-Units are millimetres. Print in see-through resin or PETG (ice blue, orange,
-purple or clear). The fits are set for an FDM printer with a 0.4 mm nozzle (0.2 mm
-between parts that slide or snap). A first print (26 October) would not go together and
-its cover failed; these files fix both and have not been printed yet. The screw boss,
-the top hook and the joystick's opening may still need adjusting.
+Print the shell on its back, the bezel face down, the tray on its top face and the door
+flat: none needs supports. On a filament printer the recess in the shell's back prints
+as a ~28 mm bridge; a resin print does not have that problem.
+
+Units are millimetres. Print in see-through resin or PETG (ice blue, orange, purple or
+clear). The fits are set for an FDM printer with a 0.4 mm nozzle (0.2 mm between parts
+that slide or snap). These files have not been printed yet.
 """
 
-# ── DIY downloads (the board as ordered; the case from this run) ────────────
-ORDER = HERE / "production/order"
-FAB_SETS = {
-    "jlc": [("Gerbers", ORDER / "jlc-plain/wallet_gerbers.zip"),
-            ("Bill of materials", ORDER / "jlc-plain/wallet_bom-jlc.csv"),
-            ("Pick and place", ORDER / "jlc-plain/wallet_positions-jlc.csv")],
-    "pcbway": [("Gerbers", ORDER / "jlc-plain/wallet_gerbers.zip"),
-               ("Bill of materials", ORDER / "pcbway/wallet_bom-pcbway.csv"),
-               ("Pick and place", ORDER / "pcbway/wallet_centroid-pcbway.csv")],
-}
 MESH_TOL = 0.03
 
 
@@ -385,16 +420,17 @@ def fab_world(fp: dict) -> np.ndarray:
 # ───────────────────────────────────────────────────────────── parts geometry
 
 
-def kicad_glb(board_path: Path, tmp: Path, *flags: str) -> list[tuple]:
+def kicad_glb(board_path: Path, tmp: Path, *flags: str, drop: tuple[str, ...] = ()) -> list[tuple]:
     """Export the board with kicad-cli and flatten it: one (ref, material, vertices,
     triangles) per primitive, vertices in board mm as x, y (south +), h (height off the
     back face; parts on the back are negative). ref is the footprint reference, or None
-    for the board's own layers (body, mask, pads)."""
+    for the board's own layers (body, mask, pads). drop: references left off the board."""
     if not shutil.which("kicad-cli"):
         raise SystemExit("kicad-cli not on PATH (KiCad 8+)")
     text = board_path.read_text(encoding="utf-8")
     text = text.replace("${KIPRJMOD}", str(board_path.parent)).replace("${KICAD10_3DMODEL_DIR}", KICAD_3D)
     text = model_fallbacks(text, board_path.parent)
+    text = without_footprints(text, drop)
     copy = tmp / "board.kicad_pcb"
     copy.write_text(text, encoding="utf-8")
     glb = tmp / "export.glb"
@@ -481,22 +517,30 @@ def model_fallbacks(text: str, board_dir: Path) -> str:
     return "".join(out)
 
 
-def parts_geometry(board_path: Path, tmp: Path) -> dict[str, np.ndarray]:
-    """Vertices of every modelled part (no board body), by reference."""
-    parts: dict[str, list] = {}
-    for ref, _, v, _ in kicad_glb(board_path, tmp, "--no-board-body", "--no-dnp"):
-        if ref:
-            parts.setdefault(ref, []).append(v)
-    return {k: np.vstack(v) for k, v in parts.items()}
+def without_footprints(text: str, refs: tuple[str, ...]) -> str:
+    """The board's text with the footprints whose reference is in refs taken out."""
+    if not refs:
+        return text
+    out, last, gone = [], 0, []
+    for m in re.finditer(r"\n\t\(footprint \"", text):
+        a = m.start()
+        b_ = text.find("\n\t(", a + 1)   # the next top-level item ends the footprint
+        b_ = b_ if b_ != -1 else text.rindex("\n)")
+        ref = re.search(r'\(property "Reference" "([^"]+)"', text[a:b_])
+        if ref and ref.group(1) in refs:
+            out.append(text[last:a])
+            last = b_
+            gone.append(ref.group(1))
+    if sorted(gone) != sorted(refs):
+        raise SystemExit(f"footprints to leave off not on the board: {sorted(set(refs) - set(gone))}")
+    return "".join(out) + text[last:]
 
 
-def board_model(board_path: Path, tmp: Path, thickness: float) -> tuple[dict, bytes]:
+def board_model(board_path: Path, tmp: Path, thickness: float, drop: tuple[str, ...] = ()) -> tuple[dict, bytes]:
     """The populated board for the preview: KiCad's own export (body, soldermask, pads,
-    every part model), no silkscreen (the print is drawn by the page, per scheme).
-    Packed per material: uint16 positions quantised over the board's box, uint16
-    indices, in model space (X east, Y north, Z = 0 at the board's front face)."""
+    every part model), no silkscreen (the print is drawn by the page, per scheme)."""
     groups: dict[tuple, list] = {}
-    for ref, mat, v, tri in kicad_glb(board_path, tmp, "--include-soldermask", "--include-pads", "--no-dnp"):
+    for ref, mat, v, tri in kicad_glb(board_path, tmp, "--include-soldermask", "--include-pads", "--no-dnp", drop=drop):
         pb = (mat or {}).get("pbrMetallicRoughness", {})
         r, g_, b_, a = pb.get("baseColorFactor", [0.55, 0.55, 0.55, 1.0])
         if ref is None:
@@ -507,6 +551,15 @@ def board_model(board_path: Path, tmp: Path, thickness: float) -> tuple[dict, by
         key = (role, round(r, 3), round(g_, 3), round(b_, 3))
         model = np.c_[v[:, 0], -v[:, 1], v[:, 2] - thickness]
         groups.setdefault(key, []).append((model, tri))
+    header, blob = pack_mesh(groups)
+    header["maskBack"] = float(min(P[:, 2].min() for (role, *_), lst in groups.items() if role == "mask" for P, _ in lst))
+    return header, blob
+
+
+def pack_mesh(groups: dict[tuple, list]) -> tuple[dict, bytes]:
+    """Meshes grouped by (role, r, g, b), packed for the page: uint16 positions quantised
+    over their box, uint16 indices, in model space (X east, Y north, Z = 0 at the board's
+    front face)."""
     allp = np.vstack([P for lst in groups.values() for P, _ in lst])
     lo, hi = allp.min(0), allp.max(0)
     scale = (hi - lo) / 65535.0
@@ -543,9 +596,7 @@ def board_model(board_path: Path, tmp: Path, thickness: float) -> tuple[dict, by
             pending.append((P, T))
             count += len(P)
         flush()
-    mask_back = float(min(P[:, 2].min() for (role, *_), lst in groups.items() if role == "mask" for P, _ in lst))
-    header = {"lo": lo.tolist(), "scale": scale.tolist(), "chunks": chunks, "maskBack": mask_back}
-    return header, b"".join(blobs)
+    return {"lo": lo.tolist(), "scale": scale.tolist(), "chunks": chunks}, b"".join(blobs)
 
 
 # ───────────────────────────────────────────────────────────── print artwork
@@ -602,77 +653,35 @@ def hull(pts):
     return np.array(lo[:-1] + hi[:-1])
 
 
-def cover_geometry(clip_pts, d_floor_in, d_floor_out):
-    """The cell cover's cross-section from the clips' and the cell's real outlines.
-    clip_pts: the clips' model vertices as (offset across the cell's axis, depth off the
-    board's back face). Returns half-widths off the axis, depths, and the two outlines."""
-    lip_bot = d_floor_in - COVER_CLR
-    lip_top = lip_bot - COVER_LIP[1]
-    web_zone = clip_pts[(clip_pts[:, 1] > lip_top - COVER_CLR) & (clip_pts[:, 1] < d_floor_out + 0.5)]
-    in_hw = np.abs(web_zone[:, 0]).max() + CLIP_CLR
-    web_out = in_hw + COVER_WEB
-    edge = web_out + COVER_CLR                    # the shell's opening
-    lip_out = edge + COVER_LIP[0]
-    # inside: the hull of the clips (+CLIP_CLR) and the cell (+CELL_AIR), below the floor
-    ring = np.c_[np.cos(np.linspace(0, 2 * math.pi, 24, endpoint=False)), np.sin(np.linspace(0, 2 * math.pi, 24, endpoint=False))]
-    deep = clip_pts[clip_pts[:, 1] > d_floor_out - 0.5]
-    deep = np.r_[deep, deep * [-1, 1]]
-    axis = CELL_BASE + CELL_D / 2
-    cell = np.c_[np.cos(np.linspace(0, 2 * math.pi, 180)), np.sin(np.linspace(0, 2 * math.pi, 180))] * (CELL_D / 2 + CELL_AIR) + [0, axis]
-    inner = hull(np.r_[(deep[:, None, :] + ring[None] * CLIP_CLR).reshape(-1, 2), cell,
-                       [[-in_hw, d_floor_out - 1], [in_hw, d_floor_out - 1]]])
-    inner = inner[(inner[:, 1] >= d_floor_out - 1 - 1e-3)]   # hull() rounds; keep the two top corners
-    roof = inner[:, 1].max()
-    top = roof + COVER_SKIN
-    # outside: the inside grown by COVER_SKIN, and the skirt's corners over the lips
-    dome = (inner[:, None, :] + ring[None] * COVER_SKIN).reshape(-1, 2)
-    skirt = [[-lip_out, d_floor_out], [lip_out, d_floor_out],
-             [-lip_out, d_floor_out + COVER_FLANGE], [lip_out, d_floor_out + COVER_FLANGE]]
-    h = hull(np.r_[dome[dome[:, 1] >= d_floor_out], skirt])
-    up = h[h[:, 1] > d_floor_out + 1e-3]
-    up = up[np.lexsort((np.where(up[:, 0] < 0, up[:, 1], -up[:, 1]), up[:, 0]))]   # left to right over the top
-    outer = np.r_[[[-lip_out, d_floor_out]], up, [[lip_out, d_floor_out]]]
-    rb = lip_out
-    return {"in_hw": in_hw, "web_out": web_out, "edge": edge, "lip_out": lip_out, "out_hw": lip_out,
-            "lip_bot": lip_bot, "lip_top": lip_top, "in_bottom": roof, "out_bottom": top, "rb": rb,
-            "inner": inner, "outer": outer, "floor_out": d_floor_out, "cell_out": CELL_BASE + CELL_D}
-
-
-def cover_part(cv, cy, z_back, x0, xi0, x1):
-    """The cover: the bell outside the back, from x0 to x1, closed by COVER_CAP at x1; the
-    webs through the opening and the lips under the floor from xi0 (they stop at the
-    west wall) to x1."""
-    def slab(pts, a, b_):
-        sk = Plane.YZ * Polygon(*[(-(cy + y), z_back - d) for y, d in pts], align=None)
-        return Pos(a, 0, 0) * extrude(sk, amount=b_ - a, dir=(1, 0, 0))   # the outline's winding would set +-X
-    body = slab(cv["outer"], x0, x1) - slab(cv["inner"], x0 - 1, x1 - COVER_CAP)
-    for s in (-1, 1):
-        ya, yb = sorted((cy + s * cv["in_hw"], cy + s * cv["web_out"]))
-        body += box(xi0, ya, x1, yb, z_back - cv["floor_out"] - 0.01, z_back - cv["lip_top"])
-        ya, yb = sorted((cy + s * cv["web_out"] - s * 0.01, cy + s * cv["lip_out"]))
-        body += box(xi0, ya, x1, yb, z_back - cv["lip_bot"], z_back - cv["lip_top"])
-    return body
-
-
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     WEB.mkdir(parents=True, exist_ok=True)
     b = read_board(BOARD)
     W, H, T = b["w"], b["h"], b["t"]
     with tempfile.TemporaryDirectory() as tmp:
-        parts = parts_geometry(BOARD, Path(tmp))
+        prims = kicad_glb(BOARD, Path(tmp), "--no-board-body", "--no-dnp")
+    # every modelled part's vertices by reference; the board's cell clips go to the pack
+    grouped: dict[str, list] = {}
+    for ref, _, v, _ in prims:
+        if ref and ref not in BOARD_CELL_CLIPS:
+            grouped.setdefault(ref, []).append(v)
+    parts = {k: np.vstack(v) for k, v in grouped.items()}
+    clip_prims = [pr for pr in prims if pr[0] in BOARD_CELL_CLIPS]
+    if {pr[0] for pr in clip_prims} != set(BOARD_CELL_CLIPS):
+        raise SystemExit(f"{BOARD_CELL_CLIPS}: the pack takes its clips' shape from their models on the board "
+                         "(once the board drops them, load MYOUNG's models from board/models.json instead)")
 
-    back = {ref: v for ref, v in parts.items() if v[:, 2].min() < -0.01 and ref not in CELL_REFS}   # the cell's clips stand out of the back
+    back = {ref: v for ref, v in parts.items() if v[:, 2].min() < -0.01}
     # not fitted (DNP: the optional edge buttons) = not there; the case gets no opening for them
     unmodelled = sorted(ref for ref, f in b["fps"].items()
-                        if f["layer"] == "B.Cu" and ref not in parts and not f["dnp"] and ref not in CELL_REFS
+                        if f["layer"] == "B.Cu" and ref not in parts and not f["dnp"] and ref not in BOARD_CELL_CLIPS
                         and not f["lib"].startswith(("TestPoint", "MountingHole")))
     surprise = [r for r in unmodelled if r not in UNMODELLED_MAX_H]
     if surprise:
         raise SystemExit(f"back-side parts with no 3D model and no height bound: {surprise}")
 
     cam = b["zones"]["no parts: Camera module"]
-    deepest_ref, deepest = max(((r, -v[:, 2].min()) for r, v in back.items()), key=lambda kv: kv[1])
+    deepest_ref, deepest = max(((r, -v[:, 2].min()) for r, v in back.items() if r not in PROTRUDE), key=lambda kv: kv[1])
     bounds = {r: UNMODELLED_MAX_H[r] for r in unmodelled}
     depth = max(deepest, *bounds.values())
     driver = deepest_ref if depth == deepest else max(bounds, key=bounds.get)
@@ -737,55 +746,7 @@ def main():
     # ── shell ──
     shell = rr_prism_drafted(*out_o[:4], out_o[4], z_split, z_floor_out, draft_back)
     shell = fillet(shell.edges().group_by(Axis.Z)[0], BACK_FILLET)
-    # The AAA cell stands out of the back through an opening over its clips, open to the
-    # east so the optional cover slides in (cover_part); the back stays flat for printing.
-    clips = []
-    for ref in CELL_REFS:
-        f = b["fps"].get(ref)
-        if f is None or f["layer"] != "B.Cu":
-            raise SystemExit(f"{ref}: the AAA cell's clip must be on the board's back face")
-        fw = fab_world(f)
-        clips.append([round(v, 3) for v in (*fw.min(0), *fw.max(0))])
-    cell_cx = sum((c[0] + c[2]) / 2 for c in clips) / 2
-    cell_cy = sum((c[1] + c[3]) / 2 for c in clips) / 2
-    missing = [r for r in CELL_REFS if r not in parts]
-    if missing:
-        raise SystemExit(f"{missing}: the cell's clips need their 3D models (board/models.json) to size the cover")
-    clip_v = np.vstack([parts[r] for r in CELL_REFS])
-    cv = cover_geometry(np.c_[clip_v[:, 1] - cell_cy, -clip_v[:, 2]], z_back - z_floor_in, z_back - z_floor_out)
     shell -= rr_prism(*in_o[:4], in_o[4], z_floor_in, z_split + 1)
-    shell -= box(-GAP, cell_cy - cv["edge"], W + GAP + WALL + 2, cell_cy + cv["edge"], z_floor_out - 1, z_floor_in + 0.01)
-    slot = cv["lip_out"] + COVER_CLR
-    shell -= box(W + GAP - 0.01, cell_cy - slot, W + GAP + WALL + 2, cell_cy + slot,
-                 z_floor_out - 1, z_back - cv["lip_top"] + COVER_CLR)
-    # the lips slide under the floor from the east: nothing on the board's back may reach them
-    lip_band = (cell_cy - slot, cell_cy + slot)
-    hit = []
-    for ref, v in back.items():
-        m = (v[:, 1] > lip_band[0]) & (v[:, 1] < lip_band[1]) & (np.abs(v[:, 1] - cell_cy) > cv["in_hw"])
-        if ref not in CELL_REFS and m.any() and -v[m, 2].min() > cv["lip_top"] - COVER_CLR:
-            hit.append(f"{ref} ({-v[m, 2].min():.2f} mm deep)")
-    if hit:
-        raise SystemExit(f"the cover's lips run into {hit}")
-    near = min(((abs(v[:, 1] - cell_cy) - cv["lip_out"])[-v[:, 2] > cv["lip_top"] - COVER_CLR].min(initial=99), r)
-               for r, v in back.items() if r not in CELL_REFS)
-    face = outline(b, GAP + WALL - DRAFT_MM / 2)
-    cover = cover_part(cv, cell_cy, z_back, face[0], -GAP + COVER_CLR, face[2])
-    if cell_cx + 22.25 + CELL_AIR > face[2] - COVER_CAP:
-        raise SystemExit(f"the cell's east end runs into the cover's end wall")
-    # the cover slides over the clips: none of their model's points may be inside it
-    probe = clip_v[np.random.default_rng(0).choice(len(clip_v), min(1500, len(clip_v)), replace=False)]
-    inside = [p for p in probe if cover.is_inside(Vector(p[0], -p[1], z_back + p[2]))]
-    if inside:
-        raise SystemExit(f"the cover runs into the clips at {len(inside)} of {len(probe)} sampled points, e.g. "
-                         f"x {inside[0][0]:.2f}, y {inside[0][1]:.2f}, {-inside[0][2]:.2f} mm off the board "
-                         f"(cv floor {cv['floor_out']}, inner {cv['inner'][:3].round(2).tolist()})")
-    report.append(f"AAA cell open through the back ({2 * cv['edge']:.1f} mm wide), standing "
-                  f"{cv['cell_out'] - (z_back - z_floor_out):.1f} mm out: {z_top - z_back + cv['cell_out']:.1f} mm thick there")
-    report.append(f"cell cover (optional, slides in from the east): {2 * cv['out_hw']:.1f} mm wide on the back "
-                  f"(the inside grown by {COVER_SKIN} mm, a {COVER_FLANGE} mm skirt over the lips), {cv['out_bottom'] - (z_back - z_floor_out):.1f} mm proud; "
-                  f"inside {CELL_AIR} mm to the cell and {CLIP_CLR} mm to the clips, {COVER_SKIN} mm roof; "
-                  f"{z_top - z_back + cv['out_bottom']:.1f} mm thick there; its lips pass {near[0]:.2f} mm from {near[1]}")
     shell += rr_prism(*tongue_o[:4], tongue_o[4], z_split, z_split + TONGUE_H) - rr_prism(*in_o[:4], in_o[4], z_split - 1, z_split + TONGUE_H + 1)
 
     # A screw only where the front half is solid: under the screen there is no room
@@ -850,6 +811,134 @@ def main():
     t_out = GAP + TONGUE_T
     shell -= box(W / 2 - hl / 2 - hc, -t_out - 0.5, W / 2 + hl / 2 + hc, -t_out + hd + hc,
                  hz - hh / 2 - hc, hz + hh / 2 + hc)
+    # ── parts allowed into the floor (USB-C): a pocket over each ──
+    for ref in PROTRUDE:
+        v = parts[ref]
+        x0, y0, x1, y1 = v[:, 0].min() - PROTRUDE_CLR, v[:, 1].min() - PROTRUDE_CLR, v[:, 0].max() + PROTRUDE_CLR, v[:, 1].max() + PROTRUDE_CLR
+        z_lo = z_back + v[:, 2].min() - PROTRUDE_CLR
+        if z_lo >= z_floor_in:
+            continue
+        skin = z_lo - z_floor_out
+        through = skin < MIN_SKIN
+        shell -= box(x0, y0, x1, min(y1, H + GAP + 0.01), z_floor_out - 1 if through else z_lo, z_floor_in + 0.01)
+        report.append(f"{ref} ({-v[:, 2].min():.2f} mm) stands into the floor: "
+                      + ("opened through" if through else f"a pocket, {skin:.2f} mm of floor left under it"))
+
+    # ── the battery pack's seat: a recess the pack's board nests in, under a plate ──
+    # Laid out from the board: the cells where the clips' models put a cell today, the
+    # recess stopping USB_MARGIN short of USB-C, the pins and magnets between the cells.
+    clip_boxes = sorted([tuple(np.r_[fab_world(b["fps"][r]).min(0), fab_world(b["fps"][r]).max(0)]) for r in BOARD_CELL_CLIPS])
+    cell_cx = sum((c[0] + c[2]) / 2 for c in clip_boxes) / 2
+    clip_cy = sum((c[1] + c[3]) / 2 for c in clip_boxes) / 2          # the cell's axis on today's board
+    clip_half = max((c[3] - c[1]) / 2 for c in clip_boxes)
+    recess_s = parts[USB_REF][:, 1].min() - USB_MARGIN
+    pcb_s = recess_s - RECESS_CLR
+    cell_ys = (pcb_s - PACK_LEDGE - PACK_CLR - clip_half - CELL_PITCH, pcb_s - PACK_LEDGE - PACK_CLR - clip_half)
+    pcb = (0.0, cell_ys[0] - clip_half - PACK_CLR - PACK_LEDGE, W, pcb_s)
+    rec = (pcb[0] - RECESS_CLR, pcb[1] - RECESS_CLR, pcb[2] + RECESS_CLR, pcb[3] + RECESS_CLR)
+    if clip_boxes[0][0] < pcb[0] + PACK_CLR or clip_boxes[-1][2] > pcb[2] - PACK_CLR:
+        raise SystemExit("the clips run past the pack board's ends")
+    y_mid = sum(cell_ys) / 2
+    pins = [(net, cell_cx + sx * POGO_PITCH / 2, y_mid + sy * POGO_PITCH / 2) for net, sx, sy in POGO_NETS]
+    mags = [(cell_cx - MAG_DX, y_mid), (cell_cx + MAG_DX, y_mid)]
+    # the pack's magnets sit on its board between the cells: clear of the cans and the clips
+    r_ = CELL_D / 2
+    reach = r_ + CELL_BASE - MAG_T          # the cans' axis to the magnets' far face
+    chord = math.sqrt(max(r_ * r_ - reach * reach, 0.0))
+    if CELL_PITCH - 2 * chord < MAG_D + 2 * PACK_CLR:
+        raise SystemExit(f"the magnets ({MAG_D} mm) do not fit between the cells ({CELL_PITCH - 2 * chord:.2f} mm there)")
+    for mx, _ in mags:
+        if not (clip_boxes[0][2] + PACK_CLR <= mx - MAG_D / 2 and mx + MAG_D / 2 <= clip_boxes[-1][0] - PACK_CLR):
+            raise SystemExit(f"magnet at x {mx:.1f} runs into a clip")
+
+    z_face = z_floor_out                    # the device's back face; the tray seats on it
+    z_pcb_top = z_face + PACK_PCB_T         # the pack board's pads, mated
+    z_recess = z_pcb_top + RECESS_PLAY
+    z_plate = z_recess + PLATE
+    z_tip = z_back - POGO["L"]
+    squeeze = z_pcb_top - z_tip
+    if not z_face < z_tip < z_recess:
+        raise SystemExit(f"the pogo tips (Z {z_tip:.2f}) must stand in the recess (to Z {z_recess:.2f}) and under the back face (Z {z_face:.2f})")
+    if not POGO_SQUEEZE[0] <= squeeze <= POGO_SQUEEZE[1]:
+        raise SystemExit(f"the pogo pins squeeze {squeeze:.2f} mm mated, outside {POGO_SQUEEZE}")
+    if z_back - POGO["barrel"] < z_recess:
+        raise SystemExit("the pogo barrels reach into the recess")
+
+    # what stands on the board's back near the pack: modelled parts, and the bounded ones by their fab outline
+    near = [(r, v[:, 0].min(), v[:, 1].min(), v[:, 0].max(), v[:, 1].max(), -v[:, 2].min()) for r, v in back.items()]
+    for r in unmodelled:
+        fw = fab_world(b["fps"][r])
+        near.append((r, *fw.min(0), *fw.max(0), UNMODELLED_MAX_H[r]))
+    gap_to = lambda e, x, y: math.hypot(max(e[1] - x, 0, x - e[3]), max(e[2] - y, 0, y - e[4]))
+    overlaps = lambda e, o, m: e[1] - m < o[2] and e[3] + m > o[0] and e[2] - m < o[3] and e[4] + m > o[1]
+
+    # The plate: the back over the recess, PLATE thick, carried PLATE_MARGIN on past it;
+    # notched round any part too tall for it, which must not stand under the recess itself.
+    room = z_back - z_plate - BACK_CLEAR
+    plate_o = (rec[0] - PLATE_MARGIN, rec[1] - PLATE_MARGIN, rec[2] + PLATE_MARGIN, rec[3] + PLATE_MARGIN)
+    plate = rr_prism(*plate_o, RECESS_R + PLATE_MARGIN, z_floor_in - 0.01, z_plate) & rr_prism(*in_o[:4], in_o[4], z_floor_in - 1, z_plate + 1)
+    notched = []
+    for e in near:
+        if e[5] <= room or not overlaps(e, plate_o, BACK_CLEAR):
+            continue
+        if overlaps(e, rec, BACK_CLEAR):
+            raise SystemExit(f"{e[0]} ({e[5]:.2f} mm) stands under the recess, where the back leaves {room:.2f} mm")
+        plate -= box(e[1] - BACK_CLEAR, e[2] - BACK_CLEAR, e[3] + BACK_CLEAR, e[4] + BACK_CLEAR, z_floor_in - 1, z_plate + 1)
+        notched.append(e[0])
+    shell += plate
+    shell -= rr_prism(*rec, RECESS_R, z_face - 1, z_recess)
+
+    for net, px, py in pins:
+        hit = [e[0] for e in near if gap_to(e, px, py) < POGO["flange_d"] / 2 + POGO_PART_CLR]
+        if hit:
+            raise SystemExit(f"pogo pin {net} at {px:.1f}, {py:.1f} runs into {hit}")
+        shell -= Pos(px, -py, (z_face + z_plate) / 2) * Cylinder(POGO_HOLE / 2, z_plate - z_face + 2)
+
+    # The device's magnets: a pocket open toward the board, MAG_SKIN over the recess, in a boss.
+    z_mag_out = z_recess + MAG_SKIN
+    z_mag_in = z_mag_out + MAG_T
+    boss_r = MAG_D / 2 + MAG_CLR + MAG_WALL
+    mag_room = z_back - z_mag_in - MAG_PART_CLR
+    for mx, my in mags:
+        hit = [f"{e[0]} ({e[5]:.2f} mm)" for e in near if gap_to(e, mx, my) < boss_r and e[5] > mag_room]
+        if hit:
+            raise SystemExit(f"magnet boss at {mx:.1f}, {my:.1f} (room {mag_room:.2f} mm) runs into {hit}")
+        if any(math.hypot(mx - px, my - py) < boss_r + POGO_HOLE / 2 + 0.3 for _, px, py in pins):
+            raise SystemExit(f"magnet boss at {mx:.1f}, {my:.1f} runs into a pogo hole")
+        shell += Pos(mx, -my, (z_plate + z_mag_in) / 2) * Cylinder(boss_r, z_mag_in - z_plate + 0.02)
+        shell -= Pos(mx, -my, (z_mag_out + z_mag_in + 1) / 2) * Cylinder(MAG_D / 2 + MAG_CLR, z_mag_in + 1 - z_mag_out)
+    inductors = [(r, f["x"], f["y"]) for r, f in b["fps"].items() if r.startswith("L_") and not f["dnp"]]
+    mag_l = min((math.hypot(mx - lx, my - ly), r) for mx, my in mags for r, lx, ly in inductors)
+
+    # ── the pack: tray and door (print parts) ──
+    face = outline(b, GAP + WALL - DRAFT_MM / 2)
+    pack_o = (face[0], rec[1] - PACK_RIM, face[2], rec[3] + PACK_RIM)
+    if rec[0] - face[0] < PACK_RIM - RECESS_CLR - 0.01:
+        raise SystemExit(f"the back face leaves only {rec[0] - face[0]:.2f} mm beside the recess for the tray")
+    z_door_in = z_face - CELL_BASE - CELL_D - CELL_AIR
+    z_pack = z_door_in - DOOR_T
+    cav = (pcb[0], pcb[1] + PACK_LEDGE, pcb[2], pcb[3] - PACK_LEDGE)
+    tray = rr_prism(*pack_o, PACK_R, z_pack, z_face)
+    tray = fillet(tray.edges().group_by(Axis.Z)[0], PACK_FILLET)
+    tray -= box(*cav, z_pack - 1, z_face + 1)
+    groove = (z_pack + DOOR_LIP - FIT / 2, z_door_in + FIT / 2)
+    tray -= box(cav[0], cav[1] - DOOR_GROOVE, pack_o[2] + 1, cav[3] + DOOR_GROOVE, *groove)
+    tray -= box(cav[2] - 0.01, cav[1], pack_o[2] + 1, cav[3], z_pack - 1, groove[1])
+    door_x = (cav[0] + FIT, pack_o[2] + 1)
+    door = (box(door_x[0], cav[1] + FIT / 2, door_x[1], cav[3] - FIT / 2, z_pack, z_door_in)
+            + box(door_x[0], cav[1] - DOOR_GROOVE + FIT / 2, door_x[1], cav[3] + DOOR_GROOVE - FIT / 2, groove[0] + FIT / 2, z_door_in))
+    door &= rr_prism(*pack_o, PACK_R, z_pack - 1, z_face)   # its east end follows the tray's corners
+    report.append(f"the pack's board {pcb[2] - pcb[0]:.1f} x {pcb[3] - pcb[1]:.1f} mm (y {pcb[1]:.1f}-{pcb[3]:.1f}), "
+                  f"cells at y {cell_ys[0]:.1f} and {cell_ys[1]:.1f}; recess {PACK_PCB_T + RECESS_PLAY:.1f} deep, "
+                  f"the back {PLATE} mm over it" + (f", notched for {', '.join(notched)}" if notched else ""))
+    report.append(f"pogo pins {POGO['part']} at {', '.join(f'{n} {x:.1f},{y:.1f}' for n, x, y in pins)}: tips "
+                  f"{z_tip - z_face:.2f} mm under the back face, squeezed {squeeze:.2f} mm mated")
+    report.append(f"magnets {MAG_D:.0f} x {MAG_T:.0f} mm at x {mags[0][0]:.1f} and {mags[1][0]:.1f}, y {y_mid:.1f}: "
+                  f"{z_mag_out - z_face:.2f} mm apart mated ({MAG_SKIN} plastic, {RECESS_PLAY} air, {PACK_PCB_T} board); "
+                  f"{mag_l[0]:.1f} mm from {mag_l[1]} (in plan)")
+    report.append(f"pack {pack_o[2] - pack_o[0]:.1f} x {pack_o[3] - pack_o[1]:.1f} x {z_face - z_pack:.2f} mm "
+                  f"(y {pack_o[1]:.1f}-{pack_o[3]:.1f}): {z_top - z_pack:.1f} mm with the device")
+
     for _, _, cut in openings:
         shell -= cut
 
@@ -927,8 +1016,6 @@ def main():
         report.append(f"one pocket under the bezel's chin, {depth:.2f} deep ({FRONT_CLR} over the tallest part), "
                       f"{z_top - depth:.2f} mm of bezel over it, from y {north:.1f} to the south wall, "
                       f"a boss round the screw; it covers {', '.join(front)}")
-    cell = {"side": "back", "x": [round(cell_cx - 22.25, 3), round(cell_cx + 22.25, 3)], "y": round(cell_cy, 3),
-            "z": round(z_back - CELL_BASE - CELL_D / 2, 3), "d": CELL_D, "clips": clips}
 
     # Screw bosses: the chin is solid from the board up to the front skin there; the
     # pilot runs up to PILOT_TOP_CLR under the front face.
@@ -958,11 +1045,11 @@ def main():
     # ── checks that the geometry, not prose, has to satisfy ──
     if win[0] < panel[0] or win[2] > panel[2] or win[1] < panel[1] or win[3] > panel[3]:
         raise SystemExit("display window is larger than the glass")
-    assert shell.is_valid and bezel.is_valid and cover.is_valid, "invalid solid"
+    assert shell.is_valid and bezel.is_valid and tray.is_valid and door.is_valid, "invalid solid"
 
-    size = (out_o[2] - out_o[0], out_o[3] - out_o[1], z_top - z_floor_out)   # the body; the cell (or its cover) adds to it
-    print_3mf(shell, bezel, cover, OUT / "case.3mf")
-    for name, part in (("shell", shell), ("bezel", bezel), ("cover", cover)):
+    size = (out_o[2] - out_o[0], out_o[3] - out_o[1], z_top - z_floor_out)   # the device; the pack adds to it
+    print_3mf(shell, bezel, tray, door, OUT / "case.3mf")
+    for name, part in (("shell", shell), ("bezel", bezel), ("tray", tray), ("door", door)):
         export_step(part, str(OUT / f"{name}.step"))
         export_stl(part, str(OUT / f"{name}.stl"), tolerance=MESH_TOL, angular_tolerance=0.2)
         glb = OUT / f"{name}.glb"
@@ -971,9 +1058,12 @@ def main():
         glb.unlink()
 
     with tempfile.TemporaryDirectory() as tmp:
-        header, blob = board_model(BOARD, Path(tmp), T)
+        header, blob = board_model(BOARD, Path(tmp), T, drop=BOARD_CELL_CLIPS)
     header["bin"] = base64.b64encode(blob).decode()
     (WEB / "board.json").write_text(json.dumps(header, separators=(",", ":")), encoding="utf-8")
+    hw, hw_blob = pack_hardware(clip_prims, T, clip_cy, cell_cx, cell_ys, z_face, z_back, pcb, pins, mags)
+    hw["bin"] = base64.b64encode(hw_blob).decode()
+    (WEB / "pack.json").write_text(json.dumps(hw, separators=(",", ":")), encoding="utf-8")
 
     fbox = flame_art.box(flame_art.facets())
     at = flame_art.placement(W, H, fbox)
@@ -982,21 +1072,28 @@ def main():
     fw, fh = at[2] - at[0], at[3] - at[1]
     report.append(f"flame {fw:.1f} x {fh:.1f} mm across the back, mask back face at Z {header['maskBack']:.3f}")
 
-
     downloads = write_downloads()
+    r3 = lambda seq: [round(v, 3) for v in seq]
     data = {
         "generated_from": "board/wallet.kicad_pcb",
         "size_mm": [round(v, 1) for v in size],
         "board": {"w": W, "h": H, "r": b["r"], "t": T, "slots": b["slots"], "holes": b["holes"]},
         "z": {"floorOut": z_floor_out, "floorIn": z_floor_in, "boardBack": z_back, "split": z_split,
-              "cellOut": z_back - cv["cell_out"], "coverOut": z_back - cv["out_bottom"],
-              "panel": list(z_panel), "lip": z_lip, "top": z_top},
+              "pack": z_pack, "panel": list(z_panel), "lip": z_lip, "top": z_top},
         "panel": list(panel), "viewingArea": list(va),
-        "cell": cell,
+        "pack": {"outline": r3(pack_o), "r": PACK_R, "board": r3(pcb), "boardT": PACK_PCB_T,
+                 "cells": {"x": r3([cell_cx - CELL_L / 2, cell_cx + CELL_L / 2]), "y": r3(cell_ys),
+                           "z": round(z_face - CELL_BASE - CELL_D / 2, 3), "d": CELL_D},
+                 "pins": [{"net": n, "x": round(x, 3), "y": round(y, 3)} for n, x, y in pins],
+                 "pogo": {**POGO, "tip": round(z_tip, 3)},
+                 "magnets": [r3(m) for m in mags], "magnet": {"d": MAG_D, "t": MAG_T, "device": round(z_mag_out, 3)},
+                 "z": {"face": z_face, "recess": z_recess, "bottom": z_pack}},
         "camera": cam,
         "depthDriver": driver,
-        "parts": {"shell": "enclosure/shell.json", "bezel": "enclosure/bezel.json", "cover": "enclosure/cover.json"},
+        "parts": {"shell": "enclosure/shell.json", "bezel": "enclosure/bezel.json",
+                  "tray": "enclosure/tray.json", "door": "enclosure/door.json"},
         "board3d": "enclosure/board.json",
+        "pack3d": "enclosure/pack.json",
         "screws": {"length": screw, "d": 2.0, "head": [3.8, 1.6], "seat": seat,
                    "holes": [[hx, hy] for hx, hy in screw_holes]},
         "maskBack": header["maskBack"],
@@ -1006,13 +1103,49 @@ def main():
     }
     (WEB / "enclosure.json").write_text(json.dumps(data, indent=1))
 
-    print(f"case {size[0]:.1f} x {size[1]:.1f} x {size[2]:.1f} mm, {z_top - z_back + cv['cell_out']:.1f} at the cell "
-          f"({z_top - z_back + cv['out_bottom']:.1f} with its cover) "
+    print(f"device {size[0]:.1f} x {size[1]:.1f} x {size[2]:.2f} mm, {z_top - z_pack:.2f} with the pack on "
           f"(back cavity {depth + BACK_CLEAR:.1f} mm, set by the {driver}; deepest modelled part {deepest_ref} {deepest:.2f} mm)")
     for line in report:
         print(" ", line)
     print(f"  unmodelled back parts (height bounds): {', '.join(unmodelled) or 'none'}")
     print(f"wrote {OUT.relative_to(HERE)}/ and {WEB.relative_to(HERE)}/")
+
+
+def tessellated(shape, tol=0.02) -> tuple[np.ndarray, np.ndarray]:
+    vs, ts = shape.tessellate(tol, 0.3)
+    return np.array([[v.X, v.Y, v.Z] for v in vs]), np.array(ts, dtype=np.int64)
+
+
+def pack_hardware(clip_prims, T, clip_cy, cell_cx, cell_ys, z_face, z_back, pcb, pins, mags) -> tuple[dict, bytes]:
+    """The pack's board for the preview, packed like board.json: the board (its mask
+    follows the print scheme), the gold pads, the board's own clip models moved onto it
+    (the north cell turned end for end: the cells are in series), the cells, the magnets
+    and the small parts on its inner face."""
+    groups: dict[tuple, list] = {}
+    add = lambda key, shape: groups.setdefault(key, []).append(tessellated(shape))
+    dz = z_face - z_back
+    for i, y in enumerate(cell_ys):
+        for _, mat, v, tri in clip_prims:
+            P = np.c_[v[:, 0], -(v[:, 1] + y - clip_cy), v[:, 2] - T + dz]
+            if i == 0:
+                P[:, 0], P[:, 1] = 2 * cell_cx - P[:, 0], -2 * y - P[:, 1]
+            r, g_, b_, _ = ((mat or {}).get("pbrMetallicRoughness", {})).get("baseColorFactor", [0.7, 0.7, 0.7, 1])
+            groups.setdefault(("part", round(r, 3), round(g_, 3), round(b_, 3)), []).append((P, tri))
+    add(("mask", 0, 0, 0), rr_prism(*pcb, 1.0, z_face, z_face + PACK_PCB_T))
+    for _, px, py in pins:
+        add(("pads", 0, 0, 0), Pos(px, -py, z_face + PACK_PCB_T + 0.02) * Cylinder(POGO_PAD / 2, 0.04))
+    z_cell = z_face - CELL_BASE - CELL_D / 2
+    for i, y in enumerate(cell_ys):
+        add(("part", 0.86, 0.87, 0.9), Pos(cell_cx, -y, z_cell) * Rot(0, 90, 0) * Cylinder(CELL_D / 2, CELL_L - 1.0))
+        end = cell_cx + (-1 if i == 0 else 1) * (CELL_L / 2 - 0.5)   # the + terminal: west on the north cell, east on the south
+        add(("part", 0.62, 0.63, 0.66), Pos(end, -y, z_cell) * Rot(0, 90, 0) * Cylinder(1.9, 1.0))
+    y_mid = sum(cell_ys) / 2
+    for mx, my in mags:
+        add(("part", 0.72, 0.73, 0.77), Pos(mx, -my, z_face - MAG_T / 2) * Cylinder(MAG_D / 2, MAG_T))
+    for dx, dy, w, h, t, label in PACK_SMALL:
+        colour = (0.78, 0.62, 0.22) if label.startswith("PTC") else (0.13, 0.13, 0.15)
+        add(("part", *colour), box(cell_cx + dx - w / 2, y_mid + dy - h / 2, cell_cx + dx + w / 2, y_mid + dy + h / 2, z_face - t, z_face))
+    return pack_mesh(groups)
 
 
 def gltf_json(glb: Path, dest: Path):
@@ -1021,53 +1154,39 @@ def gltf_json(glb: Path, dest: Path):
     dest.write_text(json.dumps({"glb": base64.b64encode(glb.read_bytes()).decode()}))
 
 
-def print_3mf(shell, bezel, cover, dest: Path):
-    """The parts laid out for printing: the shell on its back, the bezel face down beside
-    it, the cover standing on its end wall beyond that."""
-    sb = shell.bounding_box()
-    flat_shell = Pos(-sb.min.X, -sb.min.Y, -sb.min.Z) * shell
-    turned = Rot(180, 0, 0) * bezel
-    tb = turned.bounding_box()
-    flat_bezel = Pos(sb.size.X + 8 - tb.min.X, -tb.min.Y, -tb.min.Z) * turned
-    upright = Rot(0, 90, 0) * cover    # the east end wall down
-    cb, fb = upright.bounding_box(), flat_bezel.bounding_box()
-    flat_cover = Pos(fb.max.X + 8 - cb.min.X, -cb.min.Y, -cb.min.Z) * upright
+def print_3mf(shell, bezel, tray, door, dest: Path):
+    """The parts laid out for printing in a row: the shell on its back, the bezel face
+    down, the tray on its top face, the door flat on its outside."""
     m = Mesher()
-    for name, part in (("shell", flat_shell), ("bezel", flat_bezel), ("cover", flat_cover)):
-        m.add_shape(part, linear_deflection=MESH_TOL, angular_deflection=0.2, part_number=name)
+    x = 0.0
+    for name, part in (("shell", shell), ("bezel", Rot(180, 0, 0) * bezel), ("tray", Rot(180, 0, 0) * tray), ("door", door)):
+        bb = part.bounding_box()
+        m.add_shape(Pos(x - bb.min.X, -bb.min.Y, -bb.min.Z) * part, linear_deflection=MESH_TOL, angular_deflection=0.2, part_number=name)
+        x += bb.size.X + 8
     m.write(str(dest))
 
 
 def write_downloads() -> dict:
-    """The DIY files for the page. The host serves text only: CSVs go as they are, STEP as
-    .txt, binaries (zip, STL, 3MF) as base64 .txt; the page rebuilds each file and hands it
-    to the viewer's downloads capability."""
+    """The DIY files for the page. The host serves text only: binaries (zip) go as base64
+    .txt; the page rebuilds each file and hands it to the viewer's downloads capability.
+    v4 offers the case and the pack only: the order set in production/order is proto 1's
+    board, with the cell on it."""
     files_dir = WEB / "files"
     if files_dir.exists():
         shutil.rmtree(files_dir)
     files_dir.mkdir()
-
-    def entry(label, src: Path):
-        raw = src.read_bytes()
-        if src.suffix == ".csv":
-            part, b64 = src.name, False
-            (files_dir / part).write_bytes(raw)
-        elif src.suffix in (".step", ".stp"):
-            part, b64 = src.name + ".txt", False
-            (files_dir / part).write_bytes(raw)
-        else:
-            part, b64 = src.name + ".b64.txt", True
-            (files_dir / part).write_text(base64.b64encode(raw).decode())
-        return {"label": label, "filename": src.name, "bytes": len(raw), "part": f"enclosure/files/{part}", "b64": b64}
-
     # The viewer saves only allowlisted types (zip, csv, ...), so the case goes as one zip.
     case_zip = OUT / "ambire-signer-case.zip"
     with zipfile.ZipFile(case_zip, "w", zipfile.ZIP_DEFLATED) as z:
-        for name in ("case.3mf", "shell.stl", "bezel.stl", "cover.stl", "shell.step", "bezel.step", "cover.step"):
+        for name in ("case.3mf", "shell.stl", "bezel.stl", "tray.stl", "door.stl",
+                     "shell.step", "bezel.step", "tray.step", "door.step"):
             z.write(OUT / name, name)
         z.writestr("README.txt", CASE_README)
-    return {"fabs": {fab: [entry(l, p) for l, p in files] for fab, files in FAB_SETS.items()},
-            "case": [entry("Case: 3MF, STL and STEP (zip)", case_zip)]}
+    raw = case_zip.read_bytes()
+    part = case_zip.name + ".b64.txt"
+    (files_dir / part).write_text(base64.b64encode(raw).decode())
+    return {"case": [{"label": "Case and battery pack: 3MF, STL and STEP (zip)", "filename": case_zip.name,
+                      "bytes": len(raw), "part": f"enclosure/files/{part}", "b64": True}]}
 
 
 if __name__ == "__main__":
