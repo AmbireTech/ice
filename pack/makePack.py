@@ -78,6 +78,7 @@ CONN = ("J_PACK", os.path.join(HERE, "pack.pretty"), "Xinyangze_YZP0048-20048-04
 CLIPS = {"BT_N": ("C6937104", "MY-AAA-19-J"), "BT_P": ("C6937107", "MY-AAA-20-J")}
 
 W_PWR, W_SIG = 0.8, 0.25
+W_FAN = 0.4                # a power pad's fanout to its plane via: thick, capped at the pad's narrow side
 VIA = (0.6, 0.3)
 
 # ── copper, by hand: (net, layer, width, points) and (net, x, y) vias ───────
@@ -92,7 +93,7 @@ TRACKS = [
     ("BAT+", "B", W_PWR, [(_fx, CONN_Y - 1.4), (_fx, _bp), (CONN_X - 0.65, _bp), (CONN_X, PIN["BAT+"])]),
     ("MID_SENSE", "B", W_SIG, [(_rx + 0.51, PIN["MID_SENSE"]), (CONN_X, PIN["MID_SENSE"])]),
     ("NTC", "B", W_SIG, [(_tx + 0.825, PIN["NTC"]), (CONN_X, PIN["NTC"])]),
-    ("BAT-", "B", W_SIG, [(_tx - 0.825, PIN["NTC"]), (_tx - 0.825, PIN["NTC"] + 1.2)]),
+    ("BAT-", "B", W_FAN, [(_tx - 0.825, PIN["NTC"]), (_tx - 0.825, PIN["NTC"] + 1.2)]),   # a power fanout into the pour
     ("CELL+", "B", W_PWR, [(_fx, CONN_Y + 1.4), (_fx, _cs - 2.0), (38.6, _cs - 2.0)]),   # to the south-east clip's pad
     ("BAT-", "B", W_PWR, [(40.0, _cn - 2.0), (40.0, _cn - 3.8)]),    # north cell - -> vias into the pour, north
     ("BAT-", "B", W_PWR, [(45.0, _cn - 2.0), (45.0, _cn - 3.8)]),    # of its clip (the pins' column is south)
