@@ -202,8 +202,13 @@ CELL_D, CELL_L, CELL_BASE = 10.5, 44.5, 0.25   # AAA (Energizer E92/L92, eneloop
 # rise; nothing else of the clip comes near the board.
 LOW_STEEL = 0.5       # clip steel this close to the pack board counts as lying on it
 CLIP_BODY_HALF = 2.6  # the foot's body: model vertices this close to the cell's axis; the tab beyond
-CLIP_CRTYD_HALF = 5.9  # the clips' courtyard across the cell: the arms' 11 mm and room for them to spread as a
-                       # cell goes in (adjacent arms are different nets: the east pair is BAT- and the south cell's plus)
+# A cell goes into its clips through the arms' tips, which the model has 6.9 mm apart: each
+# arm swings out ~1.7 mm at its tip and ~0.9 mm at its widest (hinging at its root). The
+# arms of the two cells' clips face each other, and on the east side they are the pack's
+# minus and the south cell's plus, ahead of the fuse: touching while a cell goes in is a
+# dead short. So the arms keep twice that swing apart at rest.
+ARM_SWING = 0.9
+ARM_GAP = 2 * ARM_SWING
 CONN_JOINT_CLR = 0.3  # the male's through-hole joints (inner face, flat: their tails end in the board) to that steel
 SMALL_CLR = 0.3       # the pack board's small parts under the cells' cans
 PACK_PCB_T = 0.8      # the pack's board
@@ -868,7 +873,7 @@ def main():
     cam_n = max(lens[1] + LENS_R + max(z_lens - z_pack, 0) * math.tan(math.radians(CAM_FOV / 2)),
                 cam[3] + CAM_CLR + PACK_RIM)
     n = len(CONN_NETS)
-    cell_pitch = 2 * CLIP_CRTYD_HALF                 # side by side, the clips' courtyards touching
+    cell_pitch = 2 * clip_half + ARM_GAP             # side by side, the arms ARM_GAP apart
     jp = b["fps"]["J_PACK"]
     cx, cy = jp["x"], jp["y"]                         # the receptacle as the board places it: the pins' centre
     hr = (CONN_DEV["len"] / 2, CONN_DEV["wid"] / 2)   # long axis east-west
@@ -951,7 +956,7 @@ def main():
                   f"y {pack_o[1]:.1f}-{pack_o[3]:.1f} ({north_by} sets its north edge): "
                   f"{z_top - z_pack:.2f} mm with the device")
     report.append(f"the pack's board {pcb[2] - pcb[0]:.1f} x {pcb[3] - pcb[1]:.1f} x {PACK_PCB_T} mm, {out:.2f} mm off the back face "
-                  f"inside the tray's rim; cells at y {cell_ys[0]:.2f} and {cell_ys[1]:.2f} ({cell_pitch:.2f} apart, the clips' courtyards touching); "
+                  f"inside the tray's rim; cells at y {cell_ys[0]:.2f} and {cell_ys[1]:.2f} ({cell_pitch:.2f} apart, the arms {ARM_GAP:.1f} mm apart); "
                   f"the male's joints {joint_gap:.2f} mm under the south cell's can")
     report.append(f"contacts: receptacle {CONN_DEV['part']} ({CONN_DEV['h']} mm) on the device board at {cx}, {cy:.2f}, male "
                   f"{CONN_PACK['part']} on the pack (tab north), its face {z_recv - z_body:.2f} mm off the receptacle mated, "

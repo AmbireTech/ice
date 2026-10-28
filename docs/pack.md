@@ -24,11 +24,12 @@ All numbers come from the generated model (`enclosure/generate.py`, 2026-10-28).
 | Back face | the cell stands out | flat; a window for the connector; the camera head stands 1.5 mm out |
 | Without the cells | — | runs from USB |
 
-The pack is 51.2 × 28.6 × 12.45 mm. It spans the back from 21.1 to 49.7 mm below the top
+The pack is 51.2 × 29.2 × 12.45 mm. It spans the back from 21.1 to 50.3 mm below the top
 edge (the device is 91.2 mm tall), just south of the camera. Its two cells lie side by
-side, 11.8 mm apart axis to axis: their clips' courtyards touch, which leaves 0.8 mm
-between the arms of neighbouring clips (on the east side those are the pack's minus and
-the south cell's plus, so they must not touch as a cell goes in). The connector lies
+side, 12.8 mm apart axis to axis, which leaves 1.8 mm between the arms of neighbouring
+clips. A cell goes in through its arms' tips (6.9 mm apart in the clip's model), so each
+arm swings out about 0.9 mm at its widest as it does; on the east side the neighbouring
+arms are the pack's minus and the south cell's plus, ahead of the fuse, and must not touch. The connector lies
 east-west along the south cell, its four pins in a row under the cell's south flank,
 clear of the clips, which hold only the cells' ends. The fuse, the resistor and the
 thermistor sit in the strip south of the south cell's can.
@@ -152,7 +153,7 @@ JLC lists 13 magnetic pogo connectors, all from Xinyangze. The stock below was c
 
 ## The pack's board
 
-48.0 × 25.8 mm, the same width as the device's board, 0.8 mm thick.
+48.0 × 26.4 mm, the same width as the device's board, 0.8 mm thick.
 
 - The south cell's plus goes through the fuse to the plus pin.
 - The south cell's minus joins the north cell's plus at the west end: the mid-point. It

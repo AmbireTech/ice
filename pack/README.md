@@ -5,7 +5,7 @@ Ambire Ice v4 runs from two AAA cells in a pack that snaps onto its back (why an
 one face, a magnetic pogo connector on the other, the face toward the device. The
 connector's magnets, and the matching receptacle's on the device, hold the pack.
 
-48.0 × 25.8 mm, 2 layers, 0.8 mm thick, ENIG, routed.
+48.0 × 26.4 mm, 2 layers, 0.8 mm thick, ENIG, routed.
 
 <img src="render-outer.jpg" width="430" alt="The board's outer face: the magnetic connector lying east-west near the south edge, its tab to the north, its four pins labelled BAT-, NTC, MID and BAT+">
 <img src="render-cells.jpg" width="430" alt="The board's inner face: four AAA clips holding two cells in series, the connector's four joints in a row under the south cell, the fuse, resistor and thermistor in the strip south of it">
@@ -38,8 +38,10 @@ pour. The pin order lives in one place, `PIN_NETS` in `makePack.py`.
 of the device's MCU (x 22.0, y 42.28 in device board coordinates): along the south cell,
 its tab north, its four pins in a row under the cell's south flank, plus at the east end.
 The clips hold only the cells' ends, so the joints are 7 mm from any of their steel, and
-the cells lie side by side, 11.8 mm apart with the clips' courtyards touching. The joints
-are flat (see below) and sit 0.89 mm under the south cell's can. `makePack.py` reads the
+the cells lie side by side, 12.8 mm apart: 1.8 mm between neighbouring clips' arms, twice
+the ~0.9 mm each arm swings out as a cell goes in (on the east side those arms are the
+pack's minus and the south cell's plus, ahead of the fuse). The joints are flat (see
+below) and sit 0.47 mm under the south cell's can. `makePack.py` reads the
 connector's place and the clips' steel from the case (`enclosure.json`) and refuses a
 joint within 0.3 mm of the steel.
 

@@ -32,7 +32,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 OUT = os.path.join(HERE, "pack.kicad_pcb")
 PRO = os.path.join(HERE, "pack.kicad_pro")
-DEVICE = os.path.join(ROOT, "board/wallet.kicad_pcb")
+DEVICE = os.path.join(ROOT, "enclosure/pack_clips.kicad_pcb")   # proto 1's clips, as that board placed them
 ENCLOSURE = os.path.join(ROOT, "docs/v4/enclosure/enclosure.json")
 KICAD_FP = "/Applications/KiCad/KiCad.app/Contents/SharedSupport/footprints"
 
@@ -143,7 +143,7 @@ def clip_blocks():
         if ref and ref.group(1) in CLIPS:
             found[ref.group(1)] = t[a:b]
     if set(found) != set(CLIPS):
-        sys.exit(f"clips not on the device board: {set(CLIPS) - set(found)}")
+        sys.exit(f"clips not in {DEVICE}: {set(CLIPS) - set(found)}")
     out = []
     for cell in ("1", "2"):                  # 1 north, 2 south
         for ref, blk in found.items():
