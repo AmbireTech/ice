@@ -235,7 +235,7 @@ footer svg { width: 18px; height: 27px; color: var(--violet); }
           <a class="btn ghost" href="#configure" data-open-diy>Build it yourself</a>
         </div>
       </div>
-      <div class="hero-shot"><img src="brand/signer.webp" alt="Ambire Signer from the front in its see-through ice blue case: a flat front with the screen and the joystick" width="673" height="1046"></div>
+      <div class="hero-shot"><img src="brand/signer.webp" alt="Ambire Signer from the front in its see-through ice blue case: a flat front with the screen and the joystick" width="670" height="1046"></div>
     </div>
   </header>
 
@@ -297,7 +297,7 @@ footer svg { width: 18px; height: 27px; color: var(--violet); }
         <div class="stage" id="stage" role="img" aria-label="3D model of the Ambire Signer with its board and case. Drag to turn it.">
           <p class="stage-msg" id="stageMsg">Loading the 3D model…</p>
           <button type="button" class="tog onstage" id="explode" aria-pressed="false">Take apart</button>
-          <button type="button" class="tog onstage" id="packTog" aria-pressed="true">Battery pack</button>
+          <button type="button" class="tog onstage" id="packTog" aria-pressed="false">Battery pack</button>
         </div>
         <figcaption>Drag to turn it, or take it apart. The battery pack snaps onto the back just below the camera, with magnets; its magnetic connector reaches through the back onto gold pads on the board. The airgap switch is on the left edge, the joystick (its centre press is the power key) and USB-C at the bottom; the QR camera looks out through a window in the back. <span id="dims"></span></figcaption>
       </figure>
@@ -870,6 +870,7 @@ async function main() {
   const gold = new THREE.MeshStandardMaterial({ color: 0xd8b25a, metalness: 1, roughness: 0.3 });
   const magnetMat = new THREE.MeshStandardMaterial({ color: 0xb9bcc4, metalness: 0.9, roughness: 0.35 });
   const pack = new THREE.Group().add(boardMesh(packData, maskMat), tray);
+  pack.visible = false;
   const rod = (r, z0, z1, x, y, mat) => {
     const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, Math.abs(z1 - z0), 32), mat);
     m.rotation.x = Math.PI / 2;
@@ -911,7 +912,7 @@ async function main() {
   // case
   let exploded = 0, target = 0;   // take-apart progress, 0 = assembled
   let caseTransmission = 1;
-  let packOn = true;
+  let packOn = false;   // the device alone by default; the toggle snaps the pack on
   const setCase = (name) => {
     const none = name === "none";
     shell.visible = bezel.visible = screws.visible = !none;
