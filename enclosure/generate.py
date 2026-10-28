@@ -193,7 +193,7 @@ LEVER_TRAVEL, LEVER_CLR = 1.5, 0.5   # MSK12C02 slide travel; clearance around t
 # clips hold the cells, as v3's cell was held.
 BOARD_CELL_CLIPS = ("BT_N", "BT_P")   # proto 1's clips: off the device in v4; their models shape the pack's
 CELL_D, CELL_L, CELL_BASE = 10.5, 44.5, 0.25   # AAA (Energizer E92/L92, eneloop BK-4MCCE), on the clips' 0.25 mm steel base
-CELL_PITCH = 14.5     # axis to axis: the pack board's fuse lies between the two cells
+CONN_JOINT_CLR = 0.5  # the male's through-hole joints (inner face) to the clips' arms
 PACK_PCB_T = 0.8      # the pack's board
 PACK_LEDGE = 1.0      # its north and south edges rest on the tray's walls this far
 PACK_CLR = 0.3        # the clips to the tray's walls
@@ -215,13 +215,16 @@ CAM_FOV, LENS_R = 70.0, 2.6
 CONN_DEV = {"part": "YZ103915020T-04025-02", "lcsc": "C6276862", "len": 22.3, "wid": 7.7, "h": 2.0,
             "pitch": 2.54, "boss": (5.0, 1.5, 0.5)}
 CONN_PACK = {"part": "YZP0048-20048-04025-03", "lcsc": "C5126845", "len": 21.2, "wid": 6.86, "tab": (5.03, 2.31),
-             "body_t": 2.8, "free": 4.1, "work": 3.1, "pitch": 2.5, "plunger_d": 0.9, "barrel_d": 1.5}
+             "body_t": 2.8, "free": 4.1, "work": 3.1, "pitch": 2.5, "plunger_d": 0.9, "barrel_d": 1.5,
+             "pad_d": 1.6}   # pack board land: 1.6 mm rings on 0.8 mm holes (pack/makePack.py)
 CONN_NETS = ("BAT+", "MID", "NTC", "BAT-")   # north to south
 # Where the pair goes (board coordinates, long axis north-south, the male's tab west):
 # east of the MCU, the place the device board can clear (its power-key network moves to
 # the chin, which the cell left empty); west of the MCU the SE050 and the pack's power
-# lines could not share the column.
-CONN_AT = (43.6, 35.4)
+# lines could not share the column. North-south it sits midway between the cells, which
+# stand far enough apart that the male's through-hole joints pass between the east clips'
+# arms (the pack board's inner face): that sets the cells' pitch.
+CONN_X = 43.6
 CONN_CLR = 0.2        # the male's body in its window; the receptacle to the nearest part
 # The pack board's other parts on its inner face (x, y off the pack's centre; w, h,
 # height; label), where pack/pack.kicad_pcb (branch v4-pack-board) has them: a resettable
@@ -846,7 +849,9 @@ def main():
     pack_n = max(lens[1] + LENS_R + max(z_lens - z_pack, 0) * math.tan(math.radians(CAM_FOV / 2)),
                  cam[3] + CAM_CLR + PACK_RIM)
     pcb_n = pack_n + PACK_RIM
-    cell_ys = (pcb_n + PACK_LEDGE + PACK_CLR + clip_half, pcb_n + PACK_LEDGE + PACK_CLR + clip_half + CELL_PITCH)
+    n = len(CONN_NETS)
+    cell_pitch = 2 * clip_half + (n - 1) * CONN_PACK["pitch"] + CONN_PACK["pad_d"] + 2 * CONN_JOINT_CLR
+    cell_ys = (pcb_n + PACK_LEDGE + PACK_CLR + clip_half, pcb_n + PACK_LEDGE + PACK_CLR + clip_half + cell_pitch)
     pcb = (0.0, pcb_n, W, cell_ys[1] + clip_half + PACK_CLR + PACK_LEDGE)
     face = outline(b, GAP + WALL - DRAFT_MM / 2)
     pack_o = (face[0], pack_n, face[2], pcb[3] + PACK_RIM)
@@ -858,19 +863,18 @@ def main():
 
     # The pair at CONN_AT, long axis north-south. The receptacle needs bare board under it;
     # the male's body (and its tab, west) passes a window in the back and stops over it.
-    cx, cy = CONN_AT
+    cx, cy = CONN_X, y_mid
     hr = (CONN_DEV["wid"] / 2, CONN_DEV["len"] / 2)
     recv = (cx - hr[0], cy - hr[1], cx + hr[0], cy + hr[1])
     hm = (CONN_PACK["wid"] / 2, CONN_PACK["len"] / 2)
     male = (cx - hm[0], cy - hm[1], cx + hm[0], cy + hm[1])
     tw, tl = CONN_PACK["tab"]
     tab = (male[0] - tl, cy - tw / 2, male[0], cy + tw / 2)
-    n = len(CONN_NETS)
     contacts = [(net, cx, cy + (i - (n - 1) / 2) * CONN_DEV["pitch"]) for i, net in enumerate(CONN_NETS)]
     pins = [(net, cx, cy + (i - (n - 1) / 2) * CONN_PACK["pitch"]) for i, net in enumerate(CONN_NETS)]
     for r_ in (male, tab, recv):
         if r_[0] < pcb[0] + 0.5 or r_[2] > pcb[2] - 0.5 or r_[1] < pcb[1] + 0.5 or r_[3] > pcb[3] - 0.5:
-            raise SystemExit(f"the pair at {CONN_AT} runs off the pack board")
+            raise SystemExit(f"the pair at {cx}, {cy:.2f} runs off the pack board")
 
     # what stands on the board's back: modelled parts, and the bounded ones by their fab outline
     near = [(r, v[:, 0].min(), v[:, 1].min(), v[:, 0].max(), v[:, 1].max(), -v[:, 2].min()) for r, v in back.items()]
@@ -882,7 +886,7 @@ def main():
                      | {e[0] for e in near if overlaps(e, tab, CONN_CLR) and e[5] > z_back - z_body - CONN_CLR})
     fixed = [r for r in to_move if not b["fps"][r]["lib"].split(":")[-1].startswith(("R_", "C_", "SOT-23", "SOT-363", "D_SOD"))]
     if fixed:
-        raise SystemExit(f"the receptacle at {CONN_AT} sits on {fixed}, which the board cannot simply move")
+        raise SystemExit(f"the receptacle at {cx}, {cy:.2f} sits on {fixed}, which the board cannot simply move")
 
     # the device's back: the male's window (its body and tab) down into the cavity
     male_win = (male[0] - CONN_CLR, male[1] - CONN_CLR, male[2] + CONN_CLR, male[3] + CONN_CLR)
@@ -901,8 +905,8 @@ def main():
                   f"y {pack_o[1]:.1f}-{pack_o[3]:.1f} (the camera's {CAM_FOV:.0f} deg cone sets its north edge): "
                   f"{z_top - z_pack:.2f} mm with the device")
     report.append(f"the pack's board {pcb[2] - pcb[0]:.1f} x {pcb[3] - pcb[1]:.1f} x {PACK_PCB_T} mm, {out:.2f} mm off the back face "
-                  f"inside the tray's rim; cells at y {cell_ys[0]:.1f} and {cell_ys[1]:.1f}")
-    report.append(f"contacts: receptacle {CONN_DEV['part']} ({CONN_DEV['h']} mm) on the device board at {cx}, {cy}, male "
+                  f"inside the tray's rim; cells at y {cell_ys[0]:.2f} and {cell_ys[1]:.2f} ({cell_pitch:.2f} apart: the male's joints between the clips)")
+    report.append(f"contacts: receptacle {CONN_DEV['part']} ({CONN_DEV['h']} mm) on the device board at {cx}, {cy:.2f}, male "
                   f"{CONN_PACK['part']} on the pack (tab west), its face {z_recv - z_body:.2f} mm off the receptacle mated, "
                   f"pins at {CONN_PACK['work']} mm; contacts " + ", ".join(f"{n_} {y:.2f}" for n_, _, y in contacts)
                   + f" (y); the board moves {', '.join(to_move) or 'nothing'}")
