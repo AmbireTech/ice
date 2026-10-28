@@ -1,0 +1,89 @@
+(footprint "Pack_Contacts_4x2.2mm_P2.5mm"
+	(version 20260206)
+	(generator "pcbnew")
+	(generator_version "10.0")
+	(layer "F.Cu")
+	(descr "Contacts for the v4 battery pack (docs/pack.md): four 2.2 mm round gold (ENIG) pads at 2.5 mm, no part and no paste. The pack's Xinyangze YZR0158-20050-04025-01 magnetic pogo male (LCSC C5126843; drawing 2022-03-24: pins at 2.50, pads 4 x 2.20) presses its pins on them at its 4.00 mm working height. Its body (21.20 x 6.86 mm, a 5.03 x 2.31 mm tab on one side, drawn at -x so that on the back, turned 180 deg, it points east) floats 1.2 mm off the board: Fab shows it; parts under it may stand up to 1.0 mm (enclosure/generate.py checks). The courtyard is only the pads' 1.4 mm keep-out. Pad 1 BAT+, 2 MID, 3 NTC, 4 BAT-. Origin = body centre.")
+	(tags "pogo target contact pad battery pack magnetic")
+	(property "Reference" "REF**"
+		(at 0 -11.4 0)
+		(layer "F.Fab")
+		(uuid "0f6f1d3a-5b54-4f43-9c2e-2b1c8d1e7a01")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "Pack_Contacts_4x2.2mm_P2.5mm"
+		(at 0 11.4 0)
+		(layer "F.Fab")
+		(uuid "0f6f1d3a-5b54-4f43-9c2e-2b1c8d1e7a02")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr smd exclude_from_pos_files exclude_from_bom)
+	(fp_rect
+		(start -3.43 -10.6)
+		(end 3.43 10.6)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "0f6f1d3a-5b54-4f43-9c2e-2b1c8d1e7a03")
+	)
+	(fp_rect
+		(start -5.74 -2.515)
+		(end -3.43 2.515)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "0f6f1d3a-5b54-4f43-9c2e-2b1c8d1e7a04")
+	)
+	(fp_rect
+		(start -1.4 -5.15)
+		(end 1.4 5.15)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.CrtYd")
+		(uuid "0f6f1d3a-5b54-4f43-9c2e-2b1c8d1e7a05")
+	)
+	(pad "1" smd circle
+		(at 0 -3.75)
+		(size 2.2 2.2)
+		(layers "F.Cu" "F.Mask")
+		(uuid "0f6f1d3a-5b54-4f43-9c2e-2b1c8d1e7a11")
+	)
+	(pad "2" smd circle
+		(at 0 -1.25)
+		(size 2.2 2.2)
+		(layers "F.Cu" "F.Mask")
+		(uuid "0f6f1d3a-5b54-4f43-9c2e-2b1c8d1e7a12")
+	)
+	(pad "3" smd circle
+		(at 0 1.25)
+		(size 2.2 2.2)
+		(layers "F.Cu" "F.Mask")
+		(uuid "0f6f1d3a-5b54-4f43-9c2e-2b1c8d1e7a13")
+	)
+	(pad "4" smd circle
+		(at 0 3.75)
+		(size 2.2 2.2)
+		(layers "F.Cu" "F.Mask")
+		(uuid "0f6f1d3a-5b54-4f43-9c2e-2b1c8d1e7a14")
+	)
+	(embedded_fonts no)
+)
