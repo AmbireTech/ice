@@ -229,6 +229,7 @@ void tz_init(void) {
 #define _PASTE3(a, b, c) a##b##c
 #define CONCAT3(a, b, c) _PASTE3(a, b, c)
 #define OPTIGA_I2C(FIELD) CONCAT3(I2C_INSTANCE_, OPTIGA_I2C_INSTANCE, FIELD)
+#define SE050_I2C(FIELD) CONCAT3(I2C_INSTANCE_, SE050_I2C_INSTANCE, FIELD)
 
 #ifdef SECMON
 void tz_init(void) {
@@ -391,6 +392,21 @@ void tz_init(void) {
 
   NVIC_ClearTargetState(OPTIGA_I2C(_EV_IRQn));
   NVIC_ClearTargetState(OPTIGA_I2C(_ER_IRQn));
+#endif
+
+#ifdef USE_SE050
+  // Ambire Ice: set SE050 I2C secure & privileged (it may share the bus with
+  // the Optiga, which sets the same bits)
+  HAL_GTZC_TZSC_ConfigPeriphAttributes(
+      SE050_I2C(_GTZC_PERIPH), GTZC_TZSC_PERIPH_SEC | GTZC_TZSC_PERIPH_PRIV);
+
+  SE050_ENA_PORT->SECCFGR |= SE050_ENA_PIN;
+
+  SE050_I2C(_SCL_PORT)->SECCFGR |= SE050_I2C(_SCL_PIN);
+  SE050_I2C(_SDA_PORT)->SECCFGR |= SE050_I2C(_SDA_PIN);
+
+  NVIC_ClearTargetState(SE050_I2C(_EV_IRQn));
+  NVIC_ClearTargetState(SE050_I2C(_ER_IRQn));
 #endif
 
 #ifdef USE_TROPIC
