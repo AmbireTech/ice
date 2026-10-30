@@ -11,6 +11,9 @@ panel = "io/display_panel_dem240320b1"
 # The Ambire flame in place of the Trezor logo (welcome screen, bootloader too)
 [ambire_branding]
 
+# A raycaster maze behind 7 quick taps on the home screen (firmware only)
+[ambire_game]
+
 [backlight]
 driver = "io/backlight_pin"
 

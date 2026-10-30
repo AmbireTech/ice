@@ -503,6 +503,9 @@ pub struct Homescreen {
     delay: Timer,
     attach_animation: AttachAnimation,
     label_anim: HideLabelAnimation,
+    /// Ambire boards: the game behind 7 quick taps
+    #[cfg(feature = "ambire_game")]
+    game: super::ambire_game::Game,
 }
 
 pub enum HomescreenMsg {
@@ -555,6 +558,8 @@ impl Homescreen {
             delay: Timer::new(),
             attach_animation: AttachAnimation::default(),
             label_anim: HideLabelAnimation::new(label_width.max(label_unlocked_width)),
+            #[cfg(feature = "ambire_game")]
+            game: super::ambire_game::Game::new(),
         })
     }
 
@@ -644,6 +649,11 @@ impl Component for Homescreen {
     }
 
     fn event(&mut self, ctx: &mut EventCtx, event: Event) -> Option<Self::Msg> {
+        #[cfg(feature = "ambire_game")]
+        if self.game.event(ctx, event) {
+            return None;
+        }
+
         // SAFETY: Single threaded access
         let resume_attach = unsafe { HOMESCREEN_STATE.attach };
         self.attach_animation.lazy_start(ctx, event, resume_attach);
@@ -662,6 +672,12 @@ impl Component for Homescreen {
     }
 
     fn render<'s>(&'s self, target: &mut impl Renderer<'s>) {
+        #[cfg(feature = "ambire_game")]
+        if self.game.is_active() {
+            self.game.render(target);
+            return;
+        }
+
         if self.loader.is_animating() || self.loader.is_completely_grown(Instant::now()) {
             self.render_loader(target);
         } else {

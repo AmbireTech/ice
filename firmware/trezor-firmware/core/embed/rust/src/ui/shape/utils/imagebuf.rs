@@ -2,9 +2,19 @@ use crate::ui::geometry::Offset;
 use crate::ui::shape::{Bitmap, BitmapView, Canvas, CanvasBuilder};
 use crate::ui::UIError;
 
-/// Size of image buffer in bytes
-/// (up to 240x240 pixel, 16-bit RGB565 image)
-const IMAGE_BUFFER_SIZE: usize = 240 * 240 * 2;
+use crate::trezorhal::display::{DISPLAY_RESX, DISPLAY_RESY};
+
+/// Size of image buffer in bytes: a whole screen of 16-bit RGB565 pixels, and
+/// at least 240x240. The home and lock screens draw their background into it
+/// at full screen size, so a 240x320 display (T3T2) needs more than the
+/// 240x240 the buffer used to be fixed at; with less, both screens fail to be
+/// created and never appear.
+const SCREEN_IMAGE_BYTES: usize = DISPLAY_RESX as usize * DISPLAY_RESY as usize * 2;
+const IMAGE_BUFFER_SIZE: usize = if SCREEN_IMAGE_BYTES > 240 * 240 * 2 {
+    SCREEN_IMAGE_BYTES
+} else {
+    240 * 240 * 2
+};
 
 #[repr(align(16))]
 struct AlignedBuffer {

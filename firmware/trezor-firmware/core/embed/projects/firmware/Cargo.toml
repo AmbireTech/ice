@@ -80,6 +80,7 @@ layout_caesar = [
 ]
 
 ambire_branding = ["trezor_lib/ambire_branding"]
+ambire_game = ["trezor_lib/ambire_game"]
 
 layout_delizia = [
     "trezor_lib/layout_delizia",

@@ -43,6 +43,8 @@ mod swipe_up_screen;
 mod tap_to_confirm;
 mod trade_screen;
 mod welcome_screen;
+#[cfg(feature = "ambire_game")]
+mod ambire_game;
 
 #[cfg(feature = "translations")]
 pub use action_bar::{ActionBar, ActionBarMsg};

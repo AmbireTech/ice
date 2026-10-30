@@ -115,11 +115,13 @@
 #define MAIN_RAM_START 0x20025A00
 #define MAIN_RAM_SIZE (48 * 1024)
 
+// AUX1 is 24 kB larger than it was (taken from AUX2's heap): the UI image
+// buffer holds a whole 240x320 screen, which the home and lock screens need
 #define AUX1_RAM_START 0x20031A00
-#define AUX1_RAM_SIZE (172 * 1024 - 512)
+#define AUX1_RAM_SIZE (196 * 1024 - 512)
 
-#define AUX2_RAM_START 0x2005C800
-#define AUX2_RAM_SIZE (302 * 1024)
+#define AUX2_RAM_START 0x20062800
+#define AUX2_RAM_SIZE (278 * 1024)
 
 // misc
 #define CODE_ALIGNMENT 0x200

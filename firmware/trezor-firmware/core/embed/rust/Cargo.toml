@@ -54,6 +54,7 @@ upymod = { workspace = true, optional = true }
 # --------------------------------------------------------------------------
 
 ambire_branding = []
+ambire_game = []
 app_loading = []
 backlight = []
 ble = []

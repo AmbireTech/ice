@@ -119,6 +119,7 @@ class Swd:
         elif not shutil.which("openocd"):
             die("openocd not found (brew install open-ocd)")
         self._probe = None
+        self._pins = []  # (gpiochip, line) of the probe board's SWD pins
 
     def ssh(self, cmd, **kw):
         return subprocess.run(["ssh", self.host, cmd], capture_output=True, text=True, **kw)
@@ -161,6 +162,7 @@ class Swd:
                 die(f"{len(found)} GPIO lines named {want} on {self.host} (want 1): "
                     f"is it a {self.args.probe}? Line names: {', '.join(sorted(lines))[:600]}")
             chip, offset = found[0]
+            self._pins.append((chip, offset))
             if gpiod:
                 args += ["-c", f"adapter gpio {sig} {offset} -chip {chip}"]  # srst drive mode: reset_config
             else:
@@ -182,9 +184,23 @@ class Swd:
             a += ["-c", "reset_config srst_only srst_nogate srst_open_drain connect_assert_srst"]
         return a
 
+    def release_pins(self):
+        """Shell to turn the probe board's SWD pins back into inputs.
+
+        OpenOCD's GPIO drivers leave them as outputs when they exit (SWCLK
+        high): between sessions that feeds the target through its SWD pin
+        protection diodes, so unplugging the target's own supply does not take
+        it down to a power-on reset. gpioget requests each line as an input
+        (libgpiod v2 syntax first, then v1).
+        """
+        return "; ".join(f"(gpioget -c gpiochip{c} {o} || gpioget gpiochip{c} {o}) >/dev/null 2>&1"
+                         for c, o in self._pins)
+
     def command(self, a):
-        """An OpenOCD argv, run here or on the probe board."""
-        return ["ssh", self.host, shlex.join(a)] if self.host else a
+        """An OpenOCD argv, run here or on the probe board (pins released after)."""
+        if not self.host:
+            return a
+        return ["ssh", self.host, f"{shlex.join(a)}; rc=$?; {self.release_pins() or 'true'}; exit $rc"]
 
     def setup(self):
         if not self.host:
@@ -363,11 +379,14 @@ shutdown"""
                 "(trezor-firmware/docs/core/misc/trustzone.md), then rerun `info`")
 
     # --- flash ------------------------------------------------------------
-    def flash(self, image, at=BOARDLOADER_START, start=None):
+    def flash(self, image, at=BOARDLOADER_START, start=None, wait=0):
         image = Path(image or self.out / "combined-firmware.bin").resolve()
         if not image.is_file():
             die(f"no image at {image}: build with firmware/docker-build.sh")
-        r = self.read_regs([("optr", FLASH_R_NS + 0x40), ("secboot0", FLASH_R_NS + SECURE_OFFSET + 0x4C)])
+        # --wait: connect during the boot window instead (firmware that leaves SWD
+        # unreadable has not started yet); the session's first step halts the core
+        r = {"optr": 1 << 31, "secboot0": BOARDLOADER_START} if wait else \
+            self.read_regs([("optr", FLASH_R_NS + 0x40), ("secboot0", FLASH_R_NS + SECURE_OFFSET + 0x4C)])
         if isinstance(r["optr"], str) or isinstance(r["secboot0"], str):
             die(f"cannot read the option registers: {r}")
         if not r["optr"] >> 31 & 1 or r["secboot0"] & 0xFFFFFF80 != BOARDLOADER_START:
@@ -396,7 +415,7 @@ shutdown"""
               f"{CHUNK // 1024} KB")
         t = time.monotonic()
         sec = [FLASH_R_NS + SECURE_OFFSET + o for o in (0x80, 0x84, 0x88, 0x8C, 0xA0, 0xA4, 0xA8, 0xAC)]
-        log, _ = self.run(f"""init
+        script = f"""init
 # A core held in reset does not drive PWR_HOLD, so the board's latch drops ~1 s after
 # the reset: set the pin from here at once. Then secure bus access and a secure RAM
 # buffer (verify_image's checksum runs there).
@@ -466,7 +485,16 @@ proc wipe {{a}} {{ attempt $a "serase $a" }}
 prep
 {chr(10).join(steps)}
 reset run
-shutdown""", check=False)
+shutdown"""
+        deadline = time.monotonic() + wait
+        while True:
+            log, _ = self.run(script, check=False)
+            if "DPIDR 0x0be12477" in log:
+                print("  connected: flashing")
+                break
+            if time.monotonic() > deadline:
+                break
+            print("  no clean SWD connection yet, retrying")
         same = len(re.findall(r"^@@ same ", log, re.M))
         if same:
             print(f"  {same} pieces already on the chip, skipped")
@@ -509,7 +537,7 @@ shutdown""", check=False)
         os.killpg(p.pid, signal.SIGTERM)
         p.wait()
         if self.host:  # ssh going away does not reliably take the remote OpenOCD with it
-            self.ssh("pkill -f '^openocd .*bindto 0.0.0.0'")
+            self.ssh(f"pkill -f '^openocd .*bindto 0.0.0.0'; sleep 0.3; {self.release_pins() or 'true'}")
 
     def gdb_target(self):
         return f"target extended-remote {self.host.split('@')[-1] if self.host else 'localhost'}:3333"
@@ -626,6 +654,8 @@ def main():
     ap.add_argument("--halt", action="store_true", help="state: leave the core halted")
     ap.add_argument("--at", type=lambda v: int(v, 0), default=BOARDLOADER_START,
                     help="flash: address to write the image at (default: the boardloader's)")
+    ap.add_argument("--wait", type=int, default=0, metavar="S",
+                    help="flash: keep retrying the connection for S seconds (restart the board meanwhile)")
     ap.add_argument("--from", dest="start", type=lambda v: int(v, 0),
                     help="flash: resume, skipping the pieces below this address")
     args = ap.parse_args()
@@ -637,7 +667,7 @@ def main():
     elif args.command == "trustzone":
         swd.trustzone()
     elif args.command == "flash":
-        swd.flash(args.image, args.at, args.start)
+        swd.flash(args.image, args.at, args.start, args.wait)
     elif args.command == "state":
         swd.state(args.halt)
     elif args.command == "gdb":

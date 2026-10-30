@@ -3,6 +3,7 @@
 # Filter of the model/board defined features for this specific project
 uses = [
     "ambire_branding",
+    "ambire_game",
     "backlight",
     "backup_ram",
     "ble",
