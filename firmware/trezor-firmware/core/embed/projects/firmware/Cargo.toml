@@ -79,6 +79,8 @@ layout_caesar = [
     "upymod/layout_caesar",
 ]
 
+ambire_branding = ["trezor_lib/ambire_branding"]
+
 layout_delizia = [
     "trezor_lib/layout_delizia",
     "upymod/layout_delizia",

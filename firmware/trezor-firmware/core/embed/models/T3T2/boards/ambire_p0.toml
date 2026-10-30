@@ -8,6 +8,9 @@ emulator_header = "T3T2/boards/unix.h"
 driver = "io/display_spi"
 panel = "io/display_panel_dem240320b1"
 
+# The Ambire flame in place of the Trezor logo (welcome screen, bootloader too)
+[ambire_branding]
+
 [backlight]
 driver = "io/backlight_pin"
 

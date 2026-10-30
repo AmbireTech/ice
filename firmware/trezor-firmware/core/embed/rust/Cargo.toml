@@ -53,6 +53,7 @@ upymod = { workspace = true, optional = true }
 # Selectable components
 # --------------------------------------------------------------------------
 
+ambire_branding = []
 app_loading = []
 backlight = []
 ble = []

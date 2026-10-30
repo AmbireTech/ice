@@ -123,7 +123,10 @@ include_icon!(
 include_icon!(ICON_ASTERISK, "layout_delizia/res/asterisk16.toif");
 
 // Welcome screen.
+#[cfg(not(feature = "ambire_branding"))]
 include_icon!(ICON_LOGO, "layout_delizia/res/lock_full.toif");
+#[cfg(feature = "ambire_branding")]
+include_icon!(ICON_LOGO, "layout_delizia/res/ambire_flame.toif");
 
 // Homescreen notifications.
 include_icon!(ICON_WARNING40, "layout_delizia/res/warning40.toif");

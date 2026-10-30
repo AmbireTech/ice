@@ -14,6 +14,11 @@
 
 #define VDD_3V3 1
 
+// Product name on screen (welcome screen, default label) and over USB; the
+// flame logo comes with [ambire_branding] in ambire_p0.toml
+#define MODEL_FULL_NAME "Ambire"
+#define MODEL_USB_MANUFACTURER "Ambire"
+
 // Power latch. The power button lifts the 3.3 V buck-boost's enable; the MCU
 // keeps it up by driving PWR_HOLD high. An RC on the enable holds the rail for
 // about 1 s, so the boardloader must set this before anything slow (option

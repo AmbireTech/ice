@@ -55,6 +55,7 @@ mcu_stm32u5a = ["io/mcu_stm32u5a", "mcu_stm32u5"]
 layout_bolt = ["trezor_lib/layout_bolt"]
 layout_caesar = ["trezor_lib/layout_caesar"]
 layout_delizia = ["trezor_lib/layout_delizia"]
+ambire_branding = ["trezor_lib/ambire_branding"]
 layout_eckhart = ["trezor_lib/layout_eckhart"]
 
 display_mono = ["trezor_lib/display_mono"]

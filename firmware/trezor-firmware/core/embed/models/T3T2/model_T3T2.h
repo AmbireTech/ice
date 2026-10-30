@@ -23,12 +23,23 @@
 
 #include <rtl/sizedefs.h>
 
+// A board may name the product (Ambire's boards): its header comes first, so
+// every file sees one name whatever it includes first (board headers are plain
+// defines and include nothing)
+#ifdef TREZOR_BOARD
+#include TREZOR_BOARD
+#endif
+
 #define MODEL_NAME "T3T2"
+#ifndef MODEL_FULL_NAME
 #define MODEL_FULL_NAME "Trezor T3T2"
+#endif
 #define MODEL_INTERNAL_NAME "T3T2"
 #define MODEL_INTERNAL_NAME_TOKEN T3T2
 #define MODEL_INTERNAL_NAME_QSTR MP_QSTR_T3T2
+#ifndef MODEL_USB_MANUFACTURER
 #define MODEL_USB_MANUFACTURER "Trezor Company"
+#endif
 #define MODEL_USB_PRODUCT MODEL_FULL_NAME
 #define MODEL_HOMESCREEN_MAXSIZE 16384
 #define MODEL_BLE_CODE 7

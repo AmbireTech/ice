@@ -41,6 +41,8 @@ if (  # pylint: disable-next=consider-using-in
     or utils.INTERNAL_MODEL == "T3B1"
 ):
     _WELCOME_SCREEN_MS = 1000  # how long do we want to show welcome screen (minimum)
+elif utils.MODEL_FULL_NAME == "Ambire":
+    _WELCOME_SCREEN_MS = 3000  # Ambire boards: long enough to see the branding
 else:
     _WELCOME_SCREEN_MS = 0
 
