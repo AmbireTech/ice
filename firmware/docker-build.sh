@@ -54,8 +54,10 @@ fi
 
 "$here/fetch-vendor.sh"
 
+raw=0
 if [ "${1:-}" = "--" ]; then
   shift
+  raw=1
   cmd="$*"
 else
   projects=("$@")
@@ -90,7 +92,7 @@ echo ">>> in $IMAGE at $workdir: $cmd"
   "$IMAGE" \
   nix-shell --run "set -e; git config --global --add safe.directory /repo; uv sync --locked; source /venv/bin/activate; $cmd"
 
-if [ "${1:-}" != "--" ]; then
+if [ "$raw" = 0 ]; then
   out="$here/out/$BOARD"
   mkdir -p "$out"
   cp "$tree/core/build/artifacts/$MODEL/"*.bin "$tree/core/build/artifacts/$MODEL/"*.elf "$out/"

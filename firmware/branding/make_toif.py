@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Ambire flame as the firmware's logo icon (TOIF, 4-bit greyscale "TOIG").
 
-    firmware/branding/make_toif.py SYMBOL.svg OUT.toif [--width 70 --height 102]
+    firmware/branding/make_toif.py SYMBOL.svg OUT.toif [--width 100 --height 150]
 
 SYMBOL.svg is the monochrome flame from AmbireTech/ambire-brand
 (Logos/Ambire/SVG/Ambire_symbol_white.svg). It is drawn at the icon's height and
-centred on a canvas the size of the Trezor logo it replaces; the alpha channel is
+centred on its canvas; the alpha channel is
 the intensity (the UI paints the icon in its foreground colour). Needs
 rsvg-convert and ImageMagick. The format follows trezorlib's toif.py: header
 "TOIG", width, height (u16), data length (u32), then raw deflate (wbits -10) of
@@ -24,8 +24,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("svg", type=Path)
     ap.add_argument("out", type=Path)
-    ap.add_argument("--width", type=int, default=70)
-    ap.add_argument("--height", type=int, default=102)
+    ap.add_argument("--width", type=int, default=100)
+    ap.add_argument("--height", type=int, default=150)
     a = ap.parse_args()
     if a.width % 2:
         sys.exit("error: TOIG packs two pixels per byte: the width must be even")

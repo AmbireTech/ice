@@ -198,10 +198,11 @@ def failure(exc: BaseException) -> Failure:
     else:
         if isinstance(exc, MemoryError):
             message = "Out of memory"
-        elif __debug__:
+        elif __debug__ or utils.MODEL_FULL_NAME == "Ambire":
             # NOTE: when receiving generic `FirmwareError` on non-debug build,
             # change the `if __debug__` to `if True` to get the full error message.
-            message = str(exc)
+            # Ambire boards in bring-up: the full message, with the exception type.
+            message = f"{exc.__class__.__name__}: {exc}"
         else:
             message = "Firmware error"
         return Failure(code=FailureType.FirmwareError, message=message)

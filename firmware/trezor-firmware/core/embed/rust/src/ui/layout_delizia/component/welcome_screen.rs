@@ -4,8 +4,16 @@ use crate::ui::component::{Component, Event, EventCtx, Never};
 use crate::ui::geometry::{Alignment, Alignment2D, Offset, Rect};
 use crate::ui::shape::{self, Renderer};
 
+#[cfg(not(feature = "ambire_branding"))]
 const TEXT_BOTTOM_MARGIN: i16 = 54;
+#[cfg(not(feature = "ambire_branding"))]
 const ICON_TOP_MARGIN: i16 = 48;
+// The Ambire flame is 150 px tall: flame and name centred as one group, the
+// name's baseline 40 px under the flame (about 24 px of gap above the capitals)
+#[cfg(feature = "ambire_branding")]
+const ICON_TOP_MARGIN: i16 = 60;
+#[cfg(feature = "ambire_branding")]
+const TEXT_BOTTOM_MARGIN: i16 = 70;
 
 use crate::trezorhal::model;
 

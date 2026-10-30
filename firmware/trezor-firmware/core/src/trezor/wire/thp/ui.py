@@ -5,6 +5,26 @@ if TYPE_CHECKING:
 
     from trezorui_api import UiResult
 
+# Delizia (T3T2) has neither a THP pairing screen nor THP texts yet: its pairing
+# confirmations use the generic dialog, worded as Eckhart's (title, short, long).
+_DELIZIA_TEXTS = {
+    "thp_pairing_request": (
+        "Before you continue",
+        "Allow {0} to pair with this device?",
+        "Allow {0} on {1} to pair with this device?",
+    ),
+    "thp_connection_request": (
+        "Connection dialog",
+        "Allow {0} to connect with this device?",
+        "Allow {0} on {1} to connect with this device?",
+    ),
+    "thp_autoconnect_credential_request": (
+        "Autoconnect credential",
+        "Allow {0} to connect automatically to this device?",
+        "Allow {0} on {1} to connect automatically to this device?",
+    ),
+}
+
 
 async def confirm_pairing(
     br_name: str,
@@ -24,7 +44,16 @@ async def confirm_pairing(
         args = (app_name or host_name or "(unknown)",)
         description = short_text
 
-    with confirm_thp_pairing(title=title, description=description, args=args) as layout:
+    try:
+        layout = confirm_thp_pairing(title=title, description=description, args=args)
+    except NotImplementedError:
+        from trezor.ui.layouts import confirm_action
+
+        d_title, d_short, d_long = _DELIZIA_TEXTS[br_name]
+        text = description or (d_long if len(args) == 2 else d_short)
+        await confirm_action(br_name, title or d_title, description=text.format(*args))
+        return
+    with layout:
         return await raise_if_not_confirmed(layout, br_name=br_name)
 
 
@@ -79,9 +108,12 @@ async def show_code_entry_screen(
     from trezor.ui.layouts.common import interact
     from trezorui_api import show_thp_pairing_code
 
+    # Delizia has no THP texts yet (empty strings): Eckhart's wording
+    title = TR.thp__code_title or "One more step"
+    entry = TR.thp__code_entry or "Enter this one-time security code on {0}"
     with show_thp_pairing_code(
-        title=TR.thp__code_title,
-        description=TR.thp__code_entry.format(host_name),
+        title=title,
+        description=entry.format(host_name),
         code=code_entry_str,
     ) as layout:
         return await interact(layout, br_name=None)
