@@ -51,6 +51,10 @@
 #define DISPLAY_TE_INTERRUPT_GPIOSEL EXTI_GPIOE
 #define DISPLAY_TE_INTERRUPT_EXTI_LINE EXTI_LINE_10
 
+// The Newhaven panel's columns run opposite to the DEM240320B1's: without
+// this the image is mirrored left to right (seen on proto 0)
+#define DISPLAY_PANEL_MIRROR_X 1
+
 // One 150 KB frame buffer; a second does not fit next to the firmware's RAM.
 #define FRAME_BUFFER_COUNT 1
 

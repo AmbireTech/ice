@@ -32,6 +32,7 @@ import os
 import re
 import shlex
 import shutil
+import tempfile
 import signal
 import subprocess
 import sys
@@ -49,7 +50,12 @@ PROBES = {
 # OpenOCD's own raspberrypi configs use; the BeagleBone's are GPIO1 pins that boot in
 # GPIO mode and are free of HDMI and eMMC.
 GPIO_PROBES = {"rpi": ("GPIO25", "GPIO24", "GPIO18"), "beagle": ("P9_12", "P9_15", "P9_23")}
-REMOTE_IMAGE = "/tmp/ambire-swd-image.bin"
+CHUNK_DIR = "/tmp/ambire-swd-chunks"
+FLASH_BASE_S, BANK_PAGES = 0x0C000000, 128  # U585: 2 x 1 MB banks of 8 KB pages
+SECKEYR, SECSR, SECCR = 0x5002200C, 0x50022024, 0x5002202C  # FLASH secure key/status/control
+CHUNK = SECTOR = 8 * 1024  # one piece per flash sector: an empty sector is a pure erase
+# The power latch (ambire_p0.h POWER_HOLD: PE5), secure GPIOE; GPIOE's clock is AHB2ENR1 bit 4
+HOLD_GPIO, HOLD_PIN, HOLD_PORT_BIT = 0x52021000, 5, 4
 
 # T3T2 memory map (models/T3T2/memory.h), secure aliases
 BOARDLOADER_START = 0x0C004000
@@ -134,15 +140,34 @@ class Swd:
 
     def gpio_probe(self):
         lines = self.gpio_lines()
-        args = ["-c", "adapter driver linuxgpiod", "-c", "transport select swd"]
-        for sig, want in zip(("swclk", "swdio", "srst"), GPIO_PROBES[self.args.probe]):
+        # Debian 13 builds OpenOCD 0.12 without linuxgpiod (0.12 speaks only libgpiod v1);
+        # sysfsgpio is there, slower, and wants the kernel-wide GPIO numbers.
+        drivers = self.ssh("openocd -c 'adapter list' -c shutdown 2>&1").stdout
+        gpiod = re.search(r"\blinuxgpiod\b", drivers) is not None
+        if gpiod:
+            args = ["-c", "adapter driver linuxgpiod", "-c", "transport select swd"]
+        elif re.search(r"\bsysfsgpio\b", drivers):
+            args = ["-c", "adapter driver sysfsgpio", "-c", "transport select swd"]
+            labels = dict(re.findall(r"^gpiochip(\d+) \[([^\]]+)\]", self.ssh("gpiodetect").stdout, re.M))
+            bases = dict(re.findall(r"^(\S+) (\d+)$", self.ssh(
+                "for c in /sys/class/gpio/gpiochip*; do echo \"$(cat $c/label) $(cat $c/base)\"; done").stdout, re.M))
+        else:
+            die(f"{self.host}'s OpenOCD has neither linuxgpiod nor sysfsgpio")
+        sigs = ("swclk", "swdio", "srst") if self.args.under_reset else ("swclk", "swdio")
+        for sig, want in zip(sigs, GPIO_PROBES[self.args.probe]):
             # BeagleBone names carry the ball after the header pin: "P9_12 [gpio1_28]", "P9_15A"
             found = [v for k, v in lines.items() if re.fullmatch(rf"{want}A?(\s.*)?", k)]
             if len(found) != 1:
                 die(f"{len(found)} GPIO lines named {want} on {self.host} (want 1): "
                     f"is it a {self.args.probe}? Line names: {', '.join(sorted(lines))[:600]}")
             chip, offset = found[0]
-            args += ["-c", f"adapter gpio {sig} {offset} -chip {chip}"]  # srst drive mode: reset_config
+            if gpiod:
+                args += ["-c", f"adapter gpio {sig} {offset} -chip {chip}"]  # srst drive mode: reset_config
+            else:
+                label = labels.get(str(chip))
+                if label not in bases:
+                    die(f"no sysfs GPIO base for gpiochip{chip} ({label}) on {self.host}")
+                args += ["-c", f"sysfsgpio {sig}_num {int(bases[label]) + offset}"]
         return args
 
     def base(self):
@@ -151,6 +176,8 @@ class Swd:
         a = ["openocd", *self._probe, "-f", "target/stm32u5x.cfg"]
         if not self.host:  # bit-banged GPIO runs as fast as it can; no clock to set
             a += ["-c", f"adapter speed {self.args.khz}"]
+        else:  # the target config's reset-start sets a clock, which GPIO adapters do not have
+            a += ["-c", "$_TARGETNAME configure -event reset-start {}"]
         if self.args.under_reset:
             a += ["-c", "reset_config srst_only srst_nogate srst_open_drain connect_assert_srst"]
         return a
@@ -288,11 +315,18 @@ shutdown"""
         hold_out = (r2["pe_moder"] >> 10 & 3) == 1
         print(f"pins      PWR_HOLD (PE5) {'output ' + str(r2['pe_odr'] >> 5 & 1) if hold_out else 'NOT an output'}"
               f"   -> the power latch {'holds' if hold_out and r2['pe_odr'] >> 5 & 1 else 'is NOT held'}")
-        print(f"          VBUS_SENSE (PA9) {pa >> 9 & 1}  (1 = USB power present)")
-        print(f"          AIRGAP_SENSE (PE7) {pe >> 7 & 1}  (1 = airgapped: USB data and radio off)")
+        def pin(idr, moder, n, label, meaning):
+            # U5 pins reset to analog mode, where IDR reads 0 whatever the pin carries
+            mode = moder >> 2 * n & 3
+            if mode == 3:
+                print(f"          {label} not read: still in analog mode (no stage set it up yet)")
+            else:
+                print(f"          {label} {idr >> n & 1}  ({meaning})")
+        pin(pa, r2["pa_moder"], 9, "VBUS_SENSE (PA9)", "1 = USB power present")
+        pin(pe, r2["pe_moder"], 7, "AIRGAP_SENSE (PE7)", "1 = airgapped: USB data and radio off")
         pull = r2["pa_pupdr"] & 3
-        print(f"          BTN_N (PA0) {pa & 1}  (0 = button pressed"
-              + (")" if pull == 1 else "; no pull-up set on PA0, so this reads a floating pin)"))
+        pin(pa, r2["pa_moder"], 0, "BTN_N (PA0)", "0 = button pressed"
+            + ("" if pull == 1 else "; no pull-up set on PA0, so a released button floats"))
 
     # --- trustzone --------------------------------------------------------
     def trustzone(self):
@@ -324,7 +358,7 @@ shutdown"""
                 "(trezor-firmware/docs/core/misc/trustzone.md), then rerun `info`")
 
     # --- flash ------------------------------------------------------------
-    def flash(self, image):
+    def flash(self, image, at=BOARDLOADER_START, start=None):
         image = Path(image or self.out / "combined-firmware.bin").resolve()
         if not image.is_file():
             die(f"no image at {image}: build with firmware/docker-build.sh")
@@ -333,17 +367,112 @@ shutdown"""
                 r["secboot0"] & 0xFFFFFF80 != BOARDLOADER_START:
             die("TrustZone is off or the chip does not boot the boardloader: run "
                 "`firmware/swd.py trustzone` first")
-        print(f"writing {image.name} ({image.stat().st_size} bytes) at {BOARDLOADER_START:#010x}")
-        target = image
+        data = image.read_bytes()
+        # Verified pieces with retries: one glitch on a bit-banged link costs a piece, not
+        # the run. Pieces are whole flash sectors (8 KB), so an erased one is just erased.
+        work = Path(tempfile.mkdtemp(prefix="swd-chunks-"))
+        steps = []
+        for off in range(0, len(data), CHUNK):
+            piece, addr = data[off:off + CHUNK], at + off
+            if start is not None and addr < start:
+                continue  # --from: already written
+            if piece.count(0xFF) == len(piece):
+                steps.append(f"wipe {addr:#x}")
+            else:
+                (work / f"{addr:08x}.bin").write_bytes(piece)
+                steps.append(f"put {{{CHUNK_DIR if self.host else work}/{addr:08x}.bin}} {addr:#x}")
         if self.host:
-            if subprocess.run(["scp", "-q", str(image), f"{self.host}:{REMOTE_IMAGE}"]).returncode:
+            self.ssh(f"rm -rf {CHUNK_DIR}")
+            if subprocess.run(["scp", "-q", "-r", str(work), f"{self.host}:{CHUNK_DIR}"]).returncode:
                 die(f"could not copy the image to {self.host}")
-            target = REMOTE_IMAGE
+        shutil.rmtree(work)
+        print(f"writing {image.name} ({len(data)} bytes) at {at:#010x}: {len(steps)} pieces of "
+              f"{CHUNK // 1024} KB")
         t = time.monotonic()
-        self.run(f"init; reset halt; flash write_image erase {{{target}}} {BOARDLOADER_START:#x};"
-                 f" verify_image {{{target}}} {BOARDLOADER_START:#x}; reset run; shutdown")
-        print(f"written and verified in {time.monotonic() - t:.0f} s; the chip is running. "
-              "First boot: the boardloader programs the rest of the option bytes and restarts.")
+        sec = [FLASH_R_NS + SECURE_OFFSET + o for o in (0x80, 0x84, 0x88, 0x8C, 0xA0, 0xA4, 0xA8, 0xAC)]
+        log, _ = self.run(f"""init
+# A core held in reset does not drive PWR_HOLD, so the board's latch drops ~1 s after
+# the reset: set the pin from here at once. Then secure bus access and a secure RAM
+# buffer (verify_image's checksum runs there).
+#
+# Flash is programmed by hand through the secure registers. After a reset only the
+# watermarked pages (secret + boardloader) are secure; marking every page secure, as the
+# boardloader does at run time (tz_configure_flash; a reset clears it), makes one path
+# for all of them. OpenOCD 0.12's own stm32l4x write programmed zeros on this chip, and
+# its non-secure bank drove the secure registers for non-secure pages (silently ignored).
+proc rd {{a}} {{ return [lindex [[target current] read_memory $a 32 1] 0] }}
+proc prep {{}} {{
+  reset halt
+  mmw {RCC_NS + SECURE_OFFSET + 0x8C:#x} {1 << HOLD_PORT_BIT:#x} 0
+  mww {HOLD_GPIO + 0x18:#x} {1 << HOLD_PIN:#x}
+  mmw {HOLD_GPIO:#x} {1 << 2 * HOLD_PIN:#x} {2 << 2 * HOLD_PIN:#x}
+  stm32x5x_ahb_ap_secure_access
+  [target current] configure -work-area-phys {BOOTARGS_START:#x} -work-area-size 0x4000
+  foreach a {{{" ".join(f"{a:#x}" for a in sec)}}} {{ mww $a 0xFFFFFFFF }}
+  # unlock once: a second key sequence on an unlocked register locks it until reset
+  if {{[rd {SECCR:#x}] & 0x80000000}} {{ mww {SECKEYR:#x} 0x45670123; mww {SECKEYR:#x} 0xCDEF89AB }}
+}}
+proc swait {{}} {{
+  for {{set i 0}} {{$i < 5000}} {{incr i}} {{ if {{([rd {SECSR:#x}] & 0x10000) == 0}} return }}
+  error "flash busy"
+}}
+proc serr {{what}} {{
+  set sr [rd {SECSR:#x}]
+  if {{$sr & 0xFA}} {{ error [format "%s: SECSR %08X" $what $sr] }}
+}}
+proc serase {{a}} {{
+  set page [expr {{($a - {FLASH_BASE_S:#x}) / {SECTOR:#x}}}]
+  set cr [expr {{0x2 | (($page % {BANK_PAGES}) << 3) | ($page >= {BANK_PAGES} ? 0x800 : 0)}}]
+  mww {SECSR:#x} 0xFFFFFFFF
+  mww {SECCR:#x} $cr
+  mww {SECCR:#x} [expr {{$cr | 0x10000}}]
+  swait
+  serr erase
+}}
+proc sprog {{f a}} {{
+  mww {SECSR:#x} 0xFFFFFFFF
+  mww {SECCR:#x} 0x1
+  load_image $f $a bin
+  swait
+  mww {SECCR:#x} 0
+  serr program
+}}
+proc attempt {{what cmd}} {{
+  for {{set i 0}} {{$i < 4}} {{incr i}} {{
+    if {{[catch {{uplevel 1 $cmd}} e] == 0}} {{ echo "@@ ok $what"; return }}
+    echo "@@ retry $what [string map {{"\n" " "}} $e]"
+    catch {{prep}}
+  }}
+  error "$what failed 4 times"
+}}
+# Resuming: pieces that already match are skipped, up to the first that does not (where
+# an interrupted run stopped); from there on every piece is written.
+set writing 0
+proc put {{f a}} {{
+  global writing
+  if {{!$writing}} {{
+    if {{[catch {{verify_image $f $a}}] == 0}} {{ echo "@@ ok $a"; echo "@@ same $a"; return }}
+    set writing 1
+  }}
+  attempt $a "serase $a; sprog $f $a; verify_image $f $a"
+}}
+proc wipe {{a}} {{ attempt $a "serase $a" }}
+prep
+{chr(10).join(steps)}
+reset run
+shutdown""", check=False)
+        same = len(re.findall(r"^@@ same ", log, re.M))
+        if same:
+            print(f"  {same} pieces already on the chip, skipped")
+        retries = re.findall(r"^@@ retry (\S+) (.*)$", log, re.M)
+        done = len(re.findall(r"^@@ ok ", log, re.M))
+        for a, why in retries:
+            print(f"  retried {a}: {why[:120]}")
+        if done != len(steps):
+            print(log[-3000:], file=sys.stderr)
+            die(f"{done} of {len(steps)} pieces written (log above)")
+        print(f"written and verified in {time.monotonic() - t:.0f} s ({len(retries)} retries); the chip "
+              "is running. First boot: the boardloader programs the rest of the option bytes and restarts.")
 
     # --- state / gdb --------------------------------------------------------
     def elfs(self):
@@ -449,17 +578,21 @@ shutdown"""
                 pm = self.gdb_batch(self.out / "bootloader.elf",
                                     ["p 'bootutils.c'::g_boot_args.pminfo"])
                 print("RSOD info (bootargs):\n" + pm[pm.find("$1"):].rstrip())
+                # The record is a union: its fault registers mean something only for a fault
+                is_fault = "TASK_TERM_REASON_FAULT" in pm
                 for k, names in (("cfsr", CFSR_BITS), ("hfsr", HFSR_BITS), ("sfsr", SFSR_BITS)):
                     m = re.search(rf"\b{k} = (\d+)", pm)
-                    if m and int(m.group(1)):
+                    if is_fault and m and int(m.group(1)):
                         print(f"  {k} {int(m.group(1)):#010x}: {' '.join(bits(int(m.group(1)), names))}")
                 m = re.search(r"\bpc = (\d+)", pm)
-                if m and int(m.group(1)):
+                if is_fault and m and int(m.group(1)):
                     e2, s2 = self.stage_for(int(m.group(1)))
                     print(f"  faulting pc {int(m.group(1)):#010x} in {e2.stem if e2 else '?'}: {s2}")
         finally:
             self.stop(srv)
-        self.run("init; halt; shutdown" if keep_halted else "init; resume; shutdown")
+        # gdb's detach may already have resumed the core; resuming a running core is not an error
+        self.run("init; halt; shutdown" if keep_halted else
+                 "init; if {[[target current] curstate] eq \"halted\"} {resume}; shutdown")
         print("(left halted)" if keep_halted else "(resumed)")
 
     def gdb(self):
@@ -485,6 +618,10 @@ def main():
     ap.add_argument("--under-reset", action="store_true")
     ap.add_argument("--board", default="ambire_p0")
     ap.add_argument("--halt", action="store_true", help="state: leave the core halted")
+    ap.add_argument("--at", type=lambda v: int(v, 0), default=BOARDLOADER_START,
+                    help="flash: address to write the image at (default: the boardloader's)")
+    ap.add_argument("--from", dest="start", type=lambda v: int(v, 0),
+                    help="flash: resume, skipping the pieces below this address")
     args = ap.parse_args()
     swd = Swd(args)
     if args.command == "setup":
@@ -494,7 +631,7 @@ def main():
     elif args.command == "trustzone":
         swd.trustzone()
     elif args.command == "flash":
-        swd.flash(args.image)
+        swd.flash(args.image, args.at, args.start)
     elif args.command == "state":
         swd.state(args.halt)
     elif args.command == "gdb":

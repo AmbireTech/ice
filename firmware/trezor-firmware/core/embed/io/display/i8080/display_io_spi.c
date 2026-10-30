@@ -102,11 +102,14 @@ void display_io_init_spi(void) {
   DISPLAY_SPI_FORCE_RESET();
   DISPLAY_SPI_RELEASE_RESET();
 
+  // Internal NSS high first: master mode with SSM = 1 and SSI = 0 is a mode
+  // fault, which clears MASTER and keeps SPE from being set (found on proto 0:
+  // CFG2.MASTER read back 0, SR.MODF set, the first command waited forever)
+  SPI->CR1 = SPI_CR1_SSI;
   // Master, simplex transmit, mode 0, MSB first, software NSS (CS is a GPIO),
   // pins kept driven while the SPI is disabled between frame size changes
   SPI->CFG2 = SPI_CFG2_MASTER | SPI_CFG2_COMM_0 | SPI_CFG2_SSM |
               SPI_CFG2_AFCNTR;
-  SPI->CR1 = SPI_CR1_SSI;
   SPI->CR2 = 0;  // TSIZE = 0: endless transfer, clocked while data is queued
   spi_restart(SPI_CFG1(8));
 

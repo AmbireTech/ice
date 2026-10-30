@@ -68,9 +68,20 @@ void dem240320b1_gamma(void) {
 }
 
 void dem240320b1_init_seq(void) {
+#ifdef DISPLAY_TE_PIN
+  // TEON: Tearing Effect Line On; V-blanking only. The ST7789 resets with the
+  // line off (held low), and the boardloader's refresh waits for its edges.
+  ISSUE_CMD_BYTE(0x35);
+  ISSUE_DATA_BYTE(0x00);
+#endif
+
   // Memory Data Access Control (MADCTL)
   ISSUE_CMD_BYTE(0x36);
+#ifdef DISPLAY_PANEL_MIRROR_X
+  ISSUE_DATA_BYTE(1 << 6);  // MX: see dem240320b1_rotate
+#else
   ISSUE_DATA_BYTE(0x00);
+#endif
 
   // Interface Pixel Format: 16 bits/pixel (RGB565)
   ISSUE_CMD_BYTE(0x3A);
@@ -157,6 +168,13 @@ void dem240320b1_rotate(int degrees, display_padding_t* padding) {
       display_command_parameter = MV | MY;
       break;
   }
+
+#ifdef DISPLAY_PANEL_MIRROR_X
+  // The panel's columns run the other way (proto 0: text mirrored left to
+  // right at 0 degrees). Without MV, MX is the column order; with MV, the
+  // columns are addressed through the row order, MY. 90/270 untested.
+  display_command_parameter ^= (display_command_parameter & MV) ? MY : MX;
+#endif
 
   ISSUE_CMD_BYTE(0x36);
   ISSUE_DATA_BYTE(display_command_parameter);
