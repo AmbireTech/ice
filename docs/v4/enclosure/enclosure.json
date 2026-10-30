@@ -293,6 +293,77 @@
   }
  ],
  "downloads": {
+  "fabs": {
+   "jlc": [
+    {
+     "label": "Gerbers",
+     "filename": "wallet_gerbers.zip",
+     "bytes": 465379,
+     "part": "enclosure/files/wallet_gerbers.zip.b64.txt",
+     "b64": true
+    },
+    {
+     "label": "Bill of materials",
+     "filename": "wallet_bom-jlc.csv",
+     "bytes": 2981,
+     "part": "enclosure/files/wallet_bom-jlc.csv",
+     "b64": false
+    },
+    {
+     "label": "Pick and place",
+     "filename": "wallet_positions-jlc.csv",
+     "bytes": 4852,
+     "part": "enclosure/files/wallet_positions-jlc.csv",
+     "b64": false
+    }
+   ],
+   "pcbway": [
+    {
+     "label": "Gerbers",
+     "filename": "wallet_gerbers.zip",
+     "bytes": 465379,
+     "part": "enclosure/files/wallet_gerbers.zip.b64.txt",
+     "b64": true
+    },
+    {
+     "label": "Bill of materials",
+     "filename": "wallet_bom-pcbway.csv",
+     "bytes": 13834,
+     "part": "enclosure/files/wallet_bom-pcbway.csv",
+     "b64": false
+    },
+    {
+     "label": "Pick and place",
+     "filename": "wallet_centroid-pcbway.csv",
+     "bytes": 4856,
+     "part": "enclosure/files/wallet_centroid-pcbway.csv",
+     "b64": false
+    }
+   ]
+  },
+  "pack": [
+   {
+    "label": "Gerbers",
+    "filename": "pack_gerbers.zip",
+    "bytes": 11164,
+    "part": "enclosure/files/pack_gerbers.zip.b64.txt",
+    "b64": true
+   },
+   {
+    "label": "Bill of materials",
+    "filename": "pack_bom-jlc.csv",
+    "bytes": 389,
+    "part": "enclosure/files/pack_bom-jlc.csv",
+    "b64": false
+   },
+   {
+    "label": "Pick and place",
+    "filename": "pack_positions-jlc.csv",
+    "bytes": 315,
+    "part": "enclosure/files/pack_positions-jlc.csv",
+    "b64": false
+   }
+  ],
   "case": [
    {
     "label": "Case and battery pack: 3MF, STL and STEP (zip)",

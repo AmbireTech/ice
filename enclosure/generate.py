@@ -54,7 +54,8 @@ Outputs:
     board.json        the populated board, from KiCad's own 3D export (without the clips)
     pack.json         the pack's board, its connector, clips and cells, packed the same way
     {shell,bezel,tray,joycap,airslider}.json  the case parts (GLB as base64: the artifact host serves no .glb)
-    files/            the DIY set: the case and the pack (the v4 board is not laid out yet)
+    files/            the DIY set: the device board's order files (JLCPCB, PCBWay), the pack
+                      board's (JLCPCB), the case and the pack
 
 Run from hardware/ambire-wallet:
   ../../.venv-enclosure/bin/python enclosure/generate.py
@@ -99,6 +100,8 @@ from build123d import (
 HERE = Path(__file__).resolve().parent.parent
 BOARD = Path(os.environ.get("ENCLOSURE_BOARD", HERE / "board/wallet.kicad_pcb"))   # a copy for trials
 OUT = HERE / "enclosure/out"
+ORDER = HERE / "production/order"            # the device board's order set (production/make_order.sh)
+PACK_ORDER = HERE / "production/pack-order"  # the pack board's (pack/makeOrder.py)
 WEB = HERE / "docs/v4/enclosure"   # v4 (the battery pack): the /v4/ page; docs/enclosure (proto 0), docs/v2 (proto 1, front cell) and docs/v3 (cell on the back) are frozen
 sys.path.insert(0, str(HERE / "art"))
 import flame as flame_art  # noqa: E402  (art/flame.py, shared with scripts/silkFlame.py)
@@ -1232,15 +1235,38 @@ def print_3mf(shell, bezel, tray, cap, slider, dest: Path):
     m.write(str(dest))
 
 
+FAB_SETS = {
+    "jlc": [("Gerbers", ORDER / "jlc-plain/wallet_gerbers.zip"),
+            ("Bill of materials", ORDER / "jlc-plain/wallet_bom-jlc.csv"),
+            ("Pick and place", ORDER / "jlc-plain/wallet_positions-jlc.csv")],
+    "pcbway": [("Gerbers", ORDER / "jlc-plain/wallet_gerbers.zip"),
+               ("Bill of materials", ORDER / "pcbway/wallet_bom-pcbway.csv"),
+               ("Pick and place", ORDER / "pcbway/wallet_centroid-pcbway.csv")],
+}
+PACK_FILES = [("Gerbers", PACK_ORDER / "pack_gerbers.zip"),
+              ("Bill of materials", PACK_ORDER / "pack_bom-jlc.csv"),
+              ("Pick and place", PACK_ORDER / "pack_positions-jlc.csv")]
+
+
 def write_downloads() -> dict:
-    """The DIY files for the page. The host serves text only: binaries (zip) go as base64
-    .txt; the page rebuilds each file and hands it to the viewer's downloads capability.
-    v4 offers the case and the pack only: the order set in production/order is proto 1's
-    board, with the cell on it."""
+    """The DIY files for the page. The host serves text only: CSVs go as they are,
+    binaries (zip) as base64 .txt; the page rebuilds each file and hands it to the
+    viewer's downloads capability."""
     files_dir = WEB / "files"
     if files_dir.exists():
         shutil.rmtree(files_dir)
     files_dir.mkdir()
+
+    def entry(label, src: Path):
+        raw = src.read_bytes()
+        if src.suffix == ".csv":
+            part, b64 = src.name, False
+            (files_dir / part).write_bytes(raw)
+        else:
+            part, b64 = src.name + ".b64.txt", True
+            (files_dir / part).write_text(base64.b64encode(raw).decode())
+        return {"label": label, "filename": src.name, "bytes": len(raw), "part": f"enclosure/files/{part}", "b64": b64}
+
     # The viewer saves only allowlisted types (zip, csv, ...), so the case goes as one zip.
     case_zip = OUT / "ambire-ice-case.zip"
     with zipfile.ZipFile(case_zip, "w", zipfile.ZIP_DEFLATED) as z:
@@ -1248,12 +1274,9 @@ def write_downloads() -> dict:
                      "shell.step", "bezel.step", "tray.step", "joycap.step", "airslider.step"):
             z.write(OUT / name, name)
         z.writestr("README.txt", CASE_README)
-    raw = case_zip.read_bytes()
-    part = case_zip.name + ".b64.txt"
-    (files_dir / part).write_text(base64.b64encode(raw).decode())
-    return {"case": [{"label": "Case and battery pack: 3MF, STL and STEP (zip)", "filename": case_zip.name,
-                      "bytes": len(raw), "part": f"enclosure/files/{part}", "b64": True}]}
-
+    return {"fabs": {fab: [entry(l, p) for l, p in files] for fab, files in FAB_SETS.items()},
+            "pack": [entry(l, p) for l, p in PACK_FILES],
+            "case": [entry("Case and battery pack: 3MF, STL and STEP (zip)", case_zip)]}
 
 if __name__ == "__main__":
     sys.exit(main())
