@@ -108,11 +108,30 @@ Against the upstream base:
 What the build drives (compiled, not yet run on a board): the display, touch,
 USB, the boot chain and TrustZone. The backlight is on/off only.
 
-New seeds and the device's secret keys take their randomness from the MCU's
-generator and the SE050's together (Trezor's "strong" random path, which until
-now combined the MCU with the OPTIGA or Tropic). If the SE050 does not answer,
-the device stops with "SE050 entropy source failed" rather than continue on
-the MCU alone.
+New seeds take their randomness from the MCU's generator and the SE050's
+together (Trezor's "strong" random path, which until now combined the MCU with
+the OPTIGA or Tropic); the host's entropy is hashed in on top, as on every
+Trezor. If the SE050 does not answer, the device stops with "SE050 entropy
+source failed" rather than continue on the MCU alone. The link to the SE050 is
+neither authenticated nor encrypted, so someone probing its I2C lines while a
+seed is created sees its share; they still do not see the MCU's.
+
+The device's own keys do not use the SE050 yet:
+
+- The boot hardware key, which binds the PIN-protected storage to the chip,
+  comes from the MCU's generator alone (Trezor's boardloader and bootloader
+  make it).
+- The master key (secret slot 0, behind the storage salt and the device's
+  attestation keys) is written once by Trezor's factory test firmware
+  (prodtest), which this port does not build, and whose random path has no
+  SE050. Until boards are provisioned, development builds run with an all-zero
+  storage salt; a production build stops with "Failed to get storage salt".
+  Provisioning, with the SE050 in prodtest's random path, is still to do.
+
+Without the OPTIGA, nothing in hardware limits PIN guesses: the PIN key is
+stretched in software and bound to the chip by the boot hardware key, so
+someone who gets code running in the chip's secure world can try PINs at the
+chip's speed.
 
 What is not driven yet: the OPTIGA (not fitted on the first boards), the
 SE050 beyond its random number generator, the radio (Trezor's link needs SPI
