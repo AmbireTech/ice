@@ -8,9 +8,14 @@
     firmware/swd.py gdb                  # interactive gdb with every stage's symbols
     firmware/swd.py reset
 
-Options (before or after the command): --probe stlink|cmsis-dap|jlink (default stlink,
+Options (before or after the command): --probe stlink|cmsis-dap|jlink|rpi (default stlink,
 or $SWD_PROBE), --khz N (SWD clock, default 1000: flying leads), --under-reset (hold NRST
 while connecting; needs TP_NRST wired), --board NAME (default ambire_p0).
+
+No probe: a Raspberry Pi's GPIO is one (--probe rpi --host pi@HOST, or $SWD_HOST).
+OpenOCD runs on the Pi over SSH (`setup` installs it there), gdb here talks to it over
+the network. Pi header pins: 22 = GPIO25 -> SWCLK, 18 = GPIO24 -> SWDIO,
+12 = GPIO18 -> NRST (optional), 20 = GND -> GND. Any Pi model (libgpiod).
 
 Register addresses and bit positions come from the vendored CMSIS headers
 (trezor-firmware/vendor/cmsis_device_u5, core_cm33.h); the memory map from
@@ -19,6 +24,7 @@ core/embed/models/T3T2/memory.h.
 import argparse
 import os
 import re
+import shlex
 import shutil
 import signal
 import subprocess
@@ -32,7 +38,11 @@ PROBES = {
     "stlink": ["-f", "interface/stlink.cfg", "-c", "transport select hla_swd"],
     "cmsis-dap": ["-f", "interface/cmsis-dap.cfg", "-c", "transport select swd"],
     "jlink": ["-f", "interface/jlink.cfg", "-c", "transport select swd"],
+    "rpi": None,  # built per Pi: which gpiochip carries the header (Swd.rpi_probe)
 }
+# Raspberry Pi header GPIOs, as OpenOCD's own raspberrypi configs number them
+RPI_SWCLK, RPI_SWDIO, RPI_SRST = 25, 24, 18
+RPI_IMAGE = "/tmp/ambire-swd-image.bin"
 
 # T3T2 memory map (models/T3T2/memory.h), secure aliases
 BOARDLOADER_START = 0x0C004000
@@ -88,21 +98,58 @@ def die(msg):
 
 class Swd:
     def __init__(self, args):
-        if not shutil.which("openocd"):
-            die("openocd not found (brew install open-ocd)")
         self.args = args
         self.out = HERE / "out" / args.board
+        self.host = None
+        if args.probe == "rpi":
+            self.host = args.host or die("--probe rpi needs --host pi@HOST (or $SWD_HOST)")
+        elif not shutil.which("openocd"):
+            die("openocd not found (brew install open-ocd)")
+        self._probe = None
+
+    def ssh(self, cmd, **kw):
+        return subprocess.run(["ssh", self.host, cmd], capture_output=True, text=True, **kw)
+
+    def rpi_probe(self):
+        """The gpiochip whose lines are the 40-pin header: RP1 on a Pi 5, the SoC's before."""
+        out = self.ssh("gpiodetect")
+        if out.returncode != 0:
+            die(f"gpiodetect on {self.host} failed ({out.stderr.strip()}): run `setup` first")
+        m = re.search(r"^gpiochip(\d+) \[pinctrl-(rp1|bcm2711|bcm2835)\]", out.stdout, re.M)
+        if not m:
+            die(f"no Raspberry Pi header gpiochip on {self.host}:\n{out.stdout}")
+        c = f"-chip {m.group(1)}"
+        return ["-c", "adapter driver linuxgpiod", "-c", "transport select swd",
+                "-c", f"adapter gpio swclk {RPI_SWCLK} {c}", "-c", f"adapter gpio swdio {RPI_SWDIO} {c}",
+                "-c", f"adapter gpio srst {RPI_SRST} {c}"]  # drive mode: reset_config
 
     def base(self):
-        a = ["openocd", *PROBES[self.args.probe], "-f", "target/stm32u5x.cfg",
-             "-c", f"adapter speed {self.args.khz}"]
+        if self._probe is None:
+            self._probe = self.rpi_probe() if self.host else PROBES[self.args.probe]
+        a = ["openocd", *self._probe, "-f", "target/stm32u5x.cfg"]
+        if not self.host:  # bit-banged GPIO runs as fast as it can; no clock to set
+            a += ["-c", f"adapter speed {self.args.khz}"]
         if self.args.under_reset:
-            a += ["-c", "reset_config srst_only srst_nogate connect_assert_srst"]
+            a += ["-c", "reset_config srst_only srst_nogate srst_open_drain connect_assert_srst"]
         return a
+
+    def command(self, a):
+        """An OpenOCD argv, run here or on the Pi."""
+        return ["ssh", self.host, shlex.join(a)] if self.host else a
+
+    def setup(self):
+        if not self.host:
+            die("setup is for --probe rpi: it installs OpenOCD on the Pi")
+        p = subprocess.run(["ssh", self.host, "command -v openocd gpiodetect >/dev/null || "
+                            "(sudo apt-get update && sudo apt-get install -y openocd gpiod); "
+                            "openocd --version 2>&1 | head -1; gpiodetect; id -nG"])
+        if p.returncode != 0:
+            die(f"setup on {self.host} failed")
+        print(f"header chip and pins: {' '.join(self.rpi_probe())}")
 
     def run(self, script, check=True):
         """One OpenOCD session; lines our Tcl echoes start with '@@'."""
-        p = subprocess.run(self.base() + ["-c", script], capture_output=True, text=True)
+        p = subprocess.run(self.command(self.base() + ["-c", script]), capture_output=True, text=True)
         log = p.stdout + p.stderr
         if check and p.returncode != 0:
             print(log, file=sys.stderr)
@@ -254,9 +301,14 @@ shutdown"""
             die("TrustZone is off or the chip does not boot the boardloader: run "
                 "`firmware/swd.py trustzone` first")
         print(f"writing {image.name} ({image.stat().st_size} bytes) at {BOARDLOADER_START:#010x}")
+        target = image
+        if self.host:
+            if subprocess.run(["scp", "-q", str(image), f"{self.host}:{RPI_IMAGE}"]).returncode:
+                die(f"could not copy the image to {self.host}")
+            target = RPI_IMAGE
         t = time.monotonic()
-        self.run(f"init; reset halt; flash write_image erase {{{image}}} {BOARDLOADER_START:#x};"
-                 f" verify_image {{{image}}} {BOARDLOADER_START:#x}; reset run; shutdown")
+        self.run(f"init; reset halt; flash write_image erase {{{target}}} {BOARDLOADER_START:#x};"
+                 f" verify_image {{{target}}} {BOARDLOADER_START:#x}; reset run; shutdown")
         print(f"written and verified in {time.monotonic() - t:.0f} s; the chip is running. "
               "First boot: the boardloader programs the rest of the option bytes and restarts.")
 
@@ -269,7 +321,8 @@ shutdown"""
 
     def server(self):
         """OpenOCD as a gdb server on :3333, in its own process group."""
-        p = subprocess.Popen(self.base() + ["-c", "init"], stdout=subprocess.PIPE,
+        a = self.base() + (["-c", "bindto 0.0.0.0"] if self.host else []) + ["-c", "init"]
+        p = subprocess.Popen(self.command(a), stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT, text=True, start_new_session=True)
         deadline = time.monotonic() + 10
         log = []
@@ -280,9 +333,18 @@ shutdown"""
             log.append(line)
             if "Listening on port 3333" in line:
                 return p
-        os.killpg(p.pid, signal.SIGTERM)
+        self.stop(p)
         print("".join(log), file=sys.stderr)
         die("OpenOCD did not start a gdb server (log above)")
+
+    def stop(self, p):
+        os.killpg(p.pid, signal.SIGTERM)
+        p.wait()
+        if self.host:  # ssh going away does not reliably take the remote OpenOCD with it
+            self.ssh("pkill -f '^openocd .*bindto 0.0.0.0'")
+
+    def gdb_target(self):
+        return f"target extended-remote {self.host.split('@')[-1] if self.host else 'localhost'}:3333"
 
     def stage_for(self, addr):
         for elf in self.elfs():
@@ -295,7 +357,7 @@ shutdown"""
 
     def gdb_batch(self, elf, cmds):
         a = ["arm-none-eabi-gdb", "-nx", "-batch", "-ex", "set pagination off",
-             "-ex", "set print pretty on", "-ex", "target extended-remote :3333"]
+             "-ex", "set print pretty on", "-ex", self.gdb_target()]
         for c in cmds:
             a += ["-ex", c]
         return subprocess.run(a + ([str(elf)] if elf else []), capture_output=True,
@@ -363,8 +425,7 @@ shutdown"""
                     e2, s2 = self.stage_for(int(m.group(1)))
                     print(f"  faulting pc {int(m.group(1)):#010x} in {e2.stem if e2 else '?'}: {s2}")
         finally:
-            os.killpg(srv.pid, signal.SIGTERM)
-            srv.wait()
+            self.stop(srv)
         self.run("init; halt; shutdown" if keep_halted else "init; resume; shutdown")
         print("(left halted)" if keep_halted else "(resumed)")
 
@@ -373,27 +434,29 @@ shutdown"""
         elfs = self.elfs()
         try:
             a = ["arm-none-eabi-gdb", "-nx", "-ex", "set confirm off", "-ex",
-                 "target extended-remote :3333", "-ex", "monitor halt"]
+                 self.gdb_target(), "-ex", "monitor halt"]
             for e in elfs[1:]:
                 a += ["-ex", f"add-symbol-file {e}"]
             subprocess.run(a + [str(elfs[0])])
         finally:
-            os.killpg(srv.pid, signal.SIGTERM)
-            srv.wait()
+            self.stop(srv)
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["info", "trustzone", "flash", "state", "gdb", "reset"])
+    ap.add_argument("command", choices=["info", "trustzone", "flash", "state", "gdb", "reset", "setup"])
     ap.add_argument("image", nargs="?")
     ap.add_argument("--probe", default=os.environ.get("SWD_PROBE", "stlink"), choices=PROBES)
     ap.add_argument("--khz", type=int, default=1000)
+    ap.add_argument("--host", default=os.environ.get("SWD_HOST"), help="--probe rpi: the Pi, user@host")
     ap.add_argument("--under-reset", action="store_true")
     ap.add_argument("--board", default="ambire_p0")
     ap.add_argument("--halt", action="store_true", help="state: leave the core halted")
     args = ap.parse_args()
     swd = Swd(args)
-    if args.command == "info":
+    if args.command == "setup":
+        swd.setup()
+    elif args.command == "info":
         swd.info()
     elif args.command == "trustzone":
         swd.trustzone()

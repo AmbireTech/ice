@@ -44,6 +44,22 @@ firmware/swd.py state       # halt: where it runs (symbolised), fault registers,
 firmware/swd.py gdb         # interactive, with every stage's symbols
 ```
 
+**No probe: a Raspberry Pi is one.** OpenOCD on the Pi drives SWD from two
+GPIO pins (any model, Pi 5 included); `swd.py` runs it over SSH and points gdb
+at it over the network. Wire the Pi's header to the board:
+
+| Pi header pin | Pi signal | Board pad |
+|---|---|---|
+| 22 | GPIO25 | `TP_SWCLK` |
+| 18 | GPIO24 | `TP_SWDIO` |
+| 20 | GND | `TP_GND` |
+| 12 | GPIO18 | `TP_NRST` (optional, for `--under-reset`) |
+
+Leave the Pi's 3.3 V pin off the board. Then, with `SWD_PROBE=rpi
+SWD_HOST=pi@<pi-address>` set (or `--probe rpi --host …`), run `setup` once (it
+installs OpenOCD and gpiod on the Pi) and the commands above. Bit-banged SWD
+is slower: writing the full image takes minutes, not seconds.
+
 `trustzone` is what Trezor does in STM32CubeProgrammer
 (`trezor-firmware/docs/core/misc/trustzone.md`). If OpenOCD cannot set the
 option bytes, the script says so; set them there instead. On its first boot
