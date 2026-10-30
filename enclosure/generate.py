@@ -47,8 +47,9 @@ bezel's bosses. The pack: its board glued onto the tray's walls, the cells press
 their clips from underneath.
 
 Outputs:
-  enclosure/out/{shell,bezel,tray,joycap,airslider}.{step,stl}, case.3mf   for print / quote (the 3MF
-                                                      lays all five parts out for printing)
+  enclosure/out/{shell,bezel,tray,joycap,airslider}.{step,stl}   for CAD / quote
+  enclosure/out/{case,battery-tray}.{3mf,stl}        laid out for printing: the device's four parts,
+                                                      and the pack's tray on its own
   docs/v4/enclosure/                                  the /v4/ concept page's 3D preview and configurator:
     enclosure.json    the numbers the preview draws from, the flame, the print schemes, the pack
     board.json        the populated board, from KiCad's own 3D export (without the clips)
@@ -268,20 +269,26 @@ PRINT_SCHEMES = [
     {"id": "incognito", "label": "Incognito", "ink": None, "mask": "#181A1F", "colour": False},   # plain black, no print
 ]
 
-CASE_README = """Ambire Ice v4 case and battery pack
+PRINT_NOTE = """Units are millimetres. Print in see-through resin or PETG (ice blue, orange,
+purple or clear). The fits are set for an FDM printer with a 0.4 mm nozzle (0.2 mm
+between parts that slide or snap). These files have not been printed yet.
+"""
 
-case.3mf     the five parts laid out for printing: the shell on its back, the bezel face
-             down, the tray on its top face, the joystick's cap on its sleeve, the airgap
-             slider on its flange
-shell.stl    back shell (standoffs, locating pins, the screw hole, the camera window, the
+CASE_README = """Ambire Ice v4 case
+
+case.3mf     the four parts laid out for printing (Bambu Studio, OrcaSlicer, PrusaSlicer):
+             the shell on its back, the bezel face down, the joystick's cap on its sleeve,
+             the airgap slider on its flange. The shell and the bezel need no supports.
+case.stl     the same layout for any other slicer (split it into parts to place them yourself)
+
+The parts:
+  shell      back shell (standoffs, locating pins, the screw hole, the camera window, the
              window the pack's connector drops through)
-bezel.stl    front bezel (the screen sits in it; the screw threads into its chin)
-tray.stl     the battery pack's frame: the pack's board sits in its top, the cells show underneath
-joycap.stl   the joystick's cap: print it standing on its sleeve, dish up; press it straight
+  bezel      front bezel (the screen sits in it; the screw threads into its chin)
+  joycap     the joystick's cap: print it standing on its sleeve, dish up; press it straight
              onto the stem (a drop of glue if it comes loose)
-airslider.stl  the airgap switch's slider: print it on its flange, grip up; it goes into its
+  airslider  the airgap switch's slider: print it on its flange, grip up; it goes into its
              window in the shell's west wall from inside, grip out, before the board
-*.step       the same parts for CAD
 
 Assembly: push the airgap slider into its window in the shell's west wall from inside,
 grip out. Stick the screen to the board's front face with 0.3 mm foam tape, its
@@ -289,16 +296,19 @@ ribbons through the board's slots into their connectors. Lay the board in the sh
 two top holes onto the pins). Hook the bezel's top edge under the shell's top lip, swing
 it down over the screen, then the M2 pan-head screw from the back.
 
-The pack: glue the pack board into the tray's top, its magnetic connector out. Two AAA
-cells press into the clips from underneath, as marked on the board. The pack snaps onto
-the back below the camera, its connector through the window onto the receptacle on the
-device's board, whose magnets hold it; the cells charge over USB in the device.
+""" + PRINT_NOTE
 
-Print the shell on its back, the bezel face down and the tray on its top face: none needs
-supports. Units are millimetres. Print in see-through resin or PETG (ice blue, orange,
-purple or clear). The fits are set for an FDM printer with a 0.4 mm nozzle (0.2 mm
-between parts that slide or snap). These files have not been printed yet.
-"""
+TRAY_README = """Ambire Ice v4 battery pack tray
+
+battery-tray.3mf  the battery pack's frame on its top face, ready to print (no supports)
+battery-tray.stl  the same for any other slicer
+
+Glue the pack board into the tray's top, its magnetic connector out. Two AAA cells press
+into the clips from underneath, as marked on the board. The pack snaps onto the back
+below the camera, its connector through the window onto the receptacle on the device's
+board, whose magnets hold it; the cells charge over USB in the device.
+
+""" + PRINT_NOTE
 
 MESH_TOL = 0.03
 
@@ -1083,7 +1093,9 @@ def main():
     assert shell.is_valid and bezel.is_valid and tray.is_valid and joy_cap.is_valid and air_slider.is_valid, "invalid solid"
 
     size = (out_o[2] - out_o[0], out_o[3] - out_o[1], z_top - z_floor_out)   # the device; the pack adds to it
-    print_3mf(shell, bezel, tray, joy_cap, air_slider, OUT / "case.3mf")
+    print_layout((("shell", shell), ("bezel", Rot(180, 0, 0) * bezel), ("joycap", joy_cap),
+                  ("airslider", airslider.print_pose(air_slider))), OUT / "case")
+    print_layout((("tray", Rot(180, 0, 0) * tray),), OUT / "battery-tray")
     for name, part in (("shell", shell), ("bezel", bezel), ("tray", tray), ("joycap", joy_cap), ("airslider", air_slider)):
         export_step(part, str(OUT / f"{name}.step"))
         export_stl(part, str(OUT / f"{name}.stl"), tolerance=MESH_TOL, angular_tolerance=0.2)
@@ -1221,18 +1233,17 @@ def gltf_json(glb: Path, dest: Path):
     dest.write_text(json.dumps({"glb": base64.b64encode(glb.read_bytes()).decode()}))
 
 
-def print_3mf(shell, bezel, tray, cap, slider, dest: Path):
-    """The parts laid out for printing in a row: the shell on its back, the bezel face
-    down, the tray on its top face, the joystick's cap standing on its sleeve, the airgap
-    slider on its flange."""
+def print_layout(parts, stem: Path):
+    """(name, part) pairs, each already in its print pose, laid out in a row on the bed:
+    stem.3mf keeps them as named parts, stem.stl is the same layout for any slicer."""
     m = Mesher()
     x = 0.0
-    for name, part in (("shell", shell), ("bezel", Rot(180, 0, 0) * bezel), ("tray", Rot(180, 0, 0) * tray), ("joycap", cap),
-                       ("airslider", airslider.print_pose(slider))):
+    for name, part in parts:
         bb = part.bounding_box()
         m.add_shape(Pos(x - bb.min.X, -bb.min.Y, -bb.min.Z) * part, linear_deflection=MESH_TOL, angular_deflection=0.2, part_number=name)
         x += bb.size.X + 8
-    m.write(str(dest))
+    for suffix in (".3mf", ".stl"):
+        m.write(str(stem.with_suffix(suffix)))
 
 
 FAB_SETS = {
@@ -1269,16 +1280,19 @@ def write_downloads() -> dict:
             (files_dir / part).write_text(base64.b64encode(raw).decode())
         return {"label": label, "filename": name, "bytes": len(raw), "part": f"enclosure/files/{part}", "b64": b64}
 
-    # The viewer saves only allowlisted types (zip, csv, ...), so the case goes as one zip.
-    case_zip = OUT / "ambire-ice-case.zip"
-    with zipfile.ZipFile(case_zip, "w", zipfile.ZIP_DEFLATED) as z:
-        for name in ("case.3mf", "shell.stl", "bezel.stl", "tray.stl", "joycap.stl", "airslider.stl",
-                     "shell.step", "bezel.step", "tray.step", "joycap.step", "airslider.step"):
-            z.write(OUT / name, name)
-        z.writestr("README.txt", CASE_README)
+    # The viewer saves only allowlisted types (zip, csv, ...), so each print layout goes as a zip.
+    def print_zip(stem, readme):
+        dest = OUT / f"ambire-ice-{stem}.zip"
+        with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as z:
+            for suffix in (".3mf", ".stl"):
+                z.write(OUT / f"{stem}{suffix}", f"{stem}{suffix}")
+            z.writestr("README.txt", readme)
+        return dest
+
     return {"fabs": {fab: [entry(l, p) for l, p in files] for fab, files in FAB_SETS.items()},
             "pack": [entry(l, p) for l, p in PACK_FILES],
-            "case": [entry("Case and battery pack: 3MF, STL and STEP (zip)", case_zip)]}
+            "case": [entry("Case: 3MF and STL (zip)", print_zip("case", CASE_README)),
+                     entry("Battery pack tray: 3MF and STL (zip)", print_zip("battery-tray", TRAY_README))]}
 
 if __name__ == "__main__":
     sys.exit(main())
