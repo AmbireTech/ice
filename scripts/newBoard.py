@@ -56,6 +56,16 @@ SLOT_Y0, SLOT_Y1 = PANEL_S + 3.0, PANEL_S + 4.6
 # touch slot stayed), which leaves the TFT tail 3.0 mm of slack. The radio module's
 # pads (y 68.39) stop the slot going further.
 TFT_SLOT_DY = 2.5
+# The touch flex is 7 mm wide only for its last 32 mm. From the panel edge to 23.6 mm below
+# it, it is 14.55 mm wide, flush with the tail's east edge: the root off the touch glass and
+# the stiffened block that carries the touch controller. Newhaven's drawing does not dimension
+# that part; these are its outline in the PDF's vectors, scaled by the dimensioned 7.00 tail
+# and 55.85 length beside it. The block goes through the touch slot when the tail is threaded,
+# so the slot is sized by the flex, not by the tail (proto 0: the bridge between the two slots
+# stopped it). The touch slot so reaches into the TFT slot's x range, and the two are one
+# cutout (slot_outline()).
+CTP_FLEX = (CTP_TAIL[0] + CTP_TAIL[1] - 14.55, 14.55)
+CTP_FLEX_LEN = 23.6
 # Tail-to-slot clearance at each end. The panel is located by the bezel and the tails
 # by the panel: placement ~0.2 mm plus tail width +-0.1 is the lateral error, so 0.45
 # keeps the tail off the slot's end. Was 0.75 until 2026-10-23: every 0.1 mm here is
@@ -97,6 +107,7 @@ CTP_DROP = TFT_DROP + CTP_ABOVE_TFT
 TFT_SLOT_C = SLOT_C + TFT_SLOT_DY
 TFT_END_Y = TFT_SLOT_C - (TFT_LEN - (TFT_SLOT_C - PANEL_S) - TFT_DROP)
 CTP_END_Y = SLOT_C - (CTP_LEN - (SLOT_C - PANEL_S) - CTP_DROP)
+CTP_FLEX_END_Y = SLOT_C - (CTP_FLEX_LEN - (SLOT_C - PANEL_S) - CTP_DROP)   # north end of the wide part, on the back
 TFT_ROW, CTP_ROW = 1.35, 1.05                 # connector origin to its contact row (north of origin)
 CTP_SLACK = 1.5      # mm of touch tail slack: a nominal-length tail landing exactly on the row left no margin for stack/tail tolerance (pre-order audit)
 TFT_SLACK = 3.0      # mm of TFT tail left as a gentle bow (checkFpc allows 3): v4's receptacle needs the room south of the MCU
@@ -424,11 +435,13 @@ LOW_LIBS = ("Capacitor_SMD:", "Resistor_SMD:", "Inductor_SMD:", "LED_SMD:", "Pac
 
 
 def tail_corridors(board):
-    """{name: (x0, y0, x1, y1)}: each tail from its connector's south edge to its slot."""
+    """{name: (x0, y0, x1, y1)}: each tail from its connector's south edge to its slot, and
+    the touch flex's wide part (CTP_FLEX), which lies on the back from the slot north."""
     out = {}
-    for name, ref, (tx0, tw) in (("TFT tail", "J_TFT", TFT_TAIL), ("touch tail", "J_CTP", CTP_TAIL)):
+    for name, ref, (tx0, tw), dy in (("TFT tail", "J_TFT", TFT_TAIL, TFT_SLOT_DY), ("touch tail", "J_CTP", CTP_TAIL, 0.0)):
         y0 = pcbnew.ToMM(board.FindFootprintByReference(ref).GetBoundingBox(False).GetBottom())
-        out[name] = (tx0, y0, tx0 + tw, SLOT_Y0)
+        out[name] = (tx0, y0, tx0 + tw, SLOT_Y0 + dy)
+    out["touch flex block"] = (CTP_FLEX[0], CTP_FLEX_END_Y, sum(CTP_FLEX), SLOT_Y0)
     return out
 
 
@@ -492,9 +505,8 @@ def legalize(board):
     fps = {fp.GetReference(): fp for fp in board.GetFootprints()}
     forbidden = [(-999, -999, W + 999, 0.3), (-999, H - 0.3, W + 999, H + 999), (-999, -999, 0.3, H + 999),
                  (W - 0.3, -999, W + 999, H + 999)]
-    for x0, x1 in ((TFT_TAIL[0] - SLOT_MARGIN, TFT_TAIL[0] + TFT_TAIL[1] + SLOT_MARGIN),
-                   (CTP_TAIL[0] - SLOT_MARGIN, CTP_TAIL[0] + CTP_TAIL[1] + SLOT_MARGIN)):
-        forbidden.append((x0 - 0.3, SLOT_Y0 - 0.3, x1 + 0.3, SLOT_Y1 + 0.3))
+    for x0, y0, x1, y1 in slot_boxes().values():
+        forbidden.append((x0 - 0.3, y0 - 0.3, x1 + 0.3, y1 + 0.3))
     forbidden += [(x - 2.2, y - 2.2, x + 2.2, y + 2.2) for x, y in HOLES.values()]
     # Back-face-only keep-outs (the front face carries only the programming pads).
     back_only = [box for _, box in footprint_keepouts(board)] + list(LABEL_SLOTS.values()) + \
@@ -567,10 +579,28 @@ def rounded_rect(board, x0, y0, x1, y1, r):
     seg(board, (x0, y1 - r), (x0, y0 + r)); arc(board, (x0 + r, y0 + r), r, 180, 270)
 
 
-def slot(board, x0, x1):
-    """A tail slot with fully rounded ends (a router bit leaves those anyway)."""
+def slot_boxes():
+    """{name: (x0, y0, x1, y1)} of the two tail slots: each flex's widest part through
+    it plus SLOT_MARGIN at both ends; the TFT slot TFT_SLOT_DY south of the touch slot."""
+    return {"TFT": (TFT_TAIL[0] - SLOT_MARGIN, SLOT_Y0 + TFT_SLOT_DY,
+                    TFT_TAIL[0] + TFT_TAIL[1] + SLOT_MARGIN, SLOT_Y1 + TFT_SLOT_DY),
+            "touch": (CTP_FLEX[0] - SLOT_MARGIN, SLOT_Y0, CTP_TAIL[0] + CTP_TAIL[1] + SLOT_MARGIN, SLOT_Y1)}
+
+
+def slot_outline(board):
+    """The tail slots as one cutout: the touch slot (north, east) reaches west over the TFT
+    slot's east end (south), and the gap between them in that overlap is cut too, since a
+    0.9 mm web there would be the board's weakest point. Ends fully rounded (a router bit
+    leaves those anyway); the two inside corners of the step are sharp, board material."""
+    tx0, ty0, tx1, ty1 = slot_boxes()["TFT"]
+    cx0, cy0, cx1, cy1 = slot_boxes()["touch"]
+    assert cy1 < ty0 and tx0 < cx0 < tx1 < cx1, "slot_outline() assumes the touch slot north-east of the TFT slot, overlapping it in x"
     r = (SLOT_Y1 - SLOT_Y0) / 2
-    rounded_rect(board, x0, SLOT_Y0, x1, SLOT_Y1, r)
+    seg(board, (cx0 + r, cy0), (cx1 - r, cy0)); arc(board, (cx1 - r, cy0 + r), r, -90, 90)
+    seg(board, (cx1 - r, cy1), (tx1, cy1)); seg(board, (tx1, cy1), (tx1, ty1 - r))
+    arc(board, (tx1 - r, ty1 - r), r, 0, 90); seg(board, (tx1 - r, ty1), (tx0 + r, ty1))
+    arc(board, (tx0 + r, ty0 + r), r, 90, 270); seg(board, (tx0 + r, ty0), (cx0, ty0))
+    seg(board, (cx0, ty0), (cx0, cy0 + r)); arc(board, (cx0 + r, cy0 + r), r, 180, 270)
 
 
 def drawing(board, x0, y0, x1, y1, layer, width=0.1):
@@ -735,6 +765,8 @@ def artwork(board):
     cx, cw = CTP_TAIL
     drawing(board, cx, PLACE["J_CTP"][1] + 2.0, cx + cw, SLOT_Y0, d)
     text(board, "TOUCH TAIL", cx + cw / 2, 40.0, d, 0.7, 0.1, 90)
+    drawing(board, CTP_FLEX[0], CTP_FLEX_END_Y, sum(CTP_FLEX), SLOT_Y0, d)
+    text(board, "TOUCH FLEX BLOCK", CTP_FLEX[0] + 3.0, (CTP_FLEX_END_Y + SLOT_Y0) / 2, d, 0.7, 0.1, 90)
     # Camera module (OV2640 ESP32-CAM class, ~8.5 x 8.5 mm head) and its lens.
     drawing(board, 4.0, 4.5, 12.5, 13.0, d)
     text(board, "CAMERA", 8.25, 8.75, d, 0.7, 0.1)
@@ -817,8 +849,7 @@ def main():
     tb.SetTitle("Ambire Ice")
     tb.SetRevision("proto 0")
     rounded_rect(board, 0, 0, W, H, R)
-    slot(board, TFT_TAIL[0] - SLOT_MARGIN, TFT_TAIL[0] + TFT_TAIL[1] + SLOT_MARGIN)
-    slot(board, CTP_TAIL[0] - SLOT_MARGIN, CTP_TAIL[0] + CTP_TAIL[1] + SLOT_MARGIN)
+    slot_outline(board)
 
     parts = netlist.read(syncBoard.NETLIST)
     fpmap = {k: v for k, v in json.load(open(syncBoard.FPMAP)).items() if not k.startswith("_")}

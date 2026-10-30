@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Redraw the two display-tail slots from newBoard.py's constants (SLOT_MARGIN, SLOT_Y0/1).
+"""Redraw the display-tail cutout from newBoard.py's constants (newBoard.slot_outline()).
 
     $KICAD_PY scripts/resizeSlots.py BOARD [--apply]
 
 The slots are the board's only inner Edge.Cuts outlines: this removes the Edge.Cuts
-items lying inside the slots' band and draws the slots again. Dry run by default: it
+items lying inside the slots' band and draws the cutout again. Dry run by default: it
 reports the old and new extents and the DRC before/after on a copy; --apply writes BOARD
 only if DRC is no worse. Close the board in KiCad first.
 """
@@ -36,19 +36,19 @@ def drc(path):
 def main():
     path, apply_ = Path(sys.argv[1]), "--apply" in sys.argv
     b = pcbnew.LoadBoard(str(path))
-    band = (nb.SLOT_Y0 - 0.1, nb.SLOT_Y1 + 0.1)
+    band = (nb.SLOT_Y0 - 0.1, nb.SLOT_Y1 + nb.TFT_SLOT_DY + 0.1)
     old = [d for d in b.GetDrawings() if d.GetLayer() == pcbnew.Edge_Cuts
            and band[0] <= M(d.GetBoundingBox().GetTop()) and M(d.GetBoundingBox().GetBottom()) <= band[1]]
-    if len(old) != 12:    # two stadiums: 2 lines + 4 quarter arcs each (newBoard.rounded_rect)
-        raise SystemExit(f"expected the slots' 12 Edge.Cuts items in y {band}, found {len(old)}")
-    xs = sorted((M(d.GetBoundingBox().GetLeft()), M(d.GetBoundingBox().GetRight())) for d in old)
-    print("old slot items x:", [f"{a:.2f}..{c:.2f}" for a, c in xs])
+    if not old or any(M(d.GetBoundingBox().GetLeft()) < 1 or M(d.GetBoundingBox().GetRight()) > nb.W - 1 for d in old):
+        raise SystemExit(f"expected only the slots' Edge.Cuts items in y {band}, found {len(old)}")
+    xs = sorted((M(d.GetBoundingBox().GetLeft()), M(d.GetBoundingBox().GetRight()),
+                 M(d.GetBoundingBox().GetTop()), M(d.GetBoundingBox().GetBottom())) for d in old)
+    print(f"old slot items ({len(old)}):", [f"x {a:.2f}..{c:.2f} y {t:.2f}..{u:.2f}" for a, c, t, u in xs])
     for d in old:
         b.Remove(d)
-    nb.slot(b, nb.TFT_TAIL[0] - nb.SLOT_MARGIN, nb.TFT_TAIL[0] + nb.TFT_TAIL[1] + nb.SLOT_MARGIN)
-    nb.slot(b, nb.CTP_TAIL[0] - nb.SLOT_MARGIN, nb.CTP_TAIL[0] + nb.CTP_TAIL[1] + nb.SLOT_MARGIN)
-    print(f"new slots (margin {nb.SLOT_MARGIN}): TFT x {nb.TFT_TAIL[0] - nb.SLOT_MARGIN:.2f}..{sum(nb.TFT_TAIL) + nb.SLOT_MARGIN:.2f}, "
-          f"touch x {nb.CTP_TAIL[0] - nb.SLOT_MARGIN:.2f}..{sum(nb.CTP_TAIL) + nb.SLOT_MARGIN:.2f}")
+    nb.slot_outline(b)
+    for name, (x0, y0, x1, y1) in nb.slot_boxes().items():
+        print(f"new {name} slot (margin {nb.SLOT_MARGIN}): x {x0:.2f}..{x1:.2f} y {y0:.2f}..{y1:.2f}")
     with tempfile.TemporaryDirectory() as tmp:
         for f in path.parent.glob("*.kicad_pro"):
             shutil.copy(f, tmp)

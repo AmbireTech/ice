@@ -279,9 +279,8 @@ class Model:
         b = nb
         self.forbidden = [(-999, -999, b.W + 999, 0.3), (-999, b.H - 0.3, b.W + 999, b.H + 999),
                           (-999, -999, 0.3, b.H + 999), (b.W - 0.3, -999, b.W + 999, b.H + 999)]
-        for x0, x1 in ((b.TFT_TAIL[0] - b.SLOT_MARGIN, b.TFT_TAIL[0] + b.TFT_TAIL[1] + b.SLOT_MARGIN),
-                       (b.CTP_TAIL[0] - b.SLOT_MARGIN, b.CTP_TAIL[0] + b.CTP_TAIL[1] + b.SLOT_MARGIN)):
-            self.forbidden.append((x0 - 0.3, b.SLOT_Y0 - 0.3, x1 + 0.3, b.SLOT_Y1 + 0.3))
+        for x0, y0, x1, y1 in b.slot_boxes().values():
+            self.forbidden.append((x0 - 0.3, y0 - 0.3, x1 + 0.3, y1 + 0.3))
         self.forbidden += [(x - 2.2, y - 2.2, x + 2.2, y + 2.2) for x, y in b.HOLES.values()]
         # every drilled hole (a connector's legs and pegs, mounting holes) is in the way on
         # both faces: the same-side courtyard and pad checks do not see a back part's legs

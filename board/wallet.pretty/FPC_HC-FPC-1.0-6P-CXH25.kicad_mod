@@ -1,11 +1,11 @@
-(footprint "FPC_HC-FPC-1.0-6P-CSH25"
+(footprint "FPC_HC-FPC-1.0-6P-CXH25"
 	(version 20260206)
 	(generator "pcbnew")
 	(layer "F.Cu")
-	(descr "HC-FPC-1.0-6P-CSH25 (LCSC C49166860): 6P 1.0 mm FPC, right angle, slide lock, TOP contact. Pads 1-6 on the tail side (-y), FPC enters on the +y side. Land from EasyEDA C49166860; courtyard covers the pad toes.")
-	(tags "FPC 1.0mm 6P top contact touch")
+	(descr "HC-FPC-1.0-6P-CXH25 (LCSC C49166842): 6P 1.0 mm FPC, right angle, slide lock, BOTTOM contact. Pads 1-6 on the tail side (-y), FPC enters on the +y side. Land from Hong Cheng's drawing, identical to the top-contact CSH25's (EasyEDA draws it turned 180 deg); courtyard covers the pad toes. 3D: the CSH25's body, the same outside.")
+	(tags "FPC 1.0mm 6P bottom contact touch")
 	(property "Reference" "REF**" (at 0 -3.6 0) (layer "F.SilkS") (hide yes) (effects (font (size 0.8 0.8) (thickness 0.15))))
-	(property "Value" "HC-FPC-1.0-6P-CSH25" (at 0 5.8 0) (layer "F.Fab") (effects (font (size 0.6 0.6) (thickness 0.1))))
+	(property "Value" "HC-FPC-1.0-6P-CXH25" (at 0 5.8 0) (layer "F.Fab") (effects (font (size 0.6 0.6) (thickness 0.1))))
 	(attr smd)
 	(fp_line (start -3.05 -2.55) (end 3.05 -2.55) (stroke (width 0.05) (type solid)) (layer "F.CrtYd"))
 	(fp_line (start 3.05 -2.55) (end 3.05 -0.33) (stroke (width 0.05) (type solid)) (layer "F.CrtYd"))

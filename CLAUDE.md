@@ -38,8 +38,11 @@ Ambire internals into GridCore's.
   connector (which moved 5.5 mm south for it, its slot 2.5 mm), the male (C5126845) on
   the pack board through a window in the back; their own magnets hold the pack.
   `board/wallet.kicad_pcb` is v4 since 2026-10-28 (v3 is in git history before it):
-  routed, DRC clean. Never place anything on the back's touch-tail lane (x 36.5-43.5)
-  or the TFT tail's: they are cables, invisible to part checks. `enclosure/generate.py`
+  routed, DRC clean. Never place anything but low parts on the back's touch-tail lane
+  (x 36.5-43.5), under the touch flex's 14.55 mm stiffened block (x 28.95-43.5, from the
+  slot north to y ~49; `newBoard.CTP_FLEX`) or on the TFT tail's: they are cables,
+  invisible to part checks. The display slots are one cutout with no board between the
+  tails (2026-10-31): the block cannot pass a bridge. `enclosure/generate.py`
   puts the male over the board's J_PACK and takes the pack clips' models from
   `enclosure/pack_clips.kicad_pcb` (`PACK_*`/`CONN_*`).
   Everything lands on `main` (owner: no review branches). The pack board is `pack/`

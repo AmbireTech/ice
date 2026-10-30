@@ -82,20 +82,6 @@
   ],
   "note": "EasyEDA C19725033 model; 12/12 pads by scripts/alignModel.py"
  },
- "wallet:FPC_HC-FPC-1.0-6P-CSH25": {
-  "path": "${KIPRJMOD}/../3d/FPC_HC-FPC-1.0-6P-CSH25.step",
-  "offset": [
-   0.005,
-   -0.621,
-   1.3
-  ],
-  "rotate": [
-   0,
-   0,
-   0
-  ],
-  "note": "EasyEDA C49166860 model; 8/8 pads by scripts/alignModel.py"
- },
  "wallet:SW_Alps_SKRTLAE010_HoleClear": {
   "path": "${KIPRJMOD}/../3d/Alps_SKRTLAE010.step",
   "offset": [
@@ -151,5 +137,19 @@
    180
   ],
   "note": "MYOUNG's model from EasyEDA (LCSC C6937107); checked against MYOUNG's drawing WD-CP-0277 (arms 10.46 tall, 11 across) and against the footprint: base on the pad within 0.1 mm, end wall on the footprint's -x side (its fab mark), outward on the board; the model's end wall is on +x, so turned 180"
+ },
+ "wallet:FPC_HC-FPC-1.0-6P-CXH25": {
+  "path": "${KIPRJMOD}/../3d/FPC_HC-FPC-1.0-6P-CSH25.step",
+  "offset": [
+   0.005,
+   -0.621,
+   1.3
+  ],
+  "rotate": [
+   0,
+   0,
+   0
+  ],
+  "note": "the top-contact CSH25's body model: Hong Cheng's drawings give the CXH25 the same outside (6.70 vs 6.75 mm deep, 2.5 mm high); EasyEDA has no model for C49166842"
  }
 }

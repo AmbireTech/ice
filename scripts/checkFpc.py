@@ -120,7 +120,7 @@ import newBoard as nb  # noqa: E402
 
 # The tails' drop on the front: from the panel's south edge into the north half of
 # each slot. No front part's body (its fab outline) and not the cell may reach into it.
-for name, (tx0, tw), dy in (("TFT tail", nb.TFT_TAIL, nb.TFT_SLOT_DY), ("touch tail", nb.CTP_TAIL, 0.0)):
+for name, (tx0, tw), dy in (("TFT tail", nb.TFT_TAIL, nb.TFT_SLOT_DY), ("touch flex", nb.CTP_FLEX, 0.0)):
     drop_s = nb.SLOT_Y0 + dy + nb.TAIL_BEND + nb.TAIL_CLR
     x0, x1 = tx0 - nb.SLOT_MARGIN, tx0 + tw + nb.SLOT_MARGIN
     bodies = []

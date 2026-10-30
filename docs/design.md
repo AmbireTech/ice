@@ -115,10 +115,13 @@ on the back face.
   bottom-contact: the 54132-4062 is. The tail is never twisted, so panel pin 1
   stays at the west end, which on the placed connector is pad 40: **pad = 41 −
   panel pin**, the same rule as on the Nano.
-- The touch tail's contacts face the other way (the Nano's analysis, which
-  needed a top-contact part for the same reason). After the same two bends they
-  face away from the board: the HC-FPC-1.0-6P is top-contact. Pin 1 west →
-  **pad = pin**.
+- The touch tail's contacts are on the same face as the TFT tail's (Newhaven's
+  side view marks "stiffener / contact side" the same way round on both), so they
+  too face the board after the two bends and the connector is bottom-contact: the
+  HC-FPC-1.0-6P-CXH25. Proto 0 had the top-contact CSH25 (the Nano's analysis,
+  which was wrong for this panel) and its touch made no contact. Pin 1 west →
+  **pad = pin**; the CXH25's land and pad numbering are the CSH25's, so the pads
+  and copper stayed as they were.
 - `scripts/checkFpc.py` re-derives all of this from the placed board: openings,
   which pad is west-most, lever and plunger directions, antenna end. A connector
   rotated 180° fails it.
@@ -132,8 +135,23 @@ tails also dropped through a 4 mm pouch; proto 1 moved the slots 2 mm south
 instead (each millimetre south costs a tail two), so both tails land exactly where
 they did and the connectors stayed put.
 
-The touch tail's length is the one awkward thing: it lies along the back
-face's east side (x 36.5–43.5) up to its connector. Only low parts sit under it.
+The touch flex is 7 mm wide only for its last 32 mm. For its first 23.6 mm below
+the panel it is 14.55 mm wide, flush with the tail's east edge: the root off the
+touch glass and a stiffened block that carries the touch controller under a
+shield. Newhaven does not dimension that part; the numbers are its outline in the
+drawing's vectors, scaled by the dimensioned tail beside it. The block passes
+through the touch slot when the tail is threaded, so the slot is sized by the
+flex (x 28.50–43.95), not by the tail. That reaches over the TFT slot's east end,
+2.5 mm further south since v4, and the two slots are one stepped cutout with no
+board between the tails: on proto 0 the 3.2 mm bridge between the slots stopped
+the block.
+
+On the back the wide part lies from the slot north to about y 49 (x 28.95–43.5),
+and the narrow tail continues along the east side (x 36.5–43.5) up to its
+connector. Only low parts sit under either (`checkFpc.py` checks both). The
+block's north end reaches the TFT connector's east end (x 29–35, from y 49 to
+the connector's mouth at y 54.7): it rides over that end of the connector and its
+actuator, which needs checking against the case and the first panel.
 For production, ask Newhaven for a shorter touch tail or choose a panel whose
 touch flex is merged into the TFT flex.
 
@@ -163,13 +181,18 @@ touch flex is merged into the TFT flex.
   the tail keeps 3.0 mm of slack). The MCU's south-side signals pass it on the front
   copper. The east side of the back is the touch tail's lane, which rules it out there.
 - **The chin's back** holds USB-C (mouth south) with the USB switch and ESD clamp
-  beside it, the cell-sense divider and the CC pull-downs (until v3 the AAA cell lay
-  across it in two clips). North of the
-  slots, between the two display tails and under them (low parts only), sits the
-  charger with its control transistors, next to the middle bridge it feeds the cell
-  through. The placement was chosen by trial routes with the human router: with the
-  USB block beside USB-C and the charger beside the middle bridge it routes in 1230 mm
-  and 87 signal vias, against 1383 mm and 100 for the first seed.
+  beside it and the CC pull-downs (until v3 the AAA cell lay across it in two clips).
+  North of the cutout, under the touch flex (low parts only), sits the charger with
+  its control transistors. Since the bridge between the tails went (2026-10-31) the
+  cell's + reaches the chin over the east bridge only: from the pack's trunk it runs
+  on the back between the TFT connector and the charger (y 52.5) to the east edge.
+  The two sense dividers moved north with it, so neither sense line crosses: the
+  cell-sense divider sits beside the pack's mid-cell divider, by the MCU's ADC line,
+  and the VBUS-sense divider north of the cutout's west end (of two placements
+  trial-routed with the human router, the one with the least new copper: 73 mm,
+  6 signal vias). The v3 placement was chosen the same way: with the USB block beside
+  USB-C and the charger beside the then middle bridge it routed in 1230 mm and 87
+  signal vias, against 1383 mm and 100 for the first seed.
 - **Trace widths** come from the net classes (KiCad's default when routing a net):
   the **cell path at 0.8 mm** (BAT, BAT_N, SW_BOOST: ~1 A from a 1.0 V cell, every
   10 mΩ is 1 % of its voltage; two vias per layer change), the 3.3–5 V rails at
@@ -319,13 +342,12 @@ touch flex is merged into the TFT flex.
   line runs under the module; the two MCU-side lines come over the west bridge.
 - Under the screen the front copper has no parts: it is the layer for the buses
   between blocks (drop a via at the pin).
-- Signals reach the chin over three bridges between the slots and the edges:
-  west (11.4 mm, with the hole H3 out), middle (3.25 mm) and east (4.05 mm). The
-  slots run 0.45 mm past each tail's edge, enough for the panel's placement and the
-  tail's width tolerance (they ran 0.75 mm past until proto 1), and copper keeps
-  0.25 mm from every edge (JLC: 0.2): the middle bridge's copper went from 2.0 to
-  2.7 mm. A slot stays 1.6 mm wide, for the tail's two 90-degree turns through the
-  1.0 mm board.
+- Signals reach the chin over two bridges between the cutout and the edges: west
+  (11.4 mm, with the hole H3 out) and east (4.05 mm). There is no middle bridge since
+  2026-10-31: the touch flex's stiffened block could not pass it (see "Display tails").
+  The slots run 0.45 mm past each flex's widest part, enough for the panel's placement
+  and the width tolerance, and copper keeps 0.25 mm from every edge (JLC: 0.2). A slot
+  stays 1.6 mm wide, for the tail's two 90-degree turns through the 1.0 mm board.
 
 ## Power: two AAA cells in a pack
 
@@ -407,7 +429,7 @@ NiMH cell. There is no charge light.
   antenna's keep-out, as close under the cell as the land allows; the cell's clips
   went 0.25 mm north, as far as the touch tail's slot lets them. Its stem stands through a hole in the case and stops 0.25 mm under the front
   face, so a printed cap goes on it. Every line between the chin and the MCU crosses
-  one of the three narrow bridges beside the display slots, so the four directions
+  one of the two bridges beside the display cutout, so the four directions
   share one ADC line: each switches its own resistor (15k/27k/47k/100k) from a node
   pulled up by 15k to GND. The ADC, referenced to the same 3.3 V, tells every single
   direction and every pair (diagonals) apart: 110 mV between neighbouring codes,
@@ -507,8 +529,8 @@ purple (all transparent tints) and clear.
    committing; the SC031GS would need 1.8 V I/O and level translators (a board
    change). Check the module flex's contact face against the bottom-contact
    connector on a sample.
-4. **Touch tail contact face**: inherited from the Nano's analysis; confirm on
-   the first panel before reflowing the touch connector.
+4. **Touch tail contact face**: settled on proto 0 and by Newhaven's side view:
+   the contacts face the board, so the connector is bottom-contact (CXH25).
 5. **Radio UART pins**: P1.09 (module TX, pad 17) and P0.05 (module RX, pad 15),
    full-speed I/O. Every GPIO on the module's north edge is "low frequency I/O
    only" in the nRF52840 pin table (up to 10 kHz), so none carries the UART. The

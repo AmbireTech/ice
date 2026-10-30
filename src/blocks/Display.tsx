@@ -60,12 +60,12 @@ export const DisplayBlock = () => (
 
     {/*
       Touch tail (FT5426, 6-pin 1.0 mm: 1 VDD, 2 GND, 3 SCL, 4 SDA, 5 /INT,
-      6 /RESET per Newhaven). Connector and pad order are set in
-      board/footprints.json once the tail's contact face is fixed for this
-      wrap-around mount (docs/design.md, open items).
+      6 /RESET per Newhaven). Bottom contact: Newhaven's drawing puts the
+      contacts on the same face as the TFT tail's, which faces the board after
+      the two bends (proto 0: the top-contact CSH25 made no contact).
     */}
     <chip name="J_CTP" footprint="pinrow8"
-      manufacturerPartNumber="HC-FPC-1.0-6P-CSH25" supplierPartNumbers={{ jlcpcb: ["C49166860"] }}
+      manufacturerPartNumber="HC-FPC-1.0-6P-CXH25" supplierPartNumbers={{ jlcpcb: ["C49166842"] }}
       pinLabels={{ pin1: "VDD", pin2: "GND", pin3: "SCL", pin4: "SDA", pin5: "INT", pin6: "RST", pin7: "MP1", pin8: "MP2" }}
       schX={2} schY={-12} schSectionName={S} />
     <trace from=".J_CTP > .VDD" to="net.V3V3" />
