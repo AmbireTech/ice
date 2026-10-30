@@ -55,7 +55,8 @@ at it over the network. Wire the Pi's header to the board:
 | 20 | GND | `TP_GND` |
 | 12 | GPIO18 | `TP_NRST` (optional, for `--under-reset`) |
 
-A BeagleBone Black or Green works the same way (`--probe beagle`), on its P9
+A BeagleY-AI has the Pi's header layout: wire it as a Pi and use `--probe rpi`
+(`setup` checks that its Linux names the lines as a Pi does). A BeagleBone Black or Green works the same way (`--probe beagle`), on its P9
 header: P9_12 → `TP_SWCLK`, P9_15 → `TP_SWDIO`, P9_1 (GND) → `TP_GND`, P9_23 →
 `TP_NRST` (optional). The pins are found by name on the board, so the model's
 gpiochip numbering does not matter.

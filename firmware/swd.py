@@ -18,6 +18,8 @@ the network. Pins are found by their line names on the board (gpioinfo), so the 
 numbering of the model does not matter:
   Raspberry Pi (any model): header 22 = GPIO25 -> SWCLK, 18 = GPIO24 -> SWDIO,
                             12 = GPIO18 -> NRST (optional), 20 = GND
+                            (BeagleY-AI: the same Pi-layout header, --probe rpi, if
+                            its Linux names the lines GPIO25/24/18; setup tells)
   BeagleBone (Black/Green): P9_12 -> SWCLK, P9_15 -> SWDIO, P9_23 -> NRST (optional),
                             P9_1 = GND
 
