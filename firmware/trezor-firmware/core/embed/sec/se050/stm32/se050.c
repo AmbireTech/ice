@@ -58,7 +58,8 @@ LOG_DECLARE(se050)
 // PH_PROTO_7816_HEADER_LEN (NAD, PCB, one LEN byte), PH_PROTO_7816_CRC_LEN
 #define T1_HEADER_LEN 3
 #define T1_CRC_LEN 2
-// IFSC_SIZE_SEND; the LEN byte caps a received frame the same way
+// IFSC_SIZE_SEND; a received frame is held to the same size (its LEN byte
+// could say 255, one byte more than the frame buffer has room for)
 #define T1_MAX_INF 254
 #define T1_MAX_FRAME (T1_HEADER_LEN + T1_MAX_INF + T1_CRC_LEN)
 
@@ -229,6 +230,10 @@ static bool t1_receive(void) {
   }
 
   size_t inf_size = frame[2];
+  if (inf_size > T1_MAX_INF) {
+    LOG_WARN("frame announces %d bytes", (int)inf_size);
+    return false;
+  }
   if (!se050_i2c_retry(I2C_FLAG_RX, &frame[T1_HEADER_LEN],
                        inf_size + T1_CRC_LEN)) {
     return false;
