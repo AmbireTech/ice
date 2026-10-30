@@ -147,6 +147,16 @@ Against the upstream base:
 | `models/T3T2/model.toml`, `boards/devkit.toml` | SMP (the nRF's management link) moved from the model to the devkit board, so boards without the nRF build |
 | `sec/se050/` (new), `sec/rng/rng_strong.c`, `sys/rng/inc/sys/rng_use_flags.h`, `sec/build.rs`, `sec/Cargo.toml`, `projects/secmon/{Cargo,project}.toml` | the SE050's random number generator, mixed into Trezor's strong RNG beside the MCU's (and the OPTIGA's, once fitted); `[se050]` in the board file switches it on |
 | `sec/trustzone/stm32u5/tz_init.c` | with `[se050]`, the SE050's I2C bus, its pins, its enable line and its interrupts belong to the secure monitor (Trezor does this only for the OPTIGA) |
+| `io/display/i8080/display_io_spi.c` | SSI set before master mode (the other order is a mode fault: the SPI never started) |
+| `io/display/i8080/panels/dem240320b1.c` | TEON when the board wires TE; `DISPLAY_PANEL_MIRROR_X` (the Newhaven panel's columns run the other way) |
+| `sys/mpu/stm32u5/mpu.c` | the secure monitor's MPU covers AUX2 too (the app's stack: its random-number requests faulted) |
+| `sec/se050/stm32/se050.c` | GetRandom reads long-form TLV lengths (the SE050 answers `41 82 00 20` + data) |
+| `rust/src/ui/shape/utils/imagebuf.rs`, `models/T3T2/memory_secmon.{h,ld}` | the UI image buffer holds a whole 240x320 screen (the home screen never appeared); AUX1 takes 24 kB from AUX2 for it |
+| `common/defs/support.json` + regenerated coin/network/token tables | T3T2 added as a copy of T3T1 (every coin lookup failed) |
+| `src/trezor/wire/thp/ui.py` | Delizia has no THP pairing screen: the generic confirmation, Eckhart's wording |
+| `src/trezor/wire/message_handler.py` | Ambire boards report the exception behind "Firmware error" |
+| `models/T3T2/model_T3T2.h`, `boards/ambire_p0.{h,toml}`, `rust/.../theme/mod.rs`, `welcome_screen.rs`, `src/boot.py` | branding: the board names the product "Ambire"; `[ambire_branding]` puts the flame on the welcome screen (held 3 s) |
+| `rust/.../component/ambire_game.rs` (new), `homescreen.rs` | `[ambire_game]`: a raycaster maze behind 7 quick taps on the home screen |
 
 What the build drives (compiled, not yet run on a board): the display, touch,
 USB, the boot chain and TrustZone. The backlight is on/off only.
@@ -181,6 +191,26 @@ SE050 beyond its random number generator, the radio (Trezor's link needs SPI
 and four control lines, our board has a 2-wire UART), the camera, the charger
 and the battery gauge. Nothing
 releases `PWR_HOLD` yet, so the firmware cannot switch the device off.
+
+## On proto 0 (2026-10-30)
+
+Proto 0 boots to the home screen, pairs with `trezorctl` over USB (THP, code
+entry), creates a wallet and signs: the first signed transaction and its check
+are in `bringup/proto0-first-signed-tx.json`.
+
+- Firmware updates go over USB: hold no button, but tap the screen repeatedly
+  right after pressing power to stay in the bootloader ("Waiting for host"),
+  then `trezorctl firmware update -f out/ambire_p0/firmware.bin`. A running
+  Trezor Bridge (`trezord`) or Trezor Suite on the same computer takes the
+  device over mid-pairing: stop them first.
+- The power latch holds, the display runs (mirrored until fixed), touch works
+  with the touch tail folded into the connector (the fitted connector's contacts
+  are on the other side from the tail's), the SE050 answers and supplies
+  randomness.
+- SWD from the BeagleY-AI flashed the boot chain, then started returning
+  corrupted replies (the first bits of the chip's ID right, then wrong). Nothing
+  in the firmware touches the SWD pins and tamper detection does not disable
+  debug; open.
 
 ## Bring-up checks
 
