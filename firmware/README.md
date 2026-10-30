@@ -102,13 +102,21 @@ Against the upstream base:
 | `io/touch/build.rs`, `io/Cargo.toml` | the `touch_panel_nhd240320af` mapping (identity for now) |
 | `projects/boardloader/main.c` | the power latch: `PWR_HOLD` high as the first thing the chip does |
 | `models/T3T2/model.toml`, `boards/devkit.toml` | SMP (the nRF's management link) moved from the model to the devkit board, so boards without the nRF build |
+| `sec/se050/` (new), `sec/rng/rng_strong.c`, `sys/rng/inc/sys/rng_use_flags.h`, `sec/build.rs`, `sec/Cargo.toml`, `projects/secmon/{Cargo,project}.toml` | the SE050's random number generator, mixed into Trezor's strong RNG beside the MCU's (and the OPTIGA's, once fitted); `[se050]` in the board file switches it on |
 
 What the build drives (compiled, not yet run on a board): the display, touch,
 USB, the boot chain and TrustZone. The backlight is on/off only.
 
-What is not driven yet: the OPTIGA (not fitted on the first boards) and the
-SE050, the radio (Trezor's link needs SPI and four control lines, our board
-has a 2-wire UART), the camera, the charger and the battery gauge. Nothing
+New seeds and the device's secret keys take their randomness from the MCU's
+generator and the SE050's together (Trezor's "strong" random path, which until
+now combined the MCU with the OPTIGA or Tropic). If the SE050 does not answer,
+the device stops with "SE050 entropy source failed" rather than continue on
+the MCU alone.
+
+What is not driven yet: the OPTIGA (not fitted on the first boards), the
+SE050 beyond its random number generator, the radio (Trezor's link needs SPI
+and four control lines, our board has a 2-wire UART), the camera, the charger
+and the battery gauge. Nothing
 releases `PWR_HOLD` yet, so the firmware cannot switch the device off.
 
 ## Bring-up checks
@@ -125,6 +133,12 @@ Things only a board in hand can answer:
    the axis mapping against the identity mapping.
 4. **Backlight**: the on state is the pin's internal pull-up, which puts about
    2.3 V on the TPS60230's enable through the board's 1 k / 100 k divider.
+5. **SE050 random numbers**: the driver was written from NXP's Plug & Trust
+   middleware and has never talked to a chip. On the first boot that needs
+   strong randomness (first boot, seed creation), check that the device does
+   not stop with "SE050 entropy source failed". If it does, look at the I2C4
+   traffic: the first frame out is `5A C0 00 FF FC` (resynchronise), the
+   SE050 must answer `A5 E0 00 ..`.
 
 The T3T2 emulator did not build at `5fdc180`, for Trezor's own devkit either
 (chip attestation and the OPTIGA certificate exist only for the T3W1

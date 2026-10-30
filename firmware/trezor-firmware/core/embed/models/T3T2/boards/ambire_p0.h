@@ -7,10 +7,10 @@
 // LQFP100 has ports A-E and PH0/PH1/PH3 only: nothing here may sit on a
 // port F/G pin (the T3T2 devkit's pin map is a larger package).
 //
-// Not driven by this board file yet: the SE050 and OPTIGA secure elements
-// (I2C4; the OPTIGA is not fitted on the first boards), the nRF52840 radio
-// (USART3 2-wire, behind the airgap switch), the camera (DCMI), the BQ25185
-// charger and the MAX17048 battery gauge.
+// Not driven by this board file yet: the OPTIGA secure element (I2C4; not
+// fitted on the first boards), the SE050 beyond its random number generator
+// (below), the nRF52840 radio (USART3 2-wire, behind the airgap switch), the
+// camera (DCMI), the BQ25185 charger and the MAX17048 battery gauge.
 
 #define VDD_3V3 1
 
@@ -118,6 +118,15 @@
 #define OPTIGA_RST_PORT GPIOD
 #define OPTIGA_RST_PIN GPIO_PIN_14
 #define OPTIGA_RST_CLK_EN __HAL_RCC_GPIOD_CLK_ENABLE
+
+// NXP SE050: [se050] in ambire_p0.toml mixes its random number generator into
+// the strong RNG. ENA high runs the chip, low is deep power-down (the board
+// pulls it high with 100 k); the driver pulses it low to start from a clean
+// power-up.
+#define SE050_I2C_INSTANCE 1
+#define SE050_ENA_PORT GPIOD
+#define SE050_ENA_PIN GPIO_PIN_11
+#define SE050_ENA_CLK_EN __HAL_RCC_GPIOD_CLK_ENABLE
 
 // No revision straps on proto 0: four unconnected pins with pull-downs read
 // revision 0. A later board can strap them high.

@@ -15,3 +15,7 @@ driver = "io/backlight_pin"
 [touch]
 driver = "io/touch_ft6x36"
 panel = "io/touch_panel_nhd240320af"
+
+# NXP SE050 on I2C4: its random number generator is mixed into the strong RNG
+# (seed generation, secret keys) beside the MCU's. Pins: ambire_p0.h.
+[se050]

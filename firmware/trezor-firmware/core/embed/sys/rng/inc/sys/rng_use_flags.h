@@ -31,6 +31,7 @@ typedef enum {
   RNG_TYPE_MCU,
   RNG_TYPE_OPTIGA,
   RNG_TYPE_TROPIC,
+  RNG_TYPE_SE050,  // Ambire Ice
 } rng_type_t;
 
 /**

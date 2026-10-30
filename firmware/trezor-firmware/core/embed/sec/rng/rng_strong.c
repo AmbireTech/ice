@@ -32,6 +32,10 @@
 #include <sec/tropic.h>
 #endif
 
+#ifdef USE_SE050
+#include <sec/se050.h>
+#endif
+
 #include "memzero.h"
 #include "rand.h"
 
@@ -40,7 +44,7 @@ void rng_fill_buffer_strong(void* buffer, size_t buffer_size) {
 
   rng_fill_buffer(buffer, buffer_size);
 
-#if defined(USE_OPTIGA) || defined(USE_TROPIC)
+#if defined(USE_OPTIGA) || defined(USE_TROPIC) || defined(USE_SE050)
   uint8_t* dst = (uint8_t*)buffer;
   size_t remaining = buffer_size;
 
@@ -67,6 +71,15 @@ void rng_fill_buffer_strong(void* buffer, size_t buffer_size) {
     }
     memzero(block, sizeof(block));  // clear entropy from Tropic
 #endif
+#ifdef USE_SE050
+    ensure(sectrue * se050_random_buffer(block, block_size),
+           "SE050 entropy source failed");
+
+    for (size_t i = 0; i < block_size; i++) {
+      dst[i] ^= block[i];
+    }
+    memzero(block, sizeof(block));  // clear entropy from SE050
+#endif
     dst += block_size;
     remaining -= block_size;
   }
@@ -80,6 +93,10 @@ void rng_fill_buffer_strong(void* buffer, size_t buffer_size) {
 #ifdef USE_TROPIC
   ensure_true(rng_use_flag_is_set(RNG_TYPE_TROPIC),
               "Tropic entropy source not used");
+#endif
+#ifdef USE_SE050
+  ensure_true(rng_use_flag_is_set(RNG_TYPE_SE050),
+              "SE050 entropy source not used");
 #endif
 }
 

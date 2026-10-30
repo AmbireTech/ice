@@ -10,6 +10,7 @@ uses = [
     "mcu_attestation",
     "nrf_auth",
     "optiga",
+    "se050",
     "secret",
     "secure_aes",
     "suspend",

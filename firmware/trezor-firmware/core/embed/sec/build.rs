@@ -36,6 +36,8 @@ mod rsod;
 mod secret;
 #[path = "secret_keys/build.rs"]
 mod secret_keys;
+#[path = "se050/build.rs"]
+mod se050;
 #[path = "secure_aes/build.rs"]
 mod secure_aes;
 #[path = "storage/build.rs"]
@@ -80,6 +82,7 @@ fn main() -> Result<()> {
                 rsod,
                 secret if cfg!(feature = "secret"),
                 secret_keys,
+                se050 if cfg!(feature = "se050"),
                 secure_aes if cfg!(feature = "secure_aes"),
                 storage if cfg!(feature = "storage"),
                 suspend if cfg!(feature = "suspend"),
