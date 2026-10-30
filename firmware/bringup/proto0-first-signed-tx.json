@@ -1,0 +1,37 @@
+{
+  "what": "First transaction signed by Ambire Ice proto 0 (offline test, never broadcast)",
+  "date": "2026-10-30",
+  "device": {
+    "board": "proto 0 (ambire_p0)",
+    "firmware": "Trezor core 2.13.0 fork, T3T2 model, repo commit 934211c",
+    "host": "trezorctl over USB, THP pairing (code entry)",
+    "wallet": "fresh 12-word BIP-39 seed generated on the device (MCU + SE050 randomness), backup skipped"
+  },
+  "derivation_path": "m/44'/60'/0'/0/0",
+  "address": "0xE52b0b793b4fE507b7450b0eb9620A08f0536268",
+  "transaction": {
+    "type": "EIP-1559 (0x02)",
+    "chain_id": 1,
+    "nonce": 0,
+    "max_priority_fee_per_gas_wei": 1000000000,
+    "max_fee_per_gas_wei": 30000000000,
+    "gas_limit": 21000,
+    "to": "0xE52b0b793b4fE507b7450b0eb9620A08f0536268",
+    "value_wei": 1000000000000000,
+    "value_eth": 0.001,
+    "data": "0x",
+    "access_list": []
+  },
+  "signature": {
+    "y_parity": 1,
+    "r": "0xa06c6b8e31a97a193a31eda4ac1436ac0d0e9266fd4873e8652185a25061c649",
+    "s": "0x4d507b3e13a6ba3a9a45fe5f7f49d6c2b59cf207e6a987881cab6f77eae512d0"
+  },
+  "raw_signed_tx": "0x02f8720180843b9aca008506fc23ac0082520894e52b0b793b4fe507b7450b0eb9620a08f053626887038d7ea4c6800080c001a0a06c6b8e31a97a193a31eda4ac1436ac0d0e9266fd4873e8652185a25061c649a04d507b3e13a6ba3a9a45fe5f7f49d6c2b59cf207e6a987881cab6f77eae512d0",
+  "tx_hash": "0x223f3831858c745219dad19fd4e912ef4fcdb87aad2ff5b7bc2c50b9a4095853",
+  "verification": {
+    "recovered_signer": "0xE52b0b793b4fE507b7450b0eb9620A08f0536268",
+    "matches_device_address": true,
+    "method": "eth_account.Account.recover_transaction on the raw signed transaction"
+  }
+}
