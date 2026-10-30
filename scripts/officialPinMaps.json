@@ -953,5 +953,67 @@
     "REV_G"
    ]
   }
+ },
+ "U15": {
+  "part": "BMI270",
+  "source": "Bosch BST-BMI270-DS000-08 Table 22 Pin-out and pin connections (I2C column)",
+  "pins": {
+   "1": [
+    "SDO",
+    "GND"
+   ],
+   "2": [
+    "ASDx",
+    "nc"
+   ],
+   "3": [
+    "ASCx",
+    "nc"
+   ],
+   "4": [
+    "INT1",
+    "IMU_INT"
+   ],
+   "5": [
+    "VDDIO",
+    "V3V3"
+   ],
+   "6": [
+    "GNDIO",
+    "GND"
+   ],
+   "7": [
+    "GND",
+    "GND"
+   ],
+   "8": [
+    "VDD",
+    "V3V3"
+   ],
+   "9": [
+    "INT2",
+    "nc"
+   ],
+   "10": [
+    "OCSB",
+    "nc"
+   ],
+   "11": [
+    "OSDO",
+    "nc"
+   ],
+   "12": [
+    "CSB",
+    "V3V3"
+   ],
+   "13": [
+    "SCx",
+    "I2C_SCL"
+   ],
+   "14": [
+    "SDx",
+    "I2C_SDA"
+   ]
+  }
  }
 }

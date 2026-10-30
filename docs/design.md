@@ -38,6 +38,7 @@ the back ([pack.md](pack.md)).
 | Power | Two AAA cells in series (NiMH, lithium or alkaline) in a pack on the back, on a Xinyangze magnetic pogo receptacle (YZ103915020T-04025-02, C6276862) → AO3416 reverse-cell blocker → LTC3539-2 boost to 3.3 V; USB-C → TLV62569P buck → TPS2116 picks USB first; BQ25172 NiMH charger set for two cells, fed from VBUS, MCU-gated; soft latch on the joystick's centre press | all JLC (LTC3539-2: 2,400; the receptacle: 125) |
 | Sound | Huaneng MLT-5020 magnetic transducer (5 × 5.5 × 2 mm, 75 dB at 10 cm), AO3416 low-side, LPTIM3 PWM | JLC |
 | Joystick | ALPS SKRHAAE010: four directions + centre push, 7.5 mm, on the front, centred in the chin | JLC C202423 (521) |
+| IMU | Bosch BMI270 (accelerometer + gyroscope, LGA-14 2.5 × 3 mm, 3.5 µA in suspend), the GridCore Nano's part, on the touch controller's I2C bus (0x68), interrupt on PC15 | C2836813 (26,396 on 2026-10-30) |
 
 Overlap with GridCore: USB-C and ESD, the display panel with its connector and
 backlight pump, the slide switch, the netlist → KiCad flow and every gate script.
@@ -413,6 +414,27 @@ NiMH cell. There is no charge light.
   39 mV of margin with all the 1 % resistors at their limits. The push has its own
   line.
 
+## IMU
+
+The Bosch BMI270 sits on the back north of the touch connector, turned so its I2C
+lands face east and its interrupt south-west, with a 100 nF decap at each supply pin
+(VDDIO west of the part, VDD north of it). It shares I2C3 and its 4.7k pull-ups with
+the touch controller (0x38): SDO strapped to GND gives 0x68, CSB tied to 3.3 V selects
+I2C. The unused secondary/OIS pins are left open, as the data sheet allows
+(BST-BMI270-DS000-08 Table 22; ASDx/ASCx must never go to GND).
+
+- **What for**: pick-up-to-wake while the device is asleep (its any-motion
+  interrupt wakes the MCU from Stop), and orientation. It runs from the 3.3 V rail,
+  so it is off with the device; it does not wake the device from off.
+- **Interrupt on PC15**: the east-side pin with a straight run to the part. With no
+  32 kHz crystal PC15 is a plain GPIO; as one of the backup-domain pins it is limited
+  to 3 mA and 2 MHz as an output, which an input does not care about.
+- **The spot east of the MCU** (between the reset cap and the touch connector) fits
+  the part but only one of its decaps, and that one sits in the interrupt's path; the
+  touch tail's lane rules out anything further east.
+- **No vias under the part**: a rule area keeps tracks and vias out from inside its
+  ring of lands (a router once dropped the CSB via there).
+
 ## Enclosure
 
 A two-part case: a back **shell** with the walls up to the board's front face,
@@ -544,6 +566,10 @@ purple (all transparent tints) and clear.
     radio's own SWD pads are only SWDIO and SWCLK.
 18. **Joystick directions**: the ALPS drawing's A/B/C/D (pins 1/4/3/6) are the
     netlist's; LCSC's symbol swaps B and D. Confirm each direction's ADC code.
+19. **IMU**: read the BMI270's chip ID (0x24) at 0x68 on the touch bus, load its
+   config file, and check that an any-motion interrupt on PC15 wakes the MCU from Stop.
+   Measure the asleep current with it in suspend (data sheet: 3.5 µA).
+
 
 ## Flow
 

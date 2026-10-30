@@ -289,5 +289,8 @@
   "J_PACK": "wallet:Xinyangze_YZ103915020T-04025-02",
   "R_MS1": "Resistor_SMD:R_0402_1005Metric",
   "R_MS2": "Resistor_SMD:R_0402_1005Metric",
-  "C_MS": "Capacitor_SMD:C_0402_1005Metric"
+  "C_MS": "Capacitor_SMD:C_0402_1005Metric",
+  "U15": "Package_LGA:Bosch_LGA-14_3x2.5mm_P0.5mm",
+  "C_IMU1": "Capacitor_SMD:C_0402_1005Metric",
+  "C_IMU2": "Capacitor_SMD:C_0402_1005Metric"
 }

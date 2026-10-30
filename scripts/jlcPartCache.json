@@ -1468,10 +1468,75 @@
  },
  "C2836813": {
   "describe": "-40\u2103~+85\u2103 1.71V~3.6V 16bit 2KB 3.5uA Accelerometer Gyroscope SPI\u3001I2C X,Y,Z X,Y,Z \u00b116g \u00b12000dps LGA-14(2.5x3) Accelerometers ROHS",
-  "land": null,
+  "land": {
+   "pads": 14,
+   "pitch": 0.5,
+   "sizes": [
+    [
+     0.27,
+     0.6
+    ],
+    [
+     0.27,
+     0.6
+    ],
+    [
+     0.27,
+     0.6
+    ],
+    [
+     0.27,
+     0.6
+    ],
+    [
+     0.27,
+     0.6
+    ],
+    [
+     0.27,
+     0.6
+    ],
+    [
+     0.27,
+     0.6
+    ],
+    [
+     0.27,
+     0.6
+    ],
+    [
+     0.27,
+     0.6
+    ],
+    [
+     0.27,
+     0.6
+    ],
+    [
+     0.27,
+     0.6
+    ],
+    [
+     0.27,
+     0.6
+    ],
+    [
+     0.27,
+     0.6
+    ],
+    [
+     0.27,
+     0.6
+    ]
+   ],
+   "span": [
+    1.84,
+    2.34
+   ]
+  },
   "model": "BMI270",
   "package": "LGA-14(2.5x3)",
-  "stock": 2119
+  "stock": 26396
  },
  "C2845237": {
   "describe": "-40\u2103~+125\u2103@(TJ) 1 1.3V~5.5V 1.4MHz\u30011.6MHz\u30012.1MHz 1.8V~5.2V 11uA 2A Adjustable Buck-Boost Buck-Boost Built-in Yes VSON-10(2x3) DC-DC Converters ROHS",

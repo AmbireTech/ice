@@ -41,7 +41,9 @@ KEEP = {"U2.2", "U2.3", "U2.9", "C_IN_BOOST.2", "C_BOOST.2", "U3.2", "C_USB3V3.2
         "U14.4", "C_DOVDD.2", "C_U9A.2",
         # v4 (2026-10-28): the pour reaches these only by fragmenting once the pack's
         # receptacle, the display connector and the radio switch moved
-        "C_NOR.2", "J_TFT.10"}
+        "C_NOR.2", "J_TFT.10",
+        # the IMU's SDO strap: boxed in by its neighbour land and the SDA tap, one spoke
+        "U15.1"}
 
 
 def touches(t, p):

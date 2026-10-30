@@ -77,7 +77,7 @@ export const DisplayBlock = () => (
     <trace from=".J_CTP > .MP1" to="net.GND" />
     <trace from=".J_CTP > .MP2" to="net.GND" />
 
-    {/* Peripheral I2C (touch 0x38, battery gauge 0x36). */}
+    {/* Peripheral I2C (touch 0x38, IMU 0x68). */}
     <resistor name="R_SCL" resistance="4.7k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C25900"] }}
       schX={4} schY={-14} schRotation="90deg" schSectionName={S} />
     <resistor name="R_SDA" resistance="4.7k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C25900"] }}

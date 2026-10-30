@@ -143,8 +143,9 @@ then dominates. So firmware should use "asleep" only for a short window after us
 with the boost off it needs its own always-on supply (a MAX17220 nanopower boost:
 the only accelerometer that runs from the cell directly, the ADXL367, is unbuyable
 at JLC and quits at 1.1 V), each wake is a 1–2.5 s cold boot, and a pocket or bag
-would wake it 10–100 times a day. If wanted later: a LIS2DW12 (JLC, ~20k in stock,
-$1, ~0.4 µA) on the 3.3 V rail for pick-up-to-wake during the asleep window.
+would wake it 10–100 times a day. v4 has one, on the 3.3 V rail for pick-up-to-wake
+during the asleep window only: a Bosch BMI270 (the GridCore Nano's part, 3.5 µA in
+suspend, which adds to the asleep budget, not to off). See design.md, "IMU".
 
 ## The other parts this revision looked at
 

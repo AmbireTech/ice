@@ -17,6 +17,8 @@ C_DOVDD,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,180.0,,0.0,0.0,0.000,
 C_DVOUT,1uF,Capacitor_SMD:C_0402_1005Metric,C52923,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 C_EN,1uF,Capacitor_SMD:C_0402_1005Metric,C52923,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 C_FFB,33pF,Capacitor_SMD:C_0402_1005Metric,C1562,top,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
+C_IMU1,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
+C_IMU2,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 C_IN_BOOST,22uF,Capacitor_SMD:C_0805_2012Metric,C45783,top,0.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 C_MS,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 C_NOR,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
@@ -126,6 +128,7 @@ U11,E73-2G4M08S1C,wallet:Ebyte_E73-2G4M08S1C,C356849,top,0.0,,0.0,0.0,0.025,NO K
 U12,ME6211C28M5G-N,Package_TO_SOT_SMD:SOT-23-5,C53099,bottom,180.0,^SOT-23,180.0,180.0,0.000,db-rule
 U13,TPS60230RGTR,Package_DFN_QFN:VQFN-16-1EP_3x3mm_P0.5mm_EP1.45x1.45mm,C1848364,bottom,180.0,,0.0,0.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
 U14,TLV70313DBVR,Package_TO_SOT_SMD:SOT-23-5,C2868385,bottom,180.0,^SOT-23,180.0,180.0,0.000,db-rule
+U15,BMI270,Package_LGA:Bosch_LGA-14_3x2.5mm_P0.5mm,C2836813,bottom,90.0,^Bosch_LGA-,90.0,180.0,0.000,db-rule (eye check: never seen on a GridCore BOTTOM part with a 90/270 offset)
 U16,SLS32AIA010MK,Package_DFN_QFN:DFN-10-1EP_3x3mm_P0.5mm_EP1.7x2.5mm,C1518668,bottom,-90.0,^DFN-,270.0,180.0,0.000,db-rule (eye check: never seen on a GridCore BOTTOM part with a 90/270 offset)
 U2,LTC3539EDCB-2#TRPBF,wallet:LT_DCB8_DFN-8-1EP_2x3mm_P0.45mm,C462652,top,90.0,,0.0,90.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
 U3,TLV62569PDDCR,Package_TO_SOT_SMD:SOT-23-6,C398365,top,0.0,^SOT-23,180.0,180.0,0.000,db-rule

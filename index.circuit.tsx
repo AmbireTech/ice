@@ -4,6 +4,7 @@ import { DisplayBlock } from "./src/blocks/Display"
 import { SecureBlock } from "./src/blocks/Secure"
 import { RadioBlock } from "./src/blocks/Radio"
 import { CameraBlock } from "./src/blocks/Camera"
+import { ImuBlock } from "./src/blocks/Imu"
 
 /**
  * Ambire Ice — the NETLIST.
@@ -33,6 +34,7 @@ export default () => (
     <schematicsection name="Secure" schX={0} schY={-10} />
     <schematicsection name="Radio" schX={0} schY={-24} />
     <schematicsection name="Camera" schX={0} schY={-36} />
+    <schematicsection name="IMU" schX={12} schY={-24} />
 
     <PowerBlock />
     <McuBlock />
@@ -40,5 +42,6 @@ export default () => (
     <SecureBlock />
     <RadioBlock />
     <CameraBlock />
+    <ImuBlock />
   </board>
 )
