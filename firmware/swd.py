@@ -220,7 +220,10 @@ class Swd:
     def read_regs(self, regs):
         """regs: list of (name, address). Values come back as ints, or the error text."""
         lines = "\n".join(f"rd {n} {a:#010x}" for n, a in regs)
+        # Secure bus access where TrustZone is on: a running bootloader or firmware makes
+        # the flash's secure registers read 0 through non-secure accesses.
         script = f"""init
+catch {{stm32x5x_ahb_ap_secure_access}}
 proc rd {{name addr}} {{
   if {{[catch {{[target current] read_memory $addr 32 1}} v]}} {{
     echo "@@ $name ERR read failed [string map {{"\\n" " "}} $v]"
@@ -246,10 +249,11 @@ shutdown"""
             ("uid0", UID), ("uid1", UID + 4), ("uid2", UID + 8),
             ("optr", FLASH_R_NS + 0x40), ("nsboot0", FLASH_R_NS + 0x44),
             ("secboot0", FLASH_R_NS + 0x4C), ("secwm1r1", FLASH_R_NS + 0x50),
+            ("secboot0_s", FLASH_R_NS + SECURE_OFFSET + 0x4C),
             ("secwm1r2", FLASH_R_NS + 0x54), ("wrp1a", FLASH_R_NS + 0x58),
             ("wrp1b", FLASH_R_NS + 0x5C),
         ])
-        bad = {k: v for k, v in r.items() if isinstance(v, str)}
+        bad = {k: v for k, v in r.items() if isinstance(v, str) and k != "secboot0_s"}
         if bad:
             die(f"cannot read the chip's system registers: {bad}")
         optr = r["optr"]
@@ -264,7 +268,8 @@ shutdown"""
               f"{r['uid2']:08x}{r['uid1']:08x}{r['uid0']:08x}")
         print(f"options   OPTR {optr:#010x}: RDP level {rdp_s}, BOR_LEV {optr >> 8 & 7}, "
               f"set: {' '.join(bits(optr, OPTR_BITS))}")
-        sb = r["secboot0"]
+        # the secure alias where it reads (TrustZone on), else the non-secure one
+        sb = r["secboot0_s"] if isinstance(r["secboot0_s"], int) and r["secboot0_s"] else r["secboot0"]
         print(f"          SECBOOTADD0R {sb:#010x}: secure boot address {sb & 0xFFFFFF80:#010x}"
               f"{', BOOT_LOCK' if sb & 1 else ''}   NSBOOTADD0R {r['nsboot0']:#010x}")
         print(f"          SECWM1R1 {r['secwm1r1']:#010x} SECWM1R2 {r['secwm1r2']:#010x} "
@@ -362,11 +367,12 @@ shutdown"""
         image = Path(image or self.out / "combined-firmware.bin").resolve()
         if not image.is_file():
             die(f"no image at {image}: build with firmware/docker-build.sh")
-        r = self.read_regs([("optr", FLASH_R_NS + 0x40), ("secboot0", FLASH_R_NS + 0x4C)])
-        if isinstance(r["optr"], str) or not r["optr"] >> 31 & 1 or \
-                r["secboot0"] & 0xFFFFFF80 != BOARDLOADER_START:
-            die("TrustZone is off or the chip does not boot the boardloader: run "
-                "`firmware/swd.py trustzone` first")
+        r = self.read_regs([("optr", FLASH_R_NS + 0x40), ("secboot0", FLASH_R_NS + SECURE_OFFSET + 0x4C)])
+        if isinstance(r["optr"], str) or isinstance(r["secboot0"], str):
+            die(f"cannot read the option registers: {r}")
+        if not r["optr"] >> 31 & 1 or r["secboot0"] & 0xFFFFFF80 != BOARDLOADER_START:
+            die(f"TrustZone is off or the chip does not boot the boardloader (OPTR {r['optr']:#010x}, "
+                f"SECBOOTADD0R {r['secboot0']:#010x}): run `firmware/swd.py trustzone` first")
         data = image.read_bytes()
         # Verified pieces with retries: one glitch on a bit-banged link costs a piece, not
         # the run. Pieces are whole flash sectors (8 KB), so an erased one is just erased.

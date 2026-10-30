@@ -283,7 +283,16 @@ static void mpu_init_fixed_regions(void) {
   SET_REGION( 1, SECMON_RAM_START,         SECMON_RAM_SIZE,   SRAM,        YES,    NO );
   SET_REGION( 2, MAIN_RAM_START,           MAIN_RAM_SIZE,     SRAM,        YES,    NO );
   SET_REGION( 3, FIRMWARE_START,           FIRMWARE_MAXSIZE,  FLASH_DATA,  YES,    NO );
+#ifdef AUX2_RAM_START
+  // AUX2 (the app's stack among others) directly follows AUX1: one region
+  // covers both, so smcall buffers there can be written (proto 0: the app's
+  // rng_fill_buffer into its stack took a MemManage fault here)
+  _Static_assert(AUX1_RAM_START + AUX1_RAM_SIZE == AUX2_RAM_START,
+                 "AUX2 must follow AUX1 to share an MPU region");
+  SET_REGION( 4, AUX1_RAM_START,           AUX1_RAM_SIZE + AUX2_RAM_SIZE, SRAM, YES, NO );
+#else
   SET_REGION( 4, AUX1_RAM_START,           AUX1_RAM_SIZE,     SRAM,        YES,    NO );
+#endif
 #else
   #error "Unknown build target"
 #endif

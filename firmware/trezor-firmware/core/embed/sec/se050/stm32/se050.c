@@ -104,7 +104,10 @@ static const uint8_t SELECT_IOT_APPLET[] = {
 // sss/src/se05x/fsl_sss_se05x_apis.c sss_se05x_channel_txnRaw with hasle:
 // Lc 00 hi lo, Le 00 00). Response: 41, length, the bytes, SW 90 00.
 #define SE05X_TAG_1 0x41
-#define SE050_RANDOM_CHUNK 32U  // keeps the response TLV's length one byte
+#define SE050_RANDOM_CHUNK 32U
+// Response TLV header at its longest: tag + BER length 0x82 hi lo. The SE050
+// sends the long form even for 32 bytes (proto 0: 41 82 00 20 + data + 90 00).
+#define SE05X_TLV_HEADER_MAX 4
 
 static const uint8_t SW_OK[2] = {0x90, 0x00};
 
@@ -379,17 +382,30 @@ static bool se050_get_random(uint8_t *dest, size_t size) {
       SE05X_TAG_1, 0x02, 0x00,     // TAG_1, length, size high
       (uint8_t)size, 0x00, 0x00};  // size low, extended Le
 
-  uint8_t rsp[2 + SE050_RANDOM_CHUNK + sizeof(SW_OK)] = {0};
+  uint8_t rsp[SE05X_TLV_HEADER_MAX + SE050_RANDOM_CHUNK + sizeof(SW_OK)] = {0};
   size_t rsp_size = 0;
   bool ok = t1_apdu(cmd, sizeof(cmd), rsp, sizeof(rsp), &rsp_size);
-  if (ok && (rsp_size != 2 + size + sizeof(SW_OK) || rsp[0] != SE05X_TAG_1 ||
-             rsp[1] != size)) {
+
+  // BER length, as the middleware's tlvGet reads it: one byte below 0x80,
+  // else 0x81 + one byte or 0x82 + two bytes
+  size_t hdr = 0, len = 0;
+  if (ok && rsp_size >= 2) {
+    if (rsp[1] < 0x80) {
+      hdr = 2, len = rsp[1];
+    } else if (rsp[1] == 0x81 && rsp_size >= 3) {
+      hdr = 3, len = rsp[2];
+    } else if (rsp[1] == 0x82 && rsp_size >= 4) {
+      hdr = 4, len = ((size_t)rsp[2] << 8) | rsp[3];
+    }
+  }
+  if (ok && (hdr == 0 || rsp[0] != SE05X_TAG_1 || len != size ||
+             rsp_size != hdr + size + sizeof(SW_OK))) {
     LOG_WARN("GetRandom answered %d bytes, tag 0x%02x, length %d",
-             (int)rsp_size, rsp[0], rsp[1]);
+             (int)rsp_size, rsp[0], (int)len);
     ok = false;
   }
   if (ok) {
-    memcpy(dest, &rsp[2], size);
+    memcpy(dest, &rsp[hdr], size);
   }
   memzero(rsp, sizeof(rsp));
   return ok;
