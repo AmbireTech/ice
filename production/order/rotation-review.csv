@@ -12,7 +12,7 @@ C_BOOST2,22uF,Capacitor_SMD:C_0805_2012Metric,C45783,top,-90.0,,0.0,270.0,0.000,
 C_BUZ,10uF,Capacitor_SMD:C_0603_1608Metric,C19702,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 C_CHGIN,1uF,Capacitor_SMD:C_0402_1005Metric,C52923,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 C_CNS,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
-C_CS,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
+C_CS,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 C_DOVDD,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 C_DVOUT,1uF,Capacitor_SMD:C_0402_1005Metric,C52923,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 C_EN,1uF,Capacitor_SMD:C_0402_1005Metric,C52923,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
@@ -56,7 +56,7 @@ D_RADIO,KT-0603G,LED_SMD:LED_0603_1608Metric,C12624,bottom,90.0,,0.0,90.0,0.000,
 D_REVG,"BAS116,215",Package_TO_SOT_SMD:SOT-23,C48502,bottom,0.0,^SOT-23,180.0,0.0,0.000,db-rule
 J1,TYPE-C-31-M-12,wallet:USB_C_Receptacle_HRO_TYPE-C-31-M-12_BoardEdge,C165948,bottom,180.0,,0.0,0.0,1.460,NO KNOWN CORRECTION -> eye check in JLC preview
 J_CAM,AFC07-S24FCA-00,Connector_FFC-FPC:Jushuo_AFC07-S24FCA-00_1x24-1MP_P0.50_Horizontal,C262567,bottom,90.0,,0.0,90.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
-J_CTP,HC-FPC-1.0-6P-CSH25,wallet:FPC_HC-FPC-1.0-6P-CSH25,C49166860,bottom,180.0,,0.0,0.0,0.225,NO KNOWN CORRECTION -> eye check in JLC preview
+J_CTP,HC-FPC-1.0-6P-CXH25,wallet:FPC_HC-FPC-1.0-6P-CXH25,C49166842,bottom,180.0,,0.0,0.0,0.225,NO KNOWN CORRECTION -> eye check in JLC preview
 J_PACK,YZ103915020T-04025-02,wallet:Xinyangze_YZ103915020T-04025-02,C6276862,bottom,180.0,,0.0,0.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
 J_TFT,54132-4062,wallet:Molex_54132-4062,C505102,bottom,180.0,,0.0,0.0,0.325,NO KNOWN CORRECTION -> eye check in JLC preview
 LS1,MLT-5020,wallet:Buzzer_Huaneng_MLT-5020_5x5.5mm,C94598,bottom,-90.0,,0.0,270.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
@@ -83,8 +83,8 @@ R_CC2,5.1k,Resistor_SMD:R_0402_1005Metric,C25905,bottom,90.0,,0.0,90.0,0.000,n/a
 R_CHGHI,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 R_CHGOFF,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 R_CNS,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
-R_CS1,1M,Resistor_SMD:R_0402_1005Metric,C26083,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
-R_CS2,1M,Resistor_SMD:R_0402_1005Metric,C26083,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
+R_CS1,1M,Resistor_SMD:R_0402_1005Metric,C26083,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
+R_CS2,1M,Resistor_SMD:R_0402_1005Metric,C26083,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 R_CSCL,4.7k,Resistor_SMD:R_0402_1005Metric,C25900,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 R_CSDA,4.7k,Resistor_SMD:R_0402_1005Metric,C25900,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 R_EN,1M,Resistor_SMD:R_0402_1005Metric,C26083,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
@@ -117,7 +117,7 @@ R_SESCL,4.7k,Resistor_SMD:R_0402_1005Metric,C25900,bottom,0.0,,0.0,180.0,0.000,n
 R_SESDA,4.7k,Resistor_SMD:R_0402_1005Metric,C25900,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 R_STAT,10k,Resistor_SMD:R_0402_1005Metric,C25744,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 R_TMR,36k,Resistor_SMD:R_0402_1005Metric,C43676,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
-R_VB1,47k,Resistor_SMD:R_0402_1005Metric,C25792,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
+R_VB1,47k,Resistor_SMD:R_0402_1005Metric,C25792,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 R_VB2,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 R_VSET,36k,Resistor_SMD:R_0402_1005Metric,C43676,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 SW_AIR,MSK12C02,Button_Switch_SMD:SW_SPDT_Shouhan_MSK12C02,C431540,bottom,90.0,,0.0,90.0,0.575,NO KNOWN CORRECTION -> eye check in JLC preview
