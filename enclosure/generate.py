@@ -1259,13 +1259,15 @@ def write_downloads() -> dict:
 
     def entry(label, src: Path):
         raw = src.read_bytes()
+        # the viewer saves them as v4's: wallet_gerbers.zip -> ambire-ice-v4_gerbers.zip
+        name = src.name.replace("wallet_", "ambire-ice-v4_").replace("pack_", "ambire-ice-v4-pack_")
         if src.suffix == ".csv":
-            part, b64 = src.name, False
+            part, b64 = name, False
             (files_dir / part).write_bytes(raw)
         else:
-            part, b64 = src.name + ".b64.txt", True
+            part, b64 = name + ".b64.txt", True
             (files_dir / part).write_text(base64.b64encode(raw).decode())
-        return {"label": label, "filename": src.name, "bytes": len(raw), "part": f"enclosure/files/{part}", "b64": b64}
+        return {"label": label, "filename": name, "bytes": len(raw), "part": f"enclosure/files/{part}", "b64": b64}
 
     # The viewer saves only allowlisted types (zip, csv, ...), so the case goes as one zip.
     case_zip = OUT / "ambire-ice-case.zip"
