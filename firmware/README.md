@@ -32,22 +32,42 @@ chip.
 
 ## Flash a blank board
 
-With an ST-Link on the front SWD pads (MCU), and the board powered:
+`swd.py` drives OpenOCD and gdb (`brew install open-ocd arm-none-eabi-gdb`).
+It takes an ST-Link by default (`--probe cmsis-dap|jlink` for others).
 
-1. Turn on TrustZone once, with STM32CubeProgrammer, as Trezor documents
-   (`trezor-firmware/docs/core/misc/trustzone.md`): option bytes **TZEN = 1**
-   and **SECBOOTADD0 = 0x0C004000**.
-2. Write the combined image:
+```sh
+firmware/swd.py info        # the chip, its option bytes, what is in flash, the boot command
+firmware/swd.py trustzone   # once per chip: TZEN = 1, SECBOOTADD0 = 0x0C004000
+firmware/swd.py flash       # out/ambire_p0/combined-firmware.bin, written and verified
+firmware/swd.py state       # halt: where it runs (symbolised), fault registers,
+                            # backtrace, the error behind a red screen; then resumes
+firmware/swd.py gdb         # interactive, with every stage's symbols
+```
 
-   ```sh
-   openocd -f interface/stlink.cfg -c "transport select hla_swd" \
-     -f target/stm32u5x.cfg \
-     -c "init; reset halt; flash write_image erase firmware/out/ambire_p0/combined-firmware.bin 0x0C004000; reset; exit"
-   ```
+`trustzone` is what Trezor does in STM32CubeProgrammer
+(`trezor-firmware/docs/core/misc/trustzone.md`). If OpenOCD cannot set the
+option bytes, the script says so; set them there instead. On its first boot
+the boardloader programs the rest of the option bytes and restarts.
+Development builds leave readout protection at level 0, so SWD stays open;
+`--production` would set level 2, which closes SWD for good.
 
-On its first boot the boardloader programs the rest of the option bytes and
-restarts. Development builds leave readout protection at level 0, so SWD stays
-open; `--production` would set level 2, which locks SWD for good.
+On proto 0:
+
+- **Wires before the pouch.** The SWD pads (`TP_SWDIO`, `TP_SWCLK`, `TP_NRST`,
+  `TP_GND`, `TP_3V3`) are on the front, under where the pouch goes. Solder
+  thin wires to them first, so SWD stays reachable for the whole bring-up.
+  `--under-reset` needs `TP_NRST` wired; it recovers a chip whose code turns
+  SWD off.
+- **Hold the button while flashing a blank chip.** The button lifts the
+  3.3 V buck-boost's enable; only our boardloader keeps it up (`PWR_HOLD`).
+  A blank chip, or one held in reset, loses power about 1 s after the button
+  is released. The button needs USB-C (or the pouch) for power. Bridge the
+  button's pads for the session if holding it is awkward; once the
+  boardloader runs, the latch holds by itself (bring-up check 1).
+- **USB data needs the airgap switch off AIR.** In AIR the USB switch's
+  enable is high and D+/D- are cut from the MCU (charging still works).
+  `swd.py info` prints the switch position (`AIRGAP_SENSE`), USB power
+  (`VBUS_SENSE`) and whether the latch holds.
 
 ## Keeping up with Trezor
 
@@ -143,6 +163,9 @@ releases `PWR_HOLD` yet, so the firmware cannot switch the device off.
 
 Things only a board in hand can answer:
 
+0. **Rail and chip, before any code**: with USB-C in and the button held,
+   `TP_3V3` reads 3.3 V and `swd.py info` reads DEV_ID 0x482 (STM32U575/585),
+   RDP level 0, 2048 KB of flash.
 1. **Power latch**: the device stays on after the button is released.
 2. **Display**: the panel init is Trezor's DEM240320B1 sequence (same ST7789,
    same resolution), not Newhaven's. Check colours, inversion, gamma and

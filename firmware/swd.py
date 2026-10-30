@@ -1,0 +1,412 @@
+#!/usr/bin/env python3
+"""Bring up, flash and inspect the board over SWD (OpenOCD + arm-none-eabi-gdb).
+
+    firmware/swd.py info                 # chip, option bytes, what is in flash, pins, boot command
+    firmware/swd.py trustzone            # blank chip: TZEN = 1, SECBOOTADD0 = boardloader
+    firmware/swd.py flash [image.bin]    # combined image (default: out/<board>/combined-firmware.bin)
+    firmware/swd.py state [--halt]       # halt, where it is (symbolised), fault registers, RSOD info
+    firmware/swd.py gdb                  # interactive gdb with every stage's symbols
+    firmware/swd.py reset
+
+Options (before or after the command): --probe stlink|cmsis-dap|jlink (default stlink,
+or $SWD_PROBE), --khz N (SWD clock, default 1000: flying leads), --under-reset (hold NRST
+while connecting; needs TP_NRST wired), --board NAME (default ambire_p0).
+
+Register addresses and bit positions come from the vendored CMSIS headers
+(trezor-firmware/vendor/cmsis_device_u5, core_cm33.h); the memory map from
+core/embed/models/T3T2/memory.h.
+"""
+import argparse
+import os
+import re
+import shutil
+import signal
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+
+PROBES = {
+    "stlink": ["-f", "interface/stlink.cfg", "-c", "transport select hla_swd"],
+    "cmsis-dap": ["-f", "interface/cmsis-dap.cfg", "-c", "transport select swd"],
+    "jlink": ["-f", "interface/jlink.cfg", "-c", "transport select swd"],
+}
+
+# T3T2 memory map (models/T3T2/memory.h), secure aliases
+BOARDLOADER_START = 0x0C004000
+BOOTLOADER_START = 0x0C016000
+FIRMWARE_START = 0x0C046000
+BOOTARGS_START = 0x30000000
+
+FLASH_R_NS = 0x40022000  # FLASH_R_BASE_NS; option registers read the same from both worlds
+DBGMCU_IDCODE = 0xE0044000
+FLASHSIZE = 0x0BFA07A0
+UID = 0x0BFA0700
+GPIOA_NS, GPIOE_NS = 0x42020000, 0x42021000
+RCC_NS = 0x46020C00
+SECURE_OFFSET = 0x10000000  # peripheral secure alias = non-secure + 0x1000_0000
+
+# STM32U5 OPTR (FLASH_OPTR_*_Pos)
+OPTR_BITS = {
+    12: "nRST_STOP", 13: "nRST_STDBY", 14: "nRST_SHDW", 16: "IWDG_SW", 20: "SWAP_BANK",
+    21: "DUALBANK", 26: "nSWBOOT0", 27: "nBOOT0", 28: "PA15_PUPEN", 31: "TZEN",
+}
+CFSR_BITS = {
+    0: "IACCVIOL", 1: "DACCVIOL", 3: "MUNSTKERR", 4: "MSTKERR", 5: "MLSPERR", 7: "MMARVALID",
+    8: "IBUSERR", 9: "PRECISERR", 10: "IMPRECISERR", 11: "UNSTKERR", 12: "STKERR", 13: "LSPERR",
+    15: "BFARVALID", 16: "UNDEFINSTR", 17: "INVSTATE", 18: "INVPC", 19: "NOCP", 20: "STKOF",
+    24: "UNALIGNED", 25: "DIVBYZERO",
+}
+HFSR_BITS = {1: "VECTTBL", 30: "FORCED", 31: "DEBUGEVT"}
+SFSR_BITS = {0: "INVEP", 1: "INVIS", 2: "INVER", 3: "AUVIOL", 4: "INVTRAN", 5: "LSPERR",
+             6: "SFARVALID", 7: "LSERR"}
+CSR_RESET_BITS = {25: "option-byte load", 26: "NRST pin", 27: "brown-out/power-on",
+                  28: "software", 29: "independent watchdog", 30: "window watchdog",
+                  31: "low-power"}
+BOOT_COMMANDS = {  # sys/startup/inc/sys/bootargs.h
+    0x00000000: "NONE", 0x0FC35A96: "STOP_AND_WAIT", 0x3B7E1C64: "STOP_AND_CONNECT",
+    0xFA4A5C8D: "INSTALL_UPGRADE", 0x7CD945A0: "SHOW_RSOD", 0xD965CE36: "WIPE",
+    0xA5C3D4E2: "REBOOT", 0x4EEE8828: "POWER_OFF",
+}
+MAGIC = {0x515A5254: "TRZQ (bootloader header)", 0x425A5254: "TRZB (old bootloader header)",
+         0x565A5254: "TRZV (vendor header)",
+         0xFFFFFFFF: "erased"}
+# Stages in the order a PC is matched against them: the first whose symbols cover it wins.
+STAGES = ["boardloader", "bootloader", "secmon", "kernel", "firmware"]
+
+
+def bits(value, names):
+    return [name for pos, name in sorted(names.items()) if value >> pos & 1]
+
+
+def die(msg):
+    print(f"error: {msg}", file=sys.stderr)
+    sys.exit(1)
+
+
+class Swd:
+    def __init__(self, args):
+        if not shutil.which("openocd"):
+            die("openocd not found (brew install open-ocd)")
+        self.args = args
+        self.out = HERE / "out" / args.board
+
+    def base(self):
+        a = ["openocd", *PROBES[self.args.probe], "-f", "target/stm32u5x.cfg",
+             "-c", f"adapter speed {self.args.khz}"]
+        if self.args.under_reset:
+            a += ["-c", "reset_config srst_only srst_nogate connect_assert_srst"]
+        return a
+
+    def run(self, script, check=True):
+        """One OpenOCD session; lines our Tcl echoes start with '@@'."""
+        p = subprocess.run(self.base() + ["-c", script], capture_output=True, text=True)
+        log = p.stdout + p.stderr
+        if check and p.returncode != 0:
+            print(log, file=sys.stderr)
+            die(f"openocd exited with {p.returncode} (log above)")
+        return log, {m.group(1): m.group(2) for m in re.finditer(r"^@@ (\S+) (.*)$", log, re.M)}
+
+    # --- info -------------------------------------------------------------
+    def read_regs(self, regs):
+        """regs: list of (name, address). Values come back as ints, or the error text."""
+        lines = "\n".join(f"rd {n} {a:#010x}" for n, a in regs)
+        script = f"""init
+proc rd {{name addr}} {{
+  if {{[catch {{[target current] read_memory $addr 32 1}} v]}} {{
+    echo "@@ $name ERR read failed [string map {{"\\n" " "}} $v]"
+  }} else {{
+    echo [format "@@ %s %08X" $name [lindex $v 0]]
+  }}
+}}
+{lines}
+shutdown"""
+        log, got = self.run(script)
+        vals = {}
+        for n, _ in regs:
+            v = got.get(n)
+            if v is None:
+                print(log, file=sys.stderr)
+                die(f"no value for {n} in the OpenOCD log")
+            vals[n] = int(v, 16) if not v.startswith("ERR") else v
+        return vals
+
+    def info(self):
+        r = self.read_regs([
+            ("idcode", DBGMCU_IDCODE), ("flashsize", FLASHSIZE),
+            ("uid0", UID), ("uid1", UID + 4), ("uid2", UID + 8),
+            ("optr", FLASH_R_NS + 0x40), ("nsboot0", FLASH_R_NS + 0x44),
+            ("secboot0", FLASH_R_NS + 0x4C), ("secwm1r1", FLASH_R_NS + 0x50),
+            ("secwm1r2", FLASH_R_NS + 0x54), ("wrp1a", FLASH_R_NS + 0x58),
+            ("wrp1b", FLASH_R_NS + 0x5C),
+        ])
+        bad = {k: v for k, v in r.items() if isinstance(v, str)}
+        if bad:
+            die(f"cannot read the chip's system registers: {bad}")
+        optr = r["optr"]
+        tz = optr >> 31 & 1
+        rdp = optr & 0xFF
+        rdp_s = {0xAA: "0 (open)", 0x55: "0.5", 0xCC: "2 (SWD closed for good)"}.get(rdp, "1")
+        dev = r["idcode"] & 0xFFF
+        print(f"chip      DBGMCU_IDCODE {r['idcode']:#010x}  DEV_ID {dev:#05x}"
+              f" ({'STM32U575/585' if dev == 0x482 else 'NOT a U575/585'})"
+              f"  REV_ID {r['idcode'] >> 16:#06x}")
+        print(f"          flash {r['flashsize'] & 0xFFFF} KB, UID "
+              f"{r['uid2']:08x}{r['uid1']:08x}{r['uid0']:08x}")
+        print(f"options   OPTR {optr:#010x}: RDP level {rdp_s}, BOR_LEV {optr >> 8 & 7}, "
+              f"set: {' '.join(bits(optr, OPTR_BITS))}")
+        sb = r["secboot0"]
+        print(f"          SECBOOTADD0R {sb:#010x}: secure boot address {sb & 0xFFFFFF80:#010x}"
+              f"{', BOOT_LOCK' if sb & 1 else ''}   NSBOOTADD0R {r['nsboot0']:#010x}")
+        print(f"          SECWM1R1 {r['secwm1r1']:#010x} SECWM1R2 {r['secwm1r2']:#010x} "
+              f"WRP1AR {r['wrp1a']:#010x} WRP1BR {r['wrp1b']:#010x}")
+        if not tz:
+            print("TrustZone is OFF: run `firmware/swd.py trustzone` before flashing.")
+            return
+        if sb & 0xFFFFFF80 != BOARDLOADER_START:
+            print(f"SECBOOTADD0 is not the boardloader ({BOARDLOADER_START:#010x}): "
+                  "run `firmware/swd.py trustzone`.")
+
+        s = SECURE_OFFSET
+        r2 = self.read_regs([
+            ("bl_sp", BOARDLOADER_START), ("bl_reset", BOARDLOADER_START + 4),
+            ("bld", BOOTLOADER_START), ("fw", FIRMWARE_START),
+            ("bootcmd", BOOTARGS_START), ("csr", RCC_NS + s + 0xF4),
+            ("ahb2enr1", RCC_NS + s + 0x8C),
+            ("pa_moder", GPIOA_NS + s), ("pa_pupdr", GPIOA_NS + s + 0x0C),
+            ("pa_idr", GPIOA_NS + s + 0x10),
+            ("pe_moder", GPIOE_NS + s), ("pe_idr", GPIOE_NS + s + 0x10),
+            ("pe_odr", GPIOE_NS + s + 0x14),
+        ])
+
+        def word(n):
+            v = r2[n]
+            return v if isinstance(v, str) else f"{v:#010x}"
+
+        bl = "erased" if r2["bl_sp"] == 0xFFFFFFFF else \
+            f"vector table (SP {word('bl_sp')}, reset {word('bl_reset')})"
+        print(f"flash     boardloader @{BOARDLOADER_START:#010x}: {bl}")
+        for n, a in (("bld", BOOTLOADER_START), ("fw", FIRMWARE_START)):
+            v = r2[n]
+            label = "bootloader" if n == "bld" else "firmware  "
+            print(f"          {label}  @{a:#010x}: {word(n)} {MAGIC.get(v, '') if isinstance(v, int) else ''}")
+        cmd = r2["bootcmd"]
+        if isinstance(cmd, int):
+            print(f"boot cmd  {cmd:#010x} {BOOT_COMMANDS.get(cmd, '(not a boot command: RAM not set by a stage)')}"
+                  " (the bootloader clears it on entry: `state` reads its saved copy and any error)")
+        csr = r2["csr"]
+        if isinstance(csr, int):
+            print(f"reset     RCC_CSR {csr:#010x}: last reset by {', '.join(bits(csr, CSR_RESET_BITS)) or '?'}")
+
+        en = r2["ahb2enr1"]
+        if not isinstance(en, int) or not (en & 1 and en >> 4 & 1):
+            print(f"pins      GPIOA/GPIOE clocks off (RCC_AHB2ENR1 {word('ahb2enr1')}): no pin readout")
+            return
+        pa, pe = r2["pa_idr"], r2["pe_idr"]
+        hold_out = (r2["pe_moder"] >> 10 & 3) == 1
+        print(f"pins      PWR_HOLD (PE5) {'output ' + str(r2['pe_odr'] >> 5 & 1) if hold_out else 'NOT an output'}"
+              f"   -> the power latch {'holds' if hold_out and r2['pe_odr'] >> 5 & 1 else 'is NOT held'}")
+        print(f"          VBUS_SENSE (PA9) {pa >> 9 & 1}  (1 = USB power present)")
+        print(f"          AIRGAP_SENSE (PE7) {pe >> 7 & 1}  (1 = airgapped: USB data and radio off)")
+        pull = r2["pa_pupdr"] & 3
+        print(f"          BTN_N (PA0) {pa & 1}  (0 = button pressed"
+              + (")" if pull == 1 else "; no pull-up set on PA0, so this reads a floating pin)"))
+
+    # --- trustzone --------------------------------------------------------
+    def trustzone(self):
+        r = self.read_regs([("optr", FLASH_R_NS + 0x40), ("secboot0", FLASH_R_NS + 0x4C)])
+        optr, sb = r["optr"], r["secboot0"]
+        if isinstance(optr, str) or isinstance(sb, str):
+            die(f"cannot read the option registers: {optr} {sb}")
+        if optr & 0xFF != 0xAA:
+            die(f"RDP is not level 0 (OPTR {optr:#010x}): TZEN can only be set at level 0")
+        if not optr >> 31 & 1:
+            print("setting TZEN = 1 (the chip reloads its option bytes and resets)")
+            log, _ = self.run("init; reset halt; stm32l4x trustzone 0 enable; shutdown", check=False)
+            print("\n".join(l for l in log.splitlines() if "TZEN" in l or "rror" in l))
+            time.sleep(0.5)
+        if sb & 0xFFFFFF80 != BOARDLOADER_START:
+            print(f"setting SECBOOTADD0 = {BOARDLOADER_START:#010x}")
+            log, _ = self.run(
+                f"init; reset halt; stm32l4x option_write 0 0x4C {BOARDLOADER_START:#x} 0xFFFFFF80;"
+                " stm32l4x option_load 0; shutdown", check=False)
+            print("\n".join(l for l in log.splitlines() if "rror" in l))
+            time.sleep(0.5)
+        r = self.read_regs([("optr", FLASH_R_NS + 0x40), ("secboot0", FLASH_R_NS + 0x4C)])
+        ok = isinstance(r["optr"], int) and r["optr"] >> 31 & 1 and \
+            isinstance(r["secboot0"], int) and r["secboot0"] & 0xFFFFFF80 == BOARDLOADER_START
+        print(f"now OPTR {r['optr']:#010x} SECBOOTADD0R {r['secboot0']:#010x}: "
+              + ("TrustZone on, boots the boardloader" if ok else "NOT as wanted"))
+        if not ok:
+            die("set TZEN = 1 and SECBOOTADD0 = 0x0C004000 with STM32CubeProgrammer "
+                "(trezor-firmware/docs/core/misc/trustzone.md), then rerun `info`")
+
+    # --- flash ------------------------------------------------------------
+    def flash(self, image):
+        image = Path(image or self.out / "combined-firmware.bin").resolve()
+        if not image.is_file():
+            die(f"no image at {image}: build with firmware/docker-build.sh")
+        r = self.read_regs([("optr", FLASH_R_NS + 0x40), ("secboot0", FLASH_R_NS + 0x4C)])
+        if isinstance(r["optr"], str) or not r["optr"] >> 31 & 1 or \
+                r["secboot0"] & 0xFFFFFF80 != BOARDLOADER_START:
+            die("TrustZone is off or the chip does not boot the boardloader: run "
+                "`firmware/swd.py trustzone` first")
+        print(f"writing {image.name} ({image.stat().st_size} bytes) at {BOARDLOADER_START:#010x}")
+        t = time.monotonic()
+        self.run(f"init; reset halt; flash write_image erase {{{image}}} {BOARDLOADER_START:#x};"
+                 f" verify_image {{{image}}} {BOARDLOADER_START:#x}; reset run; shutdown")
+        print(f"written and verified in {time.monotonic() - t:.0f} s; the chip is running. "
+              "First boot: the boardloader programs the rest of the option bytes and restarts.")
+
+    # --- state / gdb --------------------------------------------------------
+    def elfs(self):
+        found = [self.out / f"{s}.elf" for s in STAGES if (self.out / f"{s}.elf").is_file()]
+        if not found:
+            die(f"no ELF files in {self.out}: build with firmware/docker-build.sh")
+        return found
+
+    def server(self):
+        """OpenOCD as a gdb server on :3333, in its own process group."""
+        p = subprocess.Popen(self.base() + ["-c", "init"], stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT, text=True, start_new_session=True)
+        deadline = time.monotonic() + 10
+        log = []
+        while time.monotonic() < deadline:
+            line = p.stdout.readline()
+            if not line:
+                break
+            log.append(line)
+            if "Listening on port 3333" in line:
+                return p
+        os.killpg(p.pid, signal.SIGTERM)
+        print("".join(log), file=sys.stderr)
+        die("OpenOCD did not start a gdb server (log above)")
+
+    def stage_for(self, addr):
+        for elf in self.elfs():
+            out = subprocess.run(["arm-none-eabi-gdb", "-nx", "-batch", "-ex",
+                                  f"info symbol {addr:#x}", str(elf)],
+                                 capture_output=True, text=True).stdout
+            if out.strip() and "No symbol matches" not in out:
+                return elf, out.strip()
+        return None, "no stage's symbols cover it"
+
+    def gdb_batch(self, elf, cmds):
+        a = ["arm-none-eabi-gdb", "-nx", "-batch", "-ex", "set pagination off",
+             "-ex", "set print pretty on", "-ex", "target extended-remote :3333"]
+        for c in cmds:
+            a += ["-ex", c]
+        return subprocess.run(a + ([str(elf)] if elf else []), capture_output=True,
+                              text=True).stdout
+
+    def state(self, keep_halted):
+        # One OpenOCD session halts the core and reads everything, and leaves it halted, so
+        # the gdb sessions below (symbols, backtrace) see the same PC.
+        regs = [("cfsr", 0xE000ED28), ("hfsr", 0xE000ED2C), ("mmfar", 0xE000ED34),
+                ("bfar", 0xE000ED38), ("sfsr", 0xE000EDE4), ("sfar", 0xE000EDE8),
+                ("cfsr_ns", 0xE002ED28), ("hfsr_ns", 0xE002ED2C), ("cmd", BOOTARGS_START)]
+        reads = "\n".join(f'echo [format "@@ {n} %08X" [lindex [[target current] read_memory {a:#x} 32 1] 0]]'
+                          for n, a in regs)
+        log, got = self.run("init; halt\n"
+                            + "\n".join(f'echo "@@ {r} [lindex [reg {r}] 2]"'
+                                        for r in ("pc", "lr", "sp", "xPSR"))
+                            + f"\n{reads}\nshutdown")
+        try:
+            v = {k: int(got[k], 16) for k in ["pc", "lr", "sp", "xPSR"] + [n for n, _ in regs]}
+        except (KeyError, ValueError) as e:
+            print(log, file=sys.stderr)
+            die(f"could not read the core state ({e!r}; OpenOCD log above)")
+        pc, lr, sp, xpsr = v["pc"], v["lr"], v["sp"], v["xPSR"]
+        cfsr, hfsr, mmfar, bfar, sfsr, sfar, cfsr_ns, hfsr_ns, cmd = (v[n] for n, _ in regs)
+        srv = self.server()
+        try:
+            elf, sym = self.stage_for(pc)
+            print(f"pc {pc:#010x}  in {elf.stem if elf else '?'}: {sym}")
+            print(f"lr {lr:#010x}  sp {sp:#010x}  xPSR {xpsr:#010x} (exception {xpsr & 0x1FF})")
+            for name, val, names in (("CFSR (secure)", cfsr, CFSR_BITS), ("HFSR (secure)", hfsr, HFSR_BITS),
+                                     ("CFSR (non-secure)", cfsr_ns, CFSR_BITS),
+                                     ("HFSR (non-secure)", hfsr_ns, HFSR_BITS), ("SFSR", sfsr, SFSR_BITS)):
+                if val:
+                    print(f"{name} {val:#010x}: {' '.join(bits(val, names))}")
+            if cfsr & 1 << 7:
+                print(f"MMFAR {mmfar:#010x}")
+            if cfsr & 1 << 15:
+                print(f"BFAR {bfar:#010x}")
+            if sfsr & 1 << 6:
+                print(f"SFAR {sfar:#010x}")
+            if elf:
+                bt = self.gdb_batch(elf, ["bt 25"])
+                print("backtrace:\n" + "\n".join(l for l in bt.splitlines() if l.startswith("#")))
+            if elf and elf.stem == "bootloader":
+                # The bootloader clears the command in RAM on entry and keeps a copy.
+                out = self.gdb_batch(elf, ["p/x g_boot_command_saved"])
+                m = re.search(r"\$1 = (0x[0-9a-f]+)", out)
+                if not m:
+                    print(out, file=sys.stderr)
+                    die("could not read g_boot_command_saved (gdb output above)")
+                cmd = int(m.group(1), 16)
+                print(f"boot command this bootloader run started with: {cmd:#010x} {BOOT_COMMANDS.get(cmd, '')}")
+            else:
+                print(f"boot command for the next boot: {cmd:#010x} {BOOT_COMMANDS.get(cmd, '')}")
+            if cmd == 0x7CD945A0:
+                pm = self.gdb_batch(self.out / "bootloader.elf",
+                                    ["p 'bootutils.c'::g_boot_args.pminfo"])
+                print("RSOD info (bootargs):\n" + pm[pm.find("$1"):].rstrip())
+                for k, names in (("cfsr", CFSR_BITS), ("hfsr", HFSR_BITS), ("sfsr", SFSR_BITS)):
+                    m = re.search(rf"\b{k} = (\d+)", pm)
+                    if m and int(m.group(1)):
+                        print(f"  {k} {int(m.group(1)):#010x}: {' '.join(bits(int(m.group(1)), names))}")
+                m = re.search(r"\bpc = (\d+)", pm)
+                if m and int(m.group(1)):
+                    e2, s2 = self.stage_for(int(m.group(1)))
+                    print(f"  faulting pc {int(m.group(1)):#010x} in {e2.stem if e2 else '?'}: {s2}")
+        finally:
+            os.killpg(srv.pid, signal.SIGTERM)
+            srv.wait()
+        self.run("init; halt; shutdown" if keep_halted else "init; resume; shutdown")
+        print("(left halted)" if keep_halted else "(resumed)")
+
+    def gdb(self):
+        srv = self.server()
+        elfs = self.elfs()
+        try:
+            a = ["arm-none-eabi-gdb", "-nx", "-ex", "set confirm off", "-ex",
+                 "target extended-remote :3333", "-ex", "monitor halt"]
+            for e in elfs[1:]:
+                a += ["-ex", f"add-symbol-file {e}"]
+            subprocess.run(a + [str(elfs[0])])
+        finally:
+            os.killpg(srv.pid, signal.SIGTERM)
+            srv.wait()
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("command", choices=["info", "trustzone", "flash", "state", "gdb", "reset"])
+    ap.add_argument("image", nargs="?")
+    ap.add_argument("--probe", default=os.environ.get("SWD_PROBE", "stlink"), choices=PROBES)
+    ap.add_argument("--khz", type=int, default=1000)
+    ap.add_argument("--under-reset", action="store_true")
+    ap.add_argument("--board", default="ambire_p0")
+    ap.add_argument("--halt", action="store_true", help="state: leave the core halted")
+    args = ap.parse_args()
+    swd = Swd(args)
+    if args.command == "info":
+        swd.info()
+    elif args.command == "trustzone":
+        swd.trustzone()
+    elif args.command == "flash":
+        swd.flash(args.image)
+    elif args.command == "state":
+        swd.state(args.halt)
+    elif args.command == "gdb":
+        swd.gdb()
+    elif args.command == "reset":
+        swd.run("init; reset run; shutdown")
+        print("reset")
+
+
+if __name__ == "__main__":
+    main()

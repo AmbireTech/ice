@@ -83,6 +83,9 @@ Ambire internals into GridCore's.
   `~/linux/ivo/storage/...` and `~/storage/...`, and git reports the latter.
 - The upstream T3T2 emulator did not build at `5fdc180` (devkit too): no UI
   preview until Trezor fixes it.
+- Bring-up, flashing and crash analysis over SWD: `firmware/swd.py` (info, trustzone,
+  flash, state, gdb). On a bootloader red screen the error is in bootargs RAM, and
+  `state` decodes it: the display need not work.
 
 ## The board file belongs to the owner
 
