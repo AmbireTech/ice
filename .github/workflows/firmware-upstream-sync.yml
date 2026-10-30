@@ -6,6 +6,11 @@ name: Firmware upstream sync
 # and Trezor's T3T2 devkit, and open or update one PR here from the branch
 # firmware/upstream-sync. A failing build makes it a draft; conflicts open an
 # issue instead. firmware/README.md has the details.
+#
+# Two jobs, because the build runs upstream's code (its build scripts, its
+# Python and Rust dependencies): `sync` holds a read-only token and no stored
+# credentials, and saves the synced commit before the build starts; `publish`
+# never runs upstream's code and is the only job that can write here.
 
 on:
   schedule:
@@ -17,9 +22,7 @@ on:
         default: origin/main
 
 permissions:
-  contents: write
-  pull-requests: write
-  issues: write
+  contents: read
 
 concurrency:
   group: firmware-upstream-sync
@@ -32,12 +35,18 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     timeout-minutes: 150
+    permissions:
+      contents: read
     env:
-      GH_TOKEN: ${{ github.token }}
       REF: ${{ inputs.ref || 'origin/main' }}
-      BRANCH: firmware/upstream-sync
+    outputs:
+      status: ${{ steps.sync.outputs.status }}
+      changed: ${{ steps.sync.outputs.changed }}
+      build: ${{ steps.build.outcome }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Sync with upstream
         id: sync
@@ -54,34 +63,26 @@ jobs:
           fi
           [ "$status" = 0 ] || [ "$status" = 2 ]
 
-      - name: Report conflicts
-        if: steps.sync.outputs.status == '2'
+      # Saved before the build, so nothing the build does can change what is
+      # proposed: the synced commit(s), or the conflicts to report.
+      - name: Save the sync result
+        if: steps.sync.outputs.changed == 'true' || steps.sync.outputs.status == '2'
         run: |
-          target="$(cat firmware/.upstream/target)"
-          title="Firmware: upstream sync conflicts"
-          # shellcheck disable=SC2016  # backticks are Markdown
-          {
-            echo "Pulling trezor-firmware [\`${target:0:9}\`](https://github.com/trezor/trezor-firmware/commit/$target) into our firmware conflicts with our changes in:"
-            echo
-            git -C firmware/.upstream/work diff --name-only --diff-filter=U | sed 's/^/- `/; s/$/`/'
-            echo
-            echo "Resolve locally:"
-            echo
-            echo '```sh'
-            echo "firmware/sync-upstream.sh $target"
-            echo "# fix the files in firmware/.upstream/work, git add them there, then"
-            echo "firmware/sync-upstream.sh --continue"
-            echo "firmware/docker-build.sh && git commit"
-            echo '```'
-            echo
-            echo "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-          } > "$RUNNER_TEMP/issue.md"
-          issue="$(gh issue list --state open --search "\"$title\" in:title" --json number --jq '.[0].number // empty')"
-          if [ -n "$issue" ]; then
-            gh issue comment "$issue" --body-file "$RUNNER_TEMP/issue.md"
-          else
-            gh issue create --title "$title" --body-file "$RUNNER_TEMP/issue.md"
+          out="$RUNNER_TEMP/result"
+          mkdir -p "$out"
+          if [ "${{ steps.sync.outputs.changed }}" = true ]; then
+            git bundle create "$out/sync.bundle" "$GITHUB_SHA..HEAD"
           fi
+          if [ "${{ steps.sync.outputs.status }}" = 2 ]; then
+            cat firmware/.upstream/target > "$out/target"
+            git -C firmware/.upstream/work diff --name-only --diff-filter=U > "$out/conflicts"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: steps.sync.outputs.changed == 'true' || steps.sync.outputs.status == '2'
+        with:
+          name: sync-result
+          path: ${{ runner.temp }}/result
 
       - name: Free disk space for the Nix toolchain
         if: steps.sync.outputs.changed == 'true'
@@ -108,17 +109,78 @@ jobs:
             xtask build firmware -m T3T2 -b devkit --bootloader-devel
           ' 2>&1 | tee "$RUNNER_TEMP/build.log"
 
-      - name: Open or update the PR
-        if: steps.sync.outputs.changed == 'true'
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.sync.outputs.changed == 'true'
+        with:
+          name: build-log
+          path: ${{ runner.temp }}/build.log
+
+  publish:
+    needs: sync
+    if: needs.sync.outputs.changed == 'true' || needs.sync.outputs.status == '2'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BRANCH: firmware/upstream-sync
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: sync-result
+          path: ${{ runner.temp }}/result
+
+      - uses: actions/download-artifact@v4
+        if: needs.sync.outputs.changed == 'true'
+        with:
+          name: build-log
+          path: ${{ runner.temp }}
+
+      - name: Report conflicts
+        if: needs.sync.outputs.status == '2'
         run: |
-          git push -f origin "HEAD:refs/heads/$BRANCH"
-          subject="$(git log -1 --format=%s)"
+          target="$(cat "$RUNNER_TEMP/result/target")"
+          title="Firmware: upstream sync conflicts"
+          # shellcheck disable=SC2016  # backticks are Markdown
+          {
+            echo "Pulling trezor-firmware [\`${target:0:9}\`](https://github.com/trezor/trezor-firmware/commit/$target) into our firmware conflicts with our changes in:"
+            echo
+            sed 's/^/- `/; s/$/`/' "$RUNNER_TEMP/result/conflicts"
+            echo
+            echo "Resolve locally:"
+            echo
+            echo '```sh'
+            echo "firmware/sync-upstream.sh $target"
+            echo "# fix the files in firmware/.upstream/work, git add them there, then"
+            echo "firmware/sync-upstream.sh --continue"
+            echo "firmware/docker-build.sh && git commit"
+            echo '```'
+            echo
+            echo "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          } > "$RUNNER_TEMP/issue.md"
+          issue="$(gh issue list --state open --search "\"$title\" in:title" --json number --jq '.[0].number // empty')"
+          if [ -n "$issue" ]; then
+            gh issue comment "$issue" --body-file "$RUNNER_TEMP/issue.md"
+          else
+            gh issue create --title "$title" --body-file "$RUNNER_TEMP/issue.md"
+          fi
+
+      - name: Open or update the PR
+        if: needs.sync.outputs.changed == 'true'
+        run: |
+          git fetch "$RUNNER_TEMP/result/sync.bundle" HEAD
+          git push -f origin "FETCH_HEAD:refs/heads/$BRANCH"
+          subject="$(git log -1 --format=%s FETCH_HEAD)"
           {
             echo "$subject."
             echo
-            git log -1 --format=%b
+            git log -1 --format=%b FETCH_HEAD
             echo
-            if [ "${{ steps.build.outcome }}" = success ]; then
+            if [ "${{ needs.sync.outputs.build }}" = success ]; then
               echo "Boardloader, bootloader and firmware build for \`ambire_p0\`, and Trezor's devkit firmware builds. Nothing here has run on hardware."
             else
               echo "**The build fails** (draft until fixed). End of the log:"
@@ -133,10 +195,10 @@ jobs:
           pr="$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')"
           if [ -n "$pr" ]; then
             gh pr edit "$pr" --title "$subject" --body-file "$RUNNER_TEMP/pr.md"
-            if [ "${{ steps.build.outcome }}" = success ]; then
+            if [ "${{ needs.sync.outputs.build }}" = success ]; then
               gh pr ready "$pr" || echo "PR $pr already ready for review"
             fi
-          elif [ "${{ steps.build.outcome }}" = success ]; then
+          elif [ "${{ needs.sync.outputs.build }}" = success ]; then
             gh pr create --base main --head "$BRANCH" --title "$subject" --body-file "$RUNNER_TEMP/pr.md"
           else
             gh pr create --draft --base main --head "$BRANCH" --title "$subject" --body-file "$RUNNER_TEMP/pr.md"
