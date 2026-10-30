@@ -8,14 +8,18 @@
     firmware/swd.py gdb                  # interactive gdb with every stage's symbols
     firmware/swd.py reset
 
-Options (before or after the command): --probe stlink|cmsis-dap|jlink|rpi (default stlink,
+Options (before or after the command): --probe stlink|cmsis-dap|jlink|rpi|beagle (default stlink,
 or $SWD_PROBE), --khz N (SWD clock, default 1000: flying leads), --under-reset (hold NRST
 while connecting; needs TP_NRST wired), --board NAME (default ambire_p0).
 
-No probe: a Raspberry Pi's GPIO is one (--probe rpi --host pi@HOST, or $SWD_HOST).
-OpenOCD runs on the Pi over SSH (`setup` installs it there), gdb here talks to it over
-the network. Pi header pins: 22 = GPIO25 -> SWCLK, 18 = GPIO24 -> SWDIO,
-12 = GPIO18 -> NRST (optional), 20 = GND -> GND. Any Pi model (libgpiod).
+No probe: a Linux board's GPIO is one (--probe rpi|beagle --host user@HOST, or $SWD_HOST).
+OpenOCD runs on that board over SSH (`setup` installs it there), gdb here talks to it over
+the network. Pins are found by their line names on the board (gpioinfo), so the gpiochip
+numbering of the model does not matter:
+  Raspberry Pi (any model): header 22 = GPIO25 -> SWCLK, 18 = GPIO24 -> SWDIO,
+                            12 = GPIO18 -> NRST (optional), 20 = GND
+  BeagleBone (Black/Green): P9_12 -> SWCLK, P9_15 -> SWDIO, P9_23 -> NRST (optional),
+                            P9_1 = GND
 
 Register addresses and bit positions come from the vendored CMSIS headers
 (trezor-firmware/vendor/cmsis_device_u5, core_cm33.h); the memory map from
@@ -38,11 +42,12 @@ PROBES = {
     "stlink": ["-f", "interface/stlink.cfg", "-c", "transport select hla_swd"],
     "cmsis-dap": ["-f", "interface/cmsis-dap.cfg", "-c", "transport select swd"],
     "jlink": ["-f", "interface/jlink.cfg", "-c", "transport select swd"],
-    "rpi": None,  # built per Pi: which gpiochip carries the header (Swd.rpi_probe)
 }
-# Raspberry Pi header GPIOs, as OpenOCD's own raspberrypi configs number them
-RPI_SWCLK, RPI_SWDIO, RPI_SRST = 25, 24, 18
-RPI_IMAGE = "/tmp/ambire-swd-image.bin"
+# Linux boards as probes: GPIO line names for SWCLK, SWDIO, NRST. The Pi's are the pins
+# OpenOCD's own raspberrypi configs use; the BeagleBone's are GPIO1 pins that boot in
+# GPIO mode and are free of HDMI and eMMC.
+GPIO_PROBES = {"rpi": ("GPIO25", "GPIO24", "GPIO18"), "beagle": ("P9_12", "P9_15", "P9_23")}
+REMOTE_IMAGE = "/tmp/ambire-swd-image.bin"
 
 # T3T2 memory map (models/T3T2/memory.h), secure aliases
 BOARDLOADER_START = 0x0C004000
@@ -101,8 +106,8 @@ class Swd:
         self.args = args
         self.out = HERE / "out" / args.board
         self.host = None
-        if args.probe == "rpi":
-            self.host = args.host or die("--probe rpi needs --host pi@HOST (or $SWD_HOST)")
+        if args.probe in GPIO_PROBES:
+            self.host = args.host or die(f"--probe {args.probe} needs --host user@HOST (or $SWD_HOST)")
         elif not shutil.which("openocd"):
             die("openocd not found (brew install open-ocd)")
         self._probe = None
@@ -110,22 +115,37 @@ class Swd:
     def ssh(self, cmd, **kw):
         return subprocess.run(["ssh", self.host, cmd], capture_output=True, text=True, **kw)
 
-    def rpi_probe(self):
-        """The gpiochip whose lines are the 40-pin header: RP1 on a Pi 5, the SoC's before."""
-        out = self.ssh("gpiodetect")
+    def gpio_lines(self):
+        """{line name: (chip, offset)} from gpioinfo on the host (libgpiod v1 and v2 print alike)."""
+        out = self.ssh("gpioinfo")
         if out.returncode != 0:
-            die(f"gpiodetect on {self.host} failed ({out.stderr.strip()}): run `setup` first")
-        m = re.search(r"^gpiochip(\d+) \[pinctrl-(rp1|bcm2711|bcm2835)\]", out.stdout, re.M)
-        if not m:
-            die(f"no Raspberry Pi header gpiochip on {self.host}:\n{out.stdout}")
-        c = f"-chip {m.group(1)}"
-        return ["-c", "adapter driver linuxgpiod", "-c", "transport select swd",
-                "-c", f"adapter gpio swclk {RPI_SWCLK} {c}", "-c", f"adapter gpio swdio {RPI_SWDIO} {c}",
-                "-c", f"adapter gpio srst {RPI_SRST} {c}"]  # drive mode: reset_config
+            die(f"gpioinfo on {self.host} failed ({out.stderr.strip()}): run `setup` first")
+        lines, chip = {}, None
+        for l in out.stdout.splitlines():
+            m = re.match(r"^gpiochip(\d+)", l)
+            if m:
+                chip = int(m.group(1))
+            m = re.match(r'^\s+line\s+(\d+):\s+"([^"]+)"', l)
+            if m and chip is not None:
+                lines[m.group(2)] = (chip, int(m.group(1)))
+        return lines
+
+    def gpio_probe(self):
+        lines = self.gpio_lines()
+        args = ["-c", "adapter driver linuxgpiod", "-c", "transport select swd"]
+        for sig, want in zip(("swclk", "swdio", "srst"), GPIO_PROBES[self.args.probe]):
+            # BeagleBone names carry the ball after the header pin: "P9_12 [gpio1_28]", "P9_15A"
+            found = [v for k, v in lines.items() if re.fullmatch(rf"{want}A?(\s.*)?", k)]
+            if len(found) != 1:
+                die(f"{len(found)} GPIO lines named {want} on {self.host} (want 1): "
+                    f"is it a {self.args.probe}? Line names: {', '.join(sorted(lines))[:600]}")
+            chip, offset = found[0]
+            args += ["-c", f"adapter gpio {sig} {offset} -chip {chip}"]  # srst drive mode: reset_config
+        return args
 
     def base(self):
         if self._probe is None:
-            self._probe = self.rpi_probe() if self.host else PROBES[self.args.probe]
+            self._probe = self.gpio_probe() if self.host else PROBES[self.args.probe]
         a = ["openocd", *self._probe, "-f", "target/stm32u5x.cfg"]
         if not self.host:  # bit-banged GPIO runs as fast as it can; no clock to set
             a += ["-c", f"adapter speed {self.args.khz}"]
@@ -134,18 +154,29 @@ class Swd:
         return a
 
     def command(self, a):
-        """An OpenOCD argv, run here or on the Pi."""
+        """An OpenOCD argv, run here or on the probe board."""
         return ["ssh", self.host, shlex.join(a)] if self.host else a
 
     def setup(self):
         if not self.host:
-            die("setup is for --probe rpi: it installs OpenOCD on the Pi")
-        p = subprocess.run(["ssh", self.host, "command -v openocd gpiodetect >/dev/null || "
-                            "(sudo apt-get update && sudo apt-get install -y openocd gpiod); "
-                            "openocd --version 2>&1 | head -1; gpiodetect; id -nG"])
+            die("setup is for a Linux board as the probe: it installs OpenOCD there")
+        pins = " ".join(GPIO_PROBES[self.args.probe])
+        p = subprocess.run(["ssh", self.host, "command -v openocd >/dev/null && command -v gpioinfo >/dev/null || "
+                            "(sudo apt-get update && sudo apt-get install -y openocd gpiod) || exit 1; "
+                            # BeagleBone: make sure the pins are in GPIO mode
+                            f"if command -v config-pin >/dev/null; then for p in {pins}; do config-pin $p gpio; done; fi; "
+                            "openocd --version 2>&1 | head -1; id -nG"])
         if p.returncode != 0:
             die(f"setup on {self.host} failed")
-        print(f"header chip and pins: {' '.join(self.rpi_probe())}")
+        v = self.ssh("openocd --version 2>&1 | head -1").stdout
+        m = re.search(r"(\d+)\.(\d+)\.\d+", v)
+        if not m or (int(m.group(1)), int(m.group(2))) < (0, 12):
+            die(f"{self.host} has {v.strip() or 'no openocd'}: the STM32U5 and the GPIO pin syntax need "
+                "OpenOCD 0.12 or newer (a newer OS image, or a source build with --enable-linuxgpiod)")
+        if self.ssh("test -f /usr/share/openocd/scripts/target/stm32u5x.cfg || "
+                    "test -f /usr/local/share/openocd/scripts/target/stm32u5x.cfg").returncode:
+            die(f"{self.host}'s OpenOCD has no target/stm32u5x.cfg")
+        print(f"probe pins: {' '.join(self.gpio_probe())}")
 
     def run(self, script, check=True):
         """One OpenOCD session; lines our Tcl echoes start with '@@'."""
@@ -303,9 +334,9 @@ shutdown"""
         print(f"writing {image.name} ({image.stat().st_size} bytes) at {BOARDLOADER_START:#010x}")
         target = image
         if self.host:
-            if subprocess.run(["scp", "-q", str(image), f"{self.host}:{RPI_IMAGE}"]).returncode:
+            if subprocess.run(["scp", "-q", str(image), f"{self.host}:{REMOTE_IMAGE}"]).returncode:
                 die(f"could not copy the image to {self.host}")
-            target = RPI_IMAGE
+            target = REMOTE_IMAGE
         t = time.monotonic()
         self.run(f"init; reset halt; flash write_image erase {{{target}}} {BOARDLOADER_START:#x};"
                  f" verify_image {{{target}}} {BOARDLOADER_START:#x}; reset run; shutdown")
@@ -446,7 +477,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("command", choices=["info", "trustzone", "flash", "state", "gdb", "reset", "setup"])
     ap.add_argument("image", nargs="?")
-    ap.add_argument("--probe", default=os.environ.get("SWD_PROBE", "stlink"), choices=PROBES)
+    ap.add_argument("--probe", default=os.environ.get("SWD_PROBE", "stlink"), choices=[*PROBES, *GPIO_PROBES])
     ap.add_argument("--khz", type=int, default=1000)
     ap.add_argument("--host", default=os.environ.get("SWD_HOST"), help="--probe rpi: the Pi, user@host")
     ap.add_argument("--under-reset", action="store_true")

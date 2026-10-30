@@ -55,9 +55,15 @@ at it over the network. Wire the Pi's header to the board:
 | 20 | GND | `TP_GND` |
 | 12 | GPIO18 | `TP_NRST` (optional, for `--under-reset`) |
 
-Leave the Pi's 3.3 V pin off the board. Then, with `SWD_PROBE=rpi
-SWD_HOST=pi@<pi-address>` set (or `--probe rpi --host …`), run `setup` once (it
-installs OpenOCD and gpiod on the Pi) and the commands above. Bit-banged SWD
+A BeagleBone Black or Green works the same way (`--probe beagle`), on its P9
+header: P9_12 → `TP_SWCLK`, P9_15 → `TP_SWDIO`, P9_1 (GND) → `TP_GND`, P9_23 →
+`TP_NRST` (optional). The pins are found by name on the board, so the model's
+gpiochip numbering does not matter.
+
+Leave the probe board's 3.3 V pin off the board. Then, with `SWD_PROBE=rpi`
+(or `beagle`) and `SWD_HOST=user@<address>` set (or `--probe … --host …`), run
+`setup` once (it installs OpenOCD and gpiod there; it needs OpenOCD 0.12 or
+newer) and the commands above. Bit-banged SWD
 is slower: writing the full image takes minutes, not seconds.
 
 `trustzone` is what Trezor does in STM32CubeProgrammer
