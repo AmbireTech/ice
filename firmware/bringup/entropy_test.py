@@ -26,9 +26,12 @@ def collect(trezorctl: str, calls: int, out: Path) -> None:
     for i in range(calls):
         print(f"call {i + 1}/{calls}: confirm on the device", flush=True)
         p = subprocess.run([trezorctl, "-p", "webusb", "crypto", "get-entropy", "1024"],
-                           capture_output=True, text=True)
+                           stdin=subprocess.DEVNULL, capture_output=True, text=True)
         if p.returncode != 0:
-            sys.exit(f"get-entropy failed (exit {p.returncode}): {p.stderr.strip() or p.stdout.strip()}")
+            # urllib3's LibreSSL warning comes first on macOS: show the lines that matter
+            lines = [l for l in (p.stdout + p.stderr).splitlines() if "arning" not in l]
+            sys.exit(f"get-entropy failed (exit {p.returncode}): {' | '.join(lines)}"
+                     " (GetEntropy needs an initialized device)")
         hexline = [l.strip() for l in p.stdout.splitlines() if l.strip() and all(c in "0123456789abcdef" for c in l.strip())]
         if not hexline:
             sys.exit(f"no hex in the output: {p.stdout.strip()}")
