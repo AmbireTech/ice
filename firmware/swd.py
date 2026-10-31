@@ -392,13 +392,15 @@ shutdown"""
                 "(trezor-firmware/docs/core/misc/trustzone.md), then rerun `info`")
 
     # --- flash ------------------------------------------------------------
-    def flash(self, image, at=BOARDLOADER_START, start=None, wait=0):
+    def flash(self, image, at=BOARDLOADER_START, start=None, wait=0, live=False):
         image = Path(image or self.out / "combined-firmware.bin").resolve()
         if not image.is_file():
             die(f"no image at {image}: build with firmware/docker-build.sh")
         # --wait: connect during the boot window instead (firmware that leaves SWD
         # unreadable has not started yet); the session's first step halts the core
-        r = {"optr": 1 << 31, "secboot0": BOARDLOADER_START} if wait else \
+        # --live: no reads while the firmware runs either (they can trip its TrustZone
+        # illegal-access fault); the session halts it first
+        r = {"optr": 1 << 31, "secboot0": BOARDLOADER_START} if wait or live else \
             self.read_regs([("optr", FLASH_R_NS + 0x40), ("secboot0", FLASH_R_NS + SECURE_OFFSET + 0x4C)])
         if isinstance(r["optr"], str) or isinstance(r["secboot0"], str):
             die(f"cannot read the option registers: {r}")
@@ -433,6 +435,10 @@ shutdown"""
 # the reset: set the pin from here at once. Then secure bus access and a secure RAM
 # buffer (verify_image's checksum runs there).
 #
+# --live halts the running firmware instead: a halted core keeps driving PWR_HOLD (only a
+# reset lets go of it), so no button is needed. It cannot rewrite the code the core is
+# halted in: use it for the bootloader, never for the region of the running firmware.
+#
 # Flash is programmed by hand through the secure registers. After a reset only the
 # watermarked pages (secret + boardloader) are secure; marking every page secure, as the
 # boardloader does at run time (tz_configure_flash; a reset clears it), makes one path
@@ -440,7 +446,7 @@ shutdown"""
 # its non-secure bank drove the secure registers for non-secure pages (silently ignored).
 proc rd {{a}} {{ return [lindex [[target current] read_memory $a 32 1] 0] }}
 proc prep {{}} {{
-  reset halt
+  {"halt" if live else "reset halt"}
   mmw {RCC_NS + SECURE_OFFSET + 0x8C:#x} {1 << HOLD_PORT_BIT:#x} 0
   mww {HOLD_GPIO + 0x18:#x} {1 << HOLD_PIN:#x}
   mmw {HOLD_GPIO:#x} {1 << 2 * HOLD_PIN:#x} {2 << 2 * HOLD_PIN:#x}
@@ -716,6 +722,9 @@ def main():
                     help="flash: address to write the image at (default: the boardloader's)")
     ap.add_argument("--wait", type=int, default=0, metavar="S",
                     help="flash: keep retrying the connection for S seconds (restart the board meanwhile)")
+    ap.add_argument("--live", action="store_true",
+                    help="flash: halt the running firmware instead of resetting (the power latch stays held); "
+                         "for the bootloader region only")
     ap.add_argument("--from", dest="start", type=lambda v: int(v, 0),
                     help="flash: resume, skipping the pieces below this address")
     args = ap.parse_args()
@@ -727,7 +736,7 @@ def main():
     elif args.command == "trustzone":
         swd.trustzone()
     elif args.command == "flash":
-        swd.flash(args.image, args.at, args.start, args.wait)
+        swd.flash(args.image, args.at, args.start, args.wait, args.live)
     elif args.command == "state":
         swd.state(args.halt)
     elif args.command == "gdb":
