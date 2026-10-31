@@ -22,14 +22,25 @@ target_sources(app PRIVATE
         src/ble/ble.c
         src/management/management.c
         src/prodtest/prodtest.c
-        src/trz_comm/uart.c
-        src/trz_comm/spi.c
         src/trz_comm/trz_comm.c
-        src/signals/signals.c
         src/trezor-crypto/hmac.c
         src/trezor-crypto/sha2.c
         src/trezor-crypto/memzero.c
 )
+
+# The link to the MCU: SPI + GPIO handshake (Trezor), or one framed UART.
+if(CONFIG_TREZOR_UART_LINK)
+  target_sources(app PRIVATE
+          src/trz_comm/uart_link.c
+          src/signals/signals_none.c
+  )
+else()
+  target_sources(app PRIVATE
+          src/trz_comm/uart.c
+          src/trz_comm/spi.c
+          src/signals/signals.c
+  )
+endif()
 
 include_directories(src/signals/inc)
 include_directories(src/trz_comm/inc)

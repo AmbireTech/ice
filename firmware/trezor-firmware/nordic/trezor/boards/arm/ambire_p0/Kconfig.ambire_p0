@@ -1,0 +1,4 @@
+# Ambire Ice proto 0 radio: Ebyte E73-2G4M08S1C module (nRF52840).
+
+config BOARD_AMBIRE_P0
+	select SOC_NRF52840_QIAA

@@ -1,0 +1,7 @@
+# Ambire Ice proto 0 radio: Ebyte E73-2G4M08S1C module (nRF52840).
+board:
+  name: ambire_p0
+  full_name: Ambire Ice proto 0 radio (E73-2G4M08S1C)
+  vendor: ambire
+  socs:
+    - name: nrf52840

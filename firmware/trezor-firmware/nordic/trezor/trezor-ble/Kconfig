@@ -28,5 +28,14 @@ config DEFAULT_THREAD_STACK_SIZE
 config MODEL_IDENTIFIER
     int "Model identifier"
 
+config TREZOR_UART_LINK
+	bool "Framed 2-wire UART link to the MCU"
+	help
+	  Carry every service over one UART (1 Mbaud 8N1, no flow control) in
+	  unpadded frames [0xA0|service][len][payload][crc8], instead of SPI
+	  with the spi-ready/spi-request handshake. Also drops the
+	  stay-in-bootloader input and the reserved output, for boards whose
+	  radio has only the two UART wires to the MCU.
+
 
 endmenu

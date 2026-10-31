@@ -41,8 +41,12 @@ static K_FIFO_DEFINE(fifo_uart_rx_prodtest);
 atomic_t g_suspended_flag = ATOMIC_INIT(0);
 
 void trz_comm_init(void) {
+#ifdef CONFIG_TREZOR_UART_LINK
+  uart_link_init();
+#else
   spi_init();
   uart_power_down();
+#endif
 }
 
 bool trz_comm_send_msg(nrf_service_id_t service, const uint8_t *data,
@@ -55,7 +59,11 @@ bool trz_comm_send_msg(nrf_service_id_t service, const uint8_t *data,
   atomic_set(&g_suspended_flag, 0);
 
   if (len <= SPI_TX_DATA_LEN) {
+#ifdef CONFIG_TREZOR_UART_LINK
+    return uart_link_send(service, data, len);
+#else
     return spi_send(service, data, len);
+#endif
   }
   return false;
 }
@@ -114,9 +122,17 @@ trz_packet_t *trz_comm_poll_data(nrf_service_id_t service) {
   }
 }
 
+#ifdef CONFIG_TREZOR_UART_LINK
+/* The UART is the link itself and always runs: there is no separate prodtest
+ * UART to start or stop. */
+void trz_comm_start_uart(void) { LOG_INF("UART is the link, always on"); }
+
+void trz_comm_stop_uart(void) { LOG_INF("UART is the link, always on"); }
+#else
 void trz_comm_start_uart(void) { uart_init(); }
 
 void trz_comm_stop_uart(void) { uart_deinit(); }
+#endif
 
 void trz_comm_suspend(void) { atomic_set(&g_suspended_flag, 1); }
 

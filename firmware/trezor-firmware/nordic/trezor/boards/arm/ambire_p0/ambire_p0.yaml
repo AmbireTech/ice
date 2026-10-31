@@ -1,0 +1,12 @@
+identifier: ambire_p0
+name: Ambire Ice proto 0 radio (E73-2G4M08S1C)
+type: mcu
+arch: arm
+ram: 256
+flash: 1024
+toolchain:
+  - zephyr
+supported:
+  - ble
+  - gpio
+  - watchdog

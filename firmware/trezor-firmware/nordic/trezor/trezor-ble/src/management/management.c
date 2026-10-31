@@ -155,11 +155,17 @@ static void send_info(void) {
   data[7] = 0;
   data[8] = signals_out_get_reserved();
 
+#ifdef CONFIG_BOOTLOADER_MCUBOOT
   int rc = read_image_sha256(FIXED_PARTITION_ID(slot0_partition), &data[9]);
   if (rc < 0) {
     LOG_ERR("Failed to read image SHA-256: %d", rc);
     return;
   }
+#else
+  /* Without MCUboot the image has no header or hash TLV: the hash stays
+   * zero. */
+  (void)read_image_sha256;
+#endif
 
   trz_comm_send_msg(NRF_SERVICE_MANAGEMENT, data, sizeof(data));
 }

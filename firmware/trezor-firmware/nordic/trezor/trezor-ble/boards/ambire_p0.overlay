@@ -1,0 +1,10 @@
+/*
+ * trezor-ble application devicetree glue for the ambire_p0 board: the framed
+ * UART link to the STM32 runs on uart0 (pins in boards/arm/ambire_p0/).
+ */
+
+/ {
+	chosen {
+		trezor,trz-uart = &uart0;
+	};
+};

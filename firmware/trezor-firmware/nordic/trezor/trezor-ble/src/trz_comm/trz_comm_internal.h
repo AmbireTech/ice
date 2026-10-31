@@ -39,3 +39,9 @@ bool spi_send(uint8_t service_id, const uint8_t *data, uint32_t len);
 bool uart_send(uint8_t service_id, const uint8_t *tx_data, uint8_t len);
 
 void process_rx_msg(uint8_t service_id, uint8_t *data, uint32_t len);
+
+#ifdef CONFIG_TREZOR_UART_LINK
+void uart_link_init(void);
+
+bool uart_link_send(uint8_t service_id, const uint8_t *data, uint32_t len);
+#endif
