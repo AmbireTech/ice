@@ -7,6 +7,9 @@
     firmware/swd.py state [--halt]       # halt, where it is (symbolised), fault registers, RSOD info
     firmware/swd.py gdb                  # interactive gdb with every stage's symbols
     firmware/swd.py reset
+    firmware/swd.py radio-info           # the nRF52840 radio, on its own SWD pads (TP_RSWDIO/TP_RSWCLK)
+    firmware/swd.py radio-recover        # erase-all + unlock through Nordic's CTRL-AP (APPROTECT)
+    firmware/swd.py radio-flash app.hex  # write, verify, reset
 
 Options (before or after the command): --probe stlink|cmsis-dap|jlink|rpi|beagle (default stlink,
 or $SWD_PROBE), --khz N (SWD clock, default 1000: flying leads), --under-reset (hold NRST
@@ -175,10 +178,11 @@ class Swd:
     def base(self):
         if self._probe is None:
             self._probe = self.gpio_probe() if self.host else PROBES[self.args.probe]
-        a = ["openocd", *self._probe, "-f", "target/stm32u5x.cfg"]
+        radio = self.args.command.startswith("radio-")
+        a = ["openocd", *self._probe, "-f", "target/nrf52.cfg" if radio else "target/stm32u5x.cfg"]
         if not self.host:  # bit-banged GPIO runs as fast as it can; no clock to set
             a += ["-c", f"adapter speed {self.args.khz}"]
-        else:  # the target config's reset-start sets a clock, which GPIO adapters do not have
+        elif not radio:  # the target config's reset-start sets a clock, which GPIO adapters do not have
             a += ["-c", "$_TARGETNAME configure -event reset-start {}"]
         if self.args.under_reset:
             a += ["-c", "reset_config srst_only srst_nogate srst_open_drain connect_assert_srst"]
@@ -508,6 +512,52 @@ shutdown"""
         print(f"written and verified in {time.monotonic() - t:.0f} s ({len(retries)} retries); the chip "
               "is running. First boot: the boardloader programs the rest of the option bytes and restarts.")
 
+    # --- radio (nRF52840 module, on its own SWD pads) -----------------------
+    # The radio's supply is on only while the airgap switch is off AIR and the
+    # firmware allows it ([ambire_radio] or the BLE driver): check the RADIO light.
+    def radio_info(self):
+        log, got = self.run("""init
+echo "@@ lock [expr {[catch {[dap names] apreg 1 0xc} v] ? {?} : $v}]"
+catch {nrf52_check_ap_lock}
+if {[catch {set part [lindex [[target current] read_memory 0x10000100 32 1] 0]} e]} {
+  echo "@@ part ERR"
+} else {
+  echo [format "@@ part %08X" $part]
+  echo [format "@@ variant %08X" [lindex [[target current] read_memory 0x10000104 32 1] 0]]
+  echo [format "@@ flash0 %08X" [lindex [[target current] read_memory 0x00000000 32 1] 0]]
+}
+shutdown""", check=False)
+        lock = got.get("lock", "?")
+        print(f"CTRL-AP APPROTECTSTATUS: {lock} (1 = debug access open, 0 = locked: run radio-recover)")
+        part = got.get("part")
+        if part is None or part.startswith("ERR"):
+            print(log[-1500:], file=sys.stderr)
+            die("could not read the radio's FICR: no power (RADIO light off?), wiring, or APPROTECT")
+        variant = int(got["variant"], 16).to_bytes(4, "big").decode("ascii", "replace")
+        print(f"part nRF{part.lstrip('0')}  variant {variant}  first flash word {got['flash0']}"
+              f" ({'erased' if got['flash0'] == 'FFFFFFFF' else 'programmed'})")
+
+    def radio_recover(self):
+        log, _ = self.run("init; nrf52_recover; shutdown", check=False)
+        print("\n".join(l for l in log.splitlines() if "nRF52" in l or "rror" in l or "erase" in l.lower()))
+
+    def radio_flash(self, image):
+        image = Path(image or "").resolve()
+        if not image.is_file():
+            die(f"no radio image at {image}")
+        target = image
+        if self.host:
+            remote = f"/tmp/ambire-radio{image.suffix}"
+            if subprocess.run(["scp", "-q", str(image), f"{self.host}:{remote}"]).returncode:
+                die(f"could not copy the image to {self.host}")
+            target = remote
+        t = time.monotonic()
+        log, _ = self.run(f"init; reset halt; program {{{target}}} verify; reset run; shutdown", check=False)
+        if "Verified OK" not in log and "verified" not in log.lower():
+            print(log[-2500:], file=sys.stderr)
+            die("radio flash not verified (log above)")
+        print(f"radio flashed and verified in {time.monotonic() - t:.0f} s")
+
     # --- state / gdb --------------------------------------------------------
     def elfs(self):
         found = [self.out / f"{s}.elf" for s in STAGES if (self.out / f"{s}.elf").is_file()]
@@ -644,7 +694,8 @@ shutdown"""
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["info", "trustzone", "flash", "state", "gdb", "reset", "setup"])
+    ap.add_argument("command", choices=["info", "trustzone", "flash", "state", "gdb", "reset", "setup",
+                                        "radio-info", "radio-recover", "radio-flash"])
     ap.add_argument("image", nargs="?")
     ap.add_argument("--probe", default=os.environ.get("SWD_PROBE", "stlink"), choices=[*PROBES, *GPIO_PROBES])
     ap.add_argument("--khz", type=int, default=1000)
@@ -675,6 +726,12 @@ def main():
     elif args.command == "reset":
         swd.run("init; reset run; shutdown")
         print("reset")
+    elif args.command == "radio-info":
+        swd.radio_info()
+    elif args.command == "radio-recover":
+        swd.radio_recover()
+    elif args.command == "radio-flash":
+        swd.radio_flash(args.image)
 
 
 if __name__ == "__main__":
