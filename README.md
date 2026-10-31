@@ -30,11 +30,11 @@ in silkscreen. The front (screen side) carries no brand at all.*
 Pictures on the site are illustrative; the shipped device may differ in shape and
 colour.
 
-> **Built to be opened.** The clear case lets you see the board, but you don't
-> have to take our word for what's inside. Ice is designed to come apart and go
-> back together at home: undo one small M2 screw and the front hooks off; the
-> screen lifts off its foam tape and the battery pack comes away from its magnets.
-> Open it, compare the board with the files in this repo, and close it again.
+**Built to be opened.** The clear case lets you see the board, but you don't
+have to take our word for what's inside. Ice is designed to come apart and go
+back together at home: undo one small M2 screw and the front hooks off; the
+screen lifts off its foam tape and the battery pack comes away from its magnets.
+Open it, compare the board with the files in this repo, and close it again.
 
 Hand-routed by [@Ivshti](https://github.com/Ivshti), but component placement is
 verified and optimized with
