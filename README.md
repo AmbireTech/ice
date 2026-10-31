@@ -25,6 +25,32 @@ fork (below), for proto 0.
 *Render of the 3D model: the board's back face through the case, with the flame
 in silkscreen. The front (screen side) carries no brand at all.*
 
+## Get one
+
+**[ambire.com/ice](https://ambire.com/ice)**: the hardware wallet built for Safe.
+
+- **Batch 2: $159**, limited to 200 devices. Reserve with a **$10 deposit**, which
+  counts toward the price. Batch 1 (200 devices) is sold out.
+- Delivery expected **within 6 months** of reserving.
+- Four colours: Ice Blue, Orange Crush, Atomic Purple, Crystal Clear.
+- A Safe signer over USB, Bluetooth or QR. It decodes every Safe action on screen
+  (clear signing), blocks unknown DELEGATECALLs, and is ready for a post-quantum key
+  on your Safe once chains support it.
+- An airgap switch cuts USB data and radio power in hardware; offline, it signs
+  over animated QR codes.
+- Or build your own: the Gerber, BOM and pick-and-place files for JLCPCB or PCBWay
+  are in this repo, and the case, battery-pack tray, joystick cap and airgap slider
+  print on a home 3D printer.
+
+Pictures on the site are illustrative; the shipped device may differ in shape and
+colour.
+
+> **Built to be opened.** The clear case lets you see the board, but you don't
+> have to take our word for what's inside. Ice is designed to come apart and go
+> back together at home: undo one small M2 screw and the front hooks off; the
+> screen lifts off its foam tape and the battery pack comes away from its magnets.
+> Open it, compare the board with the files in this repo, and close it again.
+
 Hand-routed by [@Ivshti](https://github.com/Ivshti), but component placement is
 verified and optimized with
 [humanizedKicadAutoRouter](https://github.com/Ivshti/humanizedKicadAutoRouter)
