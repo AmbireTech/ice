@@ -1,0 +1,8 @@
+firmware/bringup/entropy/proto0-getentropy.bin: 5120 bytes
+  PASS  bit balance: 0.49998 ones (z = -0.01)
+  PASS  runs: 20646 (expected 20480, z = +1.64)
+  PASS  byte chi-square: 276.4 on 255 dof (z = +0.95)
+  PASS  serial correlation: +0.02209 (z = +1.58)
+  PASS  compressibility: zlib output 1.0021 of the input
+  PASS  repeated 16-byte blocks: 0
+all passed
