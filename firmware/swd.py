@@ -11,7 +11,7 @@
     firmware/swd.py radio-recover        # erase-all + unlock through Nordic's CTRL-AP (APPROTECT)
     firmware/swd.py radio-flash app.hex  # write, verify, reset
 
-Options (before or after the command): --probe stlink|cmsis-dap|jlink|rpi|beagle (default stlink,
+Options (before or after the command): --probe stlink|cmsis-dap|jlink|rpi|beagley|beagle (default stlink,
 or $SWD_PROBE), --khz N (SWD clock, default 1000: flying leads), --under-reset (hold NRST
 while connecting; needs TP_NRST wired), --board NAME (default ambire_p0).
 
@@ -21,8 +21,9 @@ the network. Pins are found by their line names on the board (gpioinfo), so the 
 numbering of the model does not matter:
   Raspberry Pi (any model): header 22 = GPIO25 -> SWCLK, 18 = GPIO24 -> SWDIO,
                             12 = GPIO18 -> NRST (optional), 20 = GND
-                            (BeagleY-AI: the same Pi-layout header, --probe rpi, if
-                            its Linux names the lines GPIO25/24/18; setup tells)
+  BeagleY-AI (--probe beagley): the Pi layout, but SWDIO on header 15 = GPIO22: its
+                            pin 18 (GPIO24) is a wake-up-domain UART pad
+                            (WKUP_UART0_TXD) and garbled SWD replies on proto 0
   BeagleBone (Black/Green): P9_12 -> SWCLK, P9_15 -> SWDIO, P9_23 -> NRST (optional),
                             P9_1 = GND
 
@@ -52,7 +53,11 @@ PROBES = {
 # Linux boards as probes: GPIO line names for SWCLK, SWDIO, NRST. The Pi's are the pins
 # OpenOCD's own raspberrypi configs use; the BeagleBone's are GPIO1 pins that boot in
 # GPIO mode and are free of HDMI and eMMC.
-GPIO_PROBES = {"rpi": ("GPIO25", "GPIO24", "GPIO18"), "beagle": ("P9_12", "P9_15", "P9_23")}
+# BeagleY-AI ("beagley"): Pi-layout header, but header pin 18 (GPIO24) is the AM67A's
+# wake-up-domain pad WKUP_UART0_TXD / MCU_GPIO0_10; SWDIO goes on pin 15 (GPIO22 =
+# main-domain GPIO0_41) instead, next to SWCLK's GPIO0_42 on pin 22.
+GPIO_PROBES = {"rpi": ("GPIO25", "GPIO24", "GPIO18"), "beagley": ("GPIO25", "GPIO22", "GPIO18"),
+               "beagle": ("P9_12", "P9_15", "P9_23")}
 CHUNK_DIR = "/tmp/ambire-swd-chunks"
 FLASH_BASE_S, BANK_PAGES = 0x0C000000, 128  # U585: 2 x 1 MB banks of 8 KB pages
 SECKEYR, SECSR, SECCR = 0x5002200C, 0x50022024, 0x5002202C  # FLASH secure key/status/control
