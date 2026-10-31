@@ -41,7 +41,7 @@ firmware/swd.py trustzone   # once per chip: TZEN = 1, SECBOOTADD0 = 0x0C004000
 firmware/swd.py flash       # out/ambire_p0/combined-firmware.bin, written and verified
 firmware/swd.py flash out/ambire_p0/bootloader.bin --at 0x0c016000 --live
                             # the bootloader only, into a running device: halts it
-                            # instead of resetting, so the power latch stays held
+                            # instead of resetting
 firmware/swd.py state       # halt: where it runs (symbolised), fault registers,
                             # backtrace, the error behind a red screen; then resumes
 firmware/swd.py gdb         # interactive, with every stage's symbols
@@ -247,17 +247,19 @@ are in `bringup/proto0-first-signed-tx.json`.
   AM67A's wake-up-domain UART pad (WKUP_UART0_TXD). With SWDIO on header pin 15
   (GPIO22, a plain main-domain GPIO) every read is correct, at any clock speed
   (`bringup/swdprobe`: 80 of 80). Use `swd.py --probe beagley`.
-  Later the same day, after the board was handled, it was 13-19 of 20 at every
-  clock speed again: a loose wire or ground contact. Run
-  `bringup/swdprobe/run.sh debian@<beagle> 20 GPIO22` before blaming anything
-  else; anything short of 20/20 is the wiring.
+  Open (2026-10-31): with the same wiring, on USB power, reads are correct while
+  the core is halted, held in reset or running the bootloader, and come back
+  corrupted (the reply shifted by one bit, at every clock speed) while the
+  firmware runs. Not explained yet. The firmware does not touch the SWD pins or
+  the debug registers and never enters deep sleep (STOP2 is not linked in).
+  `bringup/swdprobe/run.sh debian@<beagle> 20 GPIO22` reads only the ID, which
+  is safe while the firmware runs.
 - Reading memory over SWD while the firmware runs can crash it: an `info`
   during normal use ended in "internal error IA" (the TrustZone controller's
   illegal-access fault, reported at whatever the CPU was doing, here the idle
   wait). Halt first (`state`, `flash --live`), or read while the bootloader runs.
-- A plain `flash` resets the chip first. A core held in reset lets go of the
-  power latch, so on battery the board switches off unless the power button is
-  held. `--live` avoids that for the bootloader region.
+- A plain `flash` resets the chip first and the screen goes dark until the new
+  code runs: that is the core held in reset, not the board switching off.
 - A USB firmware update replaces the bootloader only when the bundled one has a
   newer version: a rebuilt bootloader of the same version (the branded one)
   goes on over SWD.

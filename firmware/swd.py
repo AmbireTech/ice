@@ -435,9 +435,8 @@ shutdown"""
 # the reset: set the pin from here at once. Then secure bus access and a secure RAM
 # buffer (verify_image's checksum runs there).
 #
-# --live halts the running firmware instead: a halted core keeps driving PWR_HOLD (only a
-# reset lets go of it), so no button is needed. It cannot rewrite the code the core is
-# halted in: use it for the bootloader, never for the region of the running firmware.
+# --live halts the running firmware instead of resetting it. It cannot rewrite the code
+# the core is halted in: use it for the bootloader, never for the running firmware's region.
 #
 # Flash is programmed by hand through the secure registers. After a reset only the
 # watermarked pages (secret + boardloader) are secure; marking every page secure, as the
@@ -723,7 +722,7 @@ def main():
     ap.add_argument("--wait", type=int, default=0, metavar="S",
                     help="flash: keep retrying the connection for S seconds (restart the board meanwhile)")
     ap.add_argument("--live", action="store_true",
-                    help="flash: halt the running firmware instead of resetting (the power latch stays held); "
+                    help="flash: halt the running firmware instead of resetting; "
                          "for the bootloader region only")
     ap.add_argument("--from", dest="start", type=lambda v: int(v, 0),
                     help="flash: resume, skipping the pieces below this address")
