@@ -14,6 +14,10 @@ panel = "io/display_panel_dem240320b1"
 # A raycaster maze behind 7 quick taps on the home screen (firmware only)
 [ambire_game]
 
+# Radio bring-up: the kernel allows the radio's power (the airgap switch still
+# decides) and says hello on the radio UART (USART3) at boot
+[ambire_radio]
+
 [backlight]
 driver = "io/backlight_pin"
 

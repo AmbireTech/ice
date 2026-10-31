@@ -157,6 +157,7 @@ Against the upstream base:
 | `src/trezor/wire/message_handler.py` | Ambire boards report the exception behind "Firmware error" |
 | `models/T3T2/model_T3T2.h`, `boards/ambire_p0.{h,toml}`, `rust/.../theme/mod.rs`, `welcome_screen.rs`, `src/boot.py` | branding: the board names the product "Ambire"; `[ambire_branding]` puts the flame on the welcome screen (held 3 s) |
 | `rust/.../component/ambire_game.rs` (new), `homescreen.rs` | `[ambire_game]`: a raycaster maze behind 7 quick taps on the home screen |
+| `projects/kernel/ambire_radio.c` (new), `main.c`, `build.rs` | `[ambire_radio]`: the kernel allows the radio's power (RADIO_OFF low; the airgap switch still decides) and says hello on USART3 at boot. Trezor's own BLE link (an nRF54L on SPI with handshake lines) does not fit this board's 2-wire UART |
 
 What the build drives (compiled, not yet run on a board): the display, touch,
 USB, the boot chain and TrustZone. The backlight is on/off only.

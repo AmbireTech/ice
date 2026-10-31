@@ -2,6 +2,7 @@
 
 # Filter of the model/board defined features for this specific project
 uses = [
+    "ambire_radio",
     "backlight",
     "backup_ram",
     "ble",

@@ -122,6 +122,11 @@
 #include <io/usb_config.h>
 #endif
 
+#ifdef USE_AMBIRE_RADIO
+// ambire_radio.c (Ambire boards)
+void ambire_radio_init(void);
+#endif
+
 void drivers_init() {
   ts_t status;
 
@@ -181,6 +186,10 @@ void drivers_init() {
   option_bytes_check_oem_keys();
 #endif
 
+#endif
+
+#ifdef USE_AMBIRE_RADIO
+  ambire_radio_init();
 #endif
 
 #ifdef USE_BUTTON

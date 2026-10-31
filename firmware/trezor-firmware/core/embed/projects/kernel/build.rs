@@ -8,6 +8,11 @@ fn main() -> Result<()> {
 
         lib.add_source("main.c");
 
+        if cfg!(feature = "ambire_radio") {
+            lib.add_source("ambire_radio.c");
+            lib.add_define("USE_AMBIRE_RADIO", None);
+        }
+
         lib.add_sources_in_dir(
             "../../sys/syscall/stm32",
             [

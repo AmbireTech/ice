@@ -137,6 +137,22 @@
 #define SE050_ENA_PIN GPIO_PIN_11
 #define SE050_ENA_CLK_EN __HAL_RCC_GPIOD_CLK_ENABLE
 
+// Radio (nRF52840 module behind the airgap switch), [ambire_radio]: RADIO_OFF
+// high (or floating: 100 k pull-up) keeps the radio unpowered; low allows it,
+// the airgap switch's NOR gate still decides. USART3 to the radio through the
+// TXU0202 translator: PB10 = MCU TX (RADIO_TXD_MCU), PB11 = MCU RX.
+#define RADIO_OFF_PORT GPIOB
+#define RADIO_OFF_PIN GPIO_PIN_2
+#define RADIO_OFF_CLK_EN __HAL_RCC_GPIOB_CLK_ENABLE
+#define RADIO_UART USART3
+#define RADIO_UART_CLK_EN __HAL_RCC_USART3_CLK_ENABLE
+#define RADIO_UART_PIN_AF GPIO_AF7_USART3
+#define RADIO_UART_PINS_CLK_EN __HAL_RCC_GPIOB_CLK_ENABLE
+#define RADIO_UART_TX_PORT GPIOB
+#define RADIO_UART_TX_PIN GPIO_PIN_10
+#define RADIO_UART_RX_PORT GPIOB
+#define RADIO_UART_RX_PIN GPIO_PIN_11
+
 // No revision straps on proto 0: four unconnected pins with pull-downs read
 // revision 0. A later board can strap them high.
 #define HW_REVISION_PUPD GPIO_PULLDOWN
