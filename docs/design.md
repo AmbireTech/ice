@@ -126,34 +126,42 @@ on the back face.
   which pad is west-most, lever and plunger directions, antenna end. A connector
   rotated 180° fails it.
 
-Connector positions come from the tail lengths, not from the picture:
-`newBoard.py` runs each tail from the panel edge to its slot, down through the
-foam (0.3 mm) and board (1.0 mm) — the touch flex leaves from the touch glass,
-2.7 mm higher — and north to the connector's contact row. `checkFpc.py` fails if a
-placed connector leaves the tail short or with more than 3 mm of slack. Proto 0's
-tails also dropped through a 4 mm pouch; proto 1 moved the slots 2 mm south
-instead (each millimetre south costs a tail two), so both tails land exactly where
-they did and the connectors stayed put.
+**What goes through the board is the TFT flex's root, not its tail.** Newhaven's
+drawing, read from its vectors (2026-10-31):
+
+- The TFT flex leaves the panel as a **39.00 mm wide**, EMI-shielded root, 1.90 mm in
+  from each outline edge (x 4.5–43.5 on the board), from 2.2 to 13.2 mm below the
+  panel; only then does it narrow to the 20.5 mm tail.
+- The tail is **centred** on the panel: 11.15 mm from both outline edges, x
+  13.75–34.25. The drawing's 9.25 mm is measured from the root's edge, not the
+  outline; read from the outline it had put the tail, the TFT connector and the slot
+  1.9 mm west. The connector now sits at x 24.0, under the tail.
+- The tail is too short to reach the back unless it folds within the root, so the
+  root folds through the board, and **the cutout is sized by it**: x 4.05–43.95 (0.45
+  past the root), y 63.41–68.01, one straight-edged rectangle. On the owner's printed
+  test board the old slots had to be cut out to x ~4 before the panel would fold.
+- The touch flex leaves the panel above the TFT flex and across its whole width, so
+  it folds around the **outside** of the TFT fold, further south. The drawing's side
+  view puts the flexes' exits 1.26 mm (TFT) and 3.22 mm (touch) above the module's
+  back.
+
+Connector positions come from these lengths, not from the picture. `newBoard.py`
+runs each flex from the panel edge to its fold (TFT at y 66.8, touch 0.4 mm
+outside it), down through foam (0.3 mm) and board (1.0 mm) from its exit height, and
+north to the connector's contact row. `checkFpc.py` fails a placed connector that
+leaves its tail short or with more than 3 mm of slack. The TFT tail lands 2.5 mm
+past its contacts and the touch tail 1.5 mm, which moved the touch connector 5.5 mm
+south. The cutout is 4.6 mm tall so the folds can move: folding both further north
+gives the TFT tail more bow and the touch tail less.
 
 The touch flex is 7 mm wide only for its last 32 mm. For its first 23.6 mm below
 the panel it is 14.55 mm wide, flush with the tail's east edge: the root off the
 touch glass and a stiffened block that carries the touch controller under a
 shield. Newhaven does not dimension that part; the numbers are its outline in the
-drawing's vectors, scaled by the dimensioned tail beside it. The block passes
-through the touch slot when the tail is threaded, so the slot is sized by the
-flex (x 28.50–43.95), not by the tail. That reaches over the TFT slot's east end,
-2.5 mm further south since v4, and the two slots are one stepped cutout with no
-board between the tails: on proto 0 the 3.2 mm bridge between the slots stopped
-the block.
-
-On the back the wide part lies from the slot north to about y 49 (x 28.95–43.5),
-and the narrow tail continues along the east side (x 36.5–43.5) up to its
-connector. Only low parts sit under either (`checkFpc.py` checks both). The
-block's north end reaches the TFT connector's east end (x 29–35, from y 49 to
-the connector's mouth at y 54.7): it rides over that end of the connector and its
-actuator, which needs checking against the case and the first panel.
-For production, ask Newhaven for a shorter touch tail or choose a panel whose
-touch flex is merged into the TFT flex.
+drawing's vectors, scaled by the dimensioned tail beside it. On the back that block
+lies from the cutout north to about y 54.4 (x 28.95–43.5), and the TFT root's last
+1.3 mm from the cutout to y 62.1 across x 4.5–43.5; the narrow tails continue to
+their connectors. Only low parts sit under any of them (`checkFpc.py` checks all).
 
 ## Board
 
@@ -218,7 +226,7 @@ touch flex is merged into the TFT flex.
   counter lives in the SE050). USB runs on the internal 48 MHz oscillator trimmed
   from the USB frames, timeouts on the internal 32 kHz one.
 - Three M2 holes: two at the north corners (under the panel: locating pins in the
-  case) and one in the south-east corner, the screw. The fourth, west of the TFT slot
+  case) and one in the south-east corner, the screw. The fourth, west of the display cutout
   between the panel and the cell, is out for now: the cell's west clip moved north
   over its boss to free the chin for the joystick. The south-west corner belongs to
   the antenna.
@@ -337,17 +345,21 @@ touch flex is merged into the TFT flex.
 - **The radio gate** (NOR, load switch and their passives) sits beside the
   airgap switch on the west edge, so AIRGAP and the radio's supply are a few
   millimetres each instead of 30–40 mm down the west side
-  ([experiments](../board/experiments/README.md)). The UART translator sits between the TFT slot and the
+  ([experiments](../board/experiments/README.md)). The UART translator sits between the display cutout and the
   radio module, right over the module's two north-edge UART pads, so no radio
   line runs under the module; the two MCU-side lines come over the west bridge.
 - Under the screen the front copper has no parts: it is the layer for the buses
   between blocks (drop a via at the pin).
-- Signals reach the chin over two bridges between the cutout and the edges: west
-  (11.4 mm, with the hole H3 out) and east (4.05 mm). There is no middle bridge since
-  2026-10-31: the touch flex's stiffened block could not pass it (see "Display tails").
-  The slots run 0.45 mm past each flex's widest part, enough for the panel's placement
-  and the width tolerance, and copper keeps 0.25 mm from every edge (JLC: 0.2). A slot
-  stays 1.6 mm wide, for the tail's two 90-degree turns through the 1.0 mm board.
+- Signals reach the chin over two 4 mm bridges between the cutout and the edges.
+  The west one carries the USB pair, AIRGAP and the radio's TX, RX and 3.3 V as one
+  bundle on the back. Over the radio module the cutout's south edge steps 0.41 mm
+  north (x 4–17.8), leaving a strip above the module's top pad row: 3.3 V runs along it
+  from the west to pins 23 and 19, RX from the east to pin 15. The gap between the pad
+  rows carries TX from the east and pin 21's ground tie to the west. The radio's decaps
+  sit on the west bridge, 6.5–8 mm from its supply pins (the module has its own).
+  The east bridge carries the battery and boost rails, the enable and button lines and
+  VBUS. Copper keeps 0.25 mm from every edge (JLC: 0.2). The chin hangs on the two
+  bridges: ask JLC to keep the panel rails on, and fit the case before relying on them.
 
 ## Power: two AAA cells in a pack
 
@@ -578,7 +590,9 @@ purple (all transparent tints) and clear.
     cells in these clips (power-aaa.md). Until then, firmware should ask the user.
 12. **Boost**: rail ripple and transient at 0.9–1.5 V in and at full load; the
     rail with a 10440 at 4.2 V (it must stay at 3.3 V) and when a cell is inserted;
-    the USB-to-cell handover dip (expected ~3.0 V for microseconds).
+    the USB-to-cell handover dip (expected ~3.0 V for microseconds). The output caps are
+    two 47 µF 6.3 V 0805s (CL21A476MQYNNNE): their real capacitance at 3.3 V is not
+    published, and the LTC3539 wants ≥ 22 µF real; a load step that rings says add one.
 13. **Reverse cell**: insert a cell backwards with and without USB: nothing may
     warm, the rail must stay up on USB, and firmware should read the cell negative.
 14. **Charger**: confirm the charger stays off while the MCU is in reset, that its
@@ -597,6 +611,14 @@ purple (all transparent tints) and clear.
 19. **IMU**: read the BMI270's chip ID (0x24) at 0x68 on the touch bus, load its
    config file, and check that an any-motion interrupt on PC15 wakes the MCU from Stop.
    Measure the asleep current with it in suspend (data sheet: 3.5 µA).
+20. **Display flex fold**: fit the first panel and check that the TFT root folds in
+    the cutout near y 66.8, the touch flex around it, and that both tails reach their
+    connectors with a gentle bow (computed: TFT 2.5 mm, touch 1.5 mm past the
+    contacts). If the touch tail is short, fold both further north. Check the touch
+    flex's stiffened block lying on the back (x 29–43.5, to y ~54) against the case.
+21. **Pack contacts ESD**: zap the bare pack contacts (IEC 61000-4-2, ±8 kV contact)
+    with the pack off; the charger, the ADC readings and the reverse-cell FET must
+    survive.
 
 
 ## Flow

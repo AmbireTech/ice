@@ -125,6 +125,42 @@ JLC lists 13 magnetic pogo connectors, all from Xinyangze. The stock below was c
 
   The owner's goal was no loose magnets.
 
+## Contacts at volume (plan, 2026-10-31)
+
+**This order keeps the pair above.** 125 receptacles and 20–26 males cover a run of ten.
+They do not cover volume: both halves come from one maker, with stock in the tens and
+hundreds, and the two families have never been mated.
+
+**For the next board, the device's half becomes commodity parts: four gold pads and
+two SMT steel nuts.**
+
+- **The contacts.** The male's four spring pins land on ENIG pads on the board's back,
+  2.2 mm wide on its 2.5 mm pitch. A male at 2.50 or 2.54 mm lands on them either way.
+- **The magnet partners.** The male's magnets pull on two Würth WA-SMSI SMT steel nuts
+  under them: M2 × 3.0 mm, 9774030243R (JLC C22431109, 483 at JLC; Würth stocks them at
+  DigiKey and Mouser). JLC places them like any other part, so the board carries no
+  loose magnets and no connector at all.
+- **The height.** A 3.0 mm nut puts the steel at the male's face when its pins are at
+  working height (3.1 mm).
+- **Any brand of male fits**, since its magnets need only steel. Xinyangze's C5126845 is
+  today's; any 4-pin magnetic male at 2.5 mm pitch is a second source.
+- **The pack sits 2.2 mm closer to the device**, because the receptacle goes.
+
+**What samples must settle before the board changes:**
+
+1. **Hold.** The pull of the male's magnets on the nuts must beat the pins' push
+   (4 × 30 ± 20 g) plus the pack's weight in a drop. The magnet-to-magnet pair today has
+   never been measured either.
+2. **Contact.** Measure resistance and wear of the pogo pins on ENIG over a few hundred
+   matings. Order the board with JLC's thicker ENIG gold.
+3. **Keying.** Steel pulls the male either way round, so only the window and the tray
+   stop the pack going on rotated 180°. Check a rotated pack cannot seat. If it could,
+   the reverse FET protects the boost, but the charger's TS pin would read the
+   mid-point.
+
+**The fallback** is the magnet-to-magnet pair above, bought at volume from Xinyangze
+through LCSC's factory ordering.
+
 ## What JLC builds
 
 | Part | Where | JLC / LCSC | Stock (2026-10-28) |

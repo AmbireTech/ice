@@ -35,14 +35,17 @@ Ambire internals into GridCore's.
   just below the camera (outside its view cone), open underneath (owner: as slim as
   possible). Contacts (owner: no loose magnets): a Xinyangze magnetic pogo pair, the SMT
   receptacle (C6276862) on the device board's back, east-west between the MCU and the TFT
-  connector (which moved 5.5 mm south for it, its slot 2.5 mm), the male (C5126845) on
+  connector (which moved 5.5 mm south for it), the male (C5126845) on
   the pack board through a window in the back; their own magnets hold the pack.
   `board/wallet.kicad_pcb` is v4 since 2026-10-28 (v3 is in git history before it):
   routed, DRC clean. Never place anything but low parts on the back's touch-tail lane
   (x 36.5-43.5), under the touch flex's 14.55 mm stiffened block (x 28.95-43.5, from the
-  slot north to y ~49; `newBoard.CTP_FLEX`) or on the TFT tail's: they are cables,
-  invisible to part checks. The display slots are one cutout with no board between the
-  tails (2026-10-31): the block cannot pass a bridge. `enclosure/generate.py`
+  cutout north to y ~54; `newBoard.CTP_FLEX`), under the TFT flex's 39 mm root (y 62-63.4)
+  or on the TFT tail's: they are cables, invisible to part checks. Since 2026-10-31 the
+  display cutout is sized by the TFT flex's 39 mm root (x 4.05-43.95, y 63.41-68.01; the
+  tail is centred on the panel, J_TFT at x 24.0) and the touch flex folds outside the TFT
+  flex (J_CTP 5.5 mm south): `docs/design.md` "Display tails". The chin hangs on two
+  4 mm bridges; the west one carries a hand-drawn bundle (USB, AIRGAP, radio). `enclosure/generate.py`
   puts the male over the board's J_PACK and takes the pack clips' models from
   `enclosure/pack_clips.kicad_pcb` (`PACK_*`/`CONN_*`).
   Everything lands on `main` (owner: no review branches). The pack board is `pack/`
