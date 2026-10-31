@@ -32,7 +32,8 @@ TINE = 0.8           # each tine: two 0.4 mm perimeters
 FLOOR_T = 0.6        # the block under the slot
 TINE_UP = 0.6        # the tines above the lever's top
 FLANGE_T, LIP = 0.5, 0.8   # the inner flange: thickness, and how far it overlaps the window all round...
-LIP_BELOW = 0.6      # ...but under it, where the shell's floor is close
+LIP_BELOW = 0.6      # ...but under it at most what the shell's floor leaves room for, and none
+MIN_LIP = 0.4        # under one perimeter (it would not print)
 SLIDE_CLR = 0.15     # the slider in its window and pocket, each side along the wall
 FACE_CLR = 0.1       # the flange's outer face to the pocket's back (it rides on it)
 GRIP_PROUD = 0.6     # the grip (and the guard ridges) out of the wall
@@ -62,7 +63,9 @@ def plan(lever: dict, sw_y: float, travel: float, gap: float, x_out, z_floor_in:
         raise SystemExit(f"airgap slider: the lever reaches only {x_in - tip:.2f} mm into the wall")
     half = (ly1 - ly0) / 2 + FORK_CLR + TINE
     blk = (ly - half, ly + half, lz0 - FORK_CLR - FLOOR_T, lz1 + TINE_UP)          # y0, y1, z0, z1
-    fl = (blk[0] - LIP, blk[1] + LIP, blk[2] - LIP_BELOW, blk[3] + LIP)
+    room = blk[2] - SLIDE_CLR - (z_floor_in + 0.2)
+    below = min(LIP_BELOW, room) if room >= MIN_LIP else 0.0
+    fl = (blk[0] - LIP, blk[1] + LIP, blk[2] - below, blk[3] + LIP)
     x_flange = x_in - FLANGE_T
     x_pocket = x_flange - FACE_CLR
     x_wall_out = max(x_out(z) for z in (fl[2], fl[3]))      # the wall at its thinnest over the pocket

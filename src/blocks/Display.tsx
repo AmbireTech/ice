@@ -62,10 +62,11 @@ export const DisplayBlock = () => (
       Touch tail (FT5426, 6-pin 1.0 mm: 1 VDD, 2 GND, 3 SCL, 4 SDA, 5 /INT,
       6 /RESET per Newhaven). Bottom contact: Newhaven's drawing puts the
       contacts on the same face as the TFT tail's, which faces the board after
-      the two bends (proto 0: the top-contact CSH25 made no contact).
+      the two bends (proto 0: the top-contact CSH25 made no contact). Hong Cheng's
+      flip-top FH20, 2.0 mm tall (the slide-lock CXH25 ran out at JLC, 2026-10-31).
     */}
     <chip name="J_CTP" footprint="pinrow8"
-      manufacturerPartNumber="HC-FPC-1.0-6P-CXH25" supplierPartNumbers={{ jlcpcb: ["C49166842"] }}
+      manufacturerPartNumber="HC-FPC-1.0-6P-FH20" supplierPartNumbers={{ jlcpcb: ["C49166832"] }}
       pinLabels={{ pin1: "VDD", pin2: "GND", pin3: "SCL", pin4: "SDA", pin5: "INT", pin6: "RST", pin7: "MP1", pin8: "MP2" }}
       schX={2} schY={-12} schSectionName={S} />
     <trace from=".J_CTP > .VDD" to="net.V3V3" />

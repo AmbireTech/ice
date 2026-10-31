@@ -184,7 +184,7 @@
       ]
     }
   },
-  "J_CTP": "wallet:FPC_HC-FPC-1.0-6P-CXH25",
+  "J_CTP": "wallet:FPC_HC-FPC-1.0-6P-FH20",
   "J_TFT": "wallet:Molex_54132-4062",
   "LS1": "wallet:Buzzer_Huaneng_MLT-5020_5x5.5mm",
   "L_BOOST": "wallet:L_Sunlord_WPN4020",
@@ -289,7 +289,12 @@
   "C_BOOST2": "Capacitor_SMD:C_0805_2012Metric",
   "C_FFB": "Capacitor_SMD:C_0402_1005Metric",
   "R_PGB": "Resistor_SMD:R_0402_1005Metric",
-  "J_PACK": "wallet:Xinyangze_YZ103915020T-04025-02",
+  "J_PK1": "wallet:MillMax_1578_TargetDisc_D1.98mm",
+  "J_PK2": "wallet:MillMax_1578_TargetDisc_D1.98mm",
+  "J_PK3": "wallet:MillMax_1578_TargetDisc_D1.98mm",
+  "J_PK4": "wallet:MillMax_1578_TargetDisc_D1.98mm",
+  "MH_PK1": "wallet:Wurth_WA-SMSI_M2_L1.0_NoHole",
+  "MH_PK2": "wallet:Wurth_WA-SMSI_M2_L1.0_NoHole",
   "R_MS1": "Resistor_SMD:R_0402_1005Metric",
   "R_MS2": "Resistor_SMD:R_0402_1005Metric",
   "C_MS": "Capacitor_SMD:C_0402_1005Metric",

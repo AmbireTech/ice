@@ -82,7 +82,10 @@ WAIVED_LAND = {
              "14.8 mm width; the depth differs by the mounting-tab position",
 }
 
-SKIP_GEOMETRY = {}
+# no vendor land on EasyEDA to compare against: the land comes from the maker's drawing
+_DISC = ("Mill-Max 1578-0-57 target disc: EasyEDA has no land for it; the land is Mill-Max's own "
+         "recommended SMT pad, 0.088 in (2.235 mm) round, for the 1.981 mm disc")
+SKIP_GEOMETRY = {r: _DISC for r in ("J_PK1", "J_PK2", "J_PK3", "J_PK4")}
 
 
 def curl_json(payload):

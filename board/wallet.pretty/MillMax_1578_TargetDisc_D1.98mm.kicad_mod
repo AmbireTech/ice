@@ -1,0 +1,13 @@
+(footprint "MillMax_1578_TargetDisc_D1.98mm"
+	(version 20240108)
+	(generator "pcbnew")
+	(layer "F.Cu")
+	(descr "Mill-Max 1578-0-57-15-00-00-03-0 target disc for spring-loaded pins: brass, 10 uin hard gold over nickel, 1.981 dia x 0.635 mm, SMT pad 0.088 in (2.235 mm), tape and reel 7,200")
+	(tags "pogo target contact")
+	(property "Reference" "REF**" (at 0 -1.8 0) (layer "F.SilkS") (hide yes) (effects (font (size 0.6 0.6) (thickness 0.1))))
+	(property "Value" "1578-0-57" (at 0 1.8 0) (layer "F.Fab") (effects (font (size 0.5 0.5) (thickness 0.08))))
+	(attr smd)
+	(fp_circle (center 0 0) (end 0.99 0) (stroke (width 0.1) (type solid)) (fill none) (layer "F.Fab"))
+	(fp_circle (center 0 0) (end 1.25 0) (stroke (width 0.05) (type solid)) (fill none) (layer "F.CrtYd"))
+	(pad "1" smd circle (at 0 0) (size 2.235 2.235) (layers "F.Cu" "F.Paste" "F.Mask"))
+)

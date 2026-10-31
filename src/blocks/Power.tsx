@@ -152,21 +152,34 @@ export const PowerBlock = () => (
     <trace from=".C_3V3 > .pin2" to="net.GND" width={W_PWR} />
 
     {/* ---------------- The pack: two AAA in series, on the back ---------------- */}
-    {/* Xinyangze YZ103915020T-04025-02 (C6276862): 4-pin SMT magnetic pogo receptacle on
-        the back, east of the MCU; the pack's magnetic male (pack/) lands on it and their
-        magnets hold the pack. Contacts north to south: the pack's plus, its mid-point,
-        its thermistor, its minus. Each cell may be NiMH (1.0-1.45 V) or an alkaline or
-        lithium (Li-FeS2) primary (0.9-1.8 V): the pack is 1.8-3.6 V; the boost runs
-        from all of them, the charger only ever charges a pack whose two cells the MCU
+    {/* The pack's contacts on the back, east of the MCU's south side: commodity parts only
+        (2026-10-31, docs/pack.md). The pack's Xinyangze magnetic male (YZP0048-20048-04025-03)
+        lands its four spring pins (2.50 mm pitch) on four Mill-Max 1578 gold target discs
+        (0.635 mm), and its two magnets (3.0 mm, 15.41 mm apart, flush with its face) seat on
+        two Wurth WA-SMSI steel spacers (1.0 mm): the male's face rests on the steel, its pins
+        compressed 0.94 mm (1.0 is its working stroke). Contacts east to west: the pack's plus,
+        its mid-point, its thermistor, its minus. Each cell may be NiMH (1.0-1.45 V) or an
+        alkaline or lithium (Li-FeS2) primary (0.9-1.8 V): the pack is 1.8-3.6 V; the boost
+        runs from all of them, the charger only ever charges a pack whose two cells the MCU
         has qualified as NiMH. */}
-    <chip name="J_PACK" footprint="pinrow4"
-      pinLabels={{ pin1: "BAT_P", pin2: "MID", pin3: "NTC", pin4: "BAT_M" }}
-      manufacturerPartNumber="YZ103915020T-04025-02" supplierPartNumbers={{ jlcpcb: ["C6276862"] }}
-      schX={-20} schY={4} schSectionName={S} />
-    <trace from=".J_PACK > .BAT_P" to="net.BAT" width={W_PWR} />
-    <trace from=".J_PACK > .BAT_M" to="net.BAT_N" width={W_PWR} />
-    <trace from=".J_PACK > .MID" to="net.CELL_MID" />
-    <trace from=".J_PACK > .NTC" to="net.CHG_TS" />
+    {([["J_PK1", "BAT", W_PWR], ["J_PK2", "CELL_MID", undefined], ["J_PK3", "CHG_TS", undefined], ["J_PK4", "BAT_N", W_PWR]] as const).map(([j, net, w], i) => (
+      <group key={j}>
+        <chip name={j} footprint="pinrow1"
+          manufacturerPartNumber="1578-0-57-15-00-00-03-0" supplierPartNumbers={{ jlcpcb: ["C21905480"] }}
+          pinLabels={{ pin1: "C" }}
+          schX={-20} schY={4 - i} schSectionName={S} />
+        <trace from={`.${j} > .C`} to={`net.${net}`} width={w} />
+      </group>
+    ))}
+    {(["MH_PK1", "MH_PK2"] as const).map((m, i) => (
+      <group key={m}>
+        <chip name={m} footprint="pinrow1"
+          manufacturerPartNumber="9774010243R" supplierPartNumbers={{ jlcpcb: ["C5360192"] }}
+          pinLabels={{ pin1: "S" }}
+          schX={-24} schY={4 - i} schSectionName={S} />
+        <trace from={`.${m} > .S`} to="net.GND" />
+      </group>
+    ))}
     {/* ESD on the pack contacts, bare on the back whenever the pack is off (pre-order
         audit, 2026-10-31): the thermistor contact runs straight to the charger's TS and an
         MCU ADC pin, the mid-point to a 1M divider, the minus to Q_REV's drain. The plus

@@ -821,6 +821,13 @@
   "package": "SOT-23",
   "stock": 116461
  },
+ "C21905480": {
+  "describe": "- Pogo Pin Spring Probe Connector ROHS",
+  "land": null,
+  "model": "1578-0-57-15-00-00-03-0",
+  "package": "-",
+  "stock": 0
+ },
  "C22399657": {
   "describe": "47uF 6.3V X5R \u00b120% 1206 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
   "land": null,
@@ -2299,6 +2306,54 @@
   "package": "0402",
   "stock": 19994
  },
+ "C49166832": {
+  "describe": "-25\u2103~+85\u2103 0.3mm 1mm 2mm 50V 6P Bottom Contact Copper Flip-Top No polarity Surface Mount, Right Angle Tin Without buckle SMD,P=1mm,Surface Mount\uff0cRight Angle FFC, FPC (Flat Flexible) Connector Assemblies ROHS",
+  "land": {
+   "pads": 8,
+   "pitch": 1.0,
+   "sizes": [
+    [
+     0.5,
+     1.5
+    ],
+    [
+     0.5,
+     1.5
+    ],
+    [
+     0.5,
+     1.5
+    ],
+    [
+     0.5,
+     1.5
+    ],
+    [
+     0.5,
+     1.5
+    ],
+    [
+     0.5,
+     1.5
+    ],
+    [
+     1.5,
+     2.0
+    ],
+    [
+     1.5,
+     2.0
+    ]
+   ],
+   "span": [
+    2.7,
+    9.4
+   ]
+  },
+  "model": "HC-FPC-1.0-6P-FH20",
+  "package": "SMD,P=1mm,Surface Mount\uff0cRight Angle",
+  "stock": 5420
+ },
  "C49166842": {
   "describe": "-25\u2103~+85\u2103 0.3mm 1mm 2.5mm 50V 6P Bottom Contact Copper No polarity Slide Lock Surface Mount, Right Angle Tin Without buckle SMD,P=1mm,Surface Mount\uff0cRight Angle FFC, FPC (Flat Flexible) Connector Assemblies ROHS",
   "land": {
@@ -3300,6 +3355,30 @@
   "model": "ME6211C28M5G-N",
   "package": "SOT-23-5",
   "stock": 26017
+ },
+ "C5360192": {
+  "describe": "- Patch round nut ROHS",
+  "land": {
+   "pads": 2,
+   "pitch": null,
+   "sizes": [
+    [
+     3.0,
+     3.0
+    ],
+    [
+     4.7,
+     4.7
+    ]
+   ],
+   "span": [
+    0.0,
+    0.0
+   ]
+  },
+  "model": "9774010243R",
+  "package": "-",
+  "stock": 883
  },
  "C5383002": {
   "describe": "-40\u2103~+150\u2103@(TJ) 1 1.1MHz 2A 4.5V~36V 600mV~34.2V 65uA Adjustable Buck Buck Built-in Yes SOT-23-6 DC-DC Converters ROHS",

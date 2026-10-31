@@ -142,7 +142,9 @@ PANEL_GAP = 0.1       # under the lip; the foam takes the panel's +/-0.3 toleran
 CAM_HEAD_H = 5.9
 CAM_CLR = 0.4         # window around the camera head's keep-out
 UNMODELLED_MAX_H = {"U1": 0.8, "U2": 0.8, "U5": 0.6, "U6": 0.6, "U10": 0.6, "U13": 1.0, "U16": 1.0,
-                    "LS1": 2.0, "L_BOOST": 2.0, "L_BUCK": 1.0}
+                    "LS1": 2.0, "L_BOOST": 2.0, "L_BUCK": 1.0,
+                    # the touch connector, Hong Cheng FH20: 2.00 +-0.15 tall; the pack's contacts
+                    "J_CTP": 2.0, "J_PK1": 0.64, "J_PK2": 0.64, "J_PK3": 0.64, "J_PK4": 0.64, "MH_PK1": 1.0, "MH_PK2": 1.0}
 BACK_CLEAR = 0.6      # between the deepest part and the inside of the back
 # Parts that do not set the back's depth (owner, 2026-10-28: USB-C may stand into the
 # floor or out of it): the floor gets a pocket over them, PROTRUDE_CLR clear, and opens
@@ -218,22 +220,27 @@ PACK_PCB_T = 0.8      # the pack's board
 PACK_LEDGE = 1.0      # its north and south edges rest on the tray's walls this far
 PACK_CLR = 0.3        # the clips to the tray's walls
 PACK_RIM = 1.4        # the tray's walls round the pack board, where the tray seats on the back face
+BAY_CLR = 0.2         # a pack board standing proud of the tray's rim gets a bay in the back this much deeper:
+                      # the male's face on the steel holds the pack, never its board on the case
+MIN_FLOOR = 0.8       # the back left over the bay
 PACK_R, PACK_FILLET = 4.0, 1.5
 # The camera must see past the pack: a cone of CAM_FOV from the lens's rim (~66 deg lens,
 # design.md; the stock candidate is 68.7 deg diagonal), taken as a full cone.
 CAM_FOV, LENS_R = 70.0, 2.6
-# The contacts (owner, 2026-10-28): a readymade magnetic pogo pair whose own magnets hold
-# the pack, no loose magnets. On the device board's back, Xinyangze's 4-pin SMT magnetic
-# receptacle YZ103915020T-04025-02 (LCSC C6276862; drawing 2015-07-08): 22.30 x 7.70 mm,
-# 2.00 mm tall on feet 0.20 mm below it (2.20 mounted), flat gold contacts at 2.54 mm, two NdFeB magnets in its ends, two 5.00 x
-# 1.50 x 0.50 mm locating bosses underneath (slots in the board). On the pack board's outer
-# face, Xinyangze's 4-pin magnetic male YZP0048-20048-04025-03 (LCSC C5126845, through-
-# hole; drawing 2022-03-24): body 21.20 x 6.86 mm with a 5.03 x 2.31 mm tab, 2.80 thick,
-# pins at 2.50 mm, 4.10 free, 3.10 working; 30 +-20 g each. Two families: their pitches
-# (2.54 / 2.50) and magnet spacing (~14.6 / 15.41) differ slightly, and whether the
-# magnets attract is for samples to show.
-CONN_DEV = {"part": "YZ103915020T-04025-02", "lcsc": "C6276862", "len": 22.3, "wid": 7.7, "h": 2.2,
-            "pitch": 2.54, "boss": (5.0, 1.5, 0.5)}
+# The contacts (owner, 2026-10-31: the device side commodity parts, tested in the next
+# batch). On the device board's back, four Mill-Max 1578-0-57-15-00-00-03-0 gold target
+# discs (1.981 x 0.635 mm, LCSC C21905480 via JLC Global Sourcing; DigiKey/Mouser stock)
+# at the male's 2.50 mm pitch, and two Wurth WA-SMSI 9774010243R steel spacers (M2 x 1.0,
+# 4.35 mm, steel; JLC C5360192) under the male's magnets, 15.41 mm apart. On the pack
+# board's outer face, Xinyangze's 4-pin magnetic male YZP0048-20048-04025-03 (LCSC C5126845,
+# through-hole; drawing 2022-03-24): body 21.20 x 6.86 mm with a 5.03 x 2.31 mm tab, 2.80
+# thick, pins at 2.50 mm, 4.10 free, 3.10 working, 2.90 pressed; 30 +-20 g each; NdFeB
+# magnets 3.0 x 2.0 mm flush with its face. Mated, its face rests on the steel (1.0 mm off
+# the board) and its pins stand at 3.165 mm on the discs (0.935 compressed; 1.0 is working).
+# CONN_DEV["h"] is where a pin at its working height (3.10) would stand: 0.70 off the board.
+CONN_DEV = {"part": "4x Mill-Max 1578-0-57 + 2x Wurth 9774010243R", "lcsc": "C21905480 / C5360192",
+            "len": 15.41 + 4.35, "wid": 4.35, "h": 0.7, "steel_h": 1.0, "disc_h": 0.635, "pitch": 2.5,
+            "refs": ("J_PK1", "J_PK2", "J_PK3", "J_PK4"), "steel": ("MH_PK1", "MH_PK2")}
 CONN_PACK = {"part": "YZP0048-20048-04025-03", "lcsc": "C5126845", "len": 21.2, "wid": 6.86, "tab": (5.03, 2.31),
              "body_t": 2.8, "free": 4.1, "work": 3.1, "pitch": 2.5, "plunger_d": 0.9, "barrel_d": 1.5,
              "pad_d": 1.5}   # pack board land: 1.5 mm rings on 0.8 mm holes (pack/makePack.py)
@@ -432,6 +439,11 @@ def fab_world(fp: dict) -> np.ndarray:
     for pg in kids(fp["node"], "fp_poly"):
         if kid(pg, "layer")[1].endswith(".Fab"):
             local += [xy(p) for p in kids(kid(pg, "pts"), "xy")]
+    for ci in kids(fp["node"], "fp_circle"):      # round bodies (target discs, spacers): their bounding square
+        if kid(ci, "layer")[1].endswith(".Fab"):
+            (cx, cy), (ex, ey) = xy(kid(ci, "center")), xy(kid(ci, "end"))
+            r = math.hypot(ex - cx, ey - cy)
+            local += [(cx - r, cy - r), (cx + r, cy - r), (cx + r, cy + r), (cx - r, cy + r)]
     return np.array([(fp["x"] + lx * c + ly * s, fp["y"] - lx * s + ly * c) for lx, ly in local])
 
 
@@ -690,8 +702,8 @@ def main():
         clip_prims = [pr for pr in kicad_glb(PACK_CLIPS, Path(tmp), "--no-board-body") if pr[0] in BOARD_CELL_CLIPS]
     if {pr[0] for pr in clip_prims} != set(BOARD_CELL_CLIPS):
         raise SystemExit(f"{PACK_CLIPS.name} must hold {BOARD_CELL_CLIPS} with their models")
-    if "J_PACK" not in b["fps"]:
-        raise SystemExit("the board has no pack receptacle (J_PACK)")
+    if not all(r in b["fps"] for r in CONN_DEV["refs"] + CONN_DEV["steel"]):
+        raise SystemExit(f"the board lacks the pack's contacts {CONN_DEV['refs'] + CONN_DEV['steel']}")
 
     back = {ref: v for ref, v in parts.items() if v[:, 2].min() < -0.01}
     # not fitted (DNP: the optional edge buttons) = not there; the case gets no opening for them
@@ -860,13 +872,13 @@ def main():
     z_recv = z_back - CONN_DEV["h"]                   # the receptacle's contact face
     z_pcb_top = z_recv - CONN_PACK["work"]
     z_body = z_pcb_top + CONN_PACK["body_t"]          # the male's face, in the device's cavity
-    if z_body >= z_recv:
-        raise SystemExit("the male's body would sit on the receptacle before its pins reach working height")
-    if z_recv < z_floor_in + 0.2:
-        raise SystemExit("the receptacle does not fit under the back's inside")
+    if abs((z_back - z_body) - CONN_DEV["steel_h"]) > 0.01:
+        raise SystemExit("the male's face must rest on the steel spacers")
     out = z_face - z_pcb_top                          # the pack board stands this far off the back face
-    if out < 0:
-        raise SystemExit("the pair is shorter than the back is deep: the pack board would sit inside the back")
+    bay = -out + BAY_CLR if out < 0 else 0.0          # ...or into it: a bay in the back over the board
+    if FLOOR - bay < MIN_FLOOR:
+        raise SystemExit(f"the pair is {-out:.2f} mm shorter than the back is deep: a bay for the pack board "
+                         f"would leave {FLOOR - bay:.2f} mm of back (under {MIN_FLOOR})")
     z_pcb_bot = z_pcb_top - PACK_PCB_T
     z_cell = z_pcb_bot - CELL_BASE - CELL_D / 2
     z_pack = z_pcb_bot - CELL_BASE - CELL_D          # open: the cells' lowest line is the pack's bottom
@@ -877,8 +889,8 @@ def main():
                 cam[3] + CAM_CLR + PACK_RIM)
     n = len(CONN_NETS)
     cell_pitch = 2 * clip_half + ARM_GAP             # side by side, the arms ARM_GAP apart
-    jp = b["fps"]["J_PACK"]
-    cx, cy = jp["x"], jp["y"]                         # the receptacle as the board places it: the pins' centre
+    cx = sum(b["fps"][r]["x"] for r in CONN_DEV["refs"]) / 4     # the contacts as the board places them: the pins' centre
+    cy = sum(b["fps"][r]["y"] for r in CONN_DEV["refs"]) / 4
     hr = (CONN_DEV["len"] / 2, CONN_DEV["wid"] / 2)   # long axis east-west
     hm = (CONN_PACK["len"] / 2, CONN_PACK["wid"] / 2)
     tw, tl = CONN_PACK["tab"]
@@ -895,10 +907,11 @@ def main():
         fw = fab_world(b["fps"][r])
         near.append((r, *fw.min(0), *fw.max(0), UNMODELLED_MAX_H[r]))
     overlaps = lambda e, o, m: e[1] - m < o[2] and e[3] + m > o[0] and e[2] - m < o[3] and e[4] + m > o[1]
-    to_move = sorted({e[0] for e in near if e[0] != "J_PACK" and overlaps(e, recv, CONN_CLR)}
-                     | {e[0] for e in near if e[0] != "J_PACK" and overlaps(e, tab, CONN_CLR) and e[5] > z_back - z_body - CONN_CLR})
+    ours = set(CONN_DEV["refs"] + CONN_DEV["steel"])
+    to_move = sorted({e[0] for e in near if e[0] not in ours and (overlaps(e, male, CONN_CLR) or overlaps(e, tab, CONN_CLR))
+                      and e[5] > z_back - z_body - CONN_CLR})
     if to_move:
-        raise SystemExit(f"the receptacle or the male's tab lands on {to_move}")
+        raise SystemExit(f"the male's body or tab (its face {z_back - z_body:.2f} mm off the board) lands on {to_move}")
 
     # North edge: outside a CAM_FOV cone from the lens's rim, at the pack's farthest face.
     pack_n = cam_n
@@ -946,6 +959,12 @@ def main():
     male_win = (male[0] - CONN_CLR, male[1] - CONN_CLR, male[2] + CONN_CLR, male[3] + CONN_CLR)
     shell -= rr_prism(*male_win, (male_win[2] - male_win[0]) / 2 - 0.01, z_face - 1, z_floor_in + 1)
     shell -= box(tab[0] - CONN_CLR, tab[1] - CONN_CLR, tab[2] + 0.01, tab[3] + CONN_CLR, z_face - 1, z_floor_in + 1)
+    if bay:
+        bay_box = (pcb[0] - FIT / 2, pcb[1] - FIT / 2, pcb[2] + FIT / 2, pcb[3] + FIT / 2)
+        in_bay = [(hx, hy) for hx, hy in screw_holes if bay_box[0] - CB_R < hx < bay_box[2] + CB_R and bay_box[1] - CB_R < hy < bay_box[3] + CB_R]
+        if in_bay:
+            raise SystemExit(f"screw heads {in_bay} would stand in the pack board's bay")
+        shell -= box(*bay_box, z_face - 1, z_face + bay)
 
     # ── the pack's tray (print part): a frame round the cells, open underneath; the pack
     # board sits on its north and south walls, `out` below its top
@@ -958,12 +977,14 @@ def main():
     report.append(f"the pack {pack_o[2] - pack_o[0]:.1f} x {pack_o[3] - pack_o[1]:.1f} x {z_face - z_pack:.2f} mm, open underneath, "
                   f"y {pack_o[1]:.1f}-{pack_o[3]:.1f} ({north_by} sets its north edge): "
                   f"{z_top - z_pack:.2f} mm with the device")
-    report.append(f"the pack's board {pcb[2] - pcb[0]:.1f} x {pcb[3] - pcb[1]:.1f} x {PACK_PCB_T} mm, {out:.2f} mm off the back face "
+    where = f"in a {bay:.2f} mm bay in the back face ({FLOOR - bay:.2f} mm of back over it)" if bay else f"{out:.2f} mm off the back face"
+    report.append(f"the pack's board {pcb[2] - pcb[0]:.1f} x {pcb[3] - pcb[1]:.1f} x {PACK_PCB_T} mm, {where} "
                   f"inside the tray's rim; cells at y {cell_ys[0]:.2f} and {cell_ys[1]:.2f} ({cell_pitch:.2f} apart, the arms {ARM_GAP:.1f} mm apart); "
                   f"the male's joints {joint_gap:.2f} mm under the south cell's can")
-    report.append(f"contacts: receptacle {CONN_DEV['part']} ({CONN_DEV['h']} mm) on the device board at {cx}, {cy:.2f}, male "
-                  f"{CONN_PACK['part']} on the pack (tab north), its face {z_recv - z_body:.2f} mm off the receptacle mated, "
-                  f"pins at {CONN_PACK['work']} mm; contacts " + ", ".join(f"{n_} {x:.2f}" for n_, x, _ in contacts) + " (x)")
+    report.append(f"contacts: {CONN_DEV['part']} on the device board at {cx:.2f}, {cy:.2f}; male "
+                  f"{CONN_PACK['part']} on the pack (tab north), its face on the steel {z_back - z_body:.2f} mm off the board, "
+                  f"pins compressed {CONN_PACK['free'] - (CONN_DEV['steel_h'] - CONN_DEV['disc_h'] + CONN_PACK['body_t']):.2f} mm on the discs; "
+                  "contacts " + ", ".join(f"{n_} {x:.2f}" for n_, x, _ in contacts) + " (x)")
 
     for _, _, cut in openings:
         shell -= cut
@@ -1124,7 +1145,7 @@ def main():
                  "male": {"part": CONN_PACK["part"], "lcsc": CONN_PACK["lcsc"], "outline": r3(male), "tab": r3(tab)},
                  "clipSteel": [r3([x0, y + dy0, x1, y + dy1]) for i, y in enumerate(cell_ys) for x0, dy0, x1, dy1 in steel[i]],
                  "toMove": to_move,
-                 "z": {"face": z_face, "boardTop": z_pcb_top, "bottom": z_pack}},
+                 "z": {"face": z_face, "boardTop": z_pcb_top, "bottom": z_pack, "bay": round(bay, 3)}},
         "camera": cam,
         "depthDriver": driver,
         "parts": {"shell": "enclosure/shell.json", "bezel": "enclosure/bezel.json", "tray": "enclosure/tray.json",

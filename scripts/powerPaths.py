@@ -31,11 +31,11 @@ VIA_MM = 5.0
 
 # (name, net, sources, sinks, amps, why); sources/sinks are REF.PAD, or REF for every pad of the net
 PATHS = [
-    ("pack + to boost inductor", "BAT", ["J_PACK.1"], ["L_BOOST.1"], 0.6,
+    ("pack + to boost inductor", "BAT", ["J_PK1.1"], ["L_BOOST.1"], 0.6,
      "full use 0.64 W / 85 % at a 1.8-2.0 V two-cell pack: half the one-cell ~1.2 A (docs/power-aaa.md)"),
-    ("pack + to boost input cap", "BAT", ["J_PACK.1"], ["C_IN_BOOST.1"], 0.6, "the inductor's ripple and start-up"),
-    ("charger to pack +", "BAT", ["U1.8"], ["J_PACK.1"], 0.25, "fast charge, 0.3 C (ISET 3.6 k || 1.8 k = 1.2 k)"),
-    ("pack - to reverse FET", "BAT_N", ["J_PACK.4"], ["Q_REV.3"], 0.6, "the pack's whole current, charge and discharge"),
+    ("pack + to boost input cap", "BAT", ["J_PK1.1"], ["C_IN_BOOST.1"], 0.6, "the inductor's ripple and start-up"),
+    ("charger to pack +", "BAT", ["U1.8"], ["J_PK1.1"], 0.25, "fast charge, 0.3 C (ISET 3.6 k || 1.8 k = 1.2 k)"),
+    ("pack - to reverse FET", "BAT_N", ["J_PK4.1"], ["Q_REV.3"], 0.6, "the pack's whole current, charge and discharge"),
     ("boost switch node", "SW_BOOST", ["L_BOOST.2"], ["U2.1"], 0.65, "inductor RMS at 0.6 A in from two cells (2 A switch peak)"),
     ("boost output to mux", "V_BOOST", ["U2.7", "U2.8"], ["U10.6"], 0.2, "0.64 W at 3.3 V"),
     ("USB-C to buck", "VBUS", ["J1"], ["U3.1", "U3.4"], 0.5, "buck input: 1.5 W out / 90 % at 5 V = 0.33 A, margin"),
