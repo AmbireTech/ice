@@ -16,10 +16,10 @@ The rest are datasheet constants, each with its source below.
 
 v4 takes the cell off the board (docs/pack.md): two AAA cells in series ride in a pack
 high on the device's back, just below the camera. A magnetic pogo pair connects and holds
-it: a receptacle on the device board's back, a male on the pack's own board, their own
-magnets the only ones. The board file still carries proto 1's clips; this script leaves
-them off the device and uses their models for the pack (enclosure/pack_clips.kicad_pcb), and puts the male over the board's J_PACK,
-until the board has it.
+it: a magnetic male on the pack's own board lands on gold target discs and steel spacers
+on the device board's back; the male's magnets, on the steel, are the only ones. The pack
+clips' models come from enclosure/pack_clips.kicad_pcb, and the male goes over the
+board's discs J_PK1-4.
 
 Parts (Z = 0 is the board's front face, +Z toward the screen; X east, Y north):
 
@@ -28,7 +28,8 @@ Parts (Z = 0 is the board's front face, +Z toward the screen; X east, Y north):
           and a counterbore (the screw head sits flush) where the front half is solid;
           USB-C opening, the airgap slider's window, an open window the camera head stands
           through, a hole over the buzzer, a groove along the north tongue; a window in
-          the back the pack's connector drops through onto the receptacle
+          the back the pack's connector drops through onto the discs, a shallow bay over
+          the pack's board
   bezel   front plate with the display window and walls down to the parting line;
           its skirt laps over a tongue on the shell, with a ridge along the north side
           that hooks into the tongue's groove. Inside: solid fills that locate the
@@ -237,20 +238,22 @@ CAM_FOV, LENS_R = 70.0, 2.6
 # thick, pins at 2.50 mm, 4.10 free, 3.10 working, 2.90 pressed; 30 +-20 g each; NdFeB
 # magnets 3.0 x 2.0 mm flush with its face. Mated, its face rests on the steel (1.0 mm off
 # the board) and its pins stand at 3.165 mm on the discs (0.935 compressed; 1.0 is working).
-# CONN_DEV["h"] is where a pin at its working height (3.10) would stand: 0.70 off the board.
 CONN_DEV = {"part": "4x Mill-Max 1578-0-57 + 2x Wurth 9774010243R", "lcsc": "C21905480 / C5360192",
-            "len": 15.41 + 4.35, "wid": 4.35, "h": 0.7, "steel_h": 1.0, "disc_h": 0.635, "pitch": 2.5,
+            "len": 15.41 + 4.35, "wid": 4.35, "steel_h": 1.0, "steel_d": 4.35, "disc_h": 0.635, "disc_d": 1.981,
             "refs": ("J_PK1", "J_PK2", "J_PK3", "J_PK4"), "steel": ("MH_PK1", "MH_PK2")}
 CONN_PACK = {"part": "YZP0048-20048-04025-03", "lcsc": "C5126845", "len": 21.2, "wid": 6.86, "tab": (5.03, 2.31),
-             "body_t": 2.8, "free": 4.1, "work": 3.1, "pitch": 2.5, "plunger_d": 0.9, "barrel_d": 1.5,
-             "pad_d": 1.5}   # pack board land: 1.5 mm rings on 0.8 mm holes (pack/makePack.py)
-CONN_NETS = ("BAT+", "MID", "NTC", "BAT-")   # east to west (the receptacle's pad 1 east)
-# Where the pair goes: wherever the device board places the receptacle (J_PACK), long axis
+             "body_t": 2.8, "free": 4.1, "work": 3.1, "pressed": 2.9, "pitch": 2.5, "plunger_d": 0.9, "barrel_d": 1.5,
+             "magnet_d": 3.0, "magnet_pitch": 15.41, "pad_d": 1.5}   # pack board land: 1.5 mm rings on 0.8 mm holes (pack/makePack.py)
+# Mated, the male's face rests on the steel: its pins stand this far off its seating face
+# on the discs (free 4.10, working 3.10, fully pressed 2.90)
+PIN_MATED = CONN_DEV["steel_h"] - CONN_DEV["disc_h"] + CONN_PACK["body_t"]
+CONN_NETS = ("BAT+", "MID", "NTC", "BAT-")   # east to west: J_PK1-4's nets (BAT, CELL_MID, CHG_TS, BAT_N)
+# Where the pair goes: wherever the device board places the discs (J_PK1-4), long axis
 # east-west, south of the MCU over the display connector (v4, 2026-10-28: the back's east
 # side is the touch tail's lane). The male lies along the south cell, its pins in a row
 # under the cell's south flank, clear of the clips (they hold the cells' ends); the cells
 # stand side by side, as close as the clips' arms let them.
-CONN_CLR = 0.2        # the male's body in its window; the receptacle to the nearest part
+CONN_CLR = 0.2        # the male's body in its window, and to the nearest part under it
 # The pack board's other parts on its inner face (x, y off the pins' centre; w, h, height;
 # label), where pack/pack.kicad_pcb has them: in the strip south of the south cell's can,
 # beside the pins' row: a resettable fuse in BAT+, the mid-point sense line's series
@@ -298,8 +301,9 @@ it down over the screen, then the M2 pan-head screw from the back.
 
 The pack: glue the pack board into the tray's top, its magnetic connector out. Two AAA
 cells press into the clips from underneath, as marked on the board. The pack snaps onto
-the back below the camera, its connector through the window onto the receptacle on the
-device's board, whose magnets hold it; the cells charge over USB in the device.
+the back below the camera, its connector through the window onto the discs on the
+device's board, its magnets on the steel spacers beside them; the cells charge over USB in
+the device.
 
 Print the shell on its back, the bezel face down and the tray on its top face: none needs
 supports. Units are millimetres. Print in see-through resin or PETG (ice blue, orange,
@@ -866,14 +870,14 @@ def main():
     clip_cy = sum((c[1] + c[3]) / 2 for c in clip_boxes) / 2          # the cell's axis on today's board
     clip_half = max((c[3] - c[1]) / 2 for c in clip_boxes)
 
-    # Z: the receptacle's contacts on the device board, the male's pins at their working
-    # height on them, which puts the pack board this far out; the cells hang under it.
+    # Z: the male's face rests on the steel spacers, its pins pressed onto the discs, which
+    # puts the pack board this far out; the cells hang under it.
     z_face = z_floor_out
-    z_recv = z_back - CONN_DEV["h"]                   # the receptacle's contact face
-    z_pcb_top = z_recv - CONN_PACK["work"]
-    z_body = z_pcb_top + CONN_PACK["body_t"]          # the male's face, in the device's cavity
-    if abs((z_back - z_body) - CONN_DEV["steel_h"]) > 0.01:
-        raise SystemExit("the male's face must rest on the steel spacers")
+    z_body = z_back - CONN_DEV["steel_h"]             # the male's face, in the device's cavity
+    z_pcb_top = z_body - CONN_PACK["body_t"]
+    if not CONN_PACK["pressed"] + 0.1 <= PIN_MATED < CONN_PACK["free"] - 0.5:
+        raise SystemExit(f"the male's pins would stand at {PIN_MATED:.2f} mm on the discs: outside "
+                         f"{CONN_PACK['pressed'] + 0.1:.2f}-{CONN_PACK['free'] - 0.5:.2f} (free {CONN_PACK['free']})")
     out = z_face - z_pcb_top                          # the pack board stands this far off the back face
     bay = -out + BAY_CLR if out < 0 else 0.0          # ...or into it: a bay in the back over the board
     if FLOOR - bay < MIN_FLOOR:
@@ -894,11 +898,14 @@ def main():
     hr = (CONN_DEV["len"] / 2, CONN_DEV["wid"] / 2)   # long axis east-west
     hm = (CONN_PACK["len"] / 2, CONN_PACK["wid"] / 2)
     tw, tl = CONN_PACK["tab"]
-    recv = (cx - hr[0], cy - hr[1], cx + hr[0], cy + hr[1])
+    strip = (cx - hr[0], cy - hr[1], cx + hr[0], cy + hr[1])
     male = (cx - hm[0], cy - hm[1], cx + hm[0], cy + hm[1])
     tab = (cx - tw / 2, male[1] - tl, cx + tw / 2, male[1])     # its tab north, over the MCU's edge
-    # east to west, as the receptacle's pads lie (pad 1, the pack's plus, east)
-    contacts = [(net, cx + (1.5 - i) * CONN_DEV["pitch"], cy) for i, net in enumerate(CONN_NETS)]
+    # the discs where the board has them, east to west (J_PK1, the pack's plus, east)
+    contacts = [(net, b["fps"][r]["x"], b["fps"][r]["y"]) for net, r in zip(CONN_NETS, CONN_DEV["refs"])]
+    if [round(x, 2) for _, x, _ in contacts] != sorted((round(x, 2) for _, x, _ in contacts), reverse=True):
+        raise SystemExit(f"the discs {CONN_DEV['refs']} must run east to west")
+    steel_xy = [(b["fps"][r]["x"], b["fps"][r]["y"]) for r in CONN_DEV["steel"]]
     pins = [(net, cx + (1.5 - i) * CONN_PACK["pitch"], cy) for i, net in enumerate(CONN_NETS)]
 
     # what stands on the board's back: modelled parts, and the bounded ones by their fab outline
@@ -983,7 +990,7 @@ def main():
                   f"the male's joints {joint_gap:.2f} mm under the south cell's can")
     report.append(f"contacts: {CONN_DEV['part']} on the device board at {cx:.2f}, {cy:.2f}; male "
                   f"{CONN_PACK['part']} on the pack (tab north), its face on the steel {z_back - z_body:.2f} mm off the board, "
-                  f"pins compressed {CONN_PACK['free'] - (CONN_DEV['steel_h'] - CONN_DEV['disc_h'] + CONN_PACK['body_t']):.2f} mm on the discs; "
+                  f"pins compressed {CONN_PACK['free'] - PIN_MATED:.2f} mm on the discs; "
                   "contacts " + ", ".join(f"{n_} {x:.2f}" for n_, x, _ in contacts) + " (x)")
 
     for _, _, cut in openings:
@@ -1140,8 +1147,11 @@ def main():
         "pack": {"outline": r3(pack_o), "r": PACK_R, "board": r3(pcb), "boardT": PACK_PCB_T,
                  "cells": {"x": r3([cell_cx - CELL_L / 2, cell_cx + CELL_L / 2]), "y": r3(cell_ys),
                            "z": round(z_cell, 3), "d": CELL_D},
-                 "receptacle": {"part": CONN_DEV["part"], "lcsc": CONN_DEV["lcsc"], "outline": r3(recv), "h": CONN_DEV["h"],
-                                "contacts": [{"net": n_, "x": round(x, 3), "y": round(y, 3)} for n_, x, y in contacts]},
+                 "contacts": {"part": CONN_DEV["part"], "lcsc": CONN_DEV["lcsc"], "strip": r3(strip),
+                              "discD": CONN_DEV["disc_d"], "discH": CONN_DEV["disc_h"],
+                              "discs": [{"net": n_, "x": round(x, 3), "y": round(y, 3)} for n_, x, y in contacts],
+                              "steelD": CONN_DEV["steel_d"], "steelH": CONN_DEV["steel_h"],
+                              "steel": [{"x": round(x, 3), "y": round(y, 3)} for x, y in steel_xy]},
                  "male": {"part": CONN_PACK["part"], "lcsc": CONN_PACK["lcsc"], "outline": r3(male), "tab": r3(tab)},
                  "clipSteel": [r3([x0, y + dy0, x1, y + dy1]) for i, y in enumerate(cell_ys) for x0, dy0, x1, dy1 in steel[i]],
                  "toMove": to_move,
@@ -1217,13 +1227,14 @@ def pack_hardware(clip_prims, T, clip_cy, cell_cx, cell_ys, pins_c, z_pcb_bot, z
     add(("part", 0.09, 0.09, 0.1), rr_prism(*body, min(body[2] - body[0], body[3] - body[1]) / 2 - 0.01, z_top_, z_face_))
     add(("part", 0.09, 0.09, 0.1), box(*tab, z_top_, z_face_))
     cx, cy = (body[0] + body[2]) / 2, (body[1] + body[3]) / 2
-    for s_ in (-1, 1):   # its own magnets, in its ends
-        mx, my = (cx + s_ * 7.7, cy) if body[2] - body[0] > body[3] - body[1] else (cx, cy + s_ * 7.7)
-        add(("part", 0.55, 0.56, 0.6), Pos(mx, -my, z_face_ + 0.01) * Cylinder(CONN_PACK["wid"] / 2 - 1.0, 0.02))
+    for s_ in (-1, 1):   # its own magnets, in its ends, flush with its face
+        off = s_ * CONN_PACK["magnet_pitch"] / 2
+        mx, my = (cx + off, cy) if body[2] - body[0] > body[3] - body[1] else (cx, cy + off)
+        add(("part", 0.55, 0.56, 0.6), Pos(mx, -my, z_face_ + 0.01) * Cylinder(CONN_PACK["magnet_d"] / 2, 0.02))
     for _, px, py in pins:
         add(("pads", 0, 0, 0), Pos(px, -py, z_face_ + 0.15) * Cylinder(CONN_PACK["barrel_d"] / 2, 0.3))
-        add(("pads", 0, 0, 0), Pos(px, -py, (z_face_ + z_top_ + CONN_PACK["work"]) / 2)
-            * Cylinder(CONN_PACK["plunger_d"] / 2, z_top_ + CONN_PACK["work"] - z_face_))
+        add(("pads", 0, 0, 0), Pos(px, -py, (z_face_ + z_top_ + PIN_MATED) / 2)
+            * Cylinder(CONN_PACK["plunger_d"] / 2, z_top_ + PIN_MATED - z_face_))
     z_cell = z_pcb_bot - CELL_BASE - CELL_D / 2
     for i, y in enumerate(cell_ys):
         add(("part", 0.86, 0.87, 0.9), Pos(cell_cx, -y, z_cell) * Rot(0, 90, 0) * Cylinder(CELL_D / 2, CELL_L - 1.0))

@@ -33,9 +33,9 @@ the back ([pack.md](pack.md)).
 | Second secure element | Infineon OPTIGA Trust M V3 SLS32AIA010MK (CC EAL6+ hardware, P-256 key generated inside), on the same I2C bus. Fallback on the same land: Trust M V1 SLS32AIA010MH | C1518668 (0, and JLC/LCSC list it as no longer manufactured): not fitted on the first boards; V1 C539250 |
 | Radio | Ebyte E73-2G4M08S1C (nRF52840 module, BLE only), behind the airgap gate | C356849 (1176) |
 | Airgap | MSK12C02 slide switch → TS3USB221A (USB data) + 74LVC1G02 / TPS22917 (radio power) + TXU0202 (radio UART isolation) | all JLC |
-| Display | NHD-2.4-240320AF-CSXP-CTP on Molex 54132-4062 + 6-pin 1.0 mm touch FPC | connectors JLC, panel hand-fitted |
+| Display | NHD-2.4-240320AF-CSXP-CTP on Molex 54132-4062 + HC-FPC-1.0-6P-FH20 (6-pin 1.0 mm, bottom contact, 2.0 mm tall, C49166832) | connectors JLC, panel hand-fitted |
 | Camera | GC2145 24-pin DVP module in the ESP32-CAM pinout (Camemake CM_DVP_GC2145_UNIVERSAL; an OV2640 module fits too), 115° lens read through the sensor's centre crop, no refocus, on a Jushuo AFC07 FPC connector; AVDD 2.8 V / DVDD 1.2 V (fixed TLV70312) / DOVDD 3.3 V | connector JLC, module hand-fitted (DigiKey, JLC Global Sourcing) |
-| Power | Two AAA cells in series (NiMH, lithium or alkaline) in a pack on the back, on a Xinyangze magnetic pogo receptacle (YZ103915020T-04025-02, C6276862) → AO3416 reverse-cell blocker → LTC3539-2 boost to 3.3 V; USB-C → TLV62569P buck → TPS2116 picks USB first; BQ25172 NiMH charger set for two cells, fed from VBUS, MCU-gated; soft latch on the joystick's centre press | all JLC (LTC3539-2: 2,400; the receptacle: 125) |
+| Power | Two AAA cells in series (NiMH, lithium or alkaline) in a pack on the back; the pack's magnetic pogo male lands on four Mill-Max 1578 gold target discs and two Würth WA-SMSI steel spacers on the device board ([pack.md](pack.md)) → AO3416 reverse-cell blocker → LTC3539-2 boost to 3.3 V; USB-C → TLV62569P buck → TPS2116 picks USB first; BQ25172 NiMH charger set for two cells, fed from VBUS, MCU-gated; soft latch on the joystick's centre press | all JLC (LTC3539-2: 2,400; the discs through Global Sourcing, DigiKey 117,259) |
 | Sound | Huaneng MLT-5020 magnetic transducer (5 × 5.5 × 2 mm, 75 dB at 10 cm), AO3416 low-side, LPTIM3 PWM | JLC |
 | Joystick | ALPS SKRHAAE010: four directions + centre push, 7.5 mm, on the front, centred in the chin | JLC C202423 (521) |
 | IMU | Bosch BMI270 (accelerometer + gyroscope, LGA-14 2.5 × 3 mm, 3.5 µA in suspend), the GridCore Nano's part, on the touch controller's I2C bus (0x68), interrupt on PC15 | C2836813 (26,396 on 2026-10-30) |
@@ -118,10 +118,11 @@ on the back face.
 - The touch tail's contacts are on the same face as the TFT tail's (Newhaven's
   side view marks "stiffener / contact side" the same way round on both), so they
   too face the board after the two bends and the connector is bottom-contact: the
-  HC-FPC-1.0-6P-CXH25. Proto 0 had the top-contact CSH25 (the Nano's analysis,
-  which was wrong for this panel) and its touch made no contact. Pin 1 west →
-  **pad = pin**; the CXH25's land and pad numbering are the CSH25's, so the pads
-  and copper stayed as they were.
+  HC-FPC-1.0-6P-FH20 (2.0 mm tall; the 2.6 mm CXH25 before it ran out of stock).
+  Proto 0 had the top-contact CSH25 (the Nano's analysis, which was wrong for this
+  panel) and its touch made no contact. Pin 1 west → **pad = pin**; the FH20's land is
+  numbered and placed so its six contacts land exactly where the CXH25's did (pad 1
+  west), so the copper to them stayed.
 - `scripts/checkFpc.py` re-derives all of this from the placed board: openings,
   which pad is west-most, lever and plunger directions, antenna end. A connector
   rotated 180° fails it.
@@ -184,8 +185,8 @@ their connectors. Only low parts sit under any of them (`checkFpc.py` checks all
   the 3.0 mm radio module, under a 5.33 mm screen stack.
   The **programming pads** (MCU SWD under the panel, the radio's SWDIO/SWCLK on the
   back beside the module's SWD pins) are reachable by pogo pins before assembly.
-- **The pack's receptacle** (v4) lies east-west on the back, south of the MCU and over
-  the display connector, which moved 5.5 mm south for it (its tail's slot 2.5 mm, so
+- **The pack's contacts** (v4: four gold discs between two steel spacers) lie east-west
+  on the back, south of the MCU and over the display connector, which moved 5.5 mm south for it (its tail's slot 2.5 mm, so
   the tail keeps 3.0 mm of slack). The MCU's south-side signals pass it on the front
   copper. The east side of the back is the touch tail's lane, which rules it out there.
 - **The chin's back** holds USB-C (mouth south) with the USB switch and ESD clamp
@@ -326,13 +327,13 @@ their connectors. Only low parts sit under any of them (`checkFpc.py` checks all
   side (USART1) was trial-routed and came out worse: the two extra pins land in
   the camera bus's escape. v4 moved two single pins: the airgap sense to PB15 on
   the west side, beside its series resistor, and the charger's status to PA3 at the
-  south-east corner, because the pack's receptacle south of the MCU sends the
+  south-east corner, because the pack's contacts south of the MCU send the
   display lines' fan across the south side.
-- **South of the MCU sits the battery pack's receptacle** (v4), in what was a 4.6 mm
+- **South of the MCU sit the battery pack's contacts** (v4), in what was a 4.6 mm
   routing channel to the TFT connector; the connector moved 5.5 mm south for it
   (its tail keeps 3.0 mm of slack, the slot moved 2.5 mm). The MCU's south-side
-  signals pass the receptacle on the front copper; its pads, boss slots and magnets
-  leave only a few lanes under it on the back. Moving the slot walled off the radio
+  signals pass the contacts on the front copper; the discs and the spacers' 5.3 mm
+  lands leave only a few lanes under them on the back. Moving the slot walled off the radio
   module's north-row exits: RADIO_RX/TX leave its pads through the 0.65 mm lane
   between its two pad rows on the front.
 - **The MCU's core runs from its internal LDO.** VDDSMPS and VLXSMPS are tied
@@ -400,7 +401,7 @@ Why these parts, which cells and how long they last: [power-aaa.md](power-aaa.md
   3.3 V rail. It burns ~0.65 W at the start of a 250 mA charge and regulates its own die
   at 125 °C. The pull-up holding it off stays on the USB 3.3 V rail (5 V would exceed
   the MCU pin's rating while the MCU is unpowered).
-- **The MCU reads the pack** at the receptacle's + contact (1M/1M), its − contact (so
+- **The MCU reads the pack** at its + contact (1M/1M), its − contact (so
   the reverse FET is not part of the reading) and its mid-point (1M/1M, PA6), so
   firmware reads each cell on its own; and its temperature through the pack's NTC
   (`CHG_TS`), which is biased only while USB is in. No battery gauge: the MAX17048 was a Li-ion gauge.
@@ -489,12 +490,12 @@ purple (all transparent tints) and clear.
   crossing the edge with no opening rule stops the build. Parts with no 3D model
   each carry a height bound, so a new unmodelled part also stops it. Parts not
   fitted are left out.
-- **Thickness, front to back:** bezel lip 0.8, panel 4.13 (Newhaven drawing) on
-  0.3 foam, board 1.0, back cavity 4.0, back 1.2: **11.5 mm** (case 52.2 × 91.2 mm), 6.5 mm less than
-  proto 0's 18.0. The back cavity is set by the USB-C receptacle (3.40 mm). Two things stand
-  out of it on purpose: the **camera head** (5.9 mm, through an open window in the
-  back, 0.7 mm proud) and the **AAA cell** with its clips (through an opening in the
-  bezel's chin, 5.4 mm proud of the front).
+- **Thickness, front to back:** bezel lip 0.8 and 0.1 over the panel, panel 4.13
+  (Newhaven drawing) on 0.3 foam, board 1.0, back cavity 2.7, back 1.2: **10.22 mm**
+  (case 52.2 × 91.2 mm; 21.68 mm with the pack on), against proto 0's 18.0. The display
+  and camera connectors (2.09 mm, plus 0.6 clearance) set the back cavity; USB-C
+  (3.40 mm) stands into the back through a pocket. The **camera head** (5.9 mm) stands
+  out on purpose, through an open window in the back, 2.0 mm proud.
 - **Fastening:** the screen sits straight on the board, so the two holes under its
   corners have no room for a boss: the shell's standoffs carry **locating pins**
   there. The **screw** (M2×8 pan head from the back, flush in a counterbore; one since
@@ -548,7 +549,7 @@ purple (all transparent tints) and clear.
    time an animated UR: the sensor has a rolling shutter (Keycard Shell moved to a
    global-shutter SC031GS for that reason; it would need 1.8 V I/O, a board change).
 4. **Touch tail contact face**: settled on proto 0 and by Newhaven's side view:
-   the contacts face the board, so the connector is bottom-contact (CXH25).
+   the contacts face the board, so the connector is bottom-contact (FH20, as the CXH25 before it).
 5. **Radio UART pins**: P1.09 (module TX, pad 17) and P0.05 (module RX, pad 15),
    full-speed I/O. Every GPIO on the module's north edge is "low frequency I/O
    only" in the nRF52840 pin table (up to 10 kHz), so none carries the UART. The
@@ -619,6 +620,11 @@ purple (all transparent tints) and clear.
 21. **Pack contacts ESD**: zap the bare pack contacts (IEC 61000-4-2, ±8 kV contact)
     with the pack off; the charger, the ADC readings and the reverse-cell FET must
     survive.
+22. **Pack hold**: the male's magnets on the two steel spacers (steel round an M2
+    thread, 1.0 mm thick) must hold the pack against the four pins' push (up to
+    4 × 36 g) and in a drop from hand height. Measure the pull-off force with a scale.
+23. **Pack contacts**: resistance of each pin on its gold disc, fresh and after a few
+    hundred matings; the pins press 0.93 mm (working 1.0).
 
 
 ## Flow

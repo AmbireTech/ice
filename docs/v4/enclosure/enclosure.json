@@ -88,17 +88,18 @@
    "z": -11.1,
    "d": 10.5
   },
-  "receptacle": {
+  "contacts": {
    "part": "4x Mill-Max 1578-0-57 + 2x Wurth 9774010243R",
    "lcsc": "C21905480 / C5360192",
-   "outline": [
+   "strip": [
     12.12,
     40.105,
     31.88,
     44.455
    ],
-   "h": 0.7,
-   "contacts": [
+   "discD": 1.981,
+   "discH": 0.635,
+   "discs": [
     {
      "net": "BAT+",
      "x": 25.75,
@@ -117,6 +118,18 @@
     {
      "net": "BAT-",
      "x": 18.25,
+     "y": 42.28
+    }
+   ],
+   "steelD": 4.35,
+   "steelH": 1.0,
+   "steel": [
+    {
+     "x": 14.295,
+     "y": 42.28
+    },
+    {
+     "x": 29.705,
      "y": 42.28
     }
    ]
@@ -363,7 +376,7 @@
    {
     "label": "Case and battery pack: 3MF, STL and STEP (zip)",
     "filename": "ambire-ice-case.zip",
-    "bytes": 630256,
+    "bytes": 630244,
     "part": "enclosure/files/ambire-ice-case.zip.b64.txt",
     "b64": true
    }

@@ -11,7 +11,8 @@ toward the device), the pack lines up with the device seen from the front.
 
   F (outer face, against the device's back): the Xinyangze magnetic pogo male (through-
     hole), its pins in a column north-south, its tab west; a BAT- pour; nothing else on it.
-    It mates with the magnetic receptacle on the device's back, whose magnets hold the pack.
+    It lands on the device's back: its pins on four gold target discs, its magnets on two
+    steel spacers, which hold the pack.
   B (inner face): two AAA cells east-west in series, in MYOUNG clips copied from the
     device board (the south cell as proto 1's cell sat, + east; the north cell turned
     end for end, + west; the west clips are the mid-point); the fuse, the thermistor and
@@ -46,7 +47,7 @@ CLIP_X = (5.5, 42.5)                      # the clips' base centres, west and ea
 # The clips' steel lying on this board (each foot: a body along the clip, a short tab across
 # it that the arms rise from), as the case reads it from their models: x0, y0, x1, y1.
 CLIP_STEEL = [tuple(r) for r in _PACK["clipSteel"]]
-# The connector, where the case puts it: over the device's receptacle, long axis east-west
+# The connector, where the case puts it: over the device's discs, long axis east-west
 # along the south cell, its tab north. Its pins stand in a row under the cell's south
 # flank, clear of the clips (they hold the cells' ends). Its joints on the inner face (flat:
 # the tails end in the board) must clear the clips' steel (check_pins_clear_clips).

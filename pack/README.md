@@ -3,9 +3,10 @@
 Ambire Ice v4 runs from two AAA cells in a pack that snaps onto its back (why and how:
 [../docs/pack.md](../docs/pack.md)). This is the pack's own board: the cells' clips on
 one face, a magnetic pogo connector on the other, the face toward the device. The
-connector's magnets, and the matching receptacle's on the device, hold the pack.
+connector's magnets hold the pack on two steel spacers on the device board; its pins
+press on four gold target discs there.
 
-48.0 × 26.4 mm, 2 layers, 0.8 mm thick, ENIG, routed.
+48.0 × 26.8 mm, 2 layers, 0.8 mm thick, ENIG, routed.
 
 <img src="render-outer.jpg" width="430" alt="The board's outer face: the magnetic connector lying east-west near the south edge, its tab to the north, its four pins labelled BAT-, NTC, MID and BAT+">
 <img src="render-cells.jpg" width="430" alt="The board's inner face: four AAA clips holding two cells in series, the connector's four joints in a row under the south cell, the fuse, resistor and thermistor in the strip south of it">
@@ -34,7 +35,7 @@ short to MID through the 1 k resistor.
 The outer face carries only the connector, the mid-point's run under its tab and a BAT−
 pour. The pin order lives in one place, `PIN_NETS` in `makePack.py`.
 
-**Where the connector goes.** Over the device's receptacle, which lies east-west south
+**Where the connector goes.** Over the device's discs and spacers, which lie east-west south
 of the device's MCU (x 22.0, y 42.28 in device board coordinates): along the south cell,
 its tab north, its four pins in a row under the cell's south flank, plus at the east end.
 The clips hold only the cells' ends, so the joints are 7 mm from any of their steel, and
@@ -80,20 +81,15 @@ $KICAD_PY pack/makeOrder.py                                 # the order files
   the **bottom** side for SMT, and tick **through-hole (THT) assembly** for J_PACK
   (JLC hand-solders it after reflow), or leave J_PACK out
   and solder it by hand: four joints on the inner face, done before the cells go in.
-- **Stock:** the connector had 26 in JLC's own stock on 2026-10-28: enough for a few
-  boards, not a run.
+- **Stock:** the connector had 20 in JLC's own stock on 2026-10-31: enough for a few
+  boards, not a run. Any brand's 4-pin magnetic male at 2.5 mm pitch, magnets about
+  15.4 mm apart, fits the device's discs and steel.
 - **Rotations:** check every part in JLC's placement preview before paying. The clips
   carry the same rotation as the device board's (the south cell's exactly so, the
-  north cell's turned 180°); the connector's tab points west, toward the middle of the
-  board. The CPL's rotations are KiCad's, not confirmed by JLC.
+  north cell's turned 180°); the connector's tab points north. The CPL's rotations are KiCad's, not confirmed by JLC.
 - The board is 0.8 mm thick and ENIG: pick both in the order form.
-- **Order samples of both halves first.** The device's receptacle (Xinyangze
-  YZ103915020T-04025-02, C6276862) is from another family: its contacts are 2.54 mm
-  apart against the male's 2.50 (the outer pins land 0.06 mm off centre), and its
-  magnets are about 14.6 mm apart against the male's 15.41 mm. Whether they mate,
-  attract and hold is for samples to show.
 
 What the checks cover: DRC at every severity (none found, with and without a zone
-refill), full connectivity, no stale copper. What they do not: the two connector
-families mating, the clips holding cells on a 0.8 mm board, the fuse's heating at full
+refill), full connectivity, no stale copper. What they do not: the magnets' hold on the
+device's steel spacers and the pins' contact on its discs, the clips holding cells on a 0.8 mm board, the fuse's heating at full
 load, the fit in the tray. These files have not been ordered yet.

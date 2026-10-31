@@ -33,10 +33,13 @@ Ambire internals into GridCore's.
   published at /v3/, linked from neither, and is frozen since v4.
 - v4 (2026-10-28; `docs/pack.md`): the cells leave the board for a pack high on the back,
   just below the camera (outside its view cone), open underneath (owner: as slim as
-  possible). Contacts (owner: no loose magnets): a Xinyangze magnetic pogo pair, the SMT
-  receptacle (C6276862) on the device board's back, east-west between the MCU and the TFT
-  connector (which moved 5.5 mm south for it), the male (C5126845) on
-  the pack board through a window in the back; their own magnets hold the pack.
+  possible). Contacts (owner: no loose magnets; the next batch tests the production parts):
+  the Xinyangze magnetic pogo male (C5126845) on the pack board, through a window in the
+  back, lands on commodity parts on the device board's back, east-west between the MCU and
+  the TFT connector (which moved 5.5 mm south for them): four Mill-Max 1578 gold target
+  discs J_PK1-4 (Global Sourcing) under its pins, two Würth WA-SMSI 1.0 mm steel spacers
+  MH_PK1/2 under its magnets, which hold the pack on them. The touch connector J_CTP is the
+  2.0 mm HC-FPC-1.0-6P-FH20 (the CXH25 ran out).
   `board/wallet.kicad_pcb` is v4 since 2026-10-28 (v3 is in git history before it):
   routed, DRC clean. Never place anything but low parts on the back's touch-tail lane
   (x 36.5-43.5), under the touch flex's 14.55 mm stiffened block (x 28.95-43.5, from the
@@ -46,7 +49,7 @@ Ambire internals into GridCore's.
   tail is centred on the panel, J_TFT at x 24.0) and the touch flex folds outside the TFT
   flex (J_CTP 5.5 mm south): `docs/design.md` "Display tails". The chin hangs on two
   4 mm bridges; the west one carries a hand-drawn bundle (USB, AIRGAP, radio). `enclosure/generate.py`
-  puts the male over the board's J_PACK and takes the pack clips' models from
+  puts the male over the board's J_PK1-4 and takes the pack clips' models from
   `enclosure/pack_clips.kicad_pcb` (`PACK_*`/`CONN_*`).
   Everything lands on `main` (owner: no review branches). The pack board is `pack/`
   (`pack/makePack.py` builds it). Page `docs/v4/`, published at /v4/, linked from nowhere;
