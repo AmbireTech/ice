@@ -24,3 +24,9 @@
 (rule "R_VSET.2: tied to its own via"
   (condition "A.Type == 'Pad' && A.memberOfFootprint('R_VSET') && A.Pad_Number == '2'")
   (constraint min_resolved_spokes 1))
+
+# The pack's steel spacers (magnet partners) carry no current; GND only keeps them from
+# floating. The B.Cu pour reaches each with one spoke, enough for that, and no tie via.
+(rule "Pack spacers: one spoke"
+  (condition "A.Type == 'Pad' && (A.memberOfFootprint('MH_PK1') || A.memberOfFootprint('MH_PK2'))")
+  (constraint min_resolved_spokes 1))

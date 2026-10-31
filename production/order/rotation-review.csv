@@ -59,12 +59,17 @@ D_RADIO,KT-0603G,LED_SMD:LED_0603_1608Metric,C12624,bottom,90.0,,0.0,90.0,0.000,
 D_REVG,"BAS116,215",Package_TO_SOT_SMD:SOT-23,C48502,bottom,0.0,^SOT-23,180.0,0.0,0.000,db-rule
 J1,TYPE-C-31-M-12,wallet:USB_C_Receptacle_HRO_TYPE-C-31-M-12_BoardEdge,C165948,bottom,180.0,,0.0,0.0,1.460,NO KNOWN CORRECTION -> eye check in JLC preview
 J_CAM,AFC07-S24FCA-00,Connector_FFC-FPC:Jushuo_AFC07-S24FCA-00_1x24-1MP_P0.50_Horizontal,C262567,bottom,90.0,,0.0,90.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
-J_CTP,HC-FPC-1.0-6P-CXH25,wallet:FPC_HC-FPC-1.0-6P-CXH25,C49166842,bottom,180.0,,0.0,0.0,0.225,NO KNOWN CORRECTION -> eye check in JLC preview
-J_PACK,YZ103915020T-04025-02,wallet:Xinyangze_YZ103915020T-04025-02,C6276862,bottom,180.0,,0.0,0.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
+J_CTP,HC-FPC-1.0-6P-FH20,wallet:FPC_HC-FPC-1.0-6P-FH20,C49166832,bottom,180.0,,0.0,0.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
+J_PK1,1578-0-57-15-00-00-03-0,wallet:MillMax_1578_TargetDisc_D1.98mm,C21905480,bottom,180.0,,0.0,0.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
+J_PK2,1578-0-57-15-00-00-03-0,wallet:MillMax_1578_TargetDisc_D1.98mm,C21905480,bottom,180.0,,0.0,0.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
+J_PK3,1578-0-57-15-00-00-03-0,wallet:MillMax_1578_TargetDisc_D1.98mm,C21905480,bottom,180.0,,0.0,0.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
+J_PK4,1578-0-57-15-00-00-03-0,wallet:MillMax_1578_TargetDisc_D1.98mm,C21905480,bottom,180.0,,0.0,0.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
 J_TFT,54132-4062,wallet:Molex_54132-4062,C505102,bottom,180.0,,0.0,0.0,0.325,NO KNOWN CORRECTION -> eye check in JLC preview
 LS1,MLT-5020,wallet:Buzzer_Huaneng_MLT-5020_5x5.5mm,C94598,bottom,-90.0,,0.0,270.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
 L_BOOST,WPN4020H2R2MT,wallet:L_Sunlord_WPN4020,C98361,top,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 L_BUCK,CKCSA201610-2.2uH/M,Inductor_SMD:L_Cenker_CKCS201610,C5291913,top,0.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
+MH_PK1,9774010243R,wallet:Wurth_WA-SMSI_M2_L1.0_NoHole,C5360192,bottom,180.0,,0.0,0.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
+MH_PK2,9774010243R,wallet:Wurth_WA-SMSI_M2_L1.0_NoHole,C5360192,bottom,180.0,,0.0,0.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
 Q_BTN,MMBT3904,Package_TO_SOT_SMD:SOT-23,C20526,bottom,-90.0,^SOT-23,180.0,90.0,0.000,db-rule
 Q_BUZ,AO3416,Package_TO_SOT_SMD:SOT-23,C43307,bottom,90.0,^SOT-23,180.0,270.0,0.000,db-rule
 Q_CHG,2N7002DW-7-F,Package_TO_SOT_SMD:SOT-363_SC-70-6,C83571,bottom,-90.0,^SOT-363,180.0,90.0,0.000,db-rule

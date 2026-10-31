@@ -21,6 +21,9 @@ from collections import OrderedDict
 
 API = "https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList"
 DEPRIORITIZED = {"C1518668": "OPTIGA Trust M V3: sourcing deprioritized (known 0 at JLC)"}
+# Not stocked by JLC: bought into the order through JLC Global Sourcing (distributor stock,
+# JLC mounts it, never shipped to us). Checked 2026-10-31; recheck the offer at order time.
+GLOBAL_SOURCING = {"C21905480": "global sourcing: DigiKey ED10763CT-ND cut tape, 117,259 in stock, MOQ 1, 8-14 business days"}
 
 # Hand-fitted, no footprint on the board (docs/design.md @ 49053dc, README "fitted by hand").
 HAND_FIT = [
@@ -160,6 +163,8 @@ def main():
             flag = "LOW (<3x)"
         if code in DEPRIORITIZED:
             flag = (flag + "; " if flag else "") + DEPRIORITIZED[code]
+        if code in GLOBAL_SOURCING:
+            flag = GLOBAL_SOURCING[code]
         stock_rows.append({"LCSC": code, "Refs": ",".join(sorted(refs_of[code])), "PerBoard": qty_per[code],
                            "Need": need, "Stock": stock, "Type": lib, "MPN": rec.get("componentModelEn") or "",
                            "Package": rec.get("componentSpecificationEn") or "",

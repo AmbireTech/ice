@@ -80,9 +80,13 @@ def main():
            and "no LCSC part: []" in log, "BOM / placement parity, every part has an LCSC number",
            parity.group(0) if parity else "no parity line")
     stock = list(csv.DictReader(open(os.path.join(order, "jlc-plain/work/stock.csv"))))
-    short = [f"{r['LCSC']} {r['MPN']} ({r['Flag']})" for r in stock if r.get("Flag") and "deprioritized" not in r["Flag"]]
+    sourced = [f"{r['LCSC']} {r['MPN']} x{r['Need']} ({r['Refs']}): {r['Flag']}" for r in stock if r.get("Flag", "").startswith("global sourcing")]
+    short = [f"{r['LCSC']} {r['MPN']} ({r['Flag']})" for r in stock
+             if r.get("Flag") and "deprioritized" not in r["Flag"] and not r["Flag"].startswith("global sourcing")]
     dnp_at_order = [f"{r['LCSC']} {r['MPN']} ({r['Refs']})" for r in stock if "deprioritized" in r.get("Flag", "")]
     report(not short, "JLC stock for 10 boards", f"{len(stock)} lines" + (f"; short: {short}" if short else ", all ok"))
+    if sourced:
+        report(None, "buy through JLC Global Sourcing before ordering (JLC mounts it)", "; ".join(sourced))
     if dnp_at_order:
         report(None, "out of stock, to DNP in JLC's order UI", "; ".join(dnp_at_order))
     rot = list(csv.DictReader(open(os.path.join(order, "jlc-plain/work/rotation-review.csv"))))
