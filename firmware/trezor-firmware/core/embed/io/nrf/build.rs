@@ -8,6 +8,12 @@ pub fn def_module(lib: &mut CLibrary) -> Result<()> {
 
     if cfg!(feature = "emulator") {
         lib.add_sources(["nrf/unix/nrf.c"]);
+    } else if cfg!(feature = "mcu_stm32u5") && cfg!(feature = "nrf_uart_link") {
+        // Ambire boards: the radio on a 2-wire UART, no SPI or handshake lines
+        // (no SMP firmware update, no nrf_auth); replaces nrf.c, nrf_spi.c and
+        // nrf_update.c
+        lib.add_define("NRF_UART_LINK", Some("1"));
+        lib.add_sources(["nrf/stm32u5/nrf_uart_link.c", "nrf/crc8.c"]);
     } else if cfg!(feature = "mcu_stm32u5") {
         lib.add_sources([
             "nrf/stm32u5/nrf.c",

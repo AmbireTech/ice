@@ -9,8 +9,9 @@
 //
 // Not driven by this board file yet: the OPTIGA secure element (I2C4; not
 // fitted on the first boards), the SE050 beyond its random number generator
-// (below), the nRF52840 radio (USART3 2-wire, behind the airgap switch), the
-// camera (DCMI), the BQ25185 charger and the MAX17048 battery gauge.
+// (below), the camera (DCMI), the BQ25185 charger and the MAX17048 battery
+// gauge. The nRF52840 radio (USART3 2-wire, behind the airgap switch) runs
+// Trezor's BLE stack over a UART link (below).
 
 #define VDD_3V3 1
 
@@ -137,15 +138,34 @@
 #define SE050_ENA_PIN GPIO_PIN_11
 #define SE050_ENA_CLK_EN __HAL_RCC_GPIOD_CLK_ENABLE
 
-// Radio (nRF52840 module behind the airgap switch), [ambire_radio]: RADIO_OFF
-// high (or floating: 100 k pull-up) keeps the radio unpowered; low allows it,
-// the airgap switch's NOR gate still decides. USART3 to the radio through the
-// TXU0202 translator: PB10 = MCU TX (RADIO_TXD_MCU), PB11 = MCU RX.
+// Radio (nRF52840 module behind the airgap switch): RADIO_OFF high (or
+// floating: 100 k pull-up) keeps the radio unpowered; low allows it, the
+// airgap switch's NOR gate still decides. USART3 to the radio through the
+// TXU0202 translator: PB10 = MCU TX (RADIO_TXD_MCU), PB11 = MCU RX. No flow
+// control, reset or handshake lines: power-cycling via RADIO_OFF is the only
+// radio reset. Driven by Trezor's BLE stack over our UART link ([ble] and
+// [nrf] in ambire_p0.toml, io/nrf/stm32u5/nrf_uart_link.c), or by the
+// [ambire_radio] bring-up hello when BLE is off.
 #define RADIO_OFF_PORT GPIOB
 #define RADIO_OFF_PIN GPIO_PIN_2
 #define RADIO_OFF_CLK_EN __HAL_RCC_GPIOB_CLK_ENABLE
 #define RADIO_UART USART3
 #define RADIO_UART_CLK_EN __HAL_RCC_USART3_CLK_ENABLE
+#define RADIO_UART_CLK_DIS __HAL_RCC_USART3_CLK_DISABLE
+#define RADIO_UART_FORCE_RESET __HAL_RCC_USART3_FORCE_RESET
+#define RADIO_UART_RELEASE_RESET __HAL_RCC_USART3_RELEASE_RESET
+#define RADIO_UART_IRQn USART3_IRQn
+#define RADIO_UART_IRQHandler USART3_IRQHandler
+// GPDMA1 channels 5 (RX, circular) and 6 (TX): free on this board (display
+// 4, backlight 3, bg_copy 0, hash processor 12 in the secure monitor)
+#define RADIO_UART_DMA_RX_CHANNEL GPDMA1_Channel5
+#define RADIO_UART_DMA_RX_IRQn GPDMA1_Channel5_IRQn
+#define RADIO_UART_DMA_RX_IRQHandler GPDMA1_Channel5_IRQHandler
+#define RADIO_UART_DMA_RX_REQUEST GPDMA1_REQUEST_USART3_RX
+#define RADIO_UART_DMA_TX_CHANNEL GPDMA1_Channel6
+#define RADIO_UART_DMA_TX_IRQn GPDMA1_Channel6_IRQn
+#define RADIO_UART_DMA_TX_IRQHandler GPDMA1_Channel6_IRQHandler
+#define RADIO_UART_DMA_TX_REQUEST GPDMA1_REQUEST_USART3_TX
 #define RADIO_UART_PIN_AF GPIO_AF7_USART3
 #define RADIO_UART_PINS_CLK_EN __HAL_RCC_GPIOB_CLK_ENABLE
 #define RADIO_UART_TX_PORT GPIOB

@@ -176,6 +176,9 @@ impl ComponentMsgObj for Homescreen {
     fn msg_try_into_obj(&self, msg: Self::Msg) -> Result<Obj, Error> {
         match msg {
             HomescreenMsg::Dismissed => Ok(CANCELLED.as_obj()),
+            // Ambire boards: the swipe up to Bluetooth pairing, as Eckhart's menu
+            #[cfg(feature = "ble")]
+            HomescreenMsg::Bluetooth => Ok(INFO.as_obj()),
         }
     }
 }
@@ -184,6 +187,9 @@ impl ComponentMsgObj for Lockscreen {
     fn msg_try_into_obj(&self, msg: Self::Msg) -> Result<Obj, Error> {
         match msg {
             HomescreenMsg::Dismissed => Ok(CANCELLED.as_obj()),
+            // Only the homescreen sends it
+            #[cfg(feature = "ble")]
+            HomescreenMsg::Bluetooth => Ok(CANCELLED.as_obj()),
         }
     }
 }

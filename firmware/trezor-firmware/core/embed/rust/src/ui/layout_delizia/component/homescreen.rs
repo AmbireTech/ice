@@ -506,11 +506,21 @@ pub struct Homescreen {
     /// Ambire boards: the game behind 7 quick taps
     #[cfg(feature = "ambire_game")]
     game: super::ambire_game::Game,
+    /// Ambire boards: where the touch began, for the swipe up to Bluetooth
+    #[cfg(feature = "ble")]
+    swipe_start: Option<Point>,
 }
 
 pub enum HomescreenMsg {
     Dismissed,
+    /// Ambire boards: swiped up, Bluetooth pairing (Delizia has no device menu)
+    #[cfg(feature = "ble")]
+    Bluetooth,
 }
+
+/// Ambire boards: how far up a touch must travel to count as a swipe
+#[cfg(feature = "ble")]
+const SWIPE_UP_MIN: i16 = 60;
 
 impl Homescreen {
     pub fn new(
@@ -560,7 +570,27 @@ impl Homescreen {
             label_anim: HideLabelAnimation::new(label_width.max(label_unlocked_width)),
             #[cfg(feature = "ambire_game")]
             game: super::ambire_game::Game::new(),
+            #[cfg(feature = "ble")]
+            swipe_start: None,
         })
+    }
+
+    /// Ambire boards: true on the touch end of a swipe up
+    #[cfg(feature = "ble")]
+    fn event_swipe_up(&mut self, event: Event) -> bool {
+        match event {
+            Event::Touch(TouchEvent::TouchStart(pos)) => {
+                self.swipe_start = Some(pos);
+            }
+            Event::Touch(TouchEvent::TouchEnd(pos)) => {
+                if let Some(start) = self.swipe_start.take() {
+                    let up = start.y - pos.y;
+                    return up >= SWIPE_UP_MIN && up > (pos.x - start.x).abs();
+                }
+            }
+            _ => {}
+        }
+        false
     }
 
     fn get_notification(&self) -> Option<Notification> {
@@ -663,6 +693,14 @@ impl Component for Homescreen {
         let resume_label = unsafe { HOMESCREEN_STATE.label };
 
         self.label_anim.process_event(ctx, event, resume_label);
+
+        #[cfg(feature = "ble")]
+        if self.event_swipe_up(event) {
+            // The swipe's touch also started the hold-to-lock delay
+            self.delay.stop();
+            self.loader.reset();
+            return Some(HomescreenMsg::Bluetooth);
+        }
 
         if self.hold_to_lock {
             Self::event_hold(self, ctx, event).then_some(HomescreenMsg::Dismissed)

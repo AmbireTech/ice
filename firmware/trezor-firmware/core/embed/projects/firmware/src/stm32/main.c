@@ -130,7 +130,8 @@ int main_func(uint32_t cmd, void *arg) {
 #endif
 
 #ifdef USE_NRF
-#if PRODUCTION
+// The UART link (Ambire boards) has no nRF pairing secret to check
+#if PRODUCTION && !defined(NRF_UART_LINK)
   if (!nrf_authenticate()) {
     error_shutdown("Bluetooth authentication failed");
   }

@@ -29,6 +29,8 @@ use crate::ui::component::text::paragraphs::{
     Checklist, Paragraph, ParagraphSource, ParagraphVecLong, ParagraphVecShort, Paragraphs, VecExt,
 };
 use crate::ui::component::text::TextStyle;
+#[cfg(feature = "ble")]
+use crate::ui::component::{BLEHandler, BLEHandlerMode};
 use crate::ui::component::{
     CachedJpeg, ComponentExt, Empty, FormattedText, MsgMap, Never, Timeout,
 };
@@ -925,25 +927,78 @@ impl FirmwareUI for UIDelizia {
         Err::<RootComponent<Empty, ModelUI>, Error>(Error::NotImplementedError)
     }
 
+    // Ambire boards: Bluetooth pairing on Delizia. Delizia's translations of
+    // these texts are empty, so the wording is ours (English) wherever the
+    // caller's text is empty. The screens are Delizia's own frames, wrapped in
+    // the shared BLEHandler, which turns the radio's pairing events into
+    // results as on Eckhart.
     fn show_pairing_device_name(
-        _description: StrBuffer,
-        _device_name: TString<'static>,
+        _description: StrBuffer, // Eckhart's "{0} is your Trezor's name."
+        device_name: TString<'static>,
     ) -> Result<impl LayoutMaybeTrace, Error> {
-        Err::<RootComponent<Empty, ModelUI>, Error>(Error::NotImplementedError)
+        let paragraphs = ParagraphVecShort::from_iter([
+            Paragraph::new(
+                &theme::TEXT_MAIN_GREY_LIGHT,
+                "On your phone or computer, open its Bluetooth settings and select",
+            ),
+            Paragraph::new(&theme::TEXT_DEMIBOLD, device_name),
+        ])
+        .into_paragraphs();
+        let screen = Frame::with_header(
+            Header::left_aligned("Pair new device".into()).with_cancel_button(),
+            paragraphs,
+        )
+        .with_footer(TR::instructions__continue_in_app.into(), None);
+        #[cfg(feature = "ble")]
+        let screen = BLEHandler::new(screen, BLEHandlerMode::WaitingForPairingRequest);
+        let layout = RootComponent::new(screen);
+        Ok(layout)
     }
 
     #[cfg(feature = "ble")]
     fn show_ble_pairing_code(
-        _title: TString<'static>,
-        _description: TString<'static>,
-        _code: TString<'static>,
+        title: TString<'static>,
+        description: TString<'static>,
+        code: TString<'static>,
     ) -> Result<impl LayoutMaybeTrace, Error> {
-        Err::<RootComponent<Empty, ModelUI>, Error>(Error::NotImplementedError)
+        let title = if title.is_empty() { "Bluetooth pairing".into() } else { title };
+        let description = if description.is_empty() {
+            "Pairing code match?".into()
+        } else {
+            description
+        };
+        let paragraphs = ParagraphVecShort::from_iter([
+            Paragraph::new(&theme::TEXT_MAIN_GREY_LIGHT, description),
+            Paragraph::new(&theme::TEXT_SUPER, code).centered(),
+        ])
+        .into_paragraphs();
+        let screen = BLEHandler::new(
+            SwipeUpScreen::new(
+                Frame::with_header(Header::left_aligned(title).with_cancel_button(), paragraphs)
+                    .with_swipeup_footer(None),
+            ),
+            BLEHandlerMode::WaitingForPairingCancel,
+        );
+        let layout = RootComponent::new(screen);
+        Ok(layout)
     }
 
     #[cfg(feature = "ble")]
     fn wait_ble_host_confirmation() -> Result<impl LayoutMaybeTrace, Error> {
-        Err::<RootComponent<Empty, ModelUI>, Error>(Error::NotImplementedError)
+        let paragraphs = ParagraphVecShort::from_iter([Paragraph::new(
+            &theme::TEXT_MAIN_GREY_LIGHT,
+            "Waiting for the other device to confirm the code...",
+        )])
+        .into_paragraphs();
+        let screen = BLEHandler::new(
+            Frame::with_header(
+                Header::left_aligned("Bluetooth pairing".into()).with_cancel_button(),
+                paragraphs,
+            ),
+            BLEHandlerMode::WaitingForPairingCompletion,
+        );
+        let layout = RootComponent::new(screen);
+        Ok(layout)
     }
 
     fn show_thp_pairing_code(

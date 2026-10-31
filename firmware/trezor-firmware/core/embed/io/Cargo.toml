@@ -55,6 +55,8 @@ ipc = ["sys/ipc"]
 lockable_bootloader = ["sec/lockable_bootloader"]
 nfc = []
 nrf = []
+# Ambire boards: the nRF on a 2-wire UART (io/nrf/stm32u5/nrf_uart_link.c)
+nrf_uart_link = ["nrf"]
 nrf_auth = ["sec/nrf_auth"]
 pmic = []
 pmic_npm1300 = ["pmic", "sys/i2c_bus"]

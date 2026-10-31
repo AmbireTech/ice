@@ -77,6 +77,11 @@ async def homescreen() -> None:
             from .device_menu import handle_device_menu
 
             return await handle_device_menu()
+    elif utils.USE_BLE and res is trezorui_api.INFO:
+        # Ambire boards (Delizia, no device menu): a swipe up pairs a device
+        from apps.management.ble.pair_from_homescreen import pair_from_homescreen
+
+        return await pair_from_homescreen()
     lock_device()
 
 

@@ -13,8 +13,12 @@ try:
     ble.start_comm()
     if enable:
         start_ms = utime.ticks_ms()
+        # Ambire boards: the radio is powered from the kernel's start, seconds
+        # before this runs (welcome screen, PIN); no answer by now means the
+        # airgap switch has it off, which must not hold the boot up for 5 s
+        wait_ms = 500 if utils.MODEL_FULL_NAME == "Ambire" else 5000
 
-        while utime.ticks_diff(utime.ticks_ms(), start_ms) < 5000:
+        while utime.ticks_diff(utime.ticks_ms(), start_ms) < wait_ms:
             if utils.EMULATOR or ble.is_started():
                 break
 

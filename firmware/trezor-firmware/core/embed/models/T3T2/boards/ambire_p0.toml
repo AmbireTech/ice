@@ -14,9 +14,19 @@ panel = "io/display_panel_dem240320b1"
 # A raycaster maze behind 7 quick taps on the home screen (firmware only)
 [ambire_game]
 
-# Radio bring-up: the kernel allows the radio's power (the airgap switch still
-# decides) and says hello on the radio UART (USART3) at boot
-[ambire_radio]
+# Bluetooth: Trezor's BLE stack on the nRF52840, over a 2-wire UART link
+# (USART3, io/nrf/stm32u5/nrf_uart_link.c) instead of Trezor's SPI with
+# handshake lines. No nRF firmware update from the STM32 and no nRF pairing
+# authentication over it. Kept out of the bootloader (Delizia has no
+# bootloader Bluetooth screens) and prodtest (its nRF tests need SPI and the
+# handshake lines). [ambire_radio], the bring-up hello on the same UART, is for
+# builds without [ble]: one owner of USART3.
+[ble]
+exclude_from = ["bootloader", "prodtest"]
+
+[nrf]
+link = "io/nrf_uart_link"
+exclude_from = ["bootloader", "prodtest"]
 
 [backlight]
 driver = "io/backlight_pin"

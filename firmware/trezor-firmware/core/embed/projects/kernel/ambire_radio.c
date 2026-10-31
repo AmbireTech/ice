@@ -12,10 +12,18 @@
  * - USART3 at 115200 8N1 to the radio (through the TXU0202 translator), with
  *   one hello line at boot: once the radio runs a UART bridge, it is the first
  *   thing it hears from the main MCU.
+ *
+ * With [ble] and [nrf] in the board file, Trezor's BLE stack owns the radio
+ * instead, over the framed UART link in io/nrf/stm32u5/nrf_uart_link.c (power
+ * gate included); this file is then left out of the board file.
  */
 
 #include <trezor_bsp.h>
 #include <trezor_rtl.h>
+
+#ifdef USE_NRF
+#error "[ambire_radio] and [nrf] would both drive USART3 and RADIO_OFF: drop [ambire_radio] from the board file"
+#endif
 
 #ifdef KERNEL_MODE
 

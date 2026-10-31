@@ -157,7 +157,12 @@ Against the upstream base:
 | `src/trezor/wire/message_handler.py` | Ambire boards report the exception behind "Firmware error" |
 | `models/T3T2/model_T3T2.h`, `boards/ambire_p0.{h,toml}`, `rust/.../theme/mod.rs`, `welcome_screen.rs`, `src/boot.py` | branding: the board names the product "Ambire"; `[ambire_branding]` puts the flame on the welcome screen (held 3 s) |
 | `rust/.../component/ambire_game.rs` (new), `homescreen.rs` | `[ambire_game]`: a raycaster maze behind 7 quick taps on the home screen |
-| `projects/kernel/ambire_radio.c` (new), `main.c`, `build.rs` | `[ambire_radio]`: the kernel allows the radio's power (RADIO_OFF low; the airgap switch still decides) and says hello on USART3 at boot. Trezor's own BLE link (an nRF54L on SPI with handshake lines) does not fit this board's 2-wire UART |
+| `projects/kernel/ambire_radio.c` (new), `main.c`, `build.rs` | `[ambire_radio]`: the kernel allows the radio's power (RADIO_OFF low; the airgap switch still decides) and says hello on USART3 at boot. Off since `[ble]`: one owner of USART3 (a build with both stops with an error) |
+| `io/nrf/stm32u5/nrf_uart_link.c` (new), `io/nrf/build.rs`, `io/Cargo.toml` | `[nrf] link = "io/nrf_uart_link"`: Trezor's BLE stack talks to the radio over the 2-wire UART instead of SPI with handshake lines (see [Bluetooth](#bluetooth)) |
+| `xtask/src/config.rs` | `exclude_from = [...]` in a board file keeps a peripheral out of the named projects: Bluetooth stays out of the bootloader and prodtest |
+| `projects/firmware/src/stm32/main.c` | a production build skips the radio's pairing-secret check on the UART link (there is no secret) |
+| `rust/.../layout_delizia/ui_firmware.rs`, `component/homescreen.rs`, `component_msg_obj.rs` | Delizia's Bluetooth pairing screens (device name, pairing code, waiting), and a swipe up on the home screen |
+| `src/apps/homescreen/__init__.py`, `src/apps/management/ble/pair_from_homescreen.py` (new), `src/ble.py` | the swipe up starts pairing; the boot waits 0.5 s, not 5 s, for a radio that the airgap switch may have off |
 
 What the build drives (compiled, not yet run on a board): the display, touch,
 USB, the boot chain and TrustZone. The backlight is on/off only.
@@ -188,10 +193,35 @@ someone who gets code running in the chip's secure world can try PINs at the
 chip's speed.
 
 What is not driven yet: the OPTIGA (not fitted on the first boards), the
-SE050 beyond its random number generator, the radio (Trezor's link needs SPI
-and four control lines, our board has a 2-wire UART), the camera, the charger
-and the battery gauge. Nothing
+SE050 beyond its random number generator, the camera, the charger and the
+battery gauge. Nothing
 releases `PWR_HOLD` yet, so the firmware cannot switch the device off.
+
+## Bluetooth
+
+The radio runs Trezor's Bluetooth firmware stack; the main chip talks to it
+over the board's two-wire serial line (1 Mbaud, no flow control) instead of
+Trezor's SPI bus and handshake lines. Messages are Trezor's own, framed with a
+start byte, a length and a checksum; a damaged message is dropped, not
+retried.
+
+- **Pairing:** on the home screen, swipe up. If Bluetooth is off, the device
+  offers to turn it on. It then shows its Bluetooth name: select it on the
+  phone or computer, check that both show the same six-digit code, and swipe
+  up (or tap) to confirm.
+- **Airgap switch:** on AIR the radio has no power, and the device works as
+  before without it. Within half a second of the radio going quiet the device
+  treats Bluetooth as disconnected; when the switch goes off AIR, the radio
+  starts fresh and is picked up again without a restart. Pairing with the
+  switch on AIR says the radio is off.
+- **Not available:** updating the radio's firmware from the device (flash it
+  over the radio's own SWD pads), and the check that the radio is the one
+  paired with this device at the factory (Trezor's boards keep a shared secret
+  in both chips; ours have none). The bootloader has no Bluetooth: firmware
+  updates go over USB.
+
+None of this has run on a board yet: the radio side and the timing (the
+radio's start-up, the power-off time between restarts) are unchecked.
 
 ## On proto 0 (2026-10-30)
 

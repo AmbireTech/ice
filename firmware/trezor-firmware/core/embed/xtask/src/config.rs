@@ -67,6 +67,10 @@ impl ModelConfig {
 pub struct Peripheral {
     pub name: String,
     pub features: Vec<String>,
+    /// Ambire boards: projects (package names) this peripheral is kept out
+    /// of, from the board file's `exclude_from = [...]` (e.g. a radio the
+    /// bootloader has no screens for).
+    pub exclude_from: Vec<String>,
 }
 
 pub struct BoardConfig {
@@ -121,9 +125,15 @@ impl BoardConfig {
                 .filter_map(|v| v.as_str())
                 .map(|s| s.to_string())
                 .collect();
+            let exclude_from = periph_table
+                .get("exclude_from")
+                .and_then(|v| v.as_array())
+                .map(|a| a.iter().filter_map(|v| v.as_str()).map(String::from).collect())
+                .unwrap_or_default();
             peripherals.push(Peripheral {
                 name: key.clone(),
                 features,
+                exclude_from,
             });
         }
 
@@ -210,6 +220,9 @@ pub fn resolve_board_definition(
 
     // Board peripheral features filtered by project config then model exceptions
     for periph in &board_config.peripherals {
+        if periph.exclude_from.iter().any(|p| p.as_str() == pkg) {
+            continue;
+        }
         if uses.contains(periph.name.as_str()) && !exclude.contains(periph.name.as_str()) {
             features.push(periph.name.clone());
             for f in &periph.features {
