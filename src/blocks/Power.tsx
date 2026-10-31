@@ -167,6 +167,22 @@ export const PowerBlock = () => (
     <trace from=".J_PACK > .BAT_M" to="net.BAT_N" width={W_PWR} />
     <trace from=".J_PACK > .MID" to="net.CELL_MID" />
     <trace from=".J_PACK > .NTC" to="net.CHG_TS" />
+    {/* ESD on the pack contacts, bare on the back whenever the pack is off (pre-order
+        audit, 2026-10-31): the thermistor contact runs straight to the charger's TS and an
+        MCU ADC pin, the mid-point to a 1M divider, the minus to Q_REV's drain. The plus
+        contact sits on 30+ uF (C_IN_BOOST, C_BAT), which takes an IEC 61000-4-2 discharge.
+        Bidirectional, because a cell in backwards puts the mid-point below GND; 5 nA at
+        5 V (PESD5V0S1BL), so neither the cells nor the 38 uA TS bias notice it. */}
+    {([["D_PKNTC", "CHG_TS"], ["D_PKMID", "CELL_MID"], ["D_PKNEG", "BAT_N"]] as const).map(([d, net], i) => (
+      <group key={d}>
+        <chip name={d} footprint="pinrow2"
+          manufacturerPartNumber="PESD5V0S1BL,315" supplierPartNumbers={{ jlcpcb: ["C84374"] }}
+          pinLabels={{ pin1: "A", pin2: "B" }}
+          schX={-22} schY={6 + i * 2} schSectionName={S} />
+        <trace from={`.${d} > .A`} to={`net.${net}`} />
+        <trace from={`.${d} > .B`} to="net.GND" />
+      </group>
+    ))}
     {/* Reverse cell: nothing stops a cell going in backwards, and the boost's VIN is
         rated to -0.3 V, so a reversed AAA would discharge through its internal diodes.
         AO3416 in the cell's low side: its body diode conducts a correctly inserted cell
@@ -285,14 +301,17 @@ export const PowerBlock = () => (
       schX={4} schY={8} schRotation="90deg" schSectionName={S} />
     <trace from=".C_IN_BOOST > .pin1" to="net.BAT" width={W_PWR} />
     <trace from=".C_IN_BOOST > .pin2" to="net.GND" width={W_PWR} />
-    <capacitor name="C_BOOST" capacitance="22uF" footprint="0805" supplierPartNumbers={{ jlcpcb: ["C45783"] }}
+    <capacitor name="C_BOOST" capacitance="47uF" footprint="0805" supplierPartNumbers={{ jlcpcb: ["C16780"] }}
       schX={11} schY={10} schRotation="90deg" schSectionName={S} />
     <trace from=".C_BOOST > .pin1" to="net.V_BOOST" width={W_PWR} />
     <trace from=".C_BOOST > .pin2" to="net.GND" width={W_PWR} />
-    {/* The LTC3539's loop wants >= 22 uF of real output capacitance and a 33 pF
-        feedforward across the top divider resistor ("usually required", 35392fc
-        Output and Input Capacitor Selection); one 22 uF 0805 keeps ~11 uF at 3.3 V. */}
-    <capacitor name="C_BOOST2" capacitance="22uF" footprint="0805" supplierPartNumbers={{ jlcpcb: ["C45783"] }}
+    {/* The LTC3539's loop "is designed to be stable with output capacitor values of 22uF
+        or greater" (35392fc, Output and Input Capacitor Selection: real capacitance) and
+        wants a 33 pF feedforward across the top divider resistor. Two 22 uF 25 V 0805s kept
+        only ~11 uF each at 3.3 V, 22 uF nominal and below it at -20 % tolerance and heat
+        (pre-order audit, 2026-10-31). Two 47 uF 6.3 V 0805s (Samsung CL21A476MQYNNNE, same
+        land) keep more at 3.3 V; measure the output ripple and a load step at bring-up. */}
+    <capacitor name="C_BOOST2" capacitance="47uF" footprint="0805" supplierPartNumbers={{ jlcpcb: ["C16780"] }}
       schX={12} schY={10} schRotation="90deg" schSectionName={S} />
     <trace from=".C_BOOST2 > .pin1" to="net.V_BOOST" width={W_PWR} />
     <trace from=".C_BOOST2 > .pin2" to="net.GND" width={W_PWR} />
