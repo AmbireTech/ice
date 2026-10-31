@@ -28,13 +28,13 @@ async def pair_from_homescreen() -> None:
             # The radio is not answering: on Ambire boards the airgap switch has
             # it off (Trezor's T3T2 devkit shares this Delizia flow)
             if utils.MODEL_FULL_NAME == "Ambire":
-                hint = "Slide the airgap switch off AIR to use Bluetooth."
+                hint = "Slide the airgap switch away from AIR to use Bluetooth."
             else:
-                hint = "The Bluetooth radio is not responding."
+                hint = "Bluetooth is not responding."
             await show_error_and_raise(
                 "bluetooth_radio_off",
                 hint,
-                subheader="Radio is off",
+                subheader="Bluetooth is off",
                 button="Close",
             )
 
