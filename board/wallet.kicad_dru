@@ -18,3 +18,9 @@
 (rule "Fine-pitch lands"
   (condition "A.Type == 'Pad' && B.Type == 'Pad' && (A.memberOfFootprint('U5') || A.memberOfFootprint('U1'))")
   (constraint clearance (min 0.09mm)))
+
+# R_VSET's ground pad keeps its own tie via (stripGndTies KEEP); since the display
+# cutout grew (2026-10-31) the B.Cu pour reaches the pad with one spoke, not two.
+(rule "R_VSET.2: tied to its own via"
+  (condition "A.Type == 'Pad' && A.memberOfFootprint('R_VSET') && A.Pad_Number == '2'")
+  (constraint min_resolved_spokes 1))

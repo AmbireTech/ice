@@ -473,6 +473,13 @@
   "package": "SMD",
   "stock": 424577
  },
+ "C16780": {
+  "describe": "47uF 6.3V X5R \u00b120% 0805 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+  "land": null,
+  "model": "CL21A476MQYNNNE",
+  "package": "0805",
+  "stock": 1038504
+ },
  "C167874": {
   "describe": "2.3A 3.2A 4.7uH 78m\u03a9 Magnetic Shielded Inductor \u00b120% SMD,4x4mm Power Inductors ROHS",
   "land": {
@@ -1594,6 +1601,42 @@
   "package": "VSON-10(2x3)",
   "stock": 41549
  },
+ "C2861352": {
+  "describe": "-40\u2103~+125\u2103@(Tj) 1 1.2V 300mA 35uA 48uVrms 5.5V 68dB@(1kHz) Fixed Over Current Protection\u3001Over Temperature Protection Positive SOT-23-5 Voltage Regulators - Linear, Low Drop Out (LDO) Regulators ROHS",
+  "land": {
+   "pads": 5,
+   "pitch": 0.95,
+   "sizes": [
+    [
+     0.6,
+     1.0
+    ],
+    [
+     0.6,
+     1.0
+    ],
+    [
+     0.6,
+     1.0
+    ],
+    [
+     0.6,
+     1.0
+    ],
+    [
+     0.6,
+     1.0
+    ]
+   ],
+   "span": [
+    1.9,
+    2.2
+   ]
+  },
+  "model": "TLV70312DBVR",
+  "package": "SOT-23-5",
+  "stock": 605
+ },
  "C2868385": {
   "describe": "-40\u2103~+125\u2103@(Tj) 1 1.3V 300mA 35uA 375mV@(300mA) 48uVrms 5.5V 68dB@(1kHz) Fixed Over Current Protection\u3001Over Temperature Protection Positive SOT-23-5 Voltage Regulators - Linear, Low Drop Out (LDO) Regulators ROHS",
   "land": {
@@ -2255,6 +2298,54 @@
   "model": "0402WGF5623TCE",
   "package": "0402",
   "stock": 19994
+ },
+ "C49166842": {
+  "describe": "-25\u2103~+85\u2103 0.3mm 1mm 2.5mm 50V 6P Bottom Contact Copper No polarity Slide Lock Surface Mount, Right Angle Tin Without buckle SMD,P=1mm,Surface Mount\uff0cRight Angle FFC, FPC (Flat Flexible) Connector Assemblies ROHS",
+  "land": {
+   "pads": 8,
+   "pitch": 1.0,
+   "sizes": [
+    [
+     0.6,
+     2.5
+    ],
+    [
+     0.6,
+     2.5
+    ],
+    [
+     0.6,
+     2.5
+    ],
+    [
+     0.6,
+     2.5
+    ],
+    [
+     0.6,
+     2.5
+    ],
+    [
+     0.6,
+     2.5
+    ],
+    [
+     3.0,
+     3.4
+    ],
+    [
+     3.0,
+     3.4
+    ]
+   ],
+   "span": [
+    2.1,
+    10.6
+   ]
+  },
+  "model": "HC-FPC-1.0-6P-CXH25",
+  "package": "SMD,P=1mm,Surface Mount\uff0cRight Angle",
+  "stock": 215
  },
  "C49166860": {
   "describe": "-25\u2103~+85\u2103 0.3mm 1mm 2.5mm 50V 6P Copper No polarity Slide Lock Surface Mount, Right Angle Tin Top Contact Without buckle SMD,P=1mm,Surface Mount\uff0cRight Angle FFC, FPC (Flat Flexible) Connector Assemblies ROHS",
@@ -3724,6 +3815,30 @@
   "model": "0402WGF6040TCE",
   "package": "0402",
   "stock": 21671
+ },
+ "C84374": {
+  "describe": "-65\u2103~+150\u2103 1 12A@8/20us 130W@8/20us 14V 35pF 5V 5nA 9.5V Bidirectional ESD IEC 61000-4-2\u3001IEC 61000-4-5 DFN1006-2 ESD and Surge Protection (TVS/ESD) ROHS",
+  "land": {
+   "pads": 2,
+   "pitch": 0.64,
+   "sizes": [
+    [
+     0.3,
+     0.6
+    ],
+    [
+     0.3,
+     0.6
+    ]
+   ],
+   "span": [
+    0.0,
+    0.64
+   ]
+  },
+  "model": "PESD5V0S1BL,315",
+  "package": "DFN1006-2",
+  "stock": 67312
  },
  "C8545": {
   "describe": "1 N-channel 115mA 2.5V 225mW 25pF 50pF 5pF 5\u03a9@10V 60V N-Channel \u00b120V SOT-23 MOSFETs ROHS",
