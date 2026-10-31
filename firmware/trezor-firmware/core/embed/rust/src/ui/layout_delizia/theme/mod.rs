@@ -132,7 +132,12 @@ include_icon!(ICON_LOGO, "layout_delizia/res/ambire_flame.toif");
 include_icon!(ICON_WARNING40, "layout_delizia/res/warning40.toif");
 
 // Default homescreen
+#[cfg(not(feature = "ambire_branding"))]
 include_icon!(HOMESCREEN_ICON, "layout_delizia/res/hs_lock.toif");
+// The Ambire flame in place of the padlock at the centre of the default home
+// and lock screen background (same 32x46 size)
+#[cfg(feature = "ambire_branding")]
+include_icon!(HOMESCREEN_ICON, "layout_delizia/res/hs_flame.toif");
 
 pub const fn label_default() -> TextStyle {
     TEXT_NORMAL
