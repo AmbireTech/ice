@@ -199,7 +199,8 @@ the clips from underneath.
   chosen. At twice the voltage it draws half the current from the cells.
 - **Reverse-cell FET:** stays. The cells can still go into the pack's clips backwards.
 - **Power key** (the joystick's centre press, through a PNP from the cells): unchanged.
-  With the pack off, the device runs from USB only.
+  With the pack off, the device runs from USB only: it stays on while plugged in, and the
+  centre press does nothing (no select, no power off; unplug to turn it off). Intended.
 
 **Firmware:** read each cell on its own: plus minus mid-point, and mid-point minus minus.
 Refuse to charge unless both cells look NiMH and match each other, so a pack with one

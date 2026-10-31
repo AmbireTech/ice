@@ -415,6 +415,11 @@ powers off by releasing `PWR_HOLD` and waiting ~2 s. With USB plugged in the boa
 is powered whatever the latch says; firmware keeps the screen dark and charges a
 NiMH cell. There is no charge light.
 
+**On USB with the pack off, the centre press does nothing.** The device is on for as long as
+USB is plugged in and cannot be switched off; unplug it to turn it off. The press
+reaches the board only through the cells, so with no pack it neither selects nor powers off:
+the touch screen and the joystick's four directions still work. This is intended.
+
 ## Buzzer and joystick
 
 - **Buzzer**: a 5 × 5.5 × 2 mm magnetic transducer (Huaneng MLT-5020, 75 dB at

@@ -311,7 +311,10 @@ export const PowerBlock = () => (
         switch from a 0.9 V cell) turns BTN into BTN_N for the MCU, which is therefore
         also the centre press while running (short press = select, hold = power off).
         The cell (up to 4.2 V) never touches an MCU pin, and an unpowered MCU is never
-        back-fed through a GPIO. Off, nothing here draws more than nanoamps. */}
+        back-fed through a GPIO. Off, nothing here draws more than nanoamps.
+        With the pack off (USB only) Q_PWRJ has no emitter supply, so the centre press is
+        dead: no select, no power off; the device stays on while USB is in. Intended
+        (owner, 2026-10-31); firmware must not rely on the centre press on USB only. */}
     <chip name="Q_PWRJ" footprint="sot23"
       manufacturerPartNumber="MMBT3906" supplierPartNumbers={{ jlcpcb: ["C2143"] }}
       pinLabels={{ pin1: "B", pin2: "E", pin3: "C" }}
