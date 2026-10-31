@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """Statistical sanity check of the device's strong random number generator.
 
-    entropy_test.py collect --calls 16 --out sample.bin   # needs the device: 16 confirmations
+    entropy_test.py collect --calls 4 --out sample.bin   # needs the device: one confirmation per call
     entropy_test.py analyze sample.bin
+
+`collect` appends each sample to the file the moment it arrives (flushed to
+disk), so nothing confirmed is ever lost; rerun it after an interruption and it
+continues until the file holds --calls samples.
 
 `collect` asks the device for GetEntropy (1024 bytes per call, the firmware's
 maximum; each call is confirmed on the device). The firmware serves it from
@@ -15,6 +19,7 @@ Thresholds are wide (about 4 sigma) so a healthy generator passes almost always.
 """
 import argparse
 import math
+import os
 import subprocess
 import sys
 import zlib
@@ -22,25 +27,36 @@ from pathlib import Path
 
 
 def collect(trezorctl: str, calls: int, out: Path) -> None:
-    data = bytearray()
-    for i in range(calls):
+    have = out.stat().st_size // 1024 if out.exists() else 0
+    if out.exists() and out.stat().st_size % 1024:
+        sys.exit(f"{out} is {out.stat().st_size} bytes, not whole 1024-byte samples: check it before resuming")
+    if have >= calls:
+        print(f"{out} already holds {have} samples")
+        return
+    if have:
+        print(f"resuming: {out} already holds {have} samples")
+    for i in range(have, calls):
         print(f"call {i + 1}/{calls}: confirm on the device", flush=True)
         p = subprocess.run([trezorctl, "-p", "webusb", "crypto", "get-entropy", "1024"],
                            stdin=subprocess.DEVNULL, capture_output=True, text=True)
         if p.returncode != 0:
             # urllib3's LibreSSL warning comes first on macOS: show the lines that matter
             lines = [l for l in (p.stdout + p.stderr).splitlines() if "arning" not in l]
-            sys.exit(f"get-entropy failed (exit {p.returncode}): {' | '.join(lines)}"
-                     " (GetEntropy needs an initialized device)")
+            hint = " (GetEntropy needs an initialized device)" if "NotInitialized" in p.stdout + p.stderr else ""
+            sys.exit(f"get-entropy failed (exit {p.returncode}): {' | '.join(lines)}{hint}; "
+                     f"samples so far are kept in {out}: rerun to continue")
         hexline = [l.strip() for l in p.stdout.splitlines() if l.strip() and all(c in "0123456789abcdef" for c in l.strip())]
         if not hexline:
             sys.exit(f"no hex in the output: {p.stdout.strip()}")
         chunk = bytes.fromhex(hexline[-1])
         if len(chunk) != 1024:
             sys.exit(f"expected 1024 bytes, got {len(chunk)}")
-        data += chunk
-    out.write_bytes(bytes(data))
-    print(f"wrote {len(data)} bytes to {out}")
+        # saved before the next confirmation is asked for
+        with open(out, "ab") as f:
+            f.write(chunk)
+            f.flush()
+            os.fsync(f.fileno())
+        print(f"  saved sample {i + 1} ({(i + 1) * 1024} bytes in {out})", flush=True)
 
 
 def analyze(path: Path) -> bool:
@@ -98,7 +114,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     c = sub.add_parser("collect")
-    c.add_argument("--calls", type=int, default=16)
+    c.add_argument("--calls", type=int, default=4)
     c.add_argument("--out", type=Path, required=True)
     c.add_argument("--trezorctl", default="trezorctl")
     a = sub.add_parser("analyze")
