@@ -34,7 +34,7 @@ the back ([pack.md](pack.md)).
 | Radio | Ebyte E73-2G4M08S1C (nRF52840 module, BLE only), behind the airgap gate | C356849 (1176) |
 | Airgap | MSK12C02 slide switch → TS3USB221A (USB data) + 74LVC1G02 / TPS22917 (radio power) + TXU0202 (radio UART isolation) | all JLC |
 | Display | NHD-2.4-240320AF-CSXP-CTP on Molex 54132-4062 + 6-pin 1.0 mm touch FPC | connectors JLC, panel hand-fitted |
-| Camera | OV2640 24-pin DVP module, ~66° lens refocused to ~15 cm, on a Jushuo AFC07 FPC connector; AVDD 2.8 V / DVDD 1.3 V (fixed TLV70313) / DOVDD 3.3 V | connector JLC, module hand-fitted |
+| Camera | GC2145 24-pin DVP module in the ESP32-CAM pinout (Camemake CM_DVP_GC2145_UNIVERSAL; an OV2640 module fits too), 115° lens read through the sensor's centre crop, no refocus, on a Jushuo AFC07 FPC connector; AVDD 2.8 V / DVDD 1.2 V (fixed TLV70312) / DOVDD 3.3 V | connector JLC, module hand-fitted (DigiKey, JLC Global Sourcing) |
 | Power | Two AAA cells in series (NiMH, lithium or alkaline) in a pack on the back, on a Xinyangze magnetic pogo receptacle (YZ103915020T-04025-02, C6276862) → AO3416 reverse-cell blocker → LTC3539-2 boost to 3.3 V; USB-C → TLV62569P buck → TPS2116 picks USB first; BQ25172 NiMH charger set for two cells, fed from VBUS, MCU-gated; soft latch on the joystick's centre press | all JLC (LTC3539-2: 2,400; the receptacle: 125) |
 | Sound | Huaneng MLT-5020 magnetic transducer (5 × 5.5 × 2 mm, 75 dB at 10 cm), AO3416 low-side, LPTIM3 PWM | JLC |
 | Joystick | ALPS SKRHAAE010: four directions + centre push, 7.5 mm, on the front, centred in the chin | JLC C202423 (521) |
@@ -525,15 +525,16 @@ purple (all transparent tints) and clear.
    Ai-Thinker's numbering, which matches the modules checked so far once the
    lens faces away from the board. What to check on a sample is which face of
    the flex carries the contacts (the AFC07 is bottom-contact).
-3. **Camera choice and focus**: OV2640, ~66° lens, focus set at ~150 mm (stock
-   modules are focused far and read phone screens poorly). Best-documented
-   module: Union Image ZY-XSF3M2640B (8.5 mm head, 68.7°); a stock 20.5–21 mm
-   flex bows ~4.5 mm here, a ~16.5 mm custom flex (SincereFirst offers it) lies
-   flat. The head is 5.4–5.9 mm tall on every drawing found: check the case.
-   Bench it against an SC031GS global-shutter module on an animated UR before
-   committing; the SC031GS would need 1.8 V I/O and level translators (a board
-   change). Check the module flex's contact face against the bottom-contact
-   connector on a sample.
+3. **Camera choice**: the GC2145 module (Camemake CM_DVP_GC2145_UNIVERSAL), the
+   commodity successor to the end-of-life OV2640, which no big distributor stocks.
+   Camemake's open CM_ESP_P4_C5 board feeds it 2.8 / 1.2 / 3.3 V on the same pins
+   as here. Its 115° lens is read through the sensor's 640×480 centre crop (about
+   48° across), which needs no refocus: a simulated phone QR decoded as well as
+   through an OV2640 refocused to 150 mm. On 10 samples, measure the flex length
+   (a stock 20.5–21 mm flex bows ~4.5 mm here) and the head height against the
+   case, check the flex's contact face against the bottom-contact connector, and
+   time an animated UR: the sensor has a rolling shutter (Keycard Shell moved to a
+   global-shutter SC031GS for that reason; it would need 1.8 V I/O, a board change).
 4. **Touch tail contact face**: settled on proto 0 and by Newhaven's side view:
    the contacts face the board, so the connector is bottom-contact (CXH25).
 5. **Radio UART pins**: P1.09 (module TX, pad 17) and P0.05 (module RX, pad 15),
@@ -557,14 +558,14 @@ purple (all transparent tints) and clear.
      Standby/Shutdown with PWR_PUCRA + APC (check in RM0456 at bring-up).
    - Camera XCLK is TIM3_CH2 PWM on PB5 at 160/8 = 20 MHz (the OV2640 wants a
      45–55 % duty cycle, so no odd divider). Hold CAM_RST (PE0) low while CAM_EN
-     rises, then release it; the TLV70313 has no output discharge.
+     rises, then release it; the TLV70312 has no output discharge.
    - VREF+ shares VDDA's caps: keep the internal VREFBUF off.
    - The touch controller's RST has no pull: pulse it low (≥ 100 µs, Newhaven's
      power-up sequence) after boot before talking to it.
-8. **Camera core supply 1.3 V** follows the OV2640 data sheet v2.2 (Feb 2007, Table
-   6: VDD-D 1.24/1.3/1.36 V; its revision history raised it from 1.2 V). The older
-   v1.6 says 1.14–1.26 V. If a module's sensor turns out to be the old revision, the
-   TLV70312 (1.2 V) fits the same land.
+8. **Camera core supply 1.2 V** matches what Camemake's reference host and the
+   Ai-Thinker ESP32-CAM feed a 24-pin DVP module. An OV2640 module runs there too,
+   though its data sheet v2.2 asks 1.24–1.36 V (v1.6: 1.14–1.26 V); the TLV70313
+   (1.3 V) fits the same land if an OV2640 ever needs it.
 9. **Device-bound PIN KDF** (research.md): measure the SAES rate keyed by the
    DHUK, pick the chain length for about one second, and confirm in our
    TrustZone/RDP configuration that software cannot read the DHUK.

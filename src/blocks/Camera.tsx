@@ -3,14 +3,15 @@ import { W_PWR_LITE } from "../widths"
 const S = "Camera"
 
 /**
- * QR camera: an OV2640 24-pin 0.5 mm FPC DVP module (ESP32-CAM kind) with the
- * standard ~66 deg lens (not fisheye: wide lenses break decoding), ~21 mm flex,
- * lens refocused to ~15 cm (stock lenses are glued for far focus; order
- * "focus at 150 mm" from the module house, e.g. Sincere SF-AOV2640, or refocus).
- * Head 8.0 x 8.0 x 4.85 mm (Kailap JAL-KA4-OV2640 sheet). Lens out through the
- * clear back; not a JLC part, it plugs into J_CAM after assembly. The better
- * optical choice, the SC031GS global-shutter mono module Keycard Shell ships,
- * needs 1.8 V I/O and level translation this board does not have.
+ * QR camera: a GC2145 24-pin 0.5 mm FPC DVP module in the ESP32-CAM pinout
+ * (Camemake CM_DVP_GC2145_UNIVERSAL, DigiKey / JLC Global Sourcing), the commodity
+ * successor to the end-of-life OV2640. Its ~1.4 mm, 115 deg lens needs no refocus;
+ * firmware reads the sensor's centre crop window (P0:0x90-0x98, 640x480, ~48 deg
+ * across), which decoded phone QR as well as a refocused OV2640 in simulation.
+ * Camemake's open CM_ESP_P4_C5 board feeds this module AVDD 2.8 V, DVDD 1.2 V and
+ * DOVDD 3.3 V on the same pins as here. An OV2640 module still fits the same
+ * connector and rails. Lens out through the clear back; not a JLC part, it plugs
+ * into J_CAM after assembly. Flex length and head height: measure on samples.
  *
  * Connector pin order is the Ai-Thinker ESP32-CAM V1.6 schematic's (Espressif's
  * ESP32-S3-EYE numbers the same contacts from the other end, pin N <-> 25 - N;
@@ -21,9 +22,9 @@ const S = "Camera"
  * explicit bring-up check with the chosen module in hand (docs/design.md).
  *
  * Supplies: AVDD 2.8 V, DOVDD 3.3 V (the MCU's I/O level, no shifting), DVDD
- * 1.3 V: the OV2640 data sheet v2.2 puts the core at 1.24-1.36 V (typ 1.3), so
- * the Ai-Thinker boards' 1.2 V is under its minimum. AVDD and DVDD are switched
- * by CAM_EN; DVDD is a fixed 1.3 V LDO.
+ * 1.2 V, as Camemake's reference host and the Ai-Thinker ESP32-CAM supply it (an
+ * OV2640 runs there too, though its data sheet v2.2 asks 1.24-1.36 V). AVDD and
+ * DVDD are switched by CAM_EN; DVDD is a fixed 1.2 V LDO.
  */
 const CAM_PINS = {
   pin1: "Y0", pin2: "Y1", pin3: "Y4", pin4: "Y3", pin5: "Y5", pin6: "Y2", pin7: "Y6", pin8: "PCLK",
@@ -70,11 +71,11 @@ export const CameraBlock = () => (
     <trace from=".U12 > .VSS" to="net.GND" />
     <trace from=".U12 > .CE" to="net.CAM_EN" />
     <trace from=".U12 > .VOUT" to="net.CAM_AVDD" />
-    {/* DVDD 1.3 V: TLV70313 DBV (SBVS305 Pin Functions: 1 IN, 2 GND, 3 EN, 4 NC, 5 OUT),
+    {/* DVDD 1.2 V: TLV70312 DBV (SBVS305 Pin Functions: 1 IN, 2 GND, 3 EN, 4 NC, 5 OUT),
         fixed output, 1 uF in and out. Another sensor's core voltage is another TLV703xx
         on the same land. */}
     <chip name="U14" footprint="pinrow5"
-      manufacturerPartNumber="TLV70313DBVR" supplierPartNumbers={{ jlcpcb: ["C2868385"] }}
+      manufacturerPartNumber="TLV70312DBVR" supplierPartNumbers={{ jlcpcb: ["C2861352"] }}
       pinLabels={{ pin1: "IN", pin2: "GND", pin3: "EN", pin4: "NC", pin5: "OUT" }}
       schX={6} schY={-38} schSectionName={S} />
     <trace from=".U14 > .IN" to="net.V3V3" />
