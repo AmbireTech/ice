@@ -45,25 +45,28 @@ PRO = HERE / "board/wallet.kicad_pro"
 W, H, R = 48.0, 87.0, 4.0
 PANEL = (2.6, 1.0, 42.80, 59.91)              # x, y, w, h (Newhaven rev 4 drawing)
 PANEL_S = PANEL[1] + PANEL[3]                 # 60.91: the panel's south edge
-TFT_TAIL = (PANEL[0] + 9.25, 20.50)           # x of the tail's west edge, width
+# Newhaven rev 4 drawing (NHD-2.4-240320AF-CSXP-CTP), read from the PDF's vectors
+# (2026-10-31). The TFT tail is centred on the panel: 11.15 from both outline edges
+# (the 9.25 dimension is from the west edge of the flex's root, not from the outline;
+# reading it from the outline put the tail, J_TFT and the slot 1.9 mm west).
+TFT_TAIL = (PANEL[0] + 11.15, 20.50)          # x of the tail's west edge, width
 CTP_TAIL = (PANEL[0] + PANEL[2] - 1.90 - 7.00, 7.00)
-# 1.6 mm wide slots, 3.0 mm south of the panel: with no battery between the panel and
-# the board the tails drop 4 mm less, and the slots moved 2 mm south take that length
-# back (each mm south costs a tail 2 mm), so both tails land as before.
-SLOT_Y0, SLOT_Y1 = PANEL_S + 3.0, PANEL_S + 4.6
-# v4 (2026-10-28): the TFT connector moved 5.5 mm south to make room for the battery
-# pack's receptacle between it and the MCU; its slot moved 2.5 mm south with it (the
-# touch slot stayed), which leaves the TFT tail 3.0 mm of slack. The radio module's
-# pads (y 68.39) stop the slot going further.
-TFT_SLOT_DY = 2.5
+# The TFT flex leaves the panel as a 39.00 mm wide, EMI-shielded root, 1.90 inside each
+# outline edge, from 2.2 to 13.2 mm below the panel; only then does it narrow to the
+# 20.5 mm tail. The tail is too short to reach the board's back unless the fold falls
+# within the root, so the ROOT is what folds through the board, and the cutout is sized
+# by it (2026-10-31: the owner had to cut the printed test board's slot out to x ~4).
+TFT_ROOT = (PANEL[0] + 1.90, 39.00)           # x of the root's west edge, width
+TFT_ROOT_END = 13.2                           # mm of flex below the panel where the root ends
+# One cutout, 4.6 mm tall: the flexes fold anywhere in it, which takes up the tails'
+# length tolerance. South edge: the radio module's pads (y 68.39) stop it; the fold lines
+# need it straight across the root's whole width.
+SLOT_Y0, SLOT_Y1 = PANEL_S + 2.5, PANEL_S + 7.1
 # The touch flex is 7 mm wide only for its last 32 mm. From the panel edge to 23.6 mm below
 # it, it is 14.55 mm wide, flush with the tail's east edge: the root off the touch glass and
 # the stiffened block that carries the touch controller. Newhaven's drawing does not dimension
 # that part; these are its outline in the PDF's vectors, scaled by the dimensioned 7.00 tail
-# and 55.85 length beside it. The block goes through the touch slot when the tail is threaded,
-# so the slot is sized by the flex, not by the tail (proto 0: the bridge between the two slots
-# stopped it). The touch slot so reaches into the TFT slot's x range, and the two are one
-# cutout (slot_outline()).
+# and 55.85 length beside it.
 CTP_FLEX = (CTP_TAIL[0] + CTP_TAIL[1] - 14.55, 14.55)
 CTP_FLEX_LEN = 23.6
 # Tail-to-slot clearance at each end. The panel is located by the bezel and the tails
@@ -92,25 +95,30 @@ HOLE_RING = 2.6      # no parts within this of a hole centre: an M2 head is ~3.8
 ANT_KEEPOUT = (0.0, H - 3.7, 20.0, H)
 
 # Tail length budget (Newhaven rev 4 drawing: TFT tail 30.00 and touch tail 55.85
-# below the panel outline). Each tail runs in-plane to the slot, drops through
-# the foam + board, and runs north on the back face until its stiffened end sits
-# over the connector's contact row. The touch flex leaves from the touch glass,
-# which sits on top of the TFT, so it drops further. scripts/checkFpc.py checks
-# the placed connectors against this budget. The panel sits on foam tape straight
-# on the board's front face (the cell is an AAA in the chin, not under the panel).
+# below the panel outline). Each flex runs in-plane from the panel's south edge,
+# folds down through the cutout and runs north on the back face until its
+# stiffened end sits over the connector's contact row. Both folds share the cutout:
+# the touch flex leaves the panel above the TFT flex and over its whole width, so it
+# folds around the outside of the TFT fold, FOLD_GAP further south. The drawing's
+# side view puts each flex's exit above the module's back face: the TFT flex 1.26 mm,
+# the touch flex 3.22 mm. scripts/checkFpc.py checks the placed connectors against
+# this budget. The panel sits on foam tape straight on the board's front face.
 ADHESIVE_T, BOARD_T = 0.3, 1.0                # foam tape, PCB
 TFT_LEN, CTP_LEN = 30.00, 55.85
-CTP_ABOVE_TFT = 2.55 + 0.175                  # TFT module + adhesive under the touch glass
-SLOT_C = (SLOT_Y0 + SLOT_Y1) / 2
-TFT_DROP = ADHESIVE_T + BOARD_T
-CTP_DROP = TFT_DROP + CTP_ABOVE_TFT
-TFT_SLOT_C = SLOT_C + TFT_SLOT_DY
-TFT_END_Y = TFT_SLOT_C - (TFT_LEN - (TFT_SLOT_C - PANEL_S) - TFT_DROP)
-CTP_END_Y = SLOT_C - (CTP_LEN - (SLOT_C - PANEL_S) - CTP_DROP)
-CTP_FLEX_END_Y = SLOT_C - (CTP_FLEX_LEN - (SLOT_C - PANEL_S) - CTP_DROP)   # north end of the wide part, on the back
+TFT_DROP = ADHESIVE_T + 1.26 + BOARD_T
+CTP_DROP = ADHESIVE_T + 3.22 + BOARD_T
+FOLD_GAP = 0.4
+# Nominal folds: the TFT's as far south as leaves the touch fold 0.8 mm off the cutout's
+# south edge; the assembler can move both north (the TFT bows more, the touch less).
+CTP_FOLD_Y = SLOT_Y1 - 0.8
+TFT_FOLD_Y = CTP_FOLD_Y - FOLD_GAP
+TFT_END_Y = TFT_FOLD_Y - (TFT_LEN - (TFT_FOLD_Y - PANEL_S) - TFT_DROP)
+CTP_END_Y = CTP_FOLD_Y - (CTP_LEN - (CTP_FOLD_Y - PANEL_S) - CTP_DROP)
+CTP_FLEX_END_Y = CTP_FOLD_Y - (CTP_FLEX_LEN - (CTP_FOLD_Y - PANEL_S) - CTP_DROP)   # north end of the wide part, on the back
+TFT_ROOT_END_Y = TFT_FOLD_Y - (TFT_ROOT_END - (TFT_FOLD_Y - PANEL_S) - TFT_DROP)   # north end of the root, on the back
 TFT_ROW, CTP_ROW = 1.35, 1.05                 # connector origin to its contact row (north of origin)
 CTP_SLACK = 1.5      # mm of touch tail slack: a nominal-length tail landing exactly on the row left no margin for stack/tail tolerance (pre-order audit)
-TFT_SLACK = 3.0      # mm of TFT tail left as a gentle bow (checkFpc allows 3): v4's receptacle needs the room south of the MCU
+TFT_SLACK = 2.5      # mm of TFT tail left as a gentle bow (checkFpc allows 3): v4's receptacle holds J_TFT where it is
 GAP = 0.5            # free board kept between courtyards: a via, or two 0.15 mm tracks
 OPT_RADIUS = 7.0     # how far the ratsnest pass may move a part from its seed (mm)
 # Footprint keep-outs on the back face (KiCad rule areas: DRC flags any part moved
@@ -431,17 +439,20 @@ PART_H = {"R_0402": 0.40, "C_0402": 0.55, "R_0603": 0.50, "C_0603": 0.90, "R_080
 # Under the display's flex tails, on the back between each connector and its slot, only
 # low parts: the tail lies flat on them. Chip passives and small SMD IC packages.
 LOW_LIBS = ("Capacitor_SMD:", "Resistor_SMD:", "Inductor_SMD:", "LED_SMD:", "Package_TO_SOT_SMD:",
-            "Package_DFN_QFN:", "Package_SON:", "wallet:Texas_", "wallet:NXP_", "Crystal:")
+            "Package_DFN_QFN:", "Package_SON:", "wallet:Texas_", "wallet:NXP_", "Crystal:",
+            "Package_SO:VSSOP-")      # VSSOP: 0.9-1.0 mm tall, no taller than a SOT-23
 
 
 def tail_corridors(board):
-    """{name: (x0, y0, x1, y1)}: each tail from its connector's south edge to its slot, and
-    the touch flex's wide part (CTP_FLEX), which lies on the back from the slot north."""
+    """{name: (x0, y0, x1, y1)}: each tail from its connector's south edge to the cutout,
+    the touch flex's wide part (CTP_FLEX) and the TFT flex's root (TFT_ROOT), which lie on
+    the back from the cutout north."""
     out = {}
-    for name, ref, (tx0, tw), dy in (("TFT tail", "J_TFT", TFT_TAIL, TFT_SLOT_DY), ("touch tail", "J_CTP", CTP_TAIL, 0.0)):
+    for name, ref, (tx0, tw) in (("TFT tail", "J_TFT", TFT_TAIL), ("touch tail", "J_CTP", CTP_TAIL)):
         y0 = pcbnew.ToMM(board.FindFootprintByReference(ref).GetBoundingBox(False).GetBottom())
-        out[name] = (tx0, y0, tx0 + tw, SLOT_Y0 + dy)
+        out[name] = (tx0, y0, tx0 + tw, SLOT_Y0)
     out["touch flex block"] = (CTP_FLEX[0], CTP_FLEX_END_Y, sum(CTP_FLEX), SLOT_Y0)
+    out["TFT flex root"] = (TFT_ROOT[0], TFT_ROOT_END_Y, sum(TFT_ROOT), SLOT_Y0)
     return out
 
 
@@ -580,27 +591,34 @@ def rounded_rect(board, x0, y0, x1, y1, r):
 
 
 def slot_boxes():
-    """{name: (x0, y0, x1, y1)} of the two tail slots: each flex's widest part through
-    it plus SLOT_MARGIN at both ends; the TFT slot TFT_SLOT_DY south of the touch slot."""
-    return {"TFT": (TFT_TAIL[0] - SLOT_MARGIN, SLOT_Y0 + TFT_SLOT_DY,
-                    TFT_TAIL[0] + TFT_TAIL[1] + SLOT_MARGIN, SLOT_Y1 + TFT_SLOT_DY),
-            "touch": (CTP_FLEX[0] - SLOT_MARGIN, SLOT_Y0, CTP_TAIL[0] + CTP_TAIL[1] + SLOT_MARGIN, SLOT_Y1)}
+    """{name: (x0, y0, x1, y1)} of the cutout the display's flexes fold through: the TFT
+    flex's 39 mm root plus SLOT_MARGIN at both ends (the touch flex is flush with its east
+    edge), SLOT_Y0..SLOT_Y1."""
+    return {"tails": (TFT_ROOT[0] - SLOT_MARGIN, SLOT_Y0, TFT_ROOT[0] + TFT_ROOT[1] + SLOT_MARGIN, SLOT_Y1)}
+
+
+SLOT_R = 0.5         # corner radius: the router bit's; straight edges keep the fold lines straight
+# Over the radio module's top pad row the south edge stands 0.41 mm further north, to x
+# RADIO_STEP[0]: the module's 3.3 V pins (19, 23), its RX pin (15) and its ground pin 21
+# all sit in that row, and the 0.65 mm gap between its pad rows takes only one track
+# from each end. The strip this leaves above the pads carries a 0.25 mm 3.3 V track from
+# the west and the RX track from the east (each 0.25 from the edge, 0.29 from the pads);
+# the row gap carries TX from the east and pin 21's ground tie to the west. The fold
+# lines stay clear of it (the TFT folds north of 67.2, the touch flex east of x 28.9).
+RADIO_STEP = (17.8, 0.41)
 
 
 def slot_outline(board):
-    """The tail slots as one cutout: the touch slot (north, east) reaches west over the TFT
-    slot's east end (south), and the gap between them in that overlap is cut too, since a
-    0.9 mm web there would be the board's weakest point. Ends fully rounded (a router bit
-    leaves those anyway); the two inside corners of the step are sharp, board material."""
-    tx0, ty0, tx1, ty1 = slot_boxes()["TFT"]
-    cx0, cy0, cx1, cy1 = slot_boxes()["touch"]
-    assert cy1 < ty0 and tx0 < cx0 < tx1 < cx1, "slot_outline() assumes the touch slot north-east of the TFT slot, overlapping it in x"
-    r = (SLOT_Y1 - SLOT_Y0) / 2
-    seg(board, (cx0 + r, cy0), (cx1 - r, cy0)); arc(board, (cx1 - r, cy0 + r), r, -90, 90)
-    seg(board, (cx1 - r, cy1), (tx1, cy1)); seg(board, (tx1, cy1), (tx1, ty1 - r))
-    arc(board, (tx1 - r, ty1 - r), r, 0, 90); seg(board, (tx1 - r, ty1), (tx0 + r, ty1))
-    arc(board, (tx0 + r, ty0 + r), r, 90, 270); seg(board, (tx0 + r, ty0), (cx0, ty0))
-    seg(board, (cx0, ty0), (cx0, cy0 + r)); arc(board, (cx0 + r, cy0 + r), r, 180, 270)
+    """The cutout: one rectangle, corners rounded to SLOT_R, its south edge stepped up
+    over the radio module (RADIO_STEP) with a 45 degree jog."""
+    x0, y0, x1, y1 = slot_boxes()["tails"]
+    r, (sx, sd) = SLOT_R, RADIO_STEP
+    ys = y1 - sd
+    seg(board, (x0 + r, y0), (x1 - r, y0)); arc(board, (x1 - r, y0 + r), r, -90, 0)
+    seg(board, (x1, y0 + r), (x1, y1 - r)); arc(board, (x1 - r, y1 - r), r, 0, 90)
+    seg(board, (x1 - r, y1), (sx + sd, y1)); seg(board, (sx + sd, y1), (sx, ys))
+    seg(board, (sx, ys), (x0 + r, ys)); arc(board, (x0 + r, ys - r), r, 90, 180)
+    seg(board, (x0, ys - r), (x0, y0 + r)); arc(board, (x0 + r, y0 + r), r, 180, 270)
 
 
 def drawing(board, x0, y0, x1, y1, layer, width=0.1):

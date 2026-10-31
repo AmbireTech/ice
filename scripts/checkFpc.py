@@ -118,10 +118,10 @@ if has_cell:
 sys.path.insert(0, str(Path(__file__).parent))
 import newBoard as nb  # noqa: E402
 
-# The tails' drop on the front: from the panel's south edge into the north half of
-# each slot. No front part's body (its fab outline) and not the cell may reach into it.
-for name, (tx0, tw), dy in (("TFT tail", nb.TFT_TAIL, nb.TFT_SLOT_DY), ("touch flex", nb.CTP_FLEX, 0.0)):
-    drop_s = nb.SLOT_Y0 + dy + nb.TAIL_BEND + nb.TAIL_CLR
+# The flexes' run on the front: from the panel's south edge to their folds in the
+# cutout. No front part's body (its fab outline) and not the cell may reach into it.
+for name, (tx0, tw), fold in (("TFT flex root", nb.TFT_ROOT, nb.TFT_FOLD_Y), ("touch flex", nb.CTP_FLEX, nb.CTP_FOLD_Y)):
+    drop_s = fold + nb.TAIL_CLR
     x0, x1 = tx0 - nb.SLOT_MARGIN, tx0 + tw + nb.SLOT_MARGIN
     bodies = []
     for f in board.GetFootprints():
