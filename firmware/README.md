@@ -239,9 +239,11 @@ are in `bringup/proto0-first-signed-tx.json`.
   are on the other side from the tail's), the SE050 answers and supplies
   randomness.
 - SWD from the BeagleY-AI flashed the boot chain, then started returning
-  corrupted replies (the first bits of the chip's ID right, then wrong). Nothing
-  in the firmware touches the SWD pins and tamper detection does not disable
-  debug; open.
+  corrupted replies (the first bits of the chip's ID right, then wrong). The
+  cause was the probe's SWDIO pin: BeagleY-AI header pin 18 (GPIO24) is the
+  AM67A's wake-up-domain UART pad (WKUP_UART0_TXD). With SWDIO on header pin 15
+  (GPIO22, a plain main-domain GPIO) every read is correct, at any clock speed
+  (`bringup/swdprobe`: 80 of 80). Use `swd.py --probe beagley`.
 
 ## Bring-up checks
 

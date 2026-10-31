@@ -278,9 +278,13 @@ shutdown"""
             ("secwm1r2", FLASH_R_NS + 0x54), ("wrp1a", FLASH_R_NS + 0x58),
             ("wrp1b", FLASH_R_NS + 0x5C),
         ])
-        bad = {k: v for k, v in r.items() if isinstance(v, str) and k != "secboot0_s"}
+        # The ID and option registers must read; a running firmware may lock others
+        bad = {k: v for k, v in r.items() if isinstance(v, str) and k in ("idcode", "flashsize", "optr")}
         if bad:
             die(f"cannot read the chip's system registers: {bad}")
+
+        def hx(k):
+            return r[k] if isinstance(r[k], str) else f"{r[k]:#010x}"
         optr = r["optr"]
         tz = optr >> 31 & 1
         rdp = optr & 0xFF
@@ -289,16 +293,16 @@ shutdown"""
         print(f"chip      DBGMCU_IDCODE {r['idcode']:#010x}  DEV_ID {dev:#05x}"
               f" ({'STM32U575/585' if dev == 0x482 else 'NOT a U575/585'})"
               f"  REV_ID {r['idcode'] >> 16:#06x}")
-        print(f"          flash {r['flashsize'] & 0xFFFF} KB, UID "
-              f"{r['uid2']:08x}{r['uid1']:08x}{r['uid0']:08x}")
+        uid = "".join(r[k] if isinstance(r[k], str) else f"{r[k]:08x}" for k in ("uid2", "uid1", "uid0"))
+        print(f"          flash {r['flashsize'] & 0xFFFF} KB, UID {uid}")
         print(f"options   OPTR {optr:#010x}: RDP level {rdp_s}, BOR_LEV {optr >> 8 & 7}, "
               f"set: {' '.join(bits(optr, OPTR_BITS))}")
         # the secure alias where it reads (TrustZone on), else the non-secure one
         sb = r["secboot0_s"] if isinstance(r["secboot0_s"], int) and r["secboot0_s"] else r["secboot0"]
         print(f"          SECBOOTADD0R {sb:#010x}: secure boot address {sb & 0xFFFFFF80:#010x}"
-              f"{', BOOT_LOCK' if sb & 1 else ''}   NSBOOTADD0R {r['nsboot0']:#010x}")
-        print(f"          SECWM1R1 {r['secwm1r1']:#010x} SECWM1R2 {r['secwm1r2']:#010x} "
-              f"WRP1AR {r['wrp1a']:#010x} WRP1BR {r['wrp1b']:#010x}")
+              f"{', BOOT_LOCK' if sb & 1 else ''}   NSBOOTADD0R {hx('nsboot0')}")
+        print(f"          SECWM1R1 {hx('secwm1r1')} SECWM1R2 {hx('secwm1r2')} "
+              f"WRP1AR {hx('wrp1a')} WRP1BR {hx('wrp1b')}")
         if not tz:
             print("TrustZone is OFF: run `firmware/swd.py trustzone` before flashing.")
             return
