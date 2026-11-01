@@ -18,7 +18,10 @@ Each finding has a place (mm) and a reason, sorted north to south:
               back through a second via, while it continues on the first layer at both
               ends, AND the first layer offers a way between the two vias at most
               DETOUR_X times the run plus DETOUR_MM (an octilinear grid search keeping the
-              board's clearances): two vias that buy nothing. A forced crossing is not listed
+              board's clearances): two vias that buy nothing. A forced crossing is not listed,
+              but a crossing forced only by a V3V3 fanout track or a GND stitching via is
+              (plane-net copper moves freely; owner, 2026-11-01): "once the plane-net track or
+              via in it moves". tidyDefects.py removes stubs and undoes the unforced hops
   acute       two segments meeting at under 80 degrees in open copper (not at a pad or via)
   stub        copper that does nothing: a segment that other copper of its net covers
               tracks (overlapping or doubled-back pieces; a piece inside a pad or via is a
@@ -61,7 +64,7 @@ def xy(p):
     return (round(M(p.x), 2), round(M(p.y), 2))
 
 
-def hops(board, max_mm):
+def hop_items(board, max_mm):
     out = []
     by_net = {}
     for t in board.GetTracks():
@@ -105,8 +108,15 @@ def hops(board, max_mm):
                     if not any(t.GetLayer() == other and (c.HitTest(t.GetStart()) or c.HitTest(t.GetEnd())) for t in tracks):
                         continue
                     alt = stay_length(board, chain, other, (a, c))
+                    moved = ""
                     if alt is None or alt > DETOUR_X * length + DETOUR_MM:
-                        continue
+                        # a V3V3 fanout track or a GND stitching via in the way is movable, not an obstacle
+                        # (owner, 2026-11-01: "jumping over a 3V3 trace given that the one is completely
+                        # flexible"): list the hop when the other layer has a way once that copper moves
+                        alt = stay_length(board, chain, other, (a, c), movable=True)
+                        if alt is None or alt > DETOUR_X * length + DETOUR_MM:
+                            continue
+                        moved = " once the plane-net track or via in it moves"
                     pa, pc = xy(a.GetPosition()), xy(c.GetPosition())
                     # walked from either via: a via that branches on this layer only walks one way
                     if frozenset((pa, pc, layer)) in seen:
@@ -114,8 +124,13 @@ def hops(board, max_mm):
                     seen.add(frozenset((pa, pc, layer)))
                     out.append(("hop", pa, f"{net}: two vias {pa} and {pc}, {length:.1f} mm on "
                                            f"{board.GetLayerName(layer)} between them; "
-                                           f"{board.GetLayerName(other)} has a {alt:.1f} mm way"))
+                                           f"{board.GetLayerName(other)} has a {alt:.1f} mm way{moved}",
+                                dict(a=a, c=c, chain=chain, layer=layer, other=other, moved=bool(moved))))
     return out
+
+
+def hops(board, max_mm):
+    return [h[:3] for h in hop_items(board, max_mm)]
 
 
 _COPPER = {}
@@ -187,10 +202,24 @@ DETOUR_X, DETOUR_MM = 1.3, 1.0   # a hop is avoidable when its own layer offers 
 GRID = 0.05
 
 
-def stay_length(board, chain, layer, skip):
-    """Length (mm) of the shortest octilinear way between the chain's ends on `layer`, keeping the
-    board's clearance to other nets, edges and keepouts (vias in `skip` gone); None if none
-    within a window around the chain."""
+def stay_length(board, chain, layer, skip, movable=False):
+    r = stay_path(board, chain, layer, skip, movable)
+    return None if r is None else r[0]
+
+
+def movable_copper(net, item):
+    """Plane-net copper the owner moves freely: a V3V3 fanout track, a GND/V3V3 stitching via. Pads are not."""
+    return net in PLANE_CODES and item.Type() in (pcbnew.PCB_TRACE_T, pcbnew.PCB_VIA_T)
+
+
+PLANE_CODES = set()
+
+
+def stay_path(board, chain, layer, skip, movable=False):
+    """(length mm, [points]) of the shortest octilinear way between the chain's ends on `layer`,
+    keeping the board's clearance to other nets, edges and keepouts (vias in `skip` gone);
+    None if none within a window around the chain. With `movable`, plane-net tracks and vias
+    do not count as obstacles."""
     import heapq
     from shapely.geometry import Point, box
     from shapely.ops import unary_union
@@ -205,8 +234,11 @@ def stay_length(board, chain, layer, skip):
     x0, y0 = min(p[0] for p in pts) - 2.5, min(p[1] for p in pts) - 2.5
     x1, y1 = max(p[0] for p in pts) + 2.5, max(p[1] for p in pts) + 2.5
     win = box(x0, y0, x1, y1)
+    if not PLANE_CODES:
+        PLANE_CODES.update(board.GetNetcodeFromNetname(n) for n in PLANES)
     obst = [shp.buffer(w + clr - 1e-3) for net, shp, item in c["lay"][layer]
-            if net != t0.GetNetCode() and not any(item is k for k in skip) and shp.intersects(win.buffer(1))]
+            if net != t0.GetNetCode() and not any(item is k for k in skip) and shp.intersects(win.buffer(1))
+            and not (movable and movable_copper(net, item))]
     edge_clr = M(board.GetDesignSettings().m_CopperEdgeClearance)
     obst += [e.buffer(w + edge_clr) for e in c["edges"] if e.intersects(win.buffer(1))]
     obst += [k.buffer(w) for k in c["keep"][layer]]
@@ -222,18 +254,26 @@ def stay_length(board, chain, layer, skip):
         return free[(i, j)]
     s, g = cell(ends[0]), cell(ends[1])
     free[s] = free[g] = True
-    dist, todo = {s: 0.0}, [(0.0, s)]
+    dist, todo, prev = {s: 0.0}, [(0.0, s)], {}
     steps = [(1, 0, 1), (-1, 0, 1), (0, 1, 1), (0, -1, 1), (1, 1, 1.4142), (1, -1, 1.4142), (-1, 1, 1.4142), (-1, -1, 1.4142)]
     while todo:
         d, (i, j) = heapq.heappop(todo)
         if (i, j) == g:
-            return d * GRID
+            path, k = [], (i, j)
+            while k != s:
+                path.append(k)
+                k = prev[k]
+            path.append(s)
+            pts = [(round(x0 + a * GRID, 3), round(y0 + b * GRID, 3)) for a, b in reversed(path)]
+            pts[0], pts[-1] = ends[0], ends[1]
+            return d * GRID, pts
         if d > dist.get((i, j), 1e18):
             continue
         for di, dj, cost in steps:
             n = (i + di, j + dj)
             if ok(*n) and d + cost < dist.get(n, 1e18):
                 dist[n] = d + cost
+                prev[n] = (i, j)
                 heapq.heappush(todo, (d + cost, n))
     return None
 
@@ -413,7 +453,12 @@ def acute_turns(board):
 
 
 def stubs(board):
-    """Segments that carry nothing: covered by other copper of the net on their layer, or zero length."""
+    return [f[:3] for f in stub_items(board)]
+
+
+def stub_items(board):
+    """Segments that carry nothing: covered by other copper of the net on their layer, or zero length.
+    [(kind, pos, what, item)]."""
     from shapely.ops import unary_union
     from shapely.geometry import LineString
     out = []
@@ -427,14 +472,14 @@ def stubs(board):
                 if item.Type() in (pcbnew.PCB_VIA_T, pcbnew.PCB_PAD_T):
                     continue
                 if item.GetLength() == 0:
-                    out.append(("stub", xy(item.GetStart()), f"{item.GetNetname()}: zero-length track"))
+                    out.append(("stub", xy(item.GetStart()), f"{item.GetNetname()}: zero-length track", item))
                     continue
                 # under other tracks only: a pad-entry piece inside its pad or via is normal
                 others = [s2 for s2, i2 in group if i2 is not item and i2.Type() == pcbnew.PCB_TRACE_T]
                 core = LineString([xy(item.GetStart()), xy(item.GetEnd())]).buffer(M(item.GetWidth()) / 2 - 0.005)
                 if others and core.difference(unary_union(others)).area < 1e-4:
                     out.append(("stub", xy(item.GetStart()), f"{item.GetNetname()}: {M(item.GetLength()):.2f} mm on "
-                                                            f"{board.GetLayerName(L)} lies under other copper of the net"))
+                                                            f"{board.GetLayerName(L)} lies under other copper of the net", item))
     return out
 
 
