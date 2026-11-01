@@ -51,7 +51,7 @@ pt = lambda x, y: pcbnew.VECTOR2I(mm(x), mm(y))
 
 # ── the device board: where the jig lands (board/wallet.kicad_pcb, 2026-11-01) ──
 PADS = {"TP_3V3": (4.00, 15.00), "TP_SWDIO": (4.14, 17.68), "TP_SWCLK": (4.00, 20.28),
-        "TP_GND": (1.29, 20.74), "TP_NRST": (33.60, 26.80),
+        "TP_GND": (1.29, 20.74), "TP_NRST": (33.25, 26.30),
         "TP_RSWDIO": (2.04, 78.90), "TP_RSWCLK": (2.00, 81.50)}
 HOLES = G.HOLES
 DEVICE_BOARD = os.path.join(ROOT, "board", "wallet.kicad_pcb")
