@@ -407,8 +407,10 @@ export const PowerBlock = () => (
     <trace from=".Q_BTN > .C" to="net.BTN_N" />
     {/* BTN_N's pull-up is PA0's own (PUPDR, kept through Standby/Shutdown with
         PWR_PUCRA + APC). */}
-    {/* PWR_HOLD low until firmware drives it: the board stays off unless the MCU asks. */}
-    <resistor name="R_HOLD" resistance="100k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C25741"] }}
+    {/* PWR_HOLD low until firmware drives it: the board stays off unless the MCU asks.
+        1M, not 100k: the MCU holds PWR_HOLD high whenever the board is on, asleep too,
+        and 100k took 33 uA of that asleep budget; 1M takes 3.3 uA. */}
+    <resistor name="R_HOLD" resistance="1M" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C26083"] }}
       schX={4} schY={12} schRotation="90deg" schSectionName={S} />
     <trace from=".R_HOLD > .pin1" to="net.PWR_HOLD" />
     <trace from=".R_HOLD > .pin2" to="net.GND" />
