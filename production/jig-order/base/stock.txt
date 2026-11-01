@@ -1,0 +1,2 @@
+C160404   SM04B-SRSS-TB(LF)(SN)        x1  JLC stock 63821  expand  ok: covers 63821 boards  (J_RAD)
+C5157248  YZP0063-20068-01             x2  JLC stock 401  expand  ok: covers 200 boards  (P_RSWCLK,P_RSWDIO)

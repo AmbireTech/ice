@@ -103,7 +103,7 @@ HERE = Path(__file__).resolve().parent.parent
 BOARD = Path(os.environ.get("ENCLOSURE_BOARD", HERE / "board/wallet.kicad_pcb"))   # a copy for trials
 OUT = HERE / "enclosure/out"
 ORDER = HERE / "production/order"            # the device board's order set (production/make_order.sh)
-PACK_ORDER = HERE / "production/pack-order"  # the pack board's (pack/makeOrder.py)
+PACK_ORDER = HERE / "production/pack-order"  # the pack board's (production/boardOrder.py)
 WEB = HERE / "docs/v4/enclosure"   # v4 (the battery pack): the /v4/ page; docs/enclosure (proto 0), docs/v2 (proto 1, front cell) and docs/v3 (cell on the back) are frozen
 sys.path.insert(0, str(HERE / "art"))
 import flame as flame_art  # noqa: E402  (art/flame.py, shared with scripts/silkFlame.py)

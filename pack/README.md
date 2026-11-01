@@ -67,14 +67,14 @@ outline and the magnets on F.Fab; it is out of the BOM and the CPL. The pin's 3D
 - `makePack.py`: builds the board from scratch from `docs/v4/enclosure/enclosure.json`
   (outline, cells, contacts, magnets, frame) and its own constants (the parts, the copper). After a
   hand edit, edit the board instead.
-- `makeOrder.py`: writes `../production/pack-order/` (Gerbers and drill zip, JLC BOM and
-  CPL, `stock.txt` with JLC's live stock).
+- `../production/boardOrder.py`: writes `../production/pack-order/` (Gerbers and drill zip,
+  JLC BOM and CPL, `stock.txt` with JLC's live stock).
 
 ```sh
 KICAD_PY=/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3
 $KICAD_PY pack/makePack.py                                  # the board (overwrites it)
 kicad-cli pcb drc --severity-all pack/pack.kicad_pcb        # as saved, and again with --refill-zones
-$KICAD_PY pack/makeOrder.py                                 # the order files
+$KICAD_PY production/boardOrder.py pack/pack.kicad_pcb production/pack-order pack 200   # the order files
 ```
 
 ## Ordering at JLC

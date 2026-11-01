@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
-"""JLC order files for the pack board, into production/pack-order/:
+"""JLC order files for a small scripted board: the pack, the jig's probe and base.
 
-    KICAD_PY pack/makeOrder.py        (from hardware/ambire-hw; refill zones and save first: it plots as saved)
+    KICAD_PY production/boardOrder.py BOARD OUTDIR NAME RUN
+        (from hardware/ambire-hw; refill zones and save first: it plots as saved)
+    KICAD_PY production/boardOrder.py pack/pack.kicad_pcb production/pack-order pack 200
+    KICAD_PY production/boardOrder.py jig/probe.kicad_pcb production/jig-order/probe jig-probe 5
+    KICAD_PY production/boardOrder.py jig/base.kicad_pcb production/jig-order/base jig-base 5
 
-  pack_gerbers.zip          Gerbers (2 Cu, mask, paste, silk, Edge.Cuts) + Excellon drill
-  pack_bom-jlc.csv          Comment, Designator, Footprint, LCSC Part #
-  pack_positions-jlc.csv    Designator, Mid X, Mid Y, Layer, Rotation
-  stock.txt                 JLC's own stock for each part, read live
+  NAME_gerbers.zip          Gerbers (every copper layer, mask, paste, silk, Edge.Cuts) + Excellon drill
+  NAME_bom-jlc.csv          Comment, Designator, Footprint, LCSC Part #
+  NAME_positions-jlc.csv    Designator, Mid X, Mid Y, Layer, Rotation
+  stock.txt                 JLC's own stock for each part, read live; RUN is the boards in a run
+                            (a part whose stock covers fewer is SHORT)
 
 The origin of the plots and the positions is the outline's bottom-left corner (as the
 device board's export_fab.py does). Rotation: KiCad's angle, bottom parts as 180 - angle;
@@ -18,20 +23,19 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import zipfile
 
 import pcbnew
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-BOARD = os.path.join(HERE, "pack.kicad_pcb")
-OUT = os.path.join(os.path.dirname(HERE), "production", "pack-order")
+if len(sys.argv) != 5:
+    sys.exit(__doc__)
+BOARD, OUT, NAME, RUN = sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4])
+BOARD, OUT = os.path.abspath(BOARD), os.path.abspath(OUT)   # KiCad's plotter resolves a relative folder against the board's
 API = "https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList"
 LAYERS = [(pcbnew.F_Cu, "F_Cu"), (pcbnew.B_Cu, "B_Cu"), (pcbnew.F_Mask, "F_Mask"), (pcbnew.B_Mask, "B_Mask"),
           (pcbnew.F_Paste, "F_Paste"), (pcbnew.B_Paste, "B_Paste"), (pcbnew.F_SilkS, "F_Silkscreen"),
           (pcbnew.B_SilkS, "B_Silkscreen"), (pcbnew.Edge_Cuts, "Edge_Cuts")]
-
-
-RUN = 200   # packs in a run: a part whose JLC stock covers fewer is SHORT
 
 
 def jlc_stock(code):
@@ -71,7 +75,8 @@ def main():
     po.SetSubtractMaskFromSilk(True)
     po.SetUseGerberX2format(True)
     po.SetDrillMarksType(pcbnew.DRILL_MARKS_NO_DRILL_SHAPE)
-    for lid, name in LAYERS:
+    inner = [(pcbnew.In1_Cu, "In1_Cu"), (pcbnew.In2_Cu, "In2_Cu")] if board.GetCopperLayerCount() == 4 else []
+    for lid, name in LAYERS[:2] + inner + LAYERS[2:]:
         ctl.SetLayer(lid)
         ctl.OpenPlotfile(name, pcbnew.PLOT_FORMAT_GERBER, name)
         ctl.PlotLayer()
@@ -81,7 +86,7 @@ def main():
     dw.SetFormat(True)
     dw.CreateDrillandMapFilesSet(gerb, True, False)
     files = sorted(f for f in os.listdir(gerb) if not f.endswith(".gbrjob"))
-    with zipfile.ZipFile(os.path.join(OUT, "pack_gerbers.zip"), "w", zipfile.ZIP_DEFLATED) as z:
+    with zipfile.ZipFile(os.path.join(OUT, f"{NAME}_gerbers.zip"), "w", zipfile.ZIP_DEFLATED) as z:
         for f in files:
             z.write(os.path.join(gerb, f), f)
 
@@ -100,12 +105,12 @@ def main():
                     "Layer": "Bottom" if bottom else "Top", "Rotation": f"{((180.0 - rot) if bottom else rot) % 360:.1f}"})
         key = (fp.GetValue(), str(fp.GetFPID().GetLibItemName()), lcsc)
         bom.setdefault(key, []).append(ref)
-    with open(os.path.join(OUT, "pack_bom-jlc.csv"), "w", newline="") as fh:
+    with open(os.path.join(OUT, f"{NAME}_bom-jlc.csv"), "w", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(["Comment", "Designator", "Footprint", "LCSC Part #"])
         for (value, footprint, lcsc), refs in bom.items():
             w.writerow([value, ",".join(refs), footprint, lcsc])
-    with open(os.path.join(OUT, "pack_positions-jlc.csv"), "w", newline="") as fh:
+    with open(os.path.join(OUT, f"{NAME}_positions-jlc.csv"), "w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=list(cpl[0]))
         w.writeheader()
         w.writerows(cpl)
@@ -116,8 +121,8 @@ def main():
         need = len(refs)
         packs = None if stock is None else stock // need
         flag = ("MISSING at JLC" if stock is None
-                else f"SHORT: covers {packs} packs; source more (maker direct, consigned to JLC)" if packs < RUN
-                else f"ok: covers {packs} packs")
+                else f"SHORT: covers {packs} boards; source more (maker direct, consigned to JLC)" if packs < RUN
+                else f"ok: covers {packs} boards")
         lines.append(f"{lcsc:9} {model or '?':28} x{need}  JLC stock {stock}  {kind or ''}  {flag}  ({','.join(refs)})")
     open(os.path.join(OUT, "stock.txt"), "w").write("\n".join(lines) + "\n")
     print(f"origin ({ox}, {oy}); {len(files)} plot files; {len(cpl)} placements on "

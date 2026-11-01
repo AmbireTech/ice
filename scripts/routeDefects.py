@@ -235,7 +235,7 @@ def stay_path(board, chain, layer, skip, movable=False):
     x1, y1 = max(p[0] for p in pts) + 2.5, max(p[1] for p in pts) + 2.5
     win = box(x0, y0, x1, y1)
     if not PLANE_CODES:
-        PLANE_CODES.update(board.GetNetcodeFromNetname(n) for n in PLANES)
+        PLANE_CODES.update(board.FindNet(n).GetNetCode() for n in PLANES if board.FindNet(n))   # a board may lack one
     obst = [shp.buffer(w + clr - 1e-3) for net, shp, item in c["lay"][layer]
             if net != t0.GetNetCode() and not any(item is k for k in skip) and shp.intersects(win.buffer(1))
             and not (movable and movable_copper(net, item))]

@@ -58,7 +58,7 @@ class Work:
         for f in Path(src).parent.iterdir():
             if f.is_file() and f.suffix in (".kicad_pro", ".kicad_dru", ".kicad_prl") or f.name == "fp-lib-table":
                 shutil.copy(f, self.dir / f.name)
-        self.path = str(self.dir / "wallet.kicad_pcb")
+        self.path = str(self.dir / Path(src).name)   # the board's own name: beside its own .kicad_pro
         shutil.copy(src, self.path)
         self.board = pcbnew.LoadBoard(self.path)
         self.out = out
