@@ -11,7 +11,7 @@ set -euo pipefail
 cd "${0:A:h}/.."
 CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 TMP=$(mktemp -d)
-PORT=8799
+PORT=${PORT:-8799}   # override when 8799 is taken (PORT=8811 enclosure/render_hero.sh)
 trap 'kill $SERVER 2>/dev/null; rm -f docs/v4/_hero.html; rm -rf "$TMP"' EXIT
 
 sed -e 's#</style>#html,body{background:transparent!important;padding:0!important;margin:0} body::after{display:none!important} .hero,.closer,footer,main>section:not(\#configure),\#configure .head,.config,figcaption,.onstage{display:none!important} .build{display:block} .stage{position:fixed!important;inset:0;border:0!important;border-radius:0!important;aspect-ratio:auto!important;background:transparent!important}</style>#' \
