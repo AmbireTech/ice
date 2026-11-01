@@ -46,7 +46,9 @@ KEEP = {"U2.2", "U2.3", "U2.9", "C_IN_BOOST.2", "C_BOOST.2", "U3.2", "C_USB3V3.2
         "U15.1",
         # 2026-10-31: the display cutout grew to the TFT flex's 39 mm root and parts moved
         # off its fold line; these pads' pour islands reach GND only through their tie
-        "C_CNS.2", "C_RIN.2", "C_U9B.2", "C_VBAT.2", "D_PKNEG.2", "R_BTN.2"}
+        "C_CNS.2", "C_RIN.2", "C_U9B.2", "C_VBAT.2", "D_PKNEG.2", "R_BTN.2",
+        # 2026-11-01, the owner's routing: the radio gate's NOR ground
+        "U7.3"}
 
 
 def touches(t, p):

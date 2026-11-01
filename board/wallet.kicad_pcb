@@ -22273,7 +22273,7 @@
 				(justify mirror)
 			)
 		)
-		(property "Value" "100k"
+		(property "Value" "1M"
 			(at 0 -1.17 90)
 			(layer "B.Fab")
 			(hide yes)
@@ -22323,7 +22323,7 @@
 				(justify mirror)
 			)
 		)
-		(property "LCSC" "C25741"
+		(property "LCSC" "C26083"
 			(at 0 0 90)
 			(layer "B.Fab")
 			(hide yes)

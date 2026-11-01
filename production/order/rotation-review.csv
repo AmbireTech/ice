@@ -100,7 +100,7 @@ R_FB1,1M,Resistor_SMD:R_0402_1005Metric,C26083,top,0.0,,0.0,0.0,0.000,n/a (non-p
 R_FB2,562k,Resistor_SMD:R_0402_1005Metric,C48838,top,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 R_FBU1,150k,Resistor_SMD:R_0402_1005Metric,C25755,top,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 R_FBU2,33k,Resistor_SMD:R_0402_1005Metric,C25779,top,180.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
-R_HOLD,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
+R_HOLD,1M,Resistor_SMD:R_0402_1005Metric,C26083,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 R_ISET,3.6k,Resistor_SMD:R_0402_1005Metric,C25891,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 R_ISETH,1.8k,Resistor_SMD:R_0402_1005Metric,C25871,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 R_JA,15k,Resistor_SMD:R_0402_1005Metric,C25756,top,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
