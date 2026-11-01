@@ -8,7 +8,7 @@ PASS  IC pads vs datasheet pin tables: 26 parts checked against their datasheet 
 PASS  flex connectors: orientation, tail slack: connector orientation: ok
 PASS  lands vs JLC's land for each part:     ? U8 (C2681320): land differs from the vendor's - waived: IPC-nominal SOT-23-6 against the vendor's longer reflow land; same 6 pads, same 0.95 mm pitch
 PASS  no stale copper: 0 stale item(s): clean
-FAIL  no GND pad-to-via ties beyond the kept ones: drop C_OPT.2: 0.90 mm, 1 via(s)
+PASS  no GND pad-to-via ties beyond the kept ones: none
 PASS  BOM / placement parity, every part has an LCSC number: BOM refs 143 in 65 lines; CPL rows 143
 PASS  JLC stock for 10 boards: 65 lines, all ok
 NOTE  out of stock, to DNP in JLC's order UI: C1518668 SLS32AIA010MKUSON10XTMA2 (U16)
@@ -22,4 +22,4 @@ PASS  PCBWay fab zip: Gerbers + drills + print image (outline-sized, 1200 DPI, t
 NOTE  sourcing: JLC/LCSC flags as not buyable: C1518668 SLS32AIA010MKUSON10XTMA2: This product is no longer manufactured.
 NOTE  colour print: not built (COLOUR=1); JLC rejects non-EasyEDA colour files
 
-FAILED: no GND pad-to-via ties beyond the kept ones
+all checks passed
