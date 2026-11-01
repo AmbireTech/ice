@@ -41,7 +41,7 @@
   "floorIn": -3.6949999383091936,
   "boardBack": -1.0,
   "split": 0.0,
-  "pack": -16.35,
+  "pack": -16.725,
   "panel": [
    0.3,
    4.43
@@ -64,14 +64,14 @@
  "pack": {
   "outline": [
    -1.6,
-   17.967,
+   18.23,
    49.6,
    47.61
   ],
   "r": 4.0,
   "board": [
    0.0,
-   19.367,
+   19.63,
    48.0,
    46.21
   ],
@@ -82,10 +82,10 @@
     46.25
    ],
    "y": [
-    26.167,
-    38.967
+    26.43,
+    39.23
    ],
-   "z": -11.1,
+   "z": -11.475,
    "d": 10.5
   },
   "contacts": {
@@ -134,9 +134,7 @@
     }
    ]
   },
-  "male": {
-   "part": "YZP0048-20048-04025-03",
-   "lcsc": "C5126845",
+  "frame": {
    "outline": [
     11.4,
     38.85,
@@ -148,64 +146,120 @@
     36.54,
     24.515,
     38.85
+   ],
+   "t": 2.975,
+   "slot": [
+    10.3,
+    2.5
+   ],
+   "pegs": [
+    [
+     16.6,
+     39.88
+    ],
+    [
+     27.4,
+     39.88
+    ]
+   ],
+   "pegHole": 1.1
+  },
+  "pins": {
+   "part": "4x Xinyangze YZP0058-20048-02",
+   "lcsc": "C5157341",
+   "free": 4.3,
+   "mated": 3.54,
+   "xy": [
+    [
+     25.75,
+     42.28
+    ],
+    [
+     23.25,
+     42.28
+    ],
+    [
+     20.75,
+     42.28
+    ],
+    [
+     18.25,
+     42.28
+    ]
+   ]
+  },
+  "magnets": {
+   "part": "2x Radial Magnets 8063 (NdFeB N40, 3.18 x 3.18 mm)",
+   "digikey": "469-8063-ND",
+   "d": 3.175,
+   "h": 3.175,
+   "xy": [
+    [
+     14.295,
+     42.28
+    ],
+    [
+     29.705,
+     42.28
+    ]
    ]
   },
   "clipSteel": [
    [
     0.5,
-    23.667,
+    23.93,
     10.48,
-    28.667
+    28.93
    ],
    [
     5.48,
-    22.667,
+    22.93,
     9.48,
-    29.667
+    29.93
    ],
    [
     37.52,
-    23.667,
+    23.93,
     47.506,
-    28.667
+    28.93
    ],
    [
     38.52,
-    22.667,
+    22.93,
     42.52,
-    29.667
+    29.93
    ],
    [
     0.494,
-    36.467,
+    36.73,
     10.48,
-    41.467
+    41.73
    ],
    [
     5.48,
-    35.467,
+    35.73,
     9.48,
-    42.467
+    42.73
    ],
    [
     37.52,
-    36.467,
+    36.73,
     47.5,
-    41.467
+    41.73
    ],
    [
     38.52,
-    35.467,
+    35.73,
     42.52,
-    42.467
+    42.73
    ]
   ],
   "toMove": [],
   "z": {
    "face": -4.894999938309193,
-   "boardTop": -4.8,
-   "bottom": -16.35,
-   "bay": 0.295
+   "boardTop": -5.175,
+   "bottom": -16.725,
+   "bay": 0.0
   }
  },
  "camera": [
@@ -306,7 +360,7 @@
     {
      "label": "Gerbers",
      "filename": "ambire-ice-v4_gerbers.zip",
-     "bytes": 457152,
+     "bytes": 452504,
      "part": "enclosure/files/ambire-ice-v4_gerbers.zip.b64.txt",
      "b64": true
     },
@@ -329,7 +383,7 @@
     {
      "label": "Gerbers",
      "filename": "ambire-ice-v4_gerbers.zip",
-     "bytes": 457152,
+     "bytes": 452504,
      "part": "enclosure/files/ambire-ice-v4_gerbers.zip.b64.txt",
      "b64": true
     },
@@ -353,21 +407,21 @@
    {
     "label": "Gerbers",
     "filename": "ambire-ice-v4-pack_gerbers.zip",
-    "bytes": 11124,
+    "bytes": 29802,
     "part": "enclosure/files/ambire-ice-v4-pack_gerbers.zip.b64.txt",
     "b64": true
    },
    {
     "label": "Bill of materials",
     "filename": "ambire-ice-v4-pack_bom-jlc.csv",
-    "bytes": 389,
+    "bytes": 404,
     "part": "enclosure/files/ambire-ice-v4-pack_bom-jlc.csv",
     "b64": false
    },
    {
     "label": "Pick and place",
     "filename": "ambire-ice-v4-pack_positions-jlc.csv",
-    "bytes": 315,
+    "bytes": 410,
     "part": "enclosure/files/ambire-ice-v4-pack_positions-jlc.csv",
     "b64": false
    }
@@ -376,7 +430,7 @@
    {
     "label": "Case and battery pack: 3MF, STL and STEP (zip)",
     "filename": "ambire-ice-case.zip",
-    "bytes": 630244,
+    "bytes": 680816,
     "part": "enclosure/files/ambire-ice-case.zip.b64.txt",
     "b64": true
    }

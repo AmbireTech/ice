@@ -88,6 +88,8 @@ def main():
     bom, cpl = {}, []
     for fp in sorted(board.GetFootprints(), key=lambda f: f.GetReference()):
         ref = fp.GetReference()
+        if fp.IsExcludedFromBOM() and fp.IsExcludedFromPosFiles():
+            continue                         # not assembled by JLC (the printed frame's peg holes)
         lcsc = fp.GetFieldText("LCSC Part #") if fp.HasField("LCSC Part #") else ""
         if not lcsc:
             raise SystemExit(f"{ref} has no LCSC part number")

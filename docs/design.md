@@ -35,7 +35,7 @@ the back ([pack.md](pack.md)).
 | Airgap | MSK12C02 slide switch → TS3USB221A (USB data) + 74LVC1G02 / TPS22917 (radio power) + TXU0202 (radio UART isolation) | all JLC |
 | Display | NHD-2.4-240320AF-CSXP-CTP on Molex 54132-4062 + HC-FPC-1.0-6P-FH20 (6-pin 1.0 mm, bottom contact, 2.0 mm tall, C49166832) | connectors JLC, panel hand-fitted |
 | Camera | GC2145 24-pin DVP module in the ESP32-CAM pinout (Camemake CM_DVP_GC2145_UNIVERSAL; an OV2640 module fits too), 115° lens read through the sensor's centre crop, no refocus, on a Jushuo AFC07 FPC connector; AVDD 2.8 V / DVDD 1.2 V (fixed TLV70312) / DOVDD 3.3 V | connector JLC, module hand-fitted (DigiKey, JLC Global Sourcing) |
-| Power | Two AAA cells in series (NiMH, lithium or alkaline) in a pack on the back; the pack's magnetic pogo male lands on four Mill-Max 1578 gold target discs and two Würth WA-SMSI steel spacers on the device board ([pack.md](pack.md)) → AO3416 reverse-cell blocker → LTC3539-2 boost to 3.3 V; USB-C → TLV62569P buck → TPS2116 picks USB first; BQ25172 NiMH charger set for two cells, fed from VBUS, MCU-gated; soft latch on the joystick's centre press | all JLC (LTC3539-2: 2,400; the discs through Global Sourcing, DigiKey 117,259) |
+| Power | Two AAA cells in series (NiMH, lithium or alkaline) in a pack on the back; the pack's four spring pins and two magnets land on four Mill-Max 1578 gold target discs and two Würth WA-SMSI steel spacers on the device board ([pack.md](pack.md)) → AO3416 reverse-cell blocker → LTC3539-2 boost to 3.3 V; USB-C → TLV62569P buck → TPS2116 picks USB first; BQ25172 NiMH charger set for two cells, fed from VBUS, MCU-gated; soft latch on the joystick's centre press | all JLC (LTC3539-2: 2,400; the discs through Global Sourcing, DigiKey 117,259) |
 | Sound | Huaneng MLT-5020 magnetic transducer (5 × 5.5 × 2 mm, 75 dB at 10 cm), AO3416 low-side, LPTIM3 PWM | JLC |
 | Joystick | ALPS SKRHAAE010: four directions + centre push, 7.5 mm, on the front, centred in the chin | JLC C202423 (521) |
 | IMU | Bosch BMI270 (accelerometer + gyroscope, LGA-14 2.5 × 3 mm, 3.5 µA in suspend), the GridCore Nano's part, on the touch controller's I2C bus (0x68), interrupt on PC15 | C2836813 (26,396 on 2026-10-30) |
@@ -492,7 +492,7 @@ purple (all transparent tints) and clear.
   fitted are left out.
 - **Thickness, front to back:** bezel lip 0.8 and 0.1 over the panel, panel 4.13
   (Newhaven drawing) on 0.3 foam, board 1.0, back cavity 2.7, back 1.2: **10.22 mm**
-  (case 52.2 × 91.2 mm; 21.68 mm with the pack on), against proto 0's 18.0. The display
+  (case 52.2 × 91.2 mm; 22.05 mm with the pack on), against proto 0's 18.0. The display
   and camera connectors (2.09 mm, plus 0.6 clearance) set the back cavity; USB-C
   (3.40 mm) stands into the back through a pocket. The **camera head** (5.9 mm) stands
   out on purpose, through an open window in the back, 2.0 mm proud.
@@ -620,11 +620,12 @@ purple (all transparent tints) and clear.
 21. **Pack contacts ESD**: zap the bare pack contacts (IEC 61000-4-2, ±8 kV contact)
     with the pack off; the charger, the ADC readings and the reverse-cell FET must
     survive.
-22. **Pack hold**: the male's magnets on the two steel spacers (steel round an M2
-    thread, 1.0 mm thick) must hold the pack against the four pins' push (up to
-    4 × 36 g) and in a drop from hand height. Measure the pull-off force with a scale.
+22. **Pack hold**: the pack's two 3.18 mm magnets on the two steel spacers (steel round
+    an M2 thread, 1.0 mm thick) must hold the pack against the four pins' push (about
+    4 × 23 g, up to 4 × 28 g) and in a drop from hand height. Measure the pull-off force
+    with a scale. The magnets' and the frame's glue must survive a few hundred matings.
 23. **Pack contacts**: resistance of each pin on its gold disc, fresh and after a few
-    hundred matings; the pins press 0.93 mm (working 1.0).
+    hundred matings; the pins press 0.76 mm of their 1.2 mm stroke (working 1.0).
 
 
 ## Flow

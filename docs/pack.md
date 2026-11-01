@@ -3,35 +3,37 @@
 Every place on the device we found for the AAA cell was ugly: a bare cell on the front,
 a hump on the back, or a cover over it ([cell-placement.md](cell-placement.md)). v4 takes
 the cells off the device. **Two AAA cells ride in a separate pack that snaps onto the
-back, high up, just below the camera.** A magnetic pogo male on the pack lands on
-commodity parts on the device board: gold target discs under its pins, steel spacers
-under its magnets. No loose magnets (owner, 2026-10-28). The device itself gets thinner,
-with a flat front and back.
+back, high up, just below the camera.** Four spring pins and two magnets on the pack land
+on commodity parts on the device board: gold target discs under the pins, steel spacers
+under the magnets. Every contact part, on both halves, is stocked by a distributor. The
+device itself gets thinner, with a flat front and back.
 
-**Status (2026-10-31):** the device board carries the production contacts (`board/`, the
-order set in `production/order/`), the pack board is `pack/` (built by `pack/makePack.py`,
-order set in `production/pack-order/`), and the /v4/ page's 3D preview (`docs/v4/`, from
-`enclosure/generate.py`) is built from both. The next batch tests these exact parts.
+**Status (2026-11-01):** both halves carry the production contacts. The device board is in
+`board/`, with its order set in `production/order/`. The pack board is `pack/` (built by
+`pack/makePack.py`), with its order set in `production/pack-order/`. The /v4/ page's 3D
+preview (`docs/v4/`, from `enclosure/generate.py`) is built from both. The next batch tests
+these exact parts. On 2026-11-01 the pack side changed from Xinyangze's magnetic male (20
+in stock anywhere) to single pins and separate magnets; the device board did not change.
 
 ## What it comes to
 
-All numbers come from the generated model (`enclosure/generate.py`, 2026-10-31).
+All numbers come from the generated model (`enclosure/generate.py`, 2026-11-01).
 
 | | v3 (one cell on the board) | v4 |
 |---|---|---|
 | Device thickness | 11.5 mm | **10.22 mm** |
-| At the cell | 17.1 mm open, 17.7 mm under its cover | **21.68 mm** with the pack on |
+| At the cell | 17.1 mm open, 17.7 mm under its cover | **22.05 mm** with the pack on |
 | Cells | one AAA | two AAA in series: twice the energy |
-| Back face | the cell stands out | flat; a shallow bay and a window for the pack; the camera head stands 2.0 mm out |
+| Back face | the cell stands out | flat; a window for the pack's contacts; the camera head stands 2.0 mm out |
 | Without the cells | — | runs from USB |
 
-The pack is 51.2 × 29.6 × 11.46 mm. It spans the back from 18.0 to 47.6 mm below the top
+The pack is 51.2 × 29.4 × 11.83 mm. It spans the back from 18.2 to 47.6 mm below the top
 edge (the device is 91.2 mm tall), just south of the camera. Its two cells lie side by
 side, 12.8 mm apart axis to axis, which leaves 1.8 mm between the arms of neighbouring
 clips. A cell goes in through its arms' tips (6.9 mm apart in the clip's model), so each
 arm swings out about 0.9 mm at its widest as it does; on the east side the neighbouring
-arms are the pack's minus and the south cell's plus, ahead of the fuse, and must not touch. The connector lies
-east-west along the south cell, its four pins in a row under the cell's south flank,
+arms are the pack's minus and the south cell's plus, ahead of the fuse, and must not touch. The contacts lie
+east-west along the south cell, the four pins in a row under the cell's south flank,
 clear of the clips, which hold only the cells' ends. The fuse, the resistor and the
 thermistor sit in the strip south of the south cell's can.
 
@@ -55,11 +57,11 @@ back; a flat back needs a lower camera module.
 
 ```
  device board (back)  ═ steel ═══ disc disc disc disc ═══ steel ═══════════
-                        1.0 mm     ▲    ▲    ▲    ▲  0.635 mm   pins pressed 0.93 mm
- device back      ───┐  ┌──────────┴────┴────┴────┴──────────┐  window: the male's body drops through
-                     └──┤ magnet         male body     magnet ├─── back face, a 0.29 mm bay over the pack board
+                        1.0 mm     ▲    ▲    ▲    ▲  0.635 mm   pins pressed 0.76 of 1.2 mm
+ device back      ───┐  ┌──────────┴────┴────┴────┴──────────┐  window: the frame drops through
+                     └──┤ magnet    frame (print)       magnet├─── back face, 0.28 mm above the pack board
  pack board 0.8 mm  ════╧═════════════════════════════════════╧══ inside the tray's rim
- tray (frame)       ║        ( AAA )            ( AAA )          ║  cells in series, in clips, open underneath
+ tray               ║        ( AAA )            ( AAA )          ║  cells in series, in clips, open underneath
 ```
 
 - **The device's half: commodity parts, no connector.** All of them sit on the board's
@@ -69,33 +71,38 @@ back; a flat back needs a lower camera module.
     pad, 2.5 mm apart. They come on tape and reel, 7,200 to a reel. JLC places them; they
     come in through JLC Global Sourcing from DigiKey (117,259 in stock, MOQ 1, 2026-10-31).
   - **Two steel spacers**, Würth WA-SMSI 9774010243R: M2, 1.0 mm tall, 4.35 mm across,
-    tin-plated steel. They sit 15.41 mm apart, under the male's magnets, on Würth's 5.3 mm
+    tin-plated steel. They sit 15.41 mm apart, under the pack's magnets, on Würth's 5.3 mm
     land, without the screw hole. JLC C5360192 (883 at JLC, 45,272 at DigiKey). Their only
     job is to be steel for the magnets; they are on ground so they do not float.
-- **The pack's half: Xinyangze's 4-pin magnetic male**, YZP0048-20048-04025-03 (LCSC
-  C5126845, through-hole), on the pack board's outer face.
-  - Its body is 21.2 × 6.86 mm with a 5.03 mm tab, 2.8 mm thick. Its NdFeB magnets
-    (3.0 mm across, 2.0 mm long, 15.41 mm apart) sit flush with its face.
-  - Its pins are 2.5 mm apart: 4.1 mm free, 3.1 mm working, 2.9 mm fully pressed, 30 g ± 20 %
-    each at working height.
-  - It drops through a window in the device's back. Mated, its face rests on the steel
-    spacers, and its pins press 0.93 mm onto the discs, just short of working height.
-- **The male's magnets hold the pack, on the steel.** There are no loose magnets. Steel
-  takes any magnet either way round, so **any brand of 4-pin magnetic male** at 2.5 mm
-  pitch with its magnets about 15.4 mm apart is a second source.
-- **The pack goes on only one way round.** The male's tab and its notch in the window
-  stop a pack turned 180°.
-- **The stack sets the thickness.** The steel (1.0 mm) plus the male's body (2.8 mm) put
-  the pack board 3.8 mm below the board's back, 0.1 mm higher than the back's outer face.
-  The back gets a 0.29 mm bay over the pack board (0.91 mm of back left there), so the
-  board never bears on the case: the male on the steel holds the pack, and the tray's rim
-  sits on the back face round it.
+- **The pack's half: four single spring pins and two magnets**, on the pack board's outer face.
+  - **Pins:** Xinyangze YZP0058-20048-02 (LCSC C5157341, 1,216 at JLC on 2026-11-01:
+    304 packs). They are SMD with a peg, 2.5 mm apart, on JLC's own land, and JLC places
+    them. Each has a 2.0 mm flange, a 1.0 mm plunger, and stands 4.3 mm free, 3.3 mm at
+    working height (30 g ± 20 %) and 3.1 mm fully pressed. These are the same pins that sat
+    in the magnetic male the pack had before.
+  - **Magnets:** two NdFeB N40 discs, Radial Magnets 8063, 3.18 mm across and 3.18 mm long
+    (DigiKey 469-8063-ND, 3,794 in stock on 2026-11-01, $0.35). They have the same diameter
+    as the old male's magnets (3.0 × 2.0 mm) and about 1.6 times the volume. They stand on
+    the board over the steel spacers, glued.
+  - **The frame** is a printed part with the old male's outline: 21.2 × 6.86 mm, a 5.03 mm
+    tab north, 2.98 mm thick. Two pegs locate it in two holes in the pack board, and it is
+    glued down. A pocket holds each magnet, and a slot clears the pins. Its face stands
+    0.2 mm short of the magnets', so only the magnets touch the steel.
+- **The magnets hold the pack, on the steel.** Steel takes a magnet either way round, so
+  either pole can face out.
+- **The pack goes on only one way round.** The frame's tab and its notch in the window stop
+  a pack turned 180°, which would put the plus on the minus.
+- **The stack sets the thickness.** The steel (1.0 mm) plus the magnets (3.18 mm) put the
+  pack board 4.18 mm below the board's back, 0.28 mm below the back's outer face. The pins
+  stand 3.54 mm on the discs: 0.76 mm into their 1.2 mm stroke, 0.44 mm short of bottoming.
+  The pack board never bears on the case: the magnets on the steel hold the pack, and the
+  tray's rim sits on the back face round it.
 - **Four contacts:** the pack's plus, its minus, the point between the two cells, and the
   pack's thermistor. They run in a row, plus at the east end and minus at the west.
 - **The pack charges in the device**, over USB, as the single cell did.
 
 **Where it lands on the board.** The contacts need a bare 19.8 × 4.4 mm strip of the
-board's back (the male's body must also clear the parts beside it), and the back has none
+board's back (the frame must also clear the parts beside it), and the back has none
 to spare. West of the MCU sit the secure elements and
 the backlight pump. East of it lies the touch panel's tail, flat along the back (x
 36.5–43.5) up to its connector, which rules the east out (an earlier layout put the
@@ -107,32 +114,32 @@ fill the channel. The MCU's south-side signals now pass them on the front copper
 
 ## Why these parts
 
-**At least one half commodity** (owner, 2026-10-31). JLC lists 13 magnetic pogo
-connectors, all from Xinyangze, with stock in the tens and hundreds. A Xinyangze
-receptacle (C6276862, 125 in stock) mated with the male would have been from another
-family (2.54 against 2.50 mm pitch, magnets about 14.6 against 15.4 mm apart), never mated
-before, and single-source on both halves. So the device's half is commodity parts, and
-the male any brand.
+**Every contact part stocked by a distributor** (owner, 2026-10-31 and 2026-11-01). JLC
+lists 13 magnetic pogo connectors, all from Xinyangze, with stock in the tens and hundreds.
+The 4-pin male the pack first used (YZP0048-20048-04025-03) had 20 at JLC, the same 20 at
+LCSC, and none at any distributor behind JLC Global Sourcing. The only magnetic 4-pin at
+DigiKey/Mouser, Mill-Max's Maxnetic 873, stands 7.6 mm tall. So the pack's half is split
+into its parts: single pins (thousands at JLC across makers) and disc magnets (thousands
+at DigiKey), with a printed frame doing what the male's body did.
 
-- **Discs, not flat pads.** A pogo pin wears gold off a flat ENIG pad, and pads put the
-  male's face 0.6 mm closer to the board. Its pins then reach working height only on a
-  0.5 mm spacer, and the pack board would sit 0.6 mm inside the back. The discs give hard
+- **Discs, not flat pads.** A pogo pin wears gold off a flat ENIG pad. The discs give hard
   gold over nickel, made as a pogo target, and the height.
-- **1.0 mm spacers, not 3.0 mm.** The male's magnets are flush with its face, and its pins
-  stand 1.3 mm proud of it: the steel goes right under the face.
+- **30 g pins.** JLC's high-stock single pins from YIYUAN (100 g) and BAT Wireless (75 g)
+  push three times as hard. Four of them would need several times the magnets' pull.
+- **3.18 mm magnets set the stack.** They are the only magnets near the old male's 3 mm
+  with real stock at DigiKey (the 3 × 1 mm Radial 8015 is too short to reach the steel).
+  The pins sit at 63 % of their stroke on them.
 - **Ruled out:** Mill-Max's larger 1593 disc (2.36 mm: 0.14 mm between neighbours at
   2.5 mm pitch), Mill-Max's own spring-pin and target families 872/873 and 878/879 (a
   stack of 10.9 mm or more), and EDAC 685/686 (through-hole, 6 mm and more).
 
 **What the next batch must show** (bring-up):
 
-1. **Hold.** The magnets' pull on the steel must beat the pins' push (4 × 30 g ± 20 %, up
-   to 144 g) and hold the pack in a drop. The spacers are steel round an M2 thread, so the
-   magnet sees an annulus, not a full disc: measure it.
+1. **Hold.** The magnets' pull on the steel must beat the pins' push (4 × about 23 g at
+   3.54 mm, up to 28 g each) and hold the pack in a drop. The spacers are steel round an
+   M2 thread, so the magnet sees an annulus, not a full disc: measure it.
 2. **Contact.** Resistance per contact, and after a few hundred matings.
-
-The receptacle pair is in git history (before 2026-10-31) if the spacers' hold falls
-short.
+3. **The glue:** the magnets' and the frame's after a few hundred matings.
 
 ## What JLC builds
 
@@ -140,16 +147,18 @@ short.
 |---|---|---|---|
 | Target disc, Mill-Max 1578-0-57-15-00-00-03-0 ×4 | device board, back | C21905480 (Global Sourcing) | 117,259 at DigiKey (2026-10-31) |
 | Steel spacer, Würth WA-SMSI 9774010243R ×2 | device board, back | C5360192 | 883 (2026-10-31) |
-| Magnetic male, Xinyangze YZP0048-20048-04025-03 (through-hole) | pack board, outer face | C5126845 | **20** (2026-11-01): short, see below |
+| Spring pin, Xinyangze YZP0058-20048-02 (SMD with a peg) ×4 | pack board, outer face | C5157341 | 1,216 (2026-11-01): 304 packs |
+| Magnet, Radial Magnets 8063 (NdFeB N40, 3.18 × 3.18 mm) ×2 | pack board, outer face, glued | DigiKey 469-8063-ND (not JLC) | 3,794 at DigiKey (2026-11-01) |
 | AAA clip MYOUNG MY-AAA-19-J (−) ×2 | pack board, inner face | C6937104 | 5,721 |
 | AAA clip MYOUNG MY-AAA-20-J (+) ×2 | pack board, inner face | C6937107 | 4,248 |
 | Thermistor Murata NCP18XH103F03RB (10 k, B 3380 K, 0603) | pack board | C13564 | 191,798 |
 | Resettable fuse BHFUSE BSMD1206-075-30V (0.75 A hold, 1.5 A trip) | pack board, in the plus | C976305 | 52,970 |
 | 1 k resistor, 0402 | pack board, in the mid-point line | C11702 | basic |
 
-- **Nothing goes in by hand** except the printed parts and the cells.
-- **The pack board has two kinds of assembly:** the male is through-hole on the outer face,
-  and the clips and small parts are SMT on the inner face.
+- **By hand:** the printed parts, the two magnets (glued into the frame's pockets) and the
+  cells.
+- **The pack board is SMT on both faces:** the pins on the outer face, the clips and small
+  parts on the inner face.
 - **The case, the tray and the joystick's cap** print at home or at JLC's 3D-printing
   service (JLC3DP: SLA resin including a transparent one, ±0.2 mm within 100 mm by its
   capabilities page; MJF nylon).
@@ -157,13 +166,14 @@ short.
 **Order flow, end to end:**
 
 1. Device board at JLC, as today; buy the discs into the order through Global Sourcing first.
-2. Pack board at JLC: 2 layers, 0.8 mm, ENIG; SMT on the inner face, the male through-hole.
-3. Case, tray and joystick cap: printed at home or at JLC3DP.
-4. Cells: the user's own (the device ships without cells).
+2. Pack board at JLC: 2 layers, 0.8 mm, ENIG; SMT on both faces.
+3. Magnets from DigiKey (469-8063-ND), two per pack.
+4. Case, tray, the pack's frame and the joystick cap: printed at home or at JLC3DP.
+5. Cells: the user's own (the device ships without cells).
 
 ## The pack's board
 
-48.0 × 26.8 mm, the same width as the device's board, 0.8 mm thick.
+48.0 × 26.6 mm, the same width as the device's board, 0.8 mm thick.
 
 - The south cell's plus goes through the fuse to the plus pin.
 - The south cell's minus joins the north cell's plus at the west end: the mid-point. It
@@ -219,14 +229,9 @@ open thermistor line shows that the pack is off.
 
 ## Open: bench checks before anything is ordered
 
-- **Hold and contact** of the male on the steel and the discs (above).
-- **Stock: the male is the supply gate.** 20 at JLC (2026-11-01), and LCSC's own stock is
-  the same 20. DigiKey and Mouser don't carry Xinyangze. No other maker has a 4-pin magnetic
-  male in stock at JLC: the best is 5. The only magnetic 4-pin at DigiKey/Mouser, Mill-Max's
-  Maxnetic 873, stands 7.6 mm tall, against this male's 2.8 mm. A run needs a direct order
-  from Xinyangze (www.xyzpogopin.com, +86 755 2877 3277), sent to JLC as consigned parts.
-  Its magnet-less sibling, YZP0048-20048-04025-02 (C5200680, 216 in stock), has the same
-  pins and heights but no magnets, so nothing holds the pack on.
+- **Hold, contact and glue** of the magnets on the steel and the pins on the discs (above).
+- **Stock for a run beyond 300 packs:** the pins have 1,216 at JLC (304 packs). Xinyangze
+  makes them (www.xyzpogopin.com); other makers' 2.0 mm-flange 30 g pins fit the same land.
 - **The cells are open underneath:** the device rests on them when it lies on its back.
 - **Fuse resistance.** The fuse is 90 mΩ fresh and up to 0.5 Ω after it has tripped.
   At full use from a nearly empty pack (~0.4 A) that is a 40–200 mV drop on 1.8 V.
@@ -238,10 +243,12 @@ open thermistor line shows that the pack is off.
 
 - TI, BQ25172 datasheet (SLUSDY5, June 2022): VSET table, electrical characteristics
   (VOUT_OVP per cell, RON, VSLEEP, TS clamp).
-- Xinyangze drawings (via LCSC): YZ103915020T-04025-02 (2015-07-08),
+- Xinyangze drawings (via LCSC): YZP0058-20048-02 (2015-05-14), YZP0048-20048-04025-02
+  (2020-10-27), YZ103915020T-04025-02 (2015-07-08),
   YZP0048-20048-04025-03 and YZR0158-20050-04025-01 (2022-03-24), YZT0675-20048-04025-01.
 - Mill-Max, 1578 target disc drawing (1578-0-57-15-00-00-03-0, SMT pad 0.088 in).
 - Würth Elektronik, WA-SMSI 9774010243R datasheet (land 5.3 mm, stencil annulus).
-- BAT WIRELESS, BWCD-L4.0W2.0H1.0 datasheet (Aug 2025), via LCSC.
+- BAT WIRELESS, BWCD-L4.0W2.0H1.0 datasheet (Aug 2025), and YIYUAN YTC1P series drawing, via LCSC.
+- DigiKey, Radial Magnets 8063 / 8003 listings (stock, 2026-11-01).
 - JLC's parts library and LCSC's product API (stock and part numbers, 2026-10-28).
 - JLC3DP, [3D printing capabilities](https://jlc3dp.com/capabilities/3d-printing-service).
