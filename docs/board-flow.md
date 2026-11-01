@@ -114,6 +114,6 @@ power-up behaviour. Those need a board in hand ([design.md](design.md#bring-up-c
 - A part is assembled by the board maker exactly when it carries a JLC part
   number. The display panel, camera module and cell are fitted by hand.
 - `board/experiments/` holds placement candidates and their gauge results.
-- `pack/` is the battery pack's board and `jig/` the programming jig's two boards, each
-  built by its own script; their order files come from `production/boardOrder.py` into
+- `pack/` is the battery pack's board and `jig/` the programming jig's, each built by its
+  own script; their order files come from `production/boardOrder.py` into
   `production/pack-order/` and `production/jig-order/` (`pack/README.md`, `jig/README.md`).

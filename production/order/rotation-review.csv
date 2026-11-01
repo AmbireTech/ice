@@ -112,7 +112,7 @@ R_PGB,100k,Resistor_SMD:R_0402_1005Metric,C25741,top,-90.0,,0.0,270.0,0.000,n/a 
 R_PWRJB,100k,Resistor_SMD:R_0402_1005Metric,C25741,top,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 R_PWRJBE,1M,Resistor_SMD:R_0402_1005Metric,C26083,top,180.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 R_REVG,1M,Resistor_SMD:R_0402_1005Metric,C26083,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
-R_RLED,1k,Resistor_SMD:R_0402_1005Metric,C11702,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
+R_RLED,1k,Resistor_SMD:R_0402_1005Metric,C11702,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 R_ROFF,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 R_SCL,4.7k,Resistor_SMD:R_0402_1005Metric,C25900,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 R_SDA,4.7k,Resistor_SMD:R_0402_1005Metric,C25900,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)

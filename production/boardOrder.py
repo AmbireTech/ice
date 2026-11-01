@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""JLC order files for a small scripted board: the pack, the jig's probe and base.
+"""JLC order files for a small scripted board: the pack, the programming jig.
 
     KICAD_PY production/boardOrder.py BOARD OUTDIR NAME RUN
         (from hardware/ambire-hw; refill zones and save first: it plots as saved)
     KICAD_PY production/boardOrder.py pack/pack.kicad_pcb production/pack-order pack 200
-    KICAD_PY production/boardOrder.py jig/probe.kicad_pcb production/jig-order/probe jig-probe 5
-    KICAD_PY production/boardOrder.py jig/base.kicad_pcb production/jig-order/base jig-base 5
+    KICAD_PY production/boardOrder.py jig/jig.kicad_pcb production/jig-order jig 5
 
   NAME_gerbers.zip          Gerbers (every copper layer, mask, paste, silk, Edge.Cuts) + Excellon drill
   NAME_bom-jlc.csv          Comment, Designator, Footprint, LCSC Part #
