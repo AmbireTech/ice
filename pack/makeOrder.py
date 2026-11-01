@@ -31,6 +31,9 @@ LAYERS = [(pcbnew.F_Cu, "F_Cu"), (pcbnew.B_Cu, "B_Cu"), (pcbnew.F_Mask, "F_Mask"
           (pcbnew.B_SilkS, "B_Silkscreen"), (pcbnew.Edge_Cuts, "Edge_Cuts")]
 
 
+RUN = 200   # packs in a run: a part whose JLC stock covers fewer is SHORT
+
+
 def jlc_stock(code):
     # curl, not urllib: KiCad's bundled Python ships with no CA bundle
     out = subprocess.run(["curl", "-s", "--max-time", "25", API, "-H", "content-type: application/json",
@@ -109,8 +112,10 @@ def main():
     for (value, footprint, lcsc), refs in bom.items():
         stock, kind, model = jlc_stock(lcsc)
         need = len(refs)
-        flag = "MISSING at JLC" if stock is None else ("ZERO at JLC: source it (global sourcing / pre-order)" if stock == 0
-                                                       else "low" if stock < 50 else "ok")
+        packs = None if stock is None else stock // need
+        flag = ("MISSING at JLC" if stock is None
+                else f"SHORT: covers {packs} packs; source more (maker direct, consigned to JLC)" if packs < RUN
+                else f"ok: covers {packs} packs")
         lines.append(f"{lcsc:9} {model or '?':28} x{need}  JLC stock {stock}  {kind or ''}  {flag}  ({','.join(refs)})")
     open(os.path.join(OUT, "stock.txt"), "w").write("\n".join(lines) + "\n")
     print(f"origin ({ox}, {oy}); {len(files)} plot files; {len(cpl)} placements on "

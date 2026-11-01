@@ -140,7 +140,7 @@ short.
 |---|---|---|---|
 | Target disc, Mill-Max 1578-0-57-15-00-00-03-0 ×4 | device board, back | C21905480 (Global Sourcing) | 117,259 at DigiKey (2026-10-31) |
 | Steel spacer, Würth WA-SMSI 9774010243R ×2 | device board, back | C5360192 | 883 (2026-10-31) |
-| Magnetic male, Xinyangze YZP0048-20048-04025-03 (through-hole) | pack board, outer face | C5126845 | 20 (2026-10-31) |
+| Magnetic male, Xinyangze YZP0048-20048-04025-03 (through-hole) | pack board, outer face | C5126845 | **20** (2026-11-01): short, see below |
 | AAA clip MYOUNG MY-AAA-19-J (−) ×2 | pack board, inner face | C6937104 | 5,721 |
 | AAA clip MYOUNG MY-AAA-20-J (+) ×2 | pack board, inner face | C6937107 | 4,248 |
 | Thermistor Murata NCP18XH103F03RB (10 k, B 3380 K, 0603) | pack board | C13564 | 191,798 |
@@ -220,8 +220,13 @@ open thermistor line shows that the pack is off.
 ## Open: bench checks before anything is ordered
 
 - **Hold and contact** of the male on the steel and the discs (above).
-- **Stock.** The male has 20 at JLC; a run needs more, a direct order from Xinyangze, or
-  another brand's male.
+- **Stock: the male is the supply gate.** 20 at JLC (2026-11-01), and LCSC's own stock is
+  the same 20. DigiKey and Mouser don't carry Xinyangze. No other maker has a 4-pin magnetic
+  male in stock at JLC: the best is 5. The only magnetic 4-pin at DigiKey/Mouser, Mill-Max's
+  Maxnetic 873, stands 7.6 mm tall, against this male's 2.8 mm. A run needs a direct order
+  from Xinyangze (www.xyzpogopin.com, +86 755 2877 3277), sent to JLC as consigned parts.
+  Its magnet-less sibling, YZP0048-20048-04025-02 (C5200680, 216 in stock), has the same
+  pins and heights but no magnets, so nothing holds the pack on.
 - **The cells are open underneath:** the device rests on them when it lies on its back.
 - **Fuse resistance.** The fuse is 90 mΩ fresh and up to 0.5 Ω after it has tripped.
   At full use from a nearly empty pack (~0.4 A) that is a 40–200 mV drop on 1.8 V.

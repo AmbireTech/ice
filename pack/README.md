@@ -81,9 +81,10 @@ $KICAD_PY pack/makeOrder.py                                 # the order files
   the **bottom** side for SMT, and tick **through-hole (THT) assembly** for J_PACK
   (JLC hand-solders it after reflow), or leave J_PACK out
   and solder it by hand: four joints on the inner face, done before the cells go in.
-- **Stock:** the connector had 20 in JLC's own stock on 2026-10-31: enough for a few
-  boards, not a run. Any brand's 4-pin magnetic male at 2.5 mm pitch, magnets about
-  15.4 mm apart, fits the device's discs and steel.
+- **Stock:** the connector has 20 at JLC (2026-11-01). LCSC's own stock is the same 20,
+  and no distributor or other brand has a fitting male in stock. A run needs a direct order
+  from Xinyangze, sent to JLC as consigned parts (`docs/pack.md`, open checks).
+  `stock.txt` marks any part whose stock covers fewer than 200 packs as SHORT.
 - **Rotations:** check every part in JLC's placement preview before paying. The clips
   carry the same rotation as the device board's (the south cell's exactly so, the
   north cell's turned 180°); the connector's tab points north. The CPL's rotations are KiCad's, not confirmed by JLC.
