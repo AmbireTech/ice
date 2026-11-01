@@ -21,7 +21,7 @@ Where a value was read off a plotted curve it says so. Sources are at the end.
 | Rechargeable | **eneloop pro BK-4HCDE** or **Fujitsu HR-4UTHC** (~930–950 mAh) for runtime; standard **eneloop BK-4MCDE** (~750–800 mAh) for 2000+ cycles and 10-year shelf | LSD NiMH: ~40–70 mΩ, flat 1.2 V plateau. The board is designed to the standard eneloop as the worst case. |
 | Primary | **Energizer Ultimate Lithium L92** (Li-FeS2) | At our currents it delivers 2.3–3.3× the energy of the best alkaline (1.5–1.7 Wh vs 0.5–0.7 Wh at 0.5 A), 4 g lighter, works to −40 °C, 20+ year shelf, no hydrogen. Its 1.79–1.83 V resting voltage also makes it the easiest cell to refuse to charge. |
 | Works, not recommended | Alkaline | 150–300 mΩ fresh and rising: at ~0.6 A it gives a third of its 0.2 A energy, and once half used it cannot deliver the full load at all (a source gives at most Voc²/4R: ~0.65 W for a half-used AAA, against ~0.8 W drawn). Fine for idle use. |
-| Works, not recommended | 10440 Li-ion (3.7 V) | No more energy than an eneloop pro (1.05–1.18 Wh), never charged by this board, and lengths spread from 42.9 mm (flat top) to ~46.5 mm (protected), which end clips tolerate poorly. The boost keeps regulating with it, so it cannot harm the board. |
+| **Not supported** | 10440 Li-ion (3.7 V) | Two in series are 6.0–8.4 V, over the boost's 6 V absolute maximum: a pair of them damages the board. Never charged by this board either. A lockout that refuses such a pack (a Zener and a transistor on the reverse-cell FET's gate) is planned after preprod-0; until then the pack must say so. A single 10440 with a dummy slug (3.0–4.2 V) is within the boost's range but is not a supported configuration. |
 
 Every candidate measures 10.1–10.3 mm across and 44.1–44.3 mm long (alkaline per
 Energizer E92: 43.3–44.5 mm).
@@ -118,8 +118,8 @@ which is why the fast rate leans on temperature and the timer.
 ## Standby: off is the resting state
 
 **Off** (the boost shut down), the board draws about 1 µA from a 1.2 V cell (≤ 2.5 µA
-at datasheet maxima; ~3.5 µA with a 3.7 V 10440, whose sense divider alone takes
-2.1 µA): the 1M/1M sense divider (~0.6 µA), the charger's quiescent draw on its output
+at datasheet maxima; ~3 µA from a fresh 3.6 V lithium pair, whose sense divider alone takes
+1.8 µA): the 1M/1M sense divider (~0.6 µA), the charger's quiescent draw on its output
 (0.35 µA typ), the boost in shutdown (0.01 µA typ). The reverse-FET gate's diode from
 the boost's output leaks picoamps, the joystick's power-on transistor nanoamps. That would
 take more than 35 years to empty any of these cells, so off is limited by the cell's
@@ -169,8 +169,8 @@ suspend, which adds to the asleep budget, not to off). See design.md, "IMU".
 
 1. The detection thresholds above are from literature on 2004-era cells and other
    holders. They must be set on real cells in these clips.
-2. The LTC3539's output current with a 10440 (input above output) is only a graph
-   in the datasheet: measure it, and the rail when a cell is inserted.
+2. The LTC3539's output current with the pack above 3.3 V (two fresh lithium primaries,
+   input above output) is only a graph in the datasheet: measure it, and the rail when a pack is inserted.
 3. The USB-to-cell handover was not measured: the rail may dip to ~3.0 V for the
    few microseconds the TPS2116 takes.
 4. The clips' installed length (47–48 mm) was computed from drawings: check with a

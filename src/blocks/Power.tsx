@@ -275,7 +275,10 @@ export const PowerBlock = () => (
     {/* LTC3539-2, DCB8 (datasheet Pin Functions): 1 SW, 2 PGND, 3 GND, 4 VIN, 5 SHDN,
         6 FB, 7 MODE, 8 VOUT, 9 EP = GND. Starts at 0.7 V (0.88 V max), runs down to
         0.5 V, 2 A switch, true output disconnect, and keeps regulating when VIN > VOUT
-        ("VIN > VOUT Operation"), so a 10440 Li-ion at 4.2 V never reaches the rail.
+        ("VIN > VOUT Operation"), so a 3.6 V pack (two fresh lithium primaries) never
+        reaches the rail. Absolute maximum 6 V on VIN, SW and SHDN: two Li-ion cells in
+        series (6.0-8.4 V) are not supported and nothing here refuses them yet (a lockout
+        on Q_REV's gate is planned after preprod-0).
         No Schottky SW-VOUT: it would defeat exactly that. MODE on VOUT: Burst Mode at
         light load (10 uA). Stays on while USB is in (when the MCU holds PWR_HOLD), so
         pulling the cable hands over to the cell without a gap. */}

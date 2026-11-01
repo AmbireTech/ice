@@ -374,11 +374,14 @@ Why these parts, which cells and how long they last: [power-aaa.md](power-aaa.md
        BAT_N -> AO3416 (reverse-cell blocker) -> GND
 ```
 
-- **The boost runs from every cell that fits**: it starts at 0.88 V (max), runs to
-  0.5 V, and keeps regulating when the cell is *above* 3.3 V, so a 10440 Li-ion at
-  4.2 V never reaches the 3.3 V rail (the STM32's absolute maximum is 4.0 V). No
-  Schottky across it: that would defeat exactly this. Firmware applies the
-  chemistry's own cut-off (NiMH or alkaline ~1.0 V under load, Li-ion 3.0 V).
+- **The boost runs from every AAA pair**: it starts at 0.88 V (max), runs to
+  0.5 V, and keeps regulating when the pack is *above* 3.3 V (two fresh lithium
+  primaries are 3.6 V), so the 3.3 V rail never sees the pack (the STM32's absolute
+  maximum is 4.0 V). No Schottky across it: that would defeat exactly this. Firmware
+  applies the chemistry's own cut-off (NiMH or alkaline ~1.0 V under load).
+  **Li-ion is not supported**: two 10440 in series are 6.0–8.4 V, over the boost's
+  6 V absolute maximum on VIN, SW and SHDN, and nothing on preprod-0 refuses them
+  (a lockout on the reverse-cell FET's gate is planned; power-aaa.md).
 - **A reversed cell** is blocked by an AO3416 in the cell's low side: its body
   diode conducts a correctly inserted cell from the first instant, its gate follows
   the cell (threshold 0.4–1.1 V) and then the boost's own output (~3 V, ~25 mΩ).
@@ -583,14 +586,13 @@ purple (all transparent tints) and clear.
    DHUK, pick the chain length for about one second, and confirm in our
    TrustZone/RDP configuration that software cannot read the DHUK.
 10. **AAA clips**: the pair's installed length (47–48 mm) is computed from the
-    drawings; fit a sample pair and a 44.5 mm cell (and a 42.9–46.5 mm 10440)
-    before the order. Check that the − clip's arms do not cut a cell's label.
+    drawings; fit a sample pair and a 44.5 mm cell before the order. Check that the − clip's arms do not cut a cell's label.
 11. **Cell identification**: measure the + and − clip readings against a solid
     metal dummy cell first (the clips' own resistance), then set the resting-voltage,
     resistance-step and trial-charge thresholds on real NiMH, alkaline and lithium
     cells in these clips (power-aaa.md). Until then, firmware should ask the user.
 12. **Boost**: rail ripple and transient at 0.9–1.5 V in and at full load; the
-    rail with a 10440 at 4.2 V (it must stay at 3.3 V) and when a cell is inserted;
+    rail with a 3.6 V pack (two fresh lithium primaries; it must stay at 3.3 V) and when a pack is inserted;
     the USB-to-cell handover dip (expected ~3.0 V for microseconds). The output caps are
     two 47 µF 6.3 V 0805s (CL21A476MQYNNNE): their real capacitance at 3.3 V is not
     published, and the LTC3539 wants ≥ 22 µF real; a load step that rings says add one.
