@@ -82,7 +82,7 @@ R_BLEN,1k,Resistor_SMD:R_0402_1005Metric,C11702,bottom,-90.0,,0.0,270.0,0.000,n/
 R_BLPD,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 R_BLSET,6.8k,Resistor_SMD:R_0402_1005Metric,C25917,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 R_BTN,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
-R_BTNB,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
+R_BTNB,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 R_BUZG,100,Resistor_SMD:R_0402_1005Metric,C25076,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 R_BUZPD,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 R_CAMEN,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
