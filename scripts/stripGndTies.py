@@ -51,7 +51,10 @@ KEEP = {"U2.2", "U2.3", "U2.9", "C_IN_BOOST.2", "C_BOOST.2", "U3.2", "C_USB3V3.2
         # ground, tied in the owner's VBUS/BAT pass the same day
         "U7.3", "U10.1",
         # 2026-11-01, the owner's later routing: the OPTIGA's decap ground
-        "C_OPT.2"}
+        "C_OPT.2",
+        # the pack's ESD clamps beside their contacts, both ground pads on one via (a clamp
+        # needs the shortest way to ground)
+        "D_PKMID.2", "D_PKNTC.2"}
 
 
 def touches(t, p):

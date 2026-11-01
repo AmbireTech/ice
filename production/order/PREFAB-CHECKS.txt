@@ -9,7 +9,7 @@ PASS  flex connectors: orientation, tail slack: connector orientation: ok
 PASS  lands vs JLC's land for each part:     ? U8 (C2681320): land differs from the vendor's - waived: IPC-nominal SOT-23-6 against the vendor's longer reflow land; same 6 pads, same 0.95 mm pitch
 PASS  no stale copper: 0 stale item(s): clean
 PASS  programming pads and holes where the ordered jig lands (frozen 2026-11-01): device board matches the ordered jig: 7 pads, 3 holes, frozen 2026-11-01
-NOTE  GND pad-to-via ties beyond the kept ones (routing tidiness, not a fab gate): drop D_PKMID.2,D_PKNTC.2: 1.60 mm, 1 via(s)
+PASS  GND pad-to-via ties beyond the kept ones (routing tidiness, not a fab gate): none
 PASS  BOM / placement parity, every part has an LCSC number: BOM refs 143 in 65 lines; CPL rows 143
 PASS  JLC stock for 10 boards: 65 lines, all ok
 NOTE  out of stock, to DNP in JLC's order UI: C1518668 SLS32AIA010MKUSON10XTMA2 (U16)

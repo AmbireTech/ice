@@ -15,13 +15,13 @@ stock (boards=10):
   OUT/SHORT; O C1518668           0 need   10 Extended             $1.3156  SLS32AIA010MKUSON10XTMA2   U16
   ok           C1525       35591779 need  240 Basic                $0.0032  CL05B104KO5NNNC            C_CNS,C_CS,C_DOVDD,C_IMU1,C_IMU2,C_MS,C_NOR,C_NRST,C_OPT,C_R
   ok           C1562        1509053 need   10 Basic                $0.0032  0402CG330J500NT            C_FFB
-  ok           C15849      12205291 need   20 Basic                $0.0143  CL10A105KB8NNNC            C_BLIN,C_BLOUT
+  ok           C15849      12205286 need   20 Basic                $0.0143  CL10A105KB8NNNC            C_BLIN,C_BLOUT
   ok           C15850       8298071 need   10 Basic                $0.0437  CL21A106KAYNNNE            C_BAT
   ok           C165948       378389 need   10 Extended             $0.1874  TYPE-C-31-M-12             J1
   ok           C16780       1035484 need   20 Basic                $0.1021  CL21A476MQYNNNE            C_BOOST,C_BOOST2
   ok           C1848364        2275 need   10 Extended             $0.4413  TPS60230RGTR               U13
   ok           C19666       4185090 need   10 Basic                $0.0169  CL10A475KO8NNNC            C_VBUS
-  ok           C19702      11739319 need   30 Basic                $0.0212  CL10A106KP8NNNC            C_BUZ,C_RADIO1,C_VDDB
+  ok           C19702      11739314 need   30 Basic                $0.0212  CL10A106KP8NNNC            C_BUZ,C_RADIO1,C_VDDB
   ok           C202423          316 need   10 Extended             $0.7333  SKRHAAE010                 SW_JOY
   ok           C20526       2659305 need   10 Basic                $0.0117  MMBT3904(RANGE:100-300)    Q_BTN
   ok           C2128        3114498 need   10 Basic                $0.0119  1N4148WS                   D_BUZ
