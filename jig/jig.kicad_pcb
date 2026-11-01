@@ -1449,6 +1449,17 @@
 			(uuid "3161065f-bbfd-49ca-9768-319d8587e373")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/../3d/Xinyangze_YZP0063-20068-01.step"
+			(offset
+				(xyz 0 0 -2.0)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz 0 0 0)
+			)
+		)
 	)
 	(footprint "Jig_Hole_M2_NPTH"
 		(layer "B.Cu")
@@ -3314,6 +3325,17 @@
 			(uuid "abd39598-e927-4b4d-9e8b-696efb53f3b3")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/../3d/Xinyangze_YZP0063-20068-01.step"
+			(offset
+				(xyz 0 0 -2.0)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz 0 0 0)
+			)
+		)
 	)
 	(footprint "R_0402_1005Metric"
 		(layer "B.Cu")
@@ -3795,6 +3817,17 @@
 			(uuid "03492950-8b53-43d7-bae4-a5bc4d9e9772")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/../3d/Xinyangze_YZP0063-20068-01.step"
+			(offset
+				(xyz 0 0 -2.0)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz 0 0 0)
+			)
+		)
 	)
 	(footprint "R_0402_1005Metric"
 		(layer "B.Cu")
@@ -4480,6 +4513,17 @@
 			(uuid "6267be46-79c8-4de2-b149-d27a8bddd71b")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/../3d/Xinyangze_YZP0063-20068-01.step"
+			(offset
+				(xyz 0 0 -2.0)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz 0 0 0)
+			)
+		)
 	)
 	(footprint "Jig_Hole_M2_NPTH"
 		(layer "B.Cu")
@@ -6607,6 +6651,17 @@
 			(uuid "571f2a38-e423-446b-9705-966755815023")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/../3d/Xinyangze_YZP0063-20068-01.step"
+			(offset
+				(xyz 0 0 -2.0)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz 0 0 0)
+			)
+		)
 	)
 	(footprint "C_0402_1005Metric"
 		(layer "B.Cu")
@@ -6909,6 +6964,17 @@
 			(uuid "1e5430f8-37a5-4ce7-8d12-fbd66f7cccdf")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/../3d/Xinyangze_YZP0063-20068-01.step"
+			(offset
+				(xyz 0 0 -2.0)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz 0 0 0)
+			)
+		)
 	)
 	(footprint "C_0603_1608Metric"
 		(layer "B.Cu")
@@ -10535,6 +10601,17 @@
 			(uuid "85f8237b-dde5-41c6-a666-513958ce132a")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/../3d/Hroparts_K3-2235S-K1.step"
+			(offset
+				(xyz 0 0 -6.35)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz 0 0 0)
+			)
+		)
 	)
 	(footprint "LED_0603_1608Metric"
 		(layer "B.Cu")
@@ -11244,6 +11321,17 @@
 			(uuid "6ea004fa-6d04-4d16-889a-a067521f320c")
 		)
 		(embedded_fonts no)
+		(model "${KIPRJMOD}/../3d/Xinyangze_YZP0063-20068-01.step"
+			(offset
+				(xyz 0 0 -2.0)
+			)
+			(scale
+				(xyz 1 1 1)
+			)
+			(rotate
+				(xyz 0 0 0)
+			)
+		)
 	)
 	(footprint "R_0402_1005Metric"
 		(layer "B.Cu")

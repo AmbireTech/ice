@@ -420,4 +420,9 @@
 		(uuid "5f74c300-d2f4-4c2b-a22b-cf6dda8da904")
 	)
 	(embedded_fonts no)
+	(model "${KIPRJMOD}/../3d/Hroparts_K3-2235S-K1.step"
+		(offset (xyz 0 0 -6.35))
+		(scale (xyz 1 1 1))
+		(rotate (xyz 0 0 0))
+	)
 )
