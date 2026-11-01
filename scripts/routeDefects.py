@@ -476,7 +476,7 @@ def necks(board):
     def wide_at(t, p):
         """Wide copper of t's net meets point p: a wide track ending there, or in the pad or via there."""
         net, w = t.GetNetCode(), cls_w(t)
-        hubs = [h for h in pads + vias if h.GetNetCode() == net and h.HitTest(p)]
+        hubs = [h for h in pads + vias if h.GetNetCode() == net and h.IsOnLayer(t.GetLayer()) and h.HitTest(p)]   # a pad on the other face is no hub
         for u in tracks:
             if u is t or u.GetNetCode() != net or M(u.GetWidth()) < 0.9 * w:
                 continue
