@@ -183,9 +183,10 @@ their connectors. Only low parts sit under any of them (`checkFpc.py` checks all
   TLV62569P buck between USB-C's shell legs and the TPS2116 mux), under one pocket in
   the flat bezel's chin. The front's chin face stays flat: the tallest part there is
   the 3.0 mm radio module, under a 5.33 mm screen stack.
-  The **programming pads** (MCU SWD under the panel, the radio's SWDIO/SWCLK on the
-  back beside the module's SWD pins) are reachable by pogo pins before assembly: the
-  programming jig ([../jig/README.md](../jig/README.md)) lands on both faces at once.
+  The **programming pads** are all on the front, 2.6-2.75 mm apart (the jig's spring
+  pins have 2.0 mm flanges): the MCU's SWD under the panel, the radio's SWDIO/SWCLK at the
+  chin's west edge beside the module's SWD pins. The programming jig
+  ([../jig/README.md](../jig/README.md)) lands on all of them at once, before assembly.
 - **The pack's contacts** (v4: four plain pads between two steel spacers) lie east-west
   on the back, south of the MCU and over the display connector, which moved 5.5 mm south for it (its tail's slot 2.5 mm, so
   the tail keeps 3.0 mm of slack). The MCU's south-side signals pass it on the front
