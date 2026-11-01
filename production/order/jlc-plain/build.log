@@ -13,18 +13,18 @@ stock (boards=10):
   ok           C128396        75158 need   10 Extended             $0.2381  TS3USB221ARSER             U6
   ok           C14442       1460489 need   10 Extended             $0.0033  CL05B102KB5NNNC            C_RCT
   OUT/SHORT; O C1518668           0 need   10 Extended             $1.3156  SLS32AIA010MKUSON10XTMA2   U16
-  ok           C1525       35592075 need  240 Basic                $0.0032  CL05B104KO5NNNC            C_CNS,C_CS,C_DOVDD,C_IMU1,C_IMU2,C_MS,C_NOR,C_NRST,C_OPT,C_R
+  ok           C1525       35592045 need  240 Basic                $0.0032  CL05B104KO5NNNC            C_CNS,C_CS,C_DOVDD,C_IMU1,C_IMU2,C_MS,C_NOR,C_NRST,C_OPT,C_R
   ok           C1562        1509053 need   10 Basic                $0.0032  0402CG330J500NT            C_FFB
-  ok           C15849      12205588 need   20 Basic                $0.0143  CL10A105KB8NNNC            C_BLIN,C_BLOUT
-  ok           C15850       8298448 need   10 Basic                $0.0437  CL21A106KAYNNNE            C_BAT
+  ok           C15849      12205583 need   20 Basic                $0.0143  CL10A105KB8NNNC            C_BLIN,C_BLOUT
+  ok           C15850       8298443 need   10 Basic                $0.0437  CL21A106KAYNNNE            C_BAT
   ok           C165948       378403 need   10 Extended             $0.1874  TYPE-C-31-M-12             J1
   ok           C16780       1035484 need   20 Basic                $0.1021  CL21A476MQYNNNE            C_BOOST,C_BOOST2
   ok           C1848364        2275 need   10 Extended             $0.4413  TPS60230RGTR               U13
-  ok           C19666       4185150 need   10 Basic                $0.0169  CL10A475KO8NNNC            C_VBUS
+  ok           C19666       4185110 need   10 Basic                $0.0169  CL10A475KO8NNNC            C_VBUS
   ok           C19702      11739381 need   30 Basic                $0.0212  CL10A106KP8NNNC            C_BUZ,C_RADIO1,C_VDDB
   ok           C202423          316 need   10 Extended             $0.7333  SKRHAAE010                 SW_JOY
   ok           C20526       2659319 need   10 Basic                $0.0117  MMBT3904(RANGE:100-300)    Q_BTN
-  ok           C2128        3114897 need   10 Basic                $0.0119  1N4148WS                   D_BUZ
+  ok           C2128        3114877 need   10 Basic                $0.0119  1N4148WS                   D_BUZ
   ok           C2143         219232 need   10 Extended             $0.0115  MMBT3906 2A(RANGE:100-300) Q_PWRJ
   ok           C22431324       1418 need   20 Extended             $0.6135  9774015243R                MH_PK1,MH_PK2
   ok           C25076       6007908 need   10 Basic                $0.0012  0402WGF1000TCE             R_BUZG
@@ -52,7 +52,7 @@ stock (boards=10):
   ok           C431540       187652 need   10 Extended             $0.0545  MSK12C02                   SW_AIR
   ok           C43307         45458 need   20 Extended             $0.1093  AO3416                     Q_BUZ,Q_REV
   ok           C43676        282795 need   20 Extended             $0.0013  0402WGF3602TCE             R_TMR,R_VSET
-  ok           C45783       3737635 need   30 Basic                $0.1898  CL21A226MAQNNNE            C_3V3,C_IN_BOOST,C_USB3V3
+  ok           C45783       3737631 need   30 Basic                $0.1898  CL21A226MAQNNNE            C_3V3,C_IN_BOOST,C_USB3V3
   ok           C462652         2197 need   10 Extended             $4.2338  LTC3539EDCB-2#TRPBF        U2
   ok           C48502          1410 need   10 Extended             $0.0219  BAS116,215                 D_REVG
   ok           C48838         19288 need   10 Extended             $0.0012  0402WGF5623TCE             R_FB2
@@ -66,7 +66,7 @@ stock (boards=10):
   ok           C52923      10231093 need   80 Basic                $0.0064  CL05A105KA5NQNC            C_AVIN,C_AVOUT,C_CHGIN,C_DVOUT,C_EN,C_RIN,C_TFT1,C_VDDA1
   ok           C53099         20054 need   10 Extended             $0.0663  ME6211C28M5G-N             U12
   ok           C7394016       55336 need   10 Extended             $0.0491  SN74LVC1G02DBVR(UMW)       U7
-  ok           C7519          45160 need   10 Extended             $0.1801  USBLC6-2SC6                D_ESD
+  ok           C7519          45177 need   10 Extended             $0.1801  USBLC6-2SC6                D_ESD
   ok           C83571         21308 need   10 Extended             $0.0913  2N7002DW-7-F               Q_CHG
   ok           C84374         67360 need   30 Extended             $0.0337  PESD5V0S1BL,315            D_PKMID,D_PKNEG,D_PKNTC
   ok           C94598         54400 need   10 Extended             $0.3462  MLT-5020                   LS1

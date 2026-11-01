@@ -74,6 +74,12 @@ Ambire internals into GridCore's.
   manufactured" (2026-10-17); the pre-fab checks print it as a NOTE.
 - The PCBWay colour print (`art/build_uv.py`) is the same flame in Purple, on a Volt
   base by default (`--scheme`); its Gerbers leave the white flame and labels out.
+- **Programming pads and holes are FROZEN** (owner, 2026-11-01): the programming jig
+  (`jig/`, one board, the device face down on a printed base) was ordered from c593d1c.
+  The device board's TP_3V3, TP_SWDIO, TP_SWCLK, TP_GND, TP_NRST, TP_RSWDIO, TP_RSWCLK
+  and the holes H1, H2, H4 stay exactly where `jig/frozen.json` has them, on the front;
+  their footprints are locked in KiCad, and the pre-fab checks fail if any moves. Never
+  move one, unlock it or edit `frozen.json` without the owner deciding on a new jig.
 - Firmware: `firmware/trezor-firmware/` is trezor-firmware vendored without .git
   (base commit: first line of `firmware/vendor-pins.txt`), built as T3T2 with our
   board `ambire_p0` (proto 0; proto 1 needs its own board file: cell sense, charger

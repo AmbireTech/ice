@@ -1,0 +1,49 @@
+{
+  "ordered": "2026-11-01",
+  "jig_commit": "c593d1c",
+  "note": "The jig was ordered with these positions. The device board's programming pads and holes H1, H2, H4 are frozen: production/prefab_checks.py fails if any moves. Moving one means a new jig.",
+  "pads": {
+    "TP_3V3": [
+      4.0,
+      15.0
+    ],
+    "TP_SWDIO": [
+      4.14,
+      17.68
+    ],
+    "TP_SWCLK": [
+      4.0,
+      20.28
+    ],
+    "TP_GND": [
+      1.29,
+      20.74
+    ],
+    "TP_NRST": [
+      33.25,
+      26.3
+    ],
+    "TP_RSWDIO": [
+      2.04,
+      78.9
+    ],
+    "TP_RSWCLK": [
+      2.0,
+      81.5
+    ]
+  },
+  "holes": {
+    "H1": [
+      3.2,
+      3.2
+    ],
+    "H2": [
+      44.8,
+      3.2
+    ],
+    "H4": [
+      44.8,
+      83.8
+    ]
+  }
+}

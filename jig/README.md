@@ -13,6 +13,11 @@ board, where they stay in reach and in sight.
 
 The repo's SWD tool works with it as it is: `firmware/swd.py --probe cmsis-dap …`.
 
+**Ordered on 2026-11-01** (the Gerbers of c593d1c). From then on the device board's
+programming pads and its holes H1, H2, H4 are **frozen** where `jig/frozen.json` has them:
+their footprints are locked in KiCad, and the device board's pre-fab checks fail if any of
+them moves. Moving one means a new jig.
+
 ## What it is made of
 
 | Part | How many | Where from |

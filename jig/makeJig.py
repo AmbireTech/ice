@@ -2,7 +2,7 @@
 """The programming jig: one board, every part on one face, placed by script.
 
     KICAD_PY jig/makeJig.py          # writes jig/jig.kicad_pcb: placed, planes drawn, not routed
-    KICAD_PY jig/makeJig.py --check  # only: do the device board's pads and holes still match the jig?
+    KICAD_PY jig/makeJig.py --check  # only: are the device board's pads and holes where the ordered jig lands?
 
 (from hardware/ambire-hw). It is then routed by humanizedKicadAutoRouter (jig/README.md,
 "Making the board"). It overwrites the board.
@@ -50,9 +50,8 @@ M, mm = pcbnew.ToMM, pcbnew.FromMM
 pt = lambda x, y: pcbnew.VECTOR2I(mm(x), mm(y))
 
 # ── the device board: where the jig lands (board/wallet.kicad_pcb, 2026-11-01) ──
-PADS = {"TP_3V3": (4.00, 15.00), "TP_SWDIO": (4.14, 17.68), "TP_SWCLK": (4.00, 20.28),
-        "TP_GND": (1.29, 20.74), "TP_NRST": (33.25, 26.30),
-        "TP_RSWDIO": (2.04, 78.90), "TP_RSWCLK": (2.00, 81.50)}
+PADS = G.PADS
+FROZEN = os.path.join(HERE, "frozen.json")   # the jig as ordered: its pads and holes may not move
 HOLES = G.HOLES
 DEVICE_BOARD = os.path.join(ROOT, "board", "wallet.kicad_pcb")
 PIN_PITCH_MIN = 2.5      # the spring pins' 2.0 mm flanges, side by side, with JLC's placement play
@@ -340,6 +339,12 @@ def check_device():
         sys.exit(f"could not read {DEVICE_BOARD}: {run.stderr[-500:]}")
     dev = json.loads(run.stdout.strip().splitlines()[-1])
     bad = []
+    frozen = json.load(open(FROZEN))
+    for ref, xy in {**frozen["pads"], **frozen["holes"]}.items():
+        mine = {**PADS, **HOLES}.get(ref)
+        if mine is None or math.dist(mine, xy) > 0.001:
+            bad.append(f"{ref}: the jig's numbers have it at {mine}; the ordered jig ({frozen['ordered']}, "
+                       f"{frozen['jig_commit']}) at {tuple(xy)}: frozen, see jig/frozen.json")
     for ref, (x, y) in {**PADS, **HOLES}.items():
         if ref not in dev:
             bad.append(f"{ref}: not on the device board")
@@ -358,7 +363,7 @@ def check_device():
                 bad.append(f"{a} and {b} are {math.dist(pa, pb):.2f} mm apart: the pins need {PIN_PITCH_MIN}")
     if bad:
         sys.exit("the jig does not fit the device board:\n  " + "\n  ".join(bad))
-    print(f"device board matches the jig: {len(PADS)} pads, {len(HOLES)} holes")
+    print(f"device board matches the ordered jig: {len(PADS)} pads, {len(HOLES)} holes, frozen {frozen['ordered']}")
 
 
 def main():

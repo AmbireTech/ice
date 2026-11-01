@@ -5,7 +5,11 @@ Coordinates are the device board's (x east, y south, mm, seen from its front). H
 are from the base's top face. The device lies face down on the poles' 4 mm shoulders,
 GAP above the jig's parts face: the spring pins' working height.
 """
-# the device board's holes (2.2 mm, plated) and its outline
+# the device board's programming pads (all on its front) and holes (2.2 mm, plated): FROZEN
+# since the jig was ordered (2026-11-01, jig/frozen.json; the pre-fab checks hold the board to it)
+PADS = {"TP_3V3": (4.00, 15.00), "TP_SWDIO": (4.14, 17.68), "TP_SWCLK": (4.00, 20.28),
+        "TP_GND": (1.29, 20.74), "TP_NRST": (33.25, 26.30),
+        "TP_RSWDIO": (2.04, 78.90), "TP_RSWCLK": (2.00, 81.50)}
 HOLES = {"H1": (3.20, 3.20), "H2": (44.80, 3.20), "H4": (44.80, 83.80)}
 DEVICE_OUTLINE = (0.0, 0.0, 48.0, 87.0, 4.0)
 DEVICE_T = 1.0

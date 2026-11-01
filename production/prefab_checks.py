@@ -4,7 +4,8 @@
     KPY production/prefab_checks.py production/order
 
 Every line is PASS, FAIL or NOTE; the exit code is 1 if anything FAILs. What it checks:
-board (KiCad DRC as saved and after a refill, the repo's gates), assembly (BOM/CPL
+board (KiCad DRC as saved and after a refill, the repo's gates, the programming pads and
+holes frozen where the ordered jig lands), assembly (BOM/CPL
 parity, JLC stock, parts JLC places with no rotation rule), fabrication (drill census,
 smallest drill, outline), and the colour print (mask openings vs KiCad's B.Mask plot,
 EasyEDA-form Gerbers geometrically identical to KiCad's, the labels the art replaces
@@ -64,7 +65,8 @@ def main():
              ([KPY, "scripts/checkPinNets.py"], "IC pads vs datasheet pin tables"),
              ([KPY, "scripts/checkFpc.py"], "flex connectors: orientation, tail slack"),
              ([KPY, "scripts/checkParts.py", "board/wallet.kicad_pcb"], "lands vs JLC's land for each part"),
-             ([KPY, "scripts/cleanCopper.py", "board/wallet.kicad_pcb", "--check"], "no stale copper")]
+             ([KPY, "scripts/cleanCopper.py", "board/wallet.kicad_pcb", "--check"], "no stale copper"),
+             ([KPY, "jig/makeJig.py", "--check"], "programming pads and holes where the ordered jig lands (frozen 2026-11-01)")]
     for cmd, what in gates:
         code, out = run(cmd)
         bad = code != 0 or re.search(r"(?m)^ERROR|LAND MISMATCH|cannot place|not written|mismatch", out)
