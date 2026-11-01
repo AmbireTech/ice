@@ -71,7 +71,9 @@ def main():
         report(not bad, what, out.splitlines()[-1] if out else "")
     code, out = run([KPY, "scripts/stripGndTies.py", "board/wallet.kicad_pcb", "--list"])
     drops = [l.strip() for l in out.splitlines() if l.strip().startswith("drop")]
-    report(not drops, "no GND pad-to-via ties beyond the kept ones", "; ".join(drops) or "none")
+    # A redundant tie is tidiness, never a fab risk (owner, 2026-11-01): a note, not a gate.
+    report(True if not drops else None, "GND pad-to-via ties beyond the kept ones (routing tidiness, not a fab gate)",
+           "; ".join(drops) or "none")
 
     # ---- assembly
     log = open(os.path.join(order, "jlc-plain/build.log")).read()

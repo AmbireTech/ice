@@ -117,7 +117,9 @@ Ambire internals into GridCore's.
   on a plane via (`widenFanouts.py`).
 - In1 = V3V3 plane, In2 = solid GND (parts are on B.Cu and reference In2). One via per
   3.3 V pad, short fanout; never 3.3 V trunks or daisy chains between plane vias.
-- No GND pad-to-via ties — the outer pour plus stitching vias carry GND. Kept ties are
+- No GND pad-to-via ties — the outer pour plus stitching vias carry GND. This is routing
+  tidiness (the router's lazy ties where the pour obviously reaches), **never a fab blocker**:
+  a redundant tie is harmless copper; the pre-fab checks list extra ties as a NOTE. Kept ties are
   listed in `scripts/stripGndTies.py` (switching stages, exposed pads carrying heat,
   RF ground, ESD clamp, the owner's C_USBSW/R_FB2 tie). Stitching vias are "free" vias,
   or KiCad's interactive router shoves and re-nets them.
