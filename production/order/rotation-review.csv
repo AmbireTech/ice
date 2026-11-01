@@ -23,7 +23,7 @@ C_IN_BOOST,22uF,Capacitor_SMD:C_0805_2012Metric,C45783,top,0.0,,0.0,0.0,0.000,n/
 C_MS,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 C_NOR,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 C_NRST,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
-C_OPT,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
+C_OPT,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 C_RADIO1,10uF,Capacitor_SMD:C_0603_1608Metric,C19702,top,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 C_RADIO2,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,top,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 C_RCT,1nF,Capacitor_SMD:C_0402_1005Metric,C14442,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)

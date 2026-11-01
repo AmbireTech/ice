@@ -2,5 +2,5 @@ C6937104  MY-AAA-19-J                  x2  JLC stock 5711  expand  ok: covers 28
 C6937107  MY-AAA-20-J                  x2  JLC stock 4238  expand  ok: covers 2119 boards  (BT_P1,BT_P2)
 C976305   BSMD1206-075-30V             x1  JLC stock 49135  expand  ok: covers 49135 boards  (F_BAT)
 C5157302  YZP0118-20063-02             x4  JLC stock 879  expand  ok: covers 219 boards  (J_PACK1,J_PACK2,J_PACK3,J_PACK4)
-C13564    NCP18XH103F03RB              x1  JLC stock 142253  expand  ok: covers 142253 boards  (RT_PACK)
-C11702    0402WGF1001TCE               x1  JLC stock 21423241  base  ok: covers 21423241 boards  (R_MID)
+C13564    NCP18XH103F03RB              x1  JLC stock 141536  expand  ok: covers 141536 boards  (RT_PACK)
+C11702    0402WGF1001TCE               x1  JLC stock 21421898  base  ok: covers 21421898 boards  (R_MID)
