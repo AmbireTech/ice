@@ -87,12 +87,18 @@ def main():
     sourced = [f"{r['LCSC']} {r['MPN']} x{r['Need']} ({r['Refs']}): {r['Flag']}" for r in stock if r.get("Flag", "").startswith("global sourcing")]
     short = [f"{r['LCSC']} {r['MPN']} ({r['Flag']})" for r in stock
              if r.get("Flag") and "deprioritized" not in r["Flag"] and not r["Flag"].startswith("global sourcing")]
-    dnp_at_order = [f"{r['LCSC']} {r['MPN']} ({r['Refs']})" for r in stock if "deprioritized" in r.get("Flag", "")]
+    # parts JLC lists out of stock that the owner has bought into the JLC parts library: assembled, not DNP
+    own_stock = {"C1518668": "the OPTIGA: the owner's stock, bought 2026-11-01; in the JLC parts library once it arrives"}
+    dnp_at_order = [f"{r['LCSC']} {r['MPN']} ({r['Refs']})" for r in stock
+                    if "deprioritized" in r.get("Flag", "") and r["LCSC"] not in own_stock]
+    own = [f"{r['LCSC']} {r['MPN']} ({r['Refs']}): {own_stock[r['LCSC']]}" for r in stock if r["LCSC"] in own_stock]
     report(not short, "JLC stock for 10 boards", f"{len(stock)} lines" + (f"; short: {short}" if short else ", all ok"))
     if sourced:
         report(None, "buy through JLC Global Sourcing before ordering (JLC mounts it)", "; ".join(sourced))
     if dnp_at_order:
         report(None, "out of stock, to DNP in JLC's order UI", "; ".join(dnp_at_order))
+    if own:
+        report(None, "assembled from your own JLC stock: check it has arrived before ordering", "; ".join(own))
     rot = list(csv.DictReader(open(os.path.join(order, "jlc-plain/work/rotation-review.csv"))))
     eye = [r["Designator"] for r in rot if "eye" in r.get("Status", "").lower()]
     report(None, "check by eye in JLC's placement preview", ", ".join(x for x in eye if x))

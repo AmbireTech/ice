@@ -257,6 +257,7 @@ FRAME = {"len": 21.2, "wid": 6.86, "tab": (5.03, 2.31), "t": MAGNET["h"] - 0.2, 
          "pocket_d": MAGNET["d"] + 0.15, "peg_d": 1.0, "peg_h": 0.6, "peg_hole": 1.1, "pegs": ((-5.4, -2.4), (5.4, -2.4))}
 # Mated: the pins stand this far off the pack board on the pads
 PIN_MATED = CONN_DEV["steel_h"] - CONN_DEV["disc_h"] + MAGNET["h"]
+PAD_DRAW_H = 0.05     # a bare pad adds no height to the stack; the page draws it this thick so it shows
 CONN_NETS = ("BAT+", "MID", "NTC", "BAT-")   # east to west: J_PK1-4's nets (BAT, CELL_MID, CHG_TS, BAT_N)
 # Where the pair goes: wherever the device board places the pads (J_PK1-4), long axis
 # east-west, south of the MCU over the display connector (v4, 2026-10-28: the back's east
@@ -1171,7 +1172,7 @@ def main():
                  "cells": {"x": r3([cell_cx - CELL_L / 2, cell_cx + CELL_L / 2]), "y": r3(cell_ys),
                            "z": round(z_cell, 3), "d": CELL_D},
                  "contacts": {"part": CONN_DEV["part"], "lcsc": CONN_DEV["lcsc"], "strip": r3(strip),
-                              "discD": CONN_DEV["disc_d"], "discH": CONN_DEV["disc_h"],
+                              "discD": CONN_DEV["disc_d"], "discH": CONN_DEV["disc_h"] or PAD_DRAW_H,
                               "discs": [{"net": n_, "x": round(x, 3), "y": round(y, 3)} for n_, x, y in contacts],
                               "steelD": CONN_DEV["steel_d"], "steelH": CONN_DEV["steel_h"],
                               "steel": [{"x": round(x, 3), "y": round(y, 3)} for x, y in steel_xy]},

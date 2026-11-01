@@ -62,7 +62,7 @@ Ambire internals into GridCore's.
   after moving parts, pads or labels on the back; it refuses to install if DRC gets worse.
 - Order set: `production/make_order.sh` → `production/order/` with `PREFAB-CHECKS.txt`.
   At order time the owner: checks the parts listed in that file in JLC's placement
-  preview, DNPs the OPTIGA (U16, C1518668, out of stock) in JLC's UI, asks for rails
+  preview, checks the OPTIGA (U16, C1518668) has arrived in the JLC parts library (owner's stock, bought 2026-11-01; JLC's own is out), asks for rails
   with fiducials.
 - Colour (UV) back print: JLC does **not** offer its colour option for files that
   EasyEDA didn't write (blocked since Jan 2026, check changed again Aug 2026). Our
