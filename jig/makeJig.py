@@ -8,10 +8,11 @@
 "Making the board"). It overwrites the board.
 
 Every programming pad of the device board is on its front (TP_3V3, TP_GND, TP_SWDIO,
-TP_SWCLK, TP_NRST for the MCU; TP_RSWDIO, TP_RSWCLK for the radio). The jig lies on the
-table with its parts face up; the device goes on it face down, three M2 screws through
-its holes H1, H2, H4 locate it, three 5 mm standoffs carry it, three nuts on its back
-hold it down. Seven spring pins, each working at its 5.0 mm, press up into the pads.
+TP_SWCLK, TP_NRST for the MCU; TP_RSWDIO, TP_RSWCLK for the radio). The jig lies on a
+printed base (makeFixture.py) with its parts face up, on four poles through its 4.2 mm
+holes; the device goes on face down, on three of the poles' 4 mm shoulders 5 mm above the
+jig, their tips through its holes H1, H2, H4; a printed lid and a weight on it hold it
+down. Seven spring pins, each working at its 5.0 mm, press up into the pads.
 
 Its parts are on KiCad's B side, so the board is drawn in the DEVICE board's own
 coordinates (x east, y south, seen from the device's front): a pin sits at its pad's
@@ -34,6 +35,9 @@ import sys
 
 import pcbnew
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import geometry as G  # noqa: E402
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 OUT = os.path.join(HERE, "jig.kicad_pcb")
@@ -49,13 +53,13 @@ pt = lambda x, y: pcbnew.VECTOR2I(mm(x), mm(y))
 PADS = {"TP_3V3": (4.00, 15.00), "TP_SWDIO": (4.14, 17.68), "TP_SWCLK": (4.00, 20.28),
         "TP_GND": (1.29, 20.74), "TP_NRST": (33.60, 26.80),
         "TP_RSWDIO": (2.04, 78.90), "TP_RSWCLK": (2.00, 81.50)}
-HOLES = {"H1": (3.20, 3.20), "H2": (44.80, 3.20), "H4": (44.80, 83.80)}   # 2.2 mm, plated
+HOLES = G.HOLES
 DEVICE_BOARD = os.path.join(ROOT, "board", "wallet.kicad_pcb")
 PIN_PITCH_MIN = 2.5      # the spring pins' 2.0 mm flanges, side by side, with JLC's placement play
-DEVICE_OUTLINE = (0.0, 0.0, 48.0, 87.0, 4.0)
+DEVICE_OUTLINE = G.DEVICE_OUTLINE
 JOYSTICK_CUT = (19.0, 75.8, 29.0, 85.8, 1.0)   # the ALPS joystick (19.5-28.5 x 76.3-85.3), taller than the gap
-EDGE_X = -13.0                                  # the jig's west edge: the strip west of the device
-OUTLINE = (EDGE_X, -3.0, 49.0, 90.0, 2.0)
+OUTLINE = G.JIG_OUTLINE
+EDGE_X = OUTLINE[0]                             # the jig's west edge: the strip west of the device
 
 # JLC parts: value, footprint (lib, name), LCSC, MPN
 P = {
@@ -82,7 +86,7 @@ P = {
     "POGO": ("YZP0063-20068-01", (JIG_LIB, "Xinyangze_YZP0063-20068-01"), "C5157248", "YZP0063-20068-01"),
 }
 NOT_ASSEMBLED = {
-    "HOLE": (JIG_LIB, "Jig_Hole_M2_NPTH"),
+    "HOLE": (JIG_LIB, "Jig_Hole_Pole_4.2mm"),
     "BOOT": (f"{KICAD_FP}/Jumper.pretty", "SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm"),
 }
 
@@ -182,6 +186,7 @@ OTHERS = [
     ("H_1", "HOLE", *HOLES["H1"], 0, {}),
     ("H_2", "HOLE", *HOLES["H2"], 0, {}),
     ("H_4", "HOLE", *HOLES["H4"], 0, {}),
+    ("H_5", "HOLE", *G.EXTRA_POLE, 0, {}),                 # the jig's fourth pole, south of the selector
 ]
 # A part whose working side faces west on the edge: (pad, its offset from the part's origin
 # once turned so, x and +-y), offset of the origin from x EDGE_X)
@@ -402,7 +407,7 @@ def main():
     for s, x, y, size in [("AMBIRE ICE SWD JIG - debugprobe (CMSIS-DAP)", 18.0, -1.6, 0.9),
                           ("USB", -6.5, 37.4, 0.7), ("3V3", -4.0, 15.8, 0.7), ("USB", -9.0, 15.8, 0.7),
                           ("BOOT", 2.6, 41.4, 0.7),
-                          ("device face down, H1 H2 H4 on the standoffs", 24.0, 88.6, 0.8)]:
+                          ("device face down on the poles, lid and weight on top", 24.0, 88.6, 0.8)]:
         text(board, s, x, y, size)
 
     zone(board, pcbnew.In1_Cu, nets["GND"])            # solid ground
