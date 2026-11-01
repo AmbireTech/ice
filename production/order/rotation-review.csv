@@ -10,7 +10,7 @@ C_BLOUT,1uF,Capacitor_SMD:C_0603_1608Metric,C15849,bottom,180.0,,0.0,0.0,0.000,n
 C_BOOST,47uF,Capacitor_SMD:C_0805_2012Metric,C16780,top,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 C_BOOST2,47uF,Capacitor_SMD:C_0805_2012Metric,C16780,top,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 C_BUZ,10uF,Capacitor_SMD:C_0603_1608Metric,C19702,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
-C_CHGIN,1uF,Capacitor_SMD:C_0402_1005Metric,C52923,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
+C_CHGIN,1uF,Capacitor_SMD:C_0402_1005Metric,C52923,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 C_CNS,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 C_CS,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 C_DOVDD,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
