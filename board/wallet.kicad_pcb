@@ -8054,6 +8054,95 @@
 			)
 		)
 	)
+	(footprint "wallet:Pack_Contact_Pad_D2.235mm"
+		(layer "B.Cu")
+		(uuid "003c0913-f627-4ae5-a432-4f6fef5fc9af")
+		(at 23.25 42.28 180)
+		(descr "Plain 2.235 mm round ENIG pad: the landing of one of the pack's spring pins (Xinyangze YZP0118-20063-02, 0.9 mm tip). No part: pad only, out of the BOM. The land is Mill-Max's 0.088 in pad for its 1578-0-57 target disc, which still fits here if hard gold is ever wanted.")
+		(tags "pogo target contact pad")
+		(property "Reference" "J_PK2"
+			(at 0 0 0)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "c463e1af-c243-421d-9e0b-737dd610043b")
+			(effects
+				(font
+					(size 0.5 0.5)
+					(thickness 0.08)
+				)
+				(justify mirror)
+			)
+		)
+		(property "Value" "J_PK2"
+			(at 0 -1.8 0)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "a467e51d-7f75-47cf-9f8c-d798416e6182")
+			(effects
+				(font
+					(size 0.5 0.5)
+					(thickness 0.08)
+				)
+				(justify mirror)
+			)
+		)
+		(property "Datasheet" ""
+			(at 0 0 0)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "27660d78-c246-467b-8415-5a0754d4bec4")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify mirror)
+			)
+		)
+		(property "Description" ""
+			(at 0 0 0)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "4772d3c0-be1a-4f87-bc74-82b66714e3ec")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify mirror)
+			)
+		)
+		(attr smd exclude_from_bom dnp)
+		(duplicate_pad_numbers_are_jumpers no)
+		(fp_circle
+			(center 0 0)
+			(end 1.25 0)
+			(stroke
+				(width 0.05)
+				(type solid)
+			)
+			(fill no)
+			(layer "B.CrtYd")
+			(uuid "76a8c4a7-9e88-4f88-ba93-61559b8e594f")
+		)
+		(fp_circle
+			(center 0 0)
+			(end 0.99 0)
+			(stroke
+				(width 0.1)
+				(type solid)
+			)
+			(fill no)
+			(layer "B.Fab")
+			(uuid "01bf7f7e-e98f-4986-b546-1de72321c9c5")
+		)
+		(pad "1" smd circle
+			(at 0 0 180)
+			(size 2.235 2.235)
+			(layers "B.Cu" "B.Mask" "B.Paste")
+			(net "CELL_MID")
+			(uuid "2b0cfdd8-2a65-4ea8-975e-38774072afc1")
+		)
+		(embedded_fonts no)
+	)
 	(footprint "Resistor_SMD:R_0402_1005Metric"
 		(layer "B.Cu")
 		(uuid "023089b9-1dd0-4a50-9e57-bd0b1a398e09")
@@ -10874,118 +10963,6 @@
 				(xyz 0 0 0)
 			)
 		)
-	)
-	(footprint "wallet:Wurth_WA-SMSI_M2_L1.0_NoHole"
-		(layer "B.Cu")
-		(uuid "19099b2b-7823-4133-8bb8-be152f6649f3")
-		(at 29.705 42.28 180)
-		(descr "Wurth WA-SMSI 9774010243R SMT steel spacer, M2, 1.0 mm, 4.35 dia (steel, tin): datasheet land 5.3 dia pad, 3.0 NPTH (omitted: no screw), stencil annulus 3.1-5.2. Here the magnet partner of the pack male's magnets.")
-		(tags "SMT spacer steel")
-		(property "Reference" "MH_PK2"
-			(at 0 0 0)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "38edc4c4-d27a-4b70-9736-23459036cb70")
-			(effects
-				(font
-					(size 0.5 0.5)
-					(thickness 0.08)
-				)
-				(justify mirror)
-			)
-		)
-		(property "Value" "9774010243R"
-			(at 0 -3.3 0)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "cb791e10-7fae-440a-8774-8c1780bc393b")
-			(effects
-				(font
-					(size 0.5 0.5)
-					(thickness 0.08)
-				)
-				(justify mirror)
-			)
-		)
-		(property "Datasheet" ""
-			(at 0 0 0)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "74b901bc-0f66-48a7-a392-431317f31030")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify mirror)
-			)
-		)
-		(property "Description" ""
-			(at 0 0 0)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "076c14ce-d25f-4286-b14f-4d51c1cd2c1b")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify mirror)
-			)
-		)
-		(property "LCSC" "C5360192"
-			(at 0 0 0)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "979d1987-cf0c-4965-8a27-5192ec2e30d8")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(attr smd)
-		(duplicate_pad_numbers_are_jumpers no)
-		(fp_circle
-			(center 0 0)
-			(end 2.075 0)
-			(stroke
-				(width 1.05)
-				(type solid)
-			)
-			(fill no)
-			(layer "B.Paste")
-			(uuid "1292c69e-cdeb-4c70-b979-ec4f88681ab5")
-		)
-		(fp_circle
-			(center 0 0)
-			(end 2.7 0)
-			(stroke
-				(width 0.05)
-				(type solid)
-			)
-			(fill no)
-			(layer "B.CrtYd")
-			(uuid "7ebe19ea-0d2f-4b13-8ab4-32100bc5fb47")
-		)
-		(fp_circle
-			(center 0 0)
-			(end 2.175 0)
-			(stroke
-				(width 0.1)
-				(type solid)
-			)
-			(fill no)
-			(layer "B.Fab")
-			(uuid "739509f3-0846-4e36-8d1f-43ab759878a8")
-		)
-		(pad "1" smd circle
-			(at 0 0 180)
-			(size 5.3 5.3)
-			(layers "B.Cu" "B.Mask")
-			(net "GND")
-			(uuid "1e57d384-c7c2-4b1d-92d8-655b7c391552")
-		)
-		(embedded_fonts no)
 	)
 	(footprint "Capacitor_SMD:C_0402_1005Metric"
 		(layer "B.Cu")
@@ -17281,6 +17258,95 @@
 			)
 		)
 	)
+	(footprint "wallet:Pack_Contact_Pad_D2.235mm"
+		(layer "B.Cu")
+		(uuid "65489b27-61b2-42b2-9f81-3bd68c91fc5b")
+		(at 20.75 42.28 180)
+		(descr "Plain 2.235 mm round ENIG pad: the landing of one of the pack's spring pins (Xinyangze YZP0118-20063-02, 0.9 mm tip). No part: pad only, out of the BOM. The land is Mill-Max's 0.088 in pad for its 1578-0-57 target disc, which still fits here if hard gold is ever wanted.")
+		(tags "pogo target contact pad")
+		(property "Reference" "J_PK3"
+			(at 0 0 0)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "1a95a742-0bdf-45a0-beed-2246cdd5f4f5")
+			(effects
+				(font
+					(size 0.5 0.5)
+					(thickness 0.08)
+				)
+				(justify mirror)
+			)
+		)
+		(property "Value" "J_PK3"
+			(at 0 -1.8 0)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "743a3439-ce53-4ef8-ad25-2fa8ff9f2216")
+			(effects
+				(font
+					(size 0.5 0.5)
+					(thickness 0.08)
+				)
+				(justify mirror)
+			)
+		)
+		(property "Datasheet" ""
+			(at 0 0 0)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "bdcffcdc-c427-45a1-be05-fc3441b6bd83")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify mirror)
+			)
+		)
+		(property "Description" ""
+			(at 0 0 0)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "47b90bd7-06b8-4220-a094-68e8217a435b")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify mirror)
+			)
+		)
+		(attr smd exclude_from_bom dnp)
+		(duplicate_pad_numbers_are_jumpers no)
+		(fp_circle
+			(center 0 0)
+			(end 1.25 0)
+			(stroke
+				(width 0.05)
+				(type solid)
+			)
+			(fill no)
+			(layer "B.CrtYd")
+			(uuid "b575d395-c593-4dba-aa8b-163452d99d58")
+		)
+		(fp_circle
+			(center 0 0)
+			(end 0.99 0)
+			(stroke
+				(width 0.1)
+				(type solid)
+			)
+			(fill no)
+			(layer "B.Fab")
+			(uuid "16422972-1637-40b7-9111-72d068da1bd5")
+		)
+		(pad "1" smd circle
+			(at 0 0 180)
+			(size 2.235 2.235)
+			(layers "B.Cu" "B.Mask" "B.Paste")
+			(net "CHG_TS")
+			(uuid "1c5f9e77-18d9-4f74-bae4-2bac71aa1948")
+		)
+		(embedded_fonts no)
+	)
 	(footprint "Capacitor_SMD:C_0603_1608Metric"
 		(layer "B.Cu")
 		(uuid "6636bd85-1434-43b5-b95c-278123ad8e4f")
@@ -20611,6 +20677,117 @@
 			)
 		)
 	)
+	(footprint "wallet:Wurth_WA-SMSI_M2_L1.5_NoHole"
+		(layer "B.Cu")
+		(uuid "790c99cc-dde9-4766-816a-cca9e5150a9a")
+		(at 14.295 42.28 180)
+		(descr "Wurth WA-SMSI 9774015243R SMT steel spacer, M2, 1.5 mm, 4.35 dia (steel, tin): datasheet land 5.3 dia pad, 3.0 NPTH (omitted: no screw), stencil annulus 3.1-5.2. Here the magnet partner of the pack male's magnets.")
+		(tags "SMT spacer steel")
+		(property "Reference" "MH_PK1"
+			(at 0 0 0)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "af506ee5-0596-4056-bc59-d3d7d1ea912e")
+			(effects
+				(font
+					(size 0.5 0.5)
+					(thickness 0.08)
+				)
+				(justify mirror)
+			)
+		)
+		(property "Value" "9774015243R"
+			(at 0 -3.3 0)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "613cc83d-b81f-4ce1-84a5-e61c7a3590f3")
+			(effects
+				(font
+					(size 0.5 0.5)
+					(thickness 0.08)
+				)
+				(justify mirror)
+			)
+		)
+		(property "Datasheet" ""
+			(at 0 0 0)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "63b82c82-5910-45f3-96d0-d2550aafc33e")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify mirror)
+			)
+		)
+		(property "Description" ""
+			(at 0 0 0)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "c1997d9c-98cc-40e3-9b51-42fcff1dd0dc")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify mirror)
+			)
+		)
+		(property "LCSC" "C22431324"
+			(at 0 0 0)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "493061a0-98f3-4599-b703-8cd494b0774d")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(attr smd)
+		(duplicate_pad_numbers_are_jumpers no)
+		(fp_circle
+			(center 0 0)
+			(end 2.075 0)
+			(stroke
+				(width 1.05)
+				(type solid)
+			)
+			(fill no)
+			(layer "B.Paste")
+			(uuid "9fc77e66-0bb4-425b-99c0-a05c94065c73")
+		)
+		(fp_circle
+			(center 0 0)
+			(end 2.7 0)
+			(stroke
+				(width 0.05)
+				(type solid)
+			)
+			(fill no)
+			(layer "B.CrtYd")
+			(uuid "ad3859d4-5caf-47c7-8e2b-d24676d8b739")
+		)
+		(fp_circle
+			(center 0 0)
+			(end 2.175 0)
+			(stroke
+				(width 0.1)
+				(type solid)
+			)
+			(fill no)
+			(layer "B.Fab")
+			(uuid "6089a72a-a1bb-4f5d-a593-05eebcbf2402")
+		)
+		(pad "1" smd circle
+			(at 0 0 180)
+			(size 5.3 5.3)
+			(layers "B.Cu" "B.Mask")
+			(net "GND")
+			(uuid "a93d3fc1-5dbf-49f4-a0aa-648dbd96869d")
+		)
+		(embedded_fonts no)
+	)
 	(footprint "Resistor_SMD:R_0402_1005Metric"
 		(layer "B.Cu")
 		(uuid "80b4c810-3ee5-472e-8d2c-3152bd8cdf80")
@@ -23666,107 +23843,6 @@
 		)
 		(embedded_fonts no)
 	)
-	(footprint "wallet:MillMax_1578_TargetDisc_D1.98mm"
-		(layer "B.Cu")
-		(uuid "96cca410-9a2f-4d72-b228-c02206a274fb")
-		(at 20.75 42.28 180)
-		(descr "Mill-Max 1578-0-57-15-00-00-03-0 target disc for spring-loaded pins: brass, 10 uin hard gold over nickel, 1.981 dia x 0.635 mm, SMT pad 0.088 in (2.235 mm), tape and reel 7,200")
-		(tags "pogo target contact")
-		(property "Reference" "J_PK3"
-			(at 0 0 0)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "32d38f94-b8eb-4244-a6a1-876b7cef9c60")
-			(effects
-				(font
-					(size 0.5 0.5)
-					(thickness 0.08)
-				)
-				(justify mirror)
-			)
-		)
-		(property "Value" "1578-0-57-15-00-00-03-0"
-			(at 0 -1.8 0)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "6eedd322-f800-48e6-8ae5-1b76c6106ac0")
-			(effects
-				(font
-					(size 0.5 0.5)
-					(thickness 0.08)
-				)
-				(justify mirror)
-			)
-		)
-		(property "Datasheet" ""
-			(at 0 0 0)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "90c00a69-feef-481a-ae61-55898b3b35d1")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify mirror)
-			)
-		)
-		(property "Description" ""
-			(at 0 0 0)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "18b560cd-7745-42fe-a610-d6b282a8eafe")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify mirror)
-			)
-		)
-		(property "LCSC" "C21905480"
-			(at 0 0 0)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "5f6c3ca5-7dde-4d8e-8185-2fc2d5b3d856")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(attr smd)
-		(duplicate_pad_numbers_are_jumpers no)
-		(fp_circle
-			(center 0 0)
-			(end 1.25 0)
-			(stroke
-				(width 0.05)
-				(type solid)
-			)
-			(fill no)
-			(layer "B.CrtYd")
-			(uuid "939312da-4e95-458f-b059-cfc821dae11d")
-		)
-		(fp_circle
-			(center 0 0)
-			(end 0.99 0)
-			(stroke
-				(width 0.1)
-				(type solid)
-			)
-			(fill no)
-			(layer "B.Fab")
-			(uuid "794c9e54-9fa9-45d5-a80d-50d5146fa02c")
-		)
-		(pad "1" smd circle
-			(at 0 0 180)
-			(size 2.235 2.235)
-			(layers "B.Cu" "B.Mask" "B.Paste")
-			(net "CHG_TS")
-			(uuid "a652df81-afba-494d-aa97-1e013434e315")
-		)
-		(embedded_fonts no)
-	)
 	(footprint "Resistor_SMD:R_0402_1005Metric"
 		(layer "B.Cu")
 		(uuid "9a350ddf-44cd-4c45-94dd-13524865ffc1")
@@ -23931,6 +24007,117 @@
 				(xyz 0 0 0)
 			)
 		)
+	)
+	(footprint "wallet:Wurth_WA-SMSI_M2_L1.5_NoHole"
+		(layer "B.Cu")
+		(uuid "9c4d97a7-d0df-4524-8e56-87a4295f02f9")
+		(at 29.705 42.28 180)
+		(descr "Wurth WA-SMSI 9774015243R SMT steel spacer, M2, 1.5 mm, 4.35 dia (steel, tin): datasheet land 5.3 dia pad, 3.0 NPTH (omitted: no screw), stencil annulus 3.1-5.2. Here the magnet partner of the pack male's magnets.")
+		(tags "SMT spacer steel")
+		(property "Reference" "MH_PK2"
+			(at 0 0 0)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "cbb179d1-c804-475f-a102-977e5f0ecf25")
+			(effects
+				(font
+					(size 0.5 0.5)
+					(thickness 0.08)
+				)
+				(justify mirror)
+			)
+		)
+		(property "Value" "9774015243R"
+			(at 0 -3.3 0)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "aa424fef-02fb-47d4-a13c-7df30167dba7")
+			(effects
+				(font
+					(size 0.5 0.5)
+					(thickness 0.08)
+				)
+				(justify mirror)
+			)
+		)
+		(property "Datasheet" ""
+			(at 0 0 0)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "74687e5e-77a0-488b-a41f-b50d0d4ae8c8")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify mirror)
+			)
+		)
+		(property "Description" ""
+			(at 0 0 0)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "b8dc2b73-348f-4f3c-817f-9857d2163e33")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify mirror)
+			)
+		)
+		(property "LCSC" "C22431324"
+			(at 0 0 0)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "0d41783b-4a93-4924-a183-64071720491c")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(attr smd)
+		(duplicate_pad_numbers_are_jumpers no)
+		(fp_circle
+			(center 0 0)
+			(end 2.075 0)
+			(stroke
+				(width 1.05)
+				(type solid)
+			)
+			(fill no)
+			(layer "B.Paste")
+			(uuid "459044a9-0e50-4ff0-9528-21eb9f0801d9")
+		)
+		(fp_circle
+			(center 0 0)
+			(end 2.7 0)
+			(stroke
+				(width 0.05)
+				(type solid)
+			)
+			(fill no)
+			(layer "B.CrtYd")
+			(uuid "fc3053f4-af37-4d70-843f-87ac980938ed")
+		)
+		(fp_circle
+			(center 0 0)
+			(end 2.175 0)
+			(stroke
+				(width 0.1)
+				(type solid)
+			)
+			(fill no)
+			(layer "B.Fab")
+			(uuid "faa31e11-ad42-497e-ac99-a9f82679c029")
+		)
+		(pad "1" smd circle
+			(at 0 0 180)
+			(size 5.3 5.3)
+			(layers "B.Cu" "B.Mask")
+			(net "GND")
+			(uuid "be04f5d2-44d3-4a2d-8a88-0fb27e42ca8a")
+		)
+		(embedded_fonts no)
 	)
 	(footprint "Capacitor_SMD:C_0402_1005Metric"
 		(layer "B.Cu")
@@ -27275,6 +27462,95 @@
 				(xyz 0 0 0)
 			)
 		)
+	)
+	(footprint "wallet:Pack_Contact_Pad_D2.235mm"
+		(layer "B.Cu")
+		(uuid "b4777f20-05ca-4593-8ce1-7759d5c6a1b5")
+		(at 18.25 42.28 180)
+		(descr "Plain 2.235 mm round ENIG pad: the landing of one of the pack's spring pins (Xinyangze YZP0118-20063-02, 0.9 mm tip). No part: pad only, out of the BOM. The land is Mill-Max's 0.088 in pad for its 1578-0-57 target disc, which still fits here if hard gold is ever wanted.")
+		(tags "pogo target contact pad")
+		(property "Reference" "J_PK4"
+			(at 0 0 0)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "e8062ba4-9d96-427f-8abb-466ac114df92")
+			(effects
+				(font
+					(size 0.5 0.5)
+					(thickness 0.08)
+				)
+				(justify mirror)
+			)
+		)
+		(property "Value" "J_PK4"
+			(at 0 -1.8 0)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "ec501c54-1f13-40dc-8b40-1e525fa03f7c")
+			(effects
+				(font
+					(size 0.5 0.5)
+					(thickness 0.08)
+				)
+				(justify mirror)
+			)
+		)
+		(property "Datasheet" ""
+			(at 0 0 0)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "2da76733-3034-496c-8a5b-10e6a83627b5")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify mirror)
+			)
+		)
+		(property "Description" ""
+			(at 0 0 0)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "5a8d3476-6552-44a4-aec2-561ccb3191a1")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify mirror)
+			)
+		)
+		(attr smd exclude_from_bom dnp)
+		(duplicate_pad_numbers_are_jumpers no)
+		(fp_circle
+			(center 0 0)
+			(end 1.25 0)
+			(stroke
+				(width 0.05)
+				(type solid)
+			)
+			(fill no)
+			(layer "B.CrtYd")
+			(uuid "a4ebfe2a-3caa-4756-a55b-8e9b163f0c5d")
+		)
+		(fp_circle
+			(center 0 0)
+			(end 0.99 0)
+			(stroke
+				(width 0.1)
+				(type solid)
+			)
+			(fill no)
+			(layer "B.Fab")
+			(uuid "62b18df8-340f-4c9d-88b5-f66323c3ba98")
+		)
+		(pad "1" smd circle
+			(at 0 0 180)
+			(size 2.235 2.235)
+			(layers "B.Cu" "B.Mask" "B.Paste")
+			(net "BAT_N")
+			(uuid "1e43412c-9b0a-43eb-a7ff-4aed00ea5de2")
+		)
+		(embedded_fonts no)
 	)
 	(footprint "Package_TO_SOT_SMD:SOT-23"
 		(layer "B.Cu")
@@ -30739,107 +31015,6 @@
 			)
 		)
 	)
-	(footprint "wallet:MillMax_1578_TargetDisc_D1.98mm"
-		(layer "B.Cu")
-		(uuid "e66662e2-3b6e-474e-ae5d-2b0f54fe228e")
-		(at 23.25 42.28 180)
-		(descr "Mill-Max 1578-0-57-15-00-00-03-0 target disc for spring-loaded pins: brass, 10 uin hard gold over nickel, 1.981 dia x 0.635 mm, SMT pad 0.088 in (2.235 mm), tape and reel 7,200")
-		(tags "pogo target contact")
-		(property "Reference" "J_PK2"
-			(at 0 0 0)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "690bba14-e2ec-403d-816e-8e51aceef993")
-			(effects
-				(font
-					(size 0.5 0.5)
-					(thickness 0.08)
-				)
-				(justify mirror)
-			)
-		)
-		(property "Value" "1578-0-57-15-00-00-03-0"
-			(at 0 -1.8 0)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "25dfc2ab-990c-4ed5-84d6-622d38078a5d")
-			(effects
-				(font
-					(size 0.5 0.5)
-					(thickness 0.08)
-				)
-				(justify mirror)
-			)
-		)
-		(property "Datasheet" ""
-			(at 0 0 0)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "1702f347-05d4-49a1-9d50-6fc90c6587a4")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify mirror)
-			)
-		)
-		(property "Description" ""
-			(at 0 0 0)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "d3d4be76-12cb-4ea8-9041-a4f13862354a")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify mirror)
-			)
-		)
-		(property "LCSC" "C21905480"
-			(at 0 0 0)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "d568ee5c-1f00-4a46-bfd9-823805d89353")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(attr smd)
-		(duplicate_pad_numbers_are_jumpers no)
-		(fp_circle
-			(center 0 0)
-			(end 1.25 0)
-			(stroke
-				(width 0.05)
-				(type solid)
-			)
-			(fill no)
-			(layer "B.CrtYd")
-			(uuid "83f25e15-a374-4f3f-a01c-49eab752668d")
-		)
-		(fp_circle
-			(center 0 0)
-			(end 0.99 0)
-			(stroke
-				(width 0.1)
-				(type solid)
-			)
-			(fill no)
-			(layer "B.Fab")
-			(uuid "1e859b43-10c5-4bf8-a5ce-d390850cb8a0")
-		)
-		(pad "1" smd circle
-			(at 0 0 180)
-			(size 2.235 2.235)
-			(layers "B.Cu" "B.Mask" "B.Paste")
-			(net "CELL_MID")
-			(uuid "7dd1d957-5c0f-44f1-82a0-b87d6ce33f55")
-		)
-		(embedded_fonts no)
-	)
 	(footprint "Package_SON:WSON-8-1EP_2x2mm_P0.5mm_EP0.9x1.6mm"
 		(layer "B.Cu")
 		(uuid "e69e9846-62d7-43dd-ae39-ef46825c3a95")
@@ -31808,107 +31983,6 @@
 			)
 		)
 	)
-	(footprint "wallet:MillMax_1578_TargetDisc_D1.98mm"
-		(layer "B.Cu")
-		(uuid "eb8f70d5-a5b2-42eb-9131-6259e6c7bf72")
-		(at 25.75 42.28 180)
-		(descr "Mill-Max 1578-0-57-15-00-00-03-0 target disc for spring-loaded pins: brass, 10 uin hard gold over nickel, 1.981 dia x 0.635 mm, SMT pad 0.088 in (2.235 mm), tape and reel 7,200")
-		(tags "pogo target contact")
-		(property "Reference" "J_PK1"
-			(at 0 0 0)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "aea02427-c402-47fb-9a5d-a71e4c20a803")
-			(effects
-				(font
-					(size 0.5 0.5)
-					(thickness 0.08)
-				)
-				(justify mirror)
-			)
-		)
-		(property "Value" "1578-0-57-15-00-00-03-0"
-			(at 0 -1.8 0)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "a9346c19-3ce4-4f93-a938-ab296f8c4891")
-			(effects
-				(font
-					(size 0.5 0.5)
-					(thickness 0.08)
-				)
-				(justify mirror)
-			)
-		)
-		(property "Datasheet" ""
-			(at 0 0 0)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "7af92b97-6d6f-44c6-aca9-6bd80f517cfa")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify mirror)
-			)
-		)
-		(property "Description" ""
-			(at 0 0 0)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "19bf71a6-9c8a-46e9-8f2c-bc79d1f93f3e")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify mirror)
-			)
-		)
-		(property "LCSC" "C21905480"
-			(at 0 0 0)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "45ee7462-ea94-46ea-a5e5-b2728571c98b")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(attr smd)
-		(duplicate_pad_numbers_are_jumpers no)
-		(fp_circle
-			(center 0 0)
-			(end 1.25 0)
-			(stroke
-				(width 0.05)
-				(type solid)
-			)
-			(fill no)
-			(layer "B.CrtYd")
-			(uuid "d0eb144f-fda6-4769-813c-55ab3b385edb")
-		)
-		(fp_circle
-			(center 0 0)
-			(end 0.99 0)
-			(stroke
-				(width 0.1)
-				(type solid)
-			)
-			(fill no)
-			(layer "B.Fab")
-			(uuid "d3dfadd9-0e08-4ae8-8885-7dcbde89ee63")
-		)
-		(pad "1" smd circle
-			(at 0 0 180)
-			(size 2.235 2.235)
-			(layers "B.Cu" "B.Mask" "B.Paste")
-			(net "BAT")
-			(uuid "28a879aa-eac2-415f-9fd6-0758f2ecd819")
-		)
-		(embedded_fonts no)
-	)
 	(footprint "Capacitor_SMD:C_0603_1608Metric"
 		(layer "B.Cu")
 		(uuid "ec4e7be1-80b2-42fb-bfdd-633643f7b72d")
@@ -32344,219 +32418,6 @@
 		)
 		(embedded_fonts no)
 	)
-	(footprint "wallet:Wurth_WA-SMSI_M2_L1.0_NoHole"
-		(layer "B.Cu")
-		(uuid "f1fa755f-08e2-42b3-9cd0-3a0291c335bb")
-		(at 14.295 42.28 180)
-		(descr "Wurth WA-SMSI 9774010243R SMT steel spacer, M2, 1.0 mm, 4.35 dia (steel, tin): datasheet land 5.3 dia pad, 3.0 NPTH (omitted: no screw), stencil annulus 3.1-5.2. Here the magnet partner of the pack male's magnets.")
-		(tags "SMT spacer steel")
-		(property "Reference" "MH_PK1"
-			(at 0 0 0)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "2a193d52-45b8-4ff0-bfcc-32bfc19f832e")
-			(effects
-				(font
-					(size 0.5 0.5)
-					(thickness 0.08)
-				)
-				(justify mirror)
-			)
-		)
-		(property "Value" "9774010243R"
-			(at 0 -3.3 0)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "8a54744f-b657-4399-ac16-c24d8e6ba8b3")
-			(effects
-				(font
-					(size 0.5 0.5)
-					(thickness 0.08)
-				)
-				(justify mirror)
-			)
-		)
-		(property "Datasheet" ""
-			(at 0 0 0)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "4b266965-ac79-45af-a110-bc26147e64eb")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify mirror)
-			)
-		)
-		(property "Description" ""
-			(at 0 0 0)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "3ea88f53-942b-4d1c-b921-ae652480b728")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify mirror)
-			)
-		)
-		(property "LCSC" "C5360192"
-			(at 0 0 0)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "36cd06bb-ac53-449a-a238-6ab61b35b5fe")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(attr smd)
-		(duplicate_pad_numbers_are_jumpers no)
-		(fp_circle
-			(center 0 0)
-			(end 2.075 0)
-			(stroke
-				(width 1.05)
-				(type solid)
-			)
-			(fill no)
-			(layer "B.Paste")
-			(uuid "71672ac9-9395-41f9-8f62-a925c0dd2ad9")
-		)
-		(fp_circle
-			(center 0 0)
-			(end 2.7 0)
-			(stroke
-				(width 0.05)
-				(type solid)
-			)
-			(fill no)
-			(layer "B.CrtYd")
-			(uuid "fbedb7d4-4167-40ab-aecc-79fafcd78d42")
-		)
-		(fp_circle
-			(center 0 0)
-			(end 2.175 0)
-			(stroke
-				(width 0.1)
-				(type solid)
-			)
-			(fill no)
-			(layer "B.Fab")
-			(uuid "6a1d213c-2b78-4533-a6ab-37c4918aa5f1")
-		)
-		(pad "1" smd circle
-			(at 0 0 180)
-			(size 5.3 5.3)
-			(layers "B.Cu" "B.Mask")
-			(net "GND")
-			(uuid "2b790d42-f4d9-48b7-a10c-c73fe8f6fb03")
-		)
-		(embedded_fonts no)
-	)
-	(footprint "wallet:MillMax_1578_TargetDisc_D1.98mm"
-		(layer "B.Cu")
-		(uuid "f2418b12-8599-4b07-b08d-d5b5cc3faee7")
-		(at 18.25 42.28 180)
-		(descr "Mill-Max 1578-0-57-15-00-00-03-0 target disc for spring-loaded pins: brass, 10 uin hard gold over nickel, 1.981 dia x 0.635 mm, SMT pad 0.088 in (2.235 mm), tape and reel 7,200")
-		(tags "pogo target contact")
-		(property "Reference" "J_PK4"
-			(at 0 0 0)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "97cdf515-5c50-4493-8688-ce3c750e4d4d")
-			(effects
-				(font
-					(size 0.5 0.5)
-					(thickness 0.08)
-				)
-				(justify mirror)
-			)
-		)
-		(property "Value" "1578-0-57-15-00-00-03-0"
-			(at 0 -1.8 0)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "bd26a4ed-67f4-485c-b87d-de1ef50b64d6")
-			(effects
-				(font
-					(size 0.5 0.5)
-					(thickness 0.08)
-				)
-				(justify mirror)
-			)
-		)
-		(property "Datasheet" ""
-			(at 0 0 0)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "4cd2ff2c-ebd6-4e35-a879-13e532905337")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify mirror)
-			)
-		)
-		(property "Description" ""
-			(at 0 0 0)
-			(layer "B.Fab")
-			(hide yes)
-			(uuid "f568c9d9-1eeb-4e41-b8c6-3d29d8bd0f7f")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify mirror)
-			)
-		)
-		(property "LCSC" "C21905480"
-			(at 0 0 0)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "7c3af817-1d40-4469-a15c-925789d37f58")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(attr smd)
-		(duplicate_pad_numbers_are_jumpers no)
-		(fp_circle
-			(center 0 0)
-			(end 1.25 0)
-			(stroke
-				(width 0.05)
-				(type solid)
-			)
-			(fill no)
-			(layer "B.CrtYd")
-			(uuid "a6956326-3fa0-44c8-bbfe-dd1883763e08")
-		)
-		(fp_circle
-			(center 0 0)
-			(end 0.99 0)
-			(stroke
-				(width 0.1)
-				(type solid)
-			)
-			(fill no)
-			(layer "B.Fab")
-			(uuid "cf79d2d9-98bc-4ac0-9c0e-d23fdf3f3813")
-		)
-		(pad "1" smd circle
-			(at 0 0 180)
-			(size 2.235 2.235)
-			(layers "B.Cu" "B.Mask" "B.Paste")
-			(net "BAT_N")
-			(uuid "58555eda-4b95-4f94-ab95-e8e8cb28f62c")
-		)
-		(embedded_fonts no)
-	)
 	(footprint "Capacitor_SMD:C_0402_1005Metric"
 		(layer "B.Cu")
 		(uuid "f28a981f-edf0-4075-be2e-47831f15a093")
@@ -32723,6 +32584,95 @@
 				(xyz 0 0 0)
 			)
 		)
+	)
+	(footprint "wallet:Pack_Contact_Pad_D2.235mm"
+		(layer "B.Cu")
+		(uuid "f7919f93-9837-4576-99f0-3211b352b38c")
+		(at 25.75 42.28 180)
+		(descr "Plain 2.235 mm round ENIG pad: the landing of one of the pack's spring pins (Xinyangze YZP0118-20063-02, 0.9 mm tip). No part: pad only, out of the BOM. The land is Mill-Max's 0.088 in pad for its 1578-0-57 target disc, which still fits here if hard gold is ever wanted.")
+		(tags "pogo target contact pad")
+		(property "Reference" "J_PK1"
+			(at 0 0 0)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "cb932734-9e9c-4d23-be5f-3be841d7e36e")
+			(effects
+				(font
+					(size 0.5 0.5)
+					(thickness 0.08)
+				)
+				(justify mirror)
+			)
+		)
+		(property "Value" "J_PK1"
+			(at 0 -1.8 0)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "861b5990-2452-4972-9db3-c9815646b8fc")
+			(effects
+				(font
+					(size 0.5 0.5)
+					(thickness 0.08)
+				)
+				(justify mirror)
+			)
+		)
+		(property "Datasheet" ""
+			(at 0 0 0)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "6bd7c1a3-4640-4af4-9bed-b10f50db6832")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify mirror)
+			)
+		)
+		(property "Description" ""
+			(at 0 0 0)
+			(layer "B.Fab")
+			(hide yes)
+			(uuid "c63a3933-2ee7-4a1f-9480-61fd4b0d0ed9")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify mirror)
+			)
+		)
+		(attr smd exclude_from_bom dnp)
+		(duplicate_pad_numbers_are_jumpers no)
+		(fp_circle
+			(center 0 0)
+			(end 1.25 0)
+			(stroke
+				(width 0.05)
+				(type solid)
+			)
+			(fill no)
+			(layer "B.CrtYd")
+			(uuid "7e494841-9842-438f-8d07-691c1b574029")
+		)
+		(fp_circle
+			(center 0 0)
+			(end 0.99 0)
+			(stroke
+				(width 0.1)
+				(type solid)
+			)
+			(fill no)
+			(layer "B.Fab")
+			(uuid "7ac3d8eb-7873-4271-96ee-a1dabc99d613")
+		)
+		(pad "1" smd circle
+			(at 0 0 180)
+			(size 2.235 2.235)
+			(layers "B.Cu" "B.Mask" "B.Paste")
+			(net "BAT")
+			(uuid "97ec1ebd-1cc1-4b58-80ae-855ca35c7172")
+		)
+		(embedded_fonts no)
 	)
 	(footprint "Capacitor_SMD:C_0402_1005Metric"
 		(layer "B.Cu")

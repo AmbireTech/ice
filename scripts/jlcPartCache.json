@@ -835,6 +835,30 @@
   "package": "1206",
   "stock": 8765
  },
+ "C22431324": {
+  "describe": "- Patch round nut ROHS",
+  "land": {
+   "pads": 2,
+   "pitch": null,
+   "sizes": [
+    [
+     3.0,
+     3.0
+    ],
+    [
+     4.7,
+     4.7
+    ]
+   ],
+   "span": [
+    0.0,
+    0.0
+   ]
+  },
+  "model": "9774015243R",
+  "package": "-",
+  "stock": 1418
+ },
  "C227183": {
   "describe": "-55\u2103~+155\u2103 50V 62.5mW 665k\u03a9 Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
   "land": null,

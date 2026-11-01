@@ -35,7 +35,7 @@ the back ([pack.md](pack.md)).
 | Airgap | MSK12C02 slide switch → TS3USB221A (USB data) + 74LVC1G02 / TPS22917 (radio power) + TXU0202 (radio UART isolation) | all JLC |
 | Display | NHD-2.4-240320AF-CSXP-CTP on Molex 54132-4062 + HC-FPC-1.0-6P-FH20 (6-pin 1.0 mm, bottom contact, 2.0 mm tall, C49166832) | connectors JLC, panel hand-fitted |
 | Camera | GC2145 24-pin DVP module in the ESP32-CAM pinout (Camemake CM_DVP_GC2145_UNIVERSAL; an OV2640 module fits too), 115° lens read through the sensor's centre crop, no refocus, on a Jushuo AFC07 FPC connector; AVDD 2.8 V / DVDD 1.2 V (fixed TLV70312) / DOVDD 3.3 V | connector JLC, module hand-fitted (DigiKey, JLC Global Sourcing) |
-| Power | Two AAA cells in series (NiMH, lithium or alkaline) in a pack on the back; the pack's four spring pins and two magnets land on four Mill-Max 1578 gold target discs and two Würth WA-SMSI steel spacers on the device board ([pack.md](pack.md)) → AO3416 reverse-cell blocker → LTC3539-2 boost to 3.3 V; USB-C → TLV62569P buck → TPS2116 picks USB first; BQ25172 NiMH charger set for two cells, fed from VBUS, MCU-gated; soft latch on the joystick's centre press | all JLC (LTC3539-2: 2,400; the discs through Global Sourcing, DigiKey 117,259) |
+| Power | Two AAA cells in series (NiMH, lithium or alkaline) in a pack on the back; the pack's four spring pins and two magnets land on four plain ENIG pads and two Würth WA-SMSI steel spacers on the device board ([pack.md](pack.md)) → AO3416 reverse-cell blocker → LTC3539-2 boost to 3.3 V; USB-C → TLV62569P buck → TPS2116 picks USB first; BQ25172 NiMH charger set for two cells, fed from VBUS, MCU-gated; soft latch on the joystick's centre press | all JLC (LTC3539-2: 2,400) |
 | Sound | Huaneng MLT-5020 magnetic transducer (5 × 5.5 × 2 mm, 75 dB at 10 cm), AO3416 low-side, LPTIM3 PWM | JLC |
 | Joystick | ALPS SKRHAAE010: four directions + centre push, 7.5 mm, on the front, centred in the chin | JLC C202423 (521) |
 | IMU | Bosch BMI270 (accelerometer + gyroscope, LGA-14 2.5 × 3 mm, 3.5 µA in suspend), the GridCore Nano's part, on the touch controller's I2C bus (0x68), interrupt on PC15 | C2836813 (26,396 on 2026-10-30) |
@@ -185,7 +185,7 @@ their connectors. Only low parts sit under any of them (`checkFpc.py` checks all
   the 3.0 mm radio module, under a 5.33 mm screen stack.
   The **programming pads** (MCU SWD under the panel, the radio's SWDIO/SWCLK on the
   back beside the module's SWD pins) are reachable by pogo pins before assembly.
-- **The pack's contacts** (v4: four gold discs between two steel spacers) lie east-west
+- **The pack's contacts** (v4: four plain pads between two steel spacers) lie east-west
   on the back, south of the MCU and over the display connector, which moved 5.5 mm south for it (its tail's slot 2.5 mm, so
   the tail keeps 3.0 mm of slack). The MCU's south-side signals pass it on the front
   copper. The east side of the back is the touch tail's lane, which rules it out there.
@@ -332,7 +332,7 @@ their connectors. Only low parts sit under any of them (`checkFpc.py` checks all
 - **South of the MCU sit the battery pack's contacts** (v4), in what was a 4.6 mm
   routing channel to the TFT connector; the connector moved 5.5 mm south for it
   (its tail keeps 3.0 mm of slack, the slot moved 2.5 mm). The MCU's south-side
-  signals pass the contacts on the front copper; the discs and the spacers' 5.3 mm
+  signals pass the contacts on the front copper; the pads and the spacers' 5.3 mm
   lands leave only a few lanes under them on the back. Moving the slot walled off the radio
   module's north-row exits: RADIO_RX/TX leave its pads through the 0.65 mm lane
   between its two pad rows on the front.
@@ -623,11 +623,13 @@ purple (all transparent tints) and clear.
     with the pack off; the charger, the ADC readings and the reverse-cell FET must
     survive.
 22. **Pack hold**: the pack's two 3.18 mm magnets on the two steel spacers (steel round
-    an M2 thread, 1.0 mm thick) must hold the pack against the four pins' push (about
-    4 × 23 g, up to 4 × 28 g) and in a drop from hand height. Measure the pull-off force
+    an M2 thread, 1.5 mm thick) must hold the pack against the four pins' push (about
+    4 × 20 g, up to 4 × 25 g) and in a drop from hand height. Measure the pull-off force
     with a scale. The magnets' and the frame's glue must survive a few hundred matings.
-23. **Pack contacts**: resistance of each pin on its gold disc, fresh and after a few
-    hundred matings; the pins press 0.76 mm of their 1.2 mm stroke (working 1.0).
+23. **Pack contacts**: resistance of each pin on its plain ENIG pad, fresh and after a few
+    hundred matings (soft gold: this decides whether the Mill-Max 1578 disc, which fits
+    the same pad, has to come back); the pins press 0.83 mm of their 1.2 mm stroke
+    (working 1.0).
 
 
 ## Flow

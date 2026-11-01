@@ -12,7 +12,7 @@ toward the device), the pack lines up with the device seen from the front.
   F (outer face, against the device's back): four Xinyangze single SMD spring pins in a
     row east-west, the two magnets' seats beside them (glued, in the printed frame, whose
     pegs go into two holes here), a BAT- pour; nothing else on it. They land on the device's
-    back: the pins on four gold target discs, the magnets on two steel spacers, which hold
+    back: the pins on four plain ENIG pads, the magnets on two steel spacers, which hold
     the pack. Each pin's peg hole is plated: it carries the pin to the inner face.
   B (inner face): two AAA cells east-west in series, in MYOUNG clips copied from the
     device board (the south cell as proto 1's cell sat, + east; the north cell turned
@@ -55,7 +55,7 @@ CLIP_STEEL = [tuple(r) for r in _PACK["clipSteel"]]
 _FRAME = _PACK["frame"]
 _FO = _FRAME["outline"]
 CONN_X, CONN_Y = round((_FO[0] + _FO[2]) / 2, 3), round((_FO[1] + _FO[3]) / 2, 3)
-CONN_PAD = 1.3                            # a pin's plated peg hole's ring on the inner face (see the footprint)
+CONN_PAD = 1.5                            # a pin's plated peg hole's ring on the inner face (see the footprint)
 JOINT_CLR = 0.3                           # a hole's ring to a clip's steel, at least
 PITCH = 2.5
 PIN_NETS = ["BAT-", "NTC", "MID_SENSE", "BAT+"]   # west to east: the one place the pin order lives
@@ -80,8 +80,8 @@ SMALL = [
     ("RT_PACK", f"{KICAD_FP}/Resistor_SMD.pretty", "R_0603_1608Metric", "10k NTC B3380", "C13564", "NCP18XH103F03RB",
      (round(CONN_X - 2.5, 3), _SY), 0, ("BAT-", "NTC")),
 ]
-PINS = ("J_PACK", os.path.join(HERE, "pack.pretty"), "Xinyangze_YZP0058-20048-02", "YZP0058-20048-02",
-        "C5157341", "YZP0058-20048-02")
+PINS = ("J_PACK", os.path.join(HERE, "pack.pretty"), "Xinyangze_YZP0118-20063-02", "YZP0118-20063-02",
+        "C5157302", "YZP0118-20063-02")
 FRAME_FP = "Pack_Frame"                   # written by frame_footprint() from the case's numbers
 CLIPS = {"BT_N": ("C6937104", "MY-AAA-19-J"), "BT_P": ("C6937107", "MY-AAA-20-J")}
 

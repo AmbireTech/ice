@@ -152,21 +152,19 @@ export const PowerBlock = () => (
     <trace from=".C_3V3 > .pin2" to="net.GND" width={W_PWR} />
 
     {/* ---------------- The pack: two AAA in series, on the back ---------------- */}
-    {/* The pack's contacts on the back, east of the MCU's south side: commodity parts only
-        (2026-10-31, docs/pack.md). The pack's Xinyangze magnetic male (YZP0048-20048-04025-03)
-        lands its four spring pins (2.50 mm pitch) on four Mill-Max 1578 gold target discs
-        (0.635 mm), and its two magnets (3.0 mm, 15.41 mm apart, flush with its face) seat on
-        two Wurth WA-SMSI steel spacers (1.0 mm): the male's face rests on the steel, its pins
-        compressed 0.94 mm (1.0 is its working stroke). Contacts east to west: the pack's plus,
-        its mid-point, its thermistor, its minus. Each cell may be NiMH (1.0-1.45 V) or an
+    {/* The pack's contacts on the back, east of the MCU's south side (docs/pack.md). The
+        pack's four Xinyangze YZP0118-20063-02 spring pins (2.50 mm pitch) land on four plain
+        2.235 mm ENIG pads (J_PK1-4: pads only, no part; the Mill-Max 1578 target disc they
+        replaced since 2026-11-01 still fits them), and its two 3.18 mm magnets (15.41 mm
+        apart) seat on two Wurth WA-SMSI steel spacers (M2 x 1.5 mm, MH_PK1/2), which set the
+        4.675 mm gap the pins work in (0.825 of their 1.2 mm stroke, 25 g each). Contacts east
+        to west: the pack's plus, its mid-point, its thermistor, its minus. Each cell may be NiMH (1.0-1.45 V) or an
         alkaline or lithium (Li-FeS2) primary (0.9-1.8 V): the pack is 1.8-3.6 V; the boost
         runs from all of them, the charger only ever charges a pack whose two cells the MCU
         has qualified as NiMH. */}
     {([["J_PK1", "BAT", W_PWR], ["J_PK2", "CELL_MID", undefined], ["J_PK3", "CHG_TS", undefined], ["J_PK4", "BAT_N", W_PWR]] as const).map(([j, net, w], i) => (
       <group key={j}>
-        <chip name={j} footprint="pinrow1"
-          manufacturerPartNumber="1578-0-57-15-00-00-03-0" supplierPartNumbers={{ jlcpcb: ["C21905480"] }}
-          pinLabels={{ pin1: "C" }}
+        <chip name={j} footprint="pinrow1" pinLabels={{ pin1: "C" }}
           schX={-20} schY={4 - i} schSectionName={S} />
         <trace from={`.${j} > .C`} to={`net.${net}`} width={w} />
       </group>
@@ -174,7 +172,7 @@ export const PowerBlock = () => (
     {(["MH_PK1", "MH_PK2"] as const).map((m, i) => (
       <group key={m}>
         <chip name={m} footprint="pinrow1"
-          manufacturerPartNumber="9774010243R" supplierPartNumbers={{ jlcpcb: ["C5360192"] }}
+          manufacturerPartNumber="9774015243R" supplierPartNumbers={{ jlcpcb: ["C22431324"] }}
           pinLabels={{ pin1: "S" }}
           schX={-24} schY={4 - i} schSectionName={S} />
         <trace from={`.${m} > .S`} to="net.GND" />

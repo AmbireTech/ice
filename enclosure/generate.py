@@ -16,11 +16,11 @@ The rest are datasheet constants, each with its source below.
 
 v4 takes the cell off the board (docs/pack.md): two AAA cells in series ride in a pack
 high on the device's back, just below the camera. A magnetic pogo pair connects and holds
-it: four spring pins and two magnets on the pack's own board land on gold target discs and
+it: four spring pins and two magnets on the pack's own board land on plain ENIG pads and
 steel spacers on the device board's back; the pack's magnets, on the steel, are the only
 ones. A printed frame on the pack board (the old magnetic male's outline, its tab keying the
 pack) holds the magnets. The pack clips' models come from enclosure/pack_clips.kicad_pcb,
-and the pins go over the board's discs J_PK1-4.
+and the pins go over the board's pads J_PK1-4.
 
 Parts (Z = 0 is the board's front face, +Z toward the screen; X east, Y north):
 
@@ -29,7 +29,7 @@ Parts (Z = 0 is the board's front face, +Z toward the screen; X east, Y north):
           and a counterbore (the screw head sits flush) where the front half is solid;
           USB-C opening, the airgap slider's window, an open window the camera head stands
           through, a hole over the buzzer, a groove along the north tongue; a window in
-          the back the pack's connector drops through onto the discs, a shallow bay over
+          the back the pack's connector drops through onto the pads, a shallow bay over
           the pack's board
   bezel   front plate with the display window and walls down to the parting line;
           its skirt laps over a tongue on the shell, with a ridge along the north side
@@ -146,7 +146,7 @@ CAM_CLR = 0.4         # window around the camera head's keep-out
 UNMODELLED_MAX_H = {"U1": 0.8, "U2": 0.8, "U5": 0.6, "U6": 0.6, "U10": 0.6, "U13": 1.0, "U16": 1.0,
                     "LS1": 2.0, "L_BOOST": 2.0, "L_BUCK": 1.0,
                     # the touch connector, Hong Cheng FH20: 2.00 +-0.15 tall; the pack's contacts
-                    "J_CTP": 2.0, "J_PK1": 0.64, "J_PK2": 0.64, "J_PK3": 0.64, "J_PK4": 0.64, "MH_PK1": 1.0, "MH_PK2": 1.0}
+                    "J_CTP": 2.0, "J_PK1": 0.0, "J_PK2": 0.0, "J_PK3": 0.0, "J_PK4": 0.0, "MH_PK1": 1.5, "MH_PK2": 1.5}
 BACK_CLEAR = 0.6      # between the deepest part and the inside of the back
 # Parts that do not set the back's depth (owner, 2026-10-28: USB-C may stand into the
 # floor or out of it): the floor gets a pocket over them, PROTRUDE_CLR clear, and opens
@@ -229,22 +229,24 @@ PACK_R, PACK_FILLET = 4.0, 1.5
 # design.md; the stock candidate is 68.7 deg diagonal), taken as a full cone.
 CAM_FOV, LENS_R = 70.0, 2.6
 # The contacts (owner, 2026-10-31: the device side commodity parts, tested in the next
-# batch; 2026-11-01: the pack side too, with real stock). On the device board's back, four
-# Mill-Max 1578-0-57-15-00-00-03-0 gold target discs (1.981 x 0.635 mm, LCSC C21905480 via
-# JLC Global Sourcing; DigiKey/Mouser stock) at 2.50 mm, and two Wurth WA-SMSI 9774010243R
-# steel spacers (M2 x 1.0, 4.35 mm, steel; JLC C5360192) 15.41 mm apart.
-CONN_DEV = {"part": "4x Mill-Max 1578-0-57 + 2x Wurth 9774010243R", "lcsc": "C21905480 / C5360192",
-            "len": 15.41 + 4.35, "wid": 4.35, "steel_h": 1.0, "steel_d": 4.35, "disc_h": 0.635, "disc_d": 1.981,
+# batch; 2026-11-01: the pack side too, with real stock; later that day the gold target
+# discs went, the only Global Sourcing part: plain ENIG pads under the pins, and the steel
+# 0.5 mm taller with a taller pin, so the pins work at the same point of their stroke). On
+# the device board's back, four plain 2.235 mm ENIG pads (J_PK1-4, no part; Mill-Max's
+# 1578-0-57 disc still fits them) at 2.50 mm, and two Wurth WA-SMSI 9774015243R steel
+# spacers (M2 x 1.5, 4.35 mm, steel; JLC C22431324) 15.41 mm apart.
+CONN_DEV = {"part": "4x ENIG pad + 2x Wurth 9774015243R", "lcsc": "- / C22431324",
+            "len": 15.41 + 4.35, "wid": 4.35, "steel_h": 1.5, "steel_d": 4.35, "disc_h": 0.0, "disc_d": 2.235,
             "refs": ("J_PK1", "J_PK2", "J_PK3", "J_PK4"), "steel": ("MH_PK1", "MH_PK2")}
-# On the pack board's outer face: four single SMD spring pins, Xinyangze YZP0058-20048-02
-# (LCSC C5157341, 1,216 at JLC on 2026-11-01; drawing 2015-05-14): a 2.00 x 0.50 flange on the
-# board, 1.54 barrel, 1.00 plunger with an R0.45 tip, a 0.40 x 0.50 peg; 4.30 free, 3.30
-# working (30 g +-20 %), 3.10 pressed. Two NdFeB N40 magnets, Radial Magnets 8063 (3.18 x
+# On the pack board's outer face: four single SMD spring pins, Xinyangze YZP0118-20063-02
+# (LCSC C5157302, 879 at JLC on 2026-11-01; drawing 2017-09-16): a 2.00 x 0.50 flange on the
+# board, 1.50 barrel to 4.00, 0.90 plunger with an R0.45 tip, a 0.70 x 0.80 peg; 5.50 free,
+# 4.50 working (25 g +-20 %), 4.30 pressed. Two NdFeB N40 magnets, Radial Magnets 8063 (3.18 x
 # 3.18 mm, DigiKey 469-8063-ND, 3,794 in stock on 2026-11-01), stand on the board over the
-# steel spacers. Mated, the magnets' faces rest on the steel (1.0 mm off the board) and the
-# pins stand at 3.545 mm on the discs: 0.755 of their 1.2 mm stroke.
-PACK_PINS = {"part": "4x Xinyangze YZP0058-20048-02", "lcsc": "C5157341", "free": 4.30, "work": 3.30, "pressed": 3.10,
-             "pitch": 2.5, "plunger_d": 1.0, "barrel_d": 1.54, "flange_d": 2.0, "flange_h": 0.5}
+# steel spacers. Mated, the magnets' faces rest on the steel (1.5 mm off the board) and the
+# pins stand at 4.675 mm on the pads: 0.825 of their 1.2 mm stroke.
+PACK_PINS = {"part": "4x Xinyangze YZP0118-20063-02", "lcsc": "C5157302", "free": 5.50, "work": 4.50, "pressed": 4.30,
+             "pitch": 2.5, "plunger_d": 0.9, "barrel_d": 1.5, "barrel": 4.00, "flange_d": 2.0, "flange_h": 0.5}
 MAGNET = {"part": "2x Radial Magnets 8063 (NdFeB N40, 3.18 x 3.18 mm)", "digikey": "469-8063-ND", "d": 3.175, "h": 3.175}
 # The frame (print part, glued to the pack board): the old male's outline, 21.2 x 6.86 mm
 # with its 5.03 x 2.31 mm tab north, which the window in the back keys (turned end for end
@@ -253,10 +255,10 @@ MAGNET = {"part": "2x Radial Magnets 8063 (NdFeB N40, 3.18 x 3.18 mm)", "digikey
 # glued), two pegs into the pack board's holes.
 FRAME = {"len": 21.2, "wid": 6.86, "tab": (5.03, 2.31), "t": MAGNET["h"] - 0.2, "slot": (10.3, 2.5),
          "pocket_d": MAGNET["d"] + 0.15, "peg_d": 1.0, "peg_h": 0.6, "peg_hole": 1.1, "pegs": ((-5.4, -2.4), (5.4, -2.4))}
-# Mated: the pins stand this far off the pack board on the discs
+# Mated: the pins stand this far off the pack board on the pads
 PIN_MATED = CONN_DEV["steel_h"] - CONN_DEV["disc_h"] + MAGNET["h"]
 CONN_NETS = ("BAT+", "MID", "NTC", "BAT-")   # east to west: J_PK1-4's nets (BAT, CELL_MID, CHG_TS, BAT_N)
-# Where the pair goes: wherever the device board places the discs (J_PK1-4), long axis
+# Where the pair goes: wherever the device board places the pads (J_PK1-4), long axis
 # east-west, south of the MCU over the display connector (v4, 2026-10-28: the back's east
 # side is the touch tail's lane). The frame lies along the south cell, the pins in a row
 # under the cell's south flank, clear of the clips (they hold the cells' ends); the cells
@@ -314,7 +316,7 @@ and glue it down (pegs into the board, tab north). Drop a magnet into each pocke
 board, with a drop of glue round it: either pole up, they hold on steel. Glue the pack
 board into the tray's top, the frame out. Two AAA cells press into the clips from
 underneath, as marked on the board. The pack snaps onto the back below the camera, the
-frame through the window, the pins on the discs on the device's board, the magnets on the
+frame through the window, the pins on the pads on the device's board, the magnets on the
 steel spacers beside them; the cells charge over USB in the device.
 
 Print the shell on its back, the bezel face down, the tray on its top face and the frame on
@@ -456,7 +458,7 @@ def fab_world(fp: dict) -> np.ndarray:
     for pg in kids(fp["node"], "fp_poly"):
         if kid(pg, "layer")[1].endswith(".Fab"):
             local += [xy(p) for p in kids(kid(pg, "pts"), "xy")]
-    for ci in kids(fp["node"], "fp_circle"):      # round bodies (target discs, spacers): their bounding square
+    for ci in kids(fp["node"], "fp_circle"):      # round bodies (spacers): their bounding square
         if kid(ci, "layer")[1].endswith(".Fab"):
             (cx, cy), (ex, ey) = xy(kid(ci, "center")), xy(kid(ci, "end"))
             r = math.hypot(ex - cx, ey - cy)
@@ -883,14 +885,14 @@ def main():
     clip_cy = sum((c[1] + c[3]) / 2 for c in clip_boxes) / 2          # the cell's axis on today's board
     clip_half = max((c[3] - c[1]) / 2 for c in clip_boxes)
 
-    # Z: the magnets' faces rest on the steel spacers, the pins pressed onto the discs, which
+    # Z: the magnets' faces rest on the steel spacers, the pins pressed onto the pads, which
     # puts the pack board this far out; the cells hang under it.
     z_face = z_floor_out
     z_mag = z_back - CONN_DEV["steel_h"]              # the magnets' faces, in the device's cavity
     z_pcb_top = z_mag - MAGNET["h"]
     z_body = z_pcb_top + FRAME["t"]                   # the frame's face
     if not PACK_PINS["pressed"] + 0.25 <= PIN_MATED <= PACK_PINS["free"] - 0.5:
-        raise SystemExit(f"the pins would stand at {PIN_MATED:.2f} mm on the discs: outside "
+        raise SystemExit(f"the pins would stand at {PIN_MATED:.2f} mm on the pads: outside "
                          f"{PACK_PINS['pressed'] + 0.25:.2f}-{PACK_PINS['free'] - 0.5:.2f} (free {PACK_PINS['free']})")
     out = z_face - z_pcb_top                          # the pack board stands this far off the back face
     bay = -out + BAY_CLR if out < 0 else 0.0          # ...or into it: a bay in the back over the board
@@ -915,14 +917,14 @@ def main():
     strip = (cx - hr[0], cy - hr[1], cx + hr[0], cy + hr[1])
     fro = (cx - hm[0], cy - hm[1], cx + hm[0], cy + hm[1])
     tab = (cx - tw / 2, fro[1] - tl, cx + tw / 2, fro[1])     # its tab north, over the MCU's edge
-    # the discs where the board has them, east to west (J_PK1, the pack's plus, east)
+    # the pads where the board has them, east to west (J_PK1, the pack's plus, east)
     contacts = [(net, b["fps"][r]["x"], b["fps"][r]["y"]) for net, r in zip(CONN_NETS, CONN_DEV["refs"])]
     if [round(x, 2) for _, x, _ in contacts] != sorted((round(x, 2) for _, x, _ in contacts), reverse=True):
-        raise SystemExit(f"the discs {CONN_DEV['refs']} must run east to west")
+        raise SystemExit(f"the pads {CONN_DEV['refs']} must run east to west")
     steel_xy = [(b["fps"][r]["x"], b["fps"][r]["y"]) for r in CONN_DEV["steel"]]
     pins = [(net, cx + (1.5 - i) * PACK_PINS["pitch"], cy) for i, net in enumerate(CONN_NETS)]
     if max(abs(sy - cy) for _, sy in steel_xy) > 0.01 or abs(sum(sx for sx, _ in steel_xy) / 2 - cx) > 0.01:
-        raise SystemExit(f"the steel spacers {CONN_DEV['steel']} must sit on the discs' line, either side of their centre")
+        raise SystemExit(f"the steel spacers {CONN_DEV['steel']} must sit on the pads' line, either side of their centre")
     mag_off = abs(steel_xy[0][0] - steel_xy[1][0]) / 2     # the magnets over the steel
     if mag_off + FRAME["pocket_d"] / 2 > hm[0] - 0.5:
         raise SystemExit(f"the magnets' pockets ({mag_off:.2f} off centre) run out of the frame")
@@ -1009,7 +1011,7 @@ def main():
                   f"{PACK_PINS['part']} and {MAGNET['part']} in the frame (tab north), the magnets on the steel "
                   f"{z_back - z_mag:.2f} mm off the board, the frame's face {z_back - z_body:.2f} mm off it, "
                   f"pins at {PIN_MATED:.3f} mm, compressed {PACK_PINS['free'] - PIN_MATED:.2f} of "
-                  f"{PACK_PINS['free'] - PACK_PINS['pressed']:.2f} mm on the discs; "
+                  f"{PACK_PINS['free'] - PACK_PINS['pressed']:.2f} mm on the pads; "
                   "contacts " + ", ".join(f"{n_} {x:.2f}" for n_, x, _ in contacts) + " (x)")
 
     for _, _, cut in openings:
@@ -1258,9 +1260,10 @@ def pack_hardware(clip_prims, T, clip_cy, cell_cx, cell_ys, pins_c, z_pcb_bot, z
     for _, px, py in pins:
         fh = PACK_PINS["flange_h"]
         add(("pads", 0, 0, 0), Pos(px, -py, z_top_ + fh / 2) * Cylinder(PACK_PINS["flange_d"] / 2, fh))
-        add(("pads", 0, 0, 0), Pos(px, -py, z_top_ + (fh + 2.80) / 2) * Cylinder(PACK_PINS["barrel_d"] / 2, 2.80 - fh))
-        add(("pads", 0, 0, 0), Pos(px, -py, z_top_ + (2.80 + PIN_MATED) / 2)
-            * Cylinder(PACK_PINS["plunger_d"] / 2, PIN_MATED - 2.80))
+        bh = PACK_PINS["barrel"]
+        add(("pads", 0, 0, 0), Pos(px, -py, z_top_ + (fh + bh) / 2) * Cylinder(PACK_PINS["barrel_d"] / 2, bh - fh))
+        add(("pads", 0, 0, 0), Pos(px, -py, z_top_ + (bh + PIN_MATED) / 2)
+            * Cylinder(PACK_PINS["plunger_d"] / 2, PIN_MATED - bh))
     z_cell = z_pcb_bot - CELL_BASE - CELL_D / 2
     for i, y in enumerate(cell_ys):
         add(("part", 0.86, 0.87, 0.9), Pos(cell_cx, -y, z_cell) * Rot(0, 90, 0) * Cylinder(CELL_D / 2, CELL_L - 1.0))

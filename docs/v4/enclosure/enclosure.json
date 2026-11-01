@@ -41,7 +41,7 @@
   "floorIn": -3.6949999383091936,
   "boardBack": -1.0,
   "split": 0.0,
-  "pack": -16.725,
+  "pack": -17.225,
   "panel": [
    0.3,
    4.43
@@ -64,16 +64,16 @@
  "pack": {
   "outline": [
    -1.6,
-   18.23,
+   18.58,
    49.6,
-   47.61
+   47.78
   ],
   "r": 4.0,
   "board": [
    0.0,
-   19.63,
+   19.98,
    48.0,
-   46.21
+   46.38
   ],
   "boardT": 0.8,
   "cells": {
@@ -82,23 +82,23 @@
     46.25
    ],
    "y": [
-    26.43,
-    39.23
+    26.78,
+    39.58
    ],
-   "z": -11.475,
+   "z": -11.975,
    "d": 10.5
   },
   "contacts": {
-   "part": "4x Mill-Max 1578-0-57 + 2x Wurth 9774010243R",
-   "lcsc": "C21905480 / C5360192",
+   "part": "4x ENIG pad + 2x Wurth 9774015243R",
+   "lcsc": "- / C22431324",
    "strip": [
     12.12,
     40.105,
     31.88,
     44.455
    ],
-   "discD": 1.981,
-   "discH": 0.635,
+   "discD": 2.235,
+   "discH": 0.0,
    "discs": [
     {
      "net": "BAT+",
@@ -122,7 +122,7 @@
     }
    ],
    "steelD": 4.35,
-   "steelH": 1.0,
+   "steelH": 1.5,
    "steel": [
     {
      "x": 14.295,
@@ -165,10 +165,10 @@
    "pegHole": 1.1
   },
   "pins": {
-   "part": "4x Xinyangze YZP0058-20048-02",
-   "lcsc": "C5157341",
-   "free": 4.3,
-   "mated": 3.54,
+   "part": "4x Xinyangze YZP0118-20063-02",
+   "lcsc": "C5157302",
+   "free": 5.5,
+   "mated": 4.675,
    "xy": [
     [
      25.75,
@@ -207,58 +207,58 @@
   "clipSteel": [
    [
     0.5,
-    23.93,
+    24.28,
     10.48,
-    28.93
+    29.28
    ],
    [
     5.48,
-    22.93,
+    23.28,
     9.48,
-    29.93
+    30.28
    ],
    [
     37.52,
-    23.93,
+    24.28,
     47.506,
-    28.93
+    29.28
    ],
    [
     38.52,
-    22.93,
+    23.28,
     42.52,
-    29.93
+    30.28
    ],
    [
     0.494,
-    36.73,
+    37.08,
     10.48,
-    41.73
+    42.08
    ],
    [
     5.48,
-    35.73,
+    36.08,
     9.48,
-    42.73
+    43.08
    ],
    [
     37.52,
-    36.73,
+    37.08,
     47.5,
-    41.73
+    42.08
    ],
    [
     38.52,
-    35.73,
+    36.08,
     42.52,
-    42.73
+    43.08
    ]
   ],
   "toMove": [],
   "z": {
    "face": -4.894999938309193,
-   "boardTop": -5.175,
-   "bottom": -16.725,
+   "boardTop": -5.675,
+   "bottom": -17.225,
    "bay": 0.0
   }
  },
@@ -360,21 +360,21 @@
     {
      "label": "Gerbers",
      "filename": "ambire-ice-v4_gerbers.zip",
-     "bytes": 452504,
+     "bytes": 429903,
      "part": "enclosure/files/ambire-ice-v4_gerbers.zip.b64.txt",
      "b64": true
     },
     {
      "label": "Bill of materials",
      "filename": "ambire-ice-v4_bom-jlc.csv",
-     "bytes": 3150,
+     "bytes": 3058,
      "part": "enclosure/files/ambire-ice-v4_bom-jlc.csv",
      "b64": false
     },
     {
      "label": "Pick and place",
      "filename": "ambire-ice-v4_positions-jlc.csv",
-     "bytes": 5136,
+     "bytes": 4999,
      "part": "enclosure/files/ambire-ice-v4_positions-jlc.csv",
      "b64": false
     }
@@ -383,21 +383,21 @@
     {
      "label": "Gerbers",
      "filename": "ambire-ice-v4_gerbers.zip",
-     "bytes": 452504,
+     "bytes": 429903,
      "part": "enclosure/files/ambire-ice-v4_gerbers.zip.b64.txt",
      "b64": true
     },
     {
      "label": "Bill of materials",
      "filename": "ambire-ice-v4_bom-pcbway.csv",
-     "bytes": 14307,
+     "bytes": 14139,
      "part": "enclosure/files/ambire-ice-v4_bom-pcbway.csv",
      "b64": false
     },
     {
      "label": "Pick and place",
      "filename": "ambire-ice-v4_centroid-pcbway.csv",
-     "bytes": 5142,
+     "bytes": 4997,
      "part": "enclosure/files/ambire-ice-v4_centroid-pcbway.csv",
      "b64": false
     }
@@ -430,7 +430,7 @@
    {
     "label": "Case and battery pack: 3MF, STL and STEP (zip)",
     "filename": "ambire-ice-case.zip",
-    "bytes": 680816,
+    "bytes": 680507,
     "part": "enclosure/files/ambire-ice-case.zip.b64.txt",
     "b64": true
    }

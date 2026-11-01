@@ -4,16 +4,19 @@ Every place on the device we found for the AAA cell was ugly: a bare cell on the
 a hump on the back, or a cover over it ([cell-placement.md](cell-placement.md)). v4 takes
 the cells off the device. **Two AAA cells ride in a separate pack that snaps onto the
 back, high up, just below the camera.** Four spring pins and two magnets on the pack land
-on commodity parts on the device board: gold target discs under the pins, steel spacers
-under the magnets. Every contact part, on both halves, is stocked by a distributor. The
-device itself gets thinner, with a flat front and back.
+on the device board's back: plain gold pads under the pins, steel spacers under the
+magnets. Every part on both halves is JLC stock. The device itself gets thinner, with a
+flat front and back.
 
 **Status (2026-11-01):** both halves carry the production contacts. The device board is in
 `board/`, with its order set in `production/order/`. The pack board is `pack/` (built by
 `pack/makePack.py`), with its order set in `production/pack-order/`. The /v4/ page's 3D
 preview (`docs/v4/`, from `enclosure/generate.py`) is built from both. The next batch tests
 these exact parts. On 2026-11-01 the pack side changed from Xinyangze's magnetic male (20
-in stock anywhere) to single pins and separate magnets; the device board did not change.
+in stock anywhere) to single pins and separate magnets; later that day the gold target
+discs went from the device board (the only part that came through JLC Global Sourcing,
+two weeks on every order): the pins now land on plain ENIG pads, and the steel under the
+magnets grew 0.5 mm with a taller pin, so the pins work at the same point of their stroke.
 
 ## What it comes to
 
@@ -56,30 +59,33 @@ back; a flat back needs a lower camera module.
 ## How it goes together
 
 ```
- device board (back)  ═ steel ═══ disc disc disc disc ═══ steel ═══════════
-                        1.0 mm     ▲    ▲    ▲    ▲  0.635 mm   pins pressed 0.76 of 1.2 mm
+ device board (back)  ═ steel ═══ pad  pad  pad  pad ═══ steel ═══════════
+                        1.5 mm     ▲    ▲    ▲    ▲   (bare ENIG)  pins pressed 0.83 of 1.2 mm
  device back      ───┐  ┌──────────┴────┴────┴────┴──────────┐  window: the frame drops through
-                     └──┤ magnet    frame (print)       magnet├─── back face, 0.28 mm above the pack board
+                     └──┤ magnet    frame (print)       magnet├─── back face, 0.78 mm above the pack board
  pack board 0.8 mm  ════╧═════════════════════════════════════╧══ inside the tray's rim
  tray               ║        ( AAA )            ( AAA )          ║  cells in series, in clips, open underneath
 ```
 
 - **The device's half: commodity parts, no connector.** All of them sit on the board's
   back, south of the MCU, centred at (22.0, 42.28), in a row east-west.
-  - **Four gold target discs**, Mill-Max 1578-0-57-15-00-00-03-0. Each is 1.98 mm across
-    and 0.635 mm tall, brass with 10 µ" hard gold over nickel, on Mill-Max's 2.235 mm round
-    pad, 2.5 mm apart. They come on tape and reel, 7,200 to a reel. JLC places them; they
-    come in through JLC Global Sourcing from DigiKey (117,259 in stock, MOQ 1, 2026-10-31).
-  - **Two steel spacers**, Würth WA-SMSI 9774010243R: M2, 1.0 mm tall, 4.35 mm across,
+  - **Four plain pads**, 2.235 mm round, ENIG like the rest of the board, 2.5 mm apart:
+    the pins' landings (J_PK1-4). No part: nothing to place, nothing to source. The land is
+    Mill-Max's for its 1578-0-57 hard-gold target disc, which still fits if a pad ever wears
+    through (ENIG is a tenth of a micron of soft gold over nickel; the pack is rarely taken
+    off, and bring-up measures the contacts after a few hundred matings).
+  - **Two steel spacers**, Würth WA-SMSI 9774015243R: M2, 1.5 mm tall, 4.35 mm across,
     tin-plated steel. They sit 15.41 mm apart, under the pack's magnets, on Würth's 5.3 mm
-    land, without the screw hole. JLC C5360192 (883 at JLC, 45,272 at DigiKey). Their only
-    job is to be steel for the magnets; they are on ground so they do not float.
+    land, without the screw hole. JLC C22431324 (1,418 at JLC, 2026-11-01). Their only
+    job is to be steel for the magnets, and to set the gap; they are on ground so they do
+    not float.
 - **The pack's half: four single spring pins and two magnets**, on the pack board's outer face.
-  - **Pins:** Xinyangze YZP0058-20048-02 (LCSC C5157341, 1,216 at JLC on 2026-11-01:
-    304 packs). They are SMD with a peg, 2.5 mm apart, on JLC's own land, and JLC places
-    them. Each has a 2.0 mm flange, a 1.0 mm plunger, and stands 4.3 mm free, 3.3 mm at
-    working height (30 g ± 20 %) and 3.1 mm fully pressed. These are the same pins that sat
-    in the magnetic male the pack had before.
+  - **Pins:** Xinyangze YZP0118-20063-02 (LCSC C5157302, 879 at JLC on 2026-11-01:
+    219 packs). They are SMD with a 0.7 mm peg, 2.5 mm apart, on JLC's own land (a 2.1 mm
+    pad round a 0.9 mm plated hole), and JLC places them. Each has a 2.0 mm flange, a
+    1.5 mm barrel to 4.0 mm, a 0.9 mm plunger, and stands 5.5 mm free, 4.5 mm at working
+    height (25 g ± 20 %) and 4.3 mm fully pressed. The shorter YZP0058-20048-02 (4.3 free,
+    30 g) that the magnetic male used needed the 0.635 mm disc under it to reach.
   - **Magnets:** two NdFeB N40 discs, Radial Magnets 8063, 3.18 mm across and 3.18 mm long
     (DigiKey 469-8063-ND, 3,794 in stock on 2026-11-01, $0.35). They have the same diameter
     as the old male's magnets (3.0 × 2.0 mm) and about 1.6 times the volume. They stand on
@@ -92,9 +98,11 @@ back; a flat back needs a lower camera module.
   either pole can face out.
 - **The pack goes on only one way round.** The frame's tab and its notch in the window stop
   a pack turned 180°, which would put the plus on the minus.
-- **The stack sets the thickness.** The steel (1.0 mm) plus the magnets (3.18 mm) put the
-  pack board 4.18 mm below the board's back, 0.28 mm below the back's outer face. The pins
-  stand 3.54 mm on the discs: 0.76 mm into their 1.2 mm stroke, 0.44 mm short of bottoming.
+- **The stack sets the thickness.** The steel (1.5 mm) plus the magnets (3.18 mm) put the
+  pack board 4.68 mm below the board's back, 0.78 mm below the back's outer face. The pins
+  stand 4.68 mm on the pads: 0.83 mm into their 1.2 mm stroke, 0.38 mm short of bottoming,
+  0.18 mm above their 4.5 mm working height (about 20 g each). The 1.0 mm steel of the
+  first design, with the discs, made the gap 4.18 mm; the pack sits 0.5 mm further out now.
   The pack board never bears on the case: the magnets on the steel hold the pack, and the
   tray's rim sits on the back face round it.
 - **Four contacts:** the pack's plus, its minus, the point between the two cells, and the
@@ -122,32 +130,39 @@ DigiKey/Mouser, Mill-Max's Maxnetic 873, stands 7.6 mm tall. So the pack's half 
 into its parts: single pins (thousands at JLC across makers) and disc magnets (thousands
 at DigiKey), with a printed frame doing what the male's body did.
 
-- **Discs, not flat pads.** A pogo pin wears gold off a flat ENIG pad. The discs give hard
-  gold over nickel, made as a pogo target, and the height.
-- **30 g pins.** JLC's high-stock single pins from YIYUAN (100 g) and BAT Wireless (75 g)
-  push three times as hard. Four of them would need several times the magnets' pull.
+- **Flat pads, not discs** (owner, 2026-11-01). The Mill-Max 1578 disc gave hard gold and
+  0.635 mm of height, and was the one part that came through JLC Global Sourcing: two
+  weeks on every device order. A plain ENIG pad is free and always there; the height
+  comes from 0.5 mm more steel and a pin 1.2 mm taller. The price is soft gold: ENIG
+  wears through to nickel after some hundreds of matings, against thousands for the disc.
+  The pack charges in place and is rarely taken off; bring-up measures the contact
+  resistance after a few hundred matings, and the disc still fits the pad if it is needed.
+- **25-30 g pins.** JLC's high-stock single pins from YIYUAN (100 g) and BAT Wireless (75 g)
+  push three times as hard, as does Xinyangze's 3 A YZ29115060P-02 (120 g), the one pin at
+  exactly 4.2 mm working height. Four of them would need several times the magnets' pull.
 - **3.18 mm magnets set the stack.** They are the only magnets near the old male's 3 mm
   with real stock at DigiKey (the 3 × 1 mm Radial 8015 is too short to reach the steel).
-  The pins sit at 63 % of their stroke on them.
+  The pins sit at 69 % of their stroke on them.
 - **Ruled out:** Mill-Max's larger 1593 disc (2.36 mm: 0.14 mm between neighbours at
   2.5 mm pitch), Mill-Max's own spring-pin and target families 872/873 and 878/879 (a
   stack of 10.9 mm or more), and EDAC 685/686 (through-hole, 6 mm and more).
 
 **What the next batch must show** (bring-up):
 
-1. **Hold.** The magnets' pull on the steel must beat the pins' push (4 × about 23 g at
-   3.54 mm, up to 28 g each) and hold the pack in a drop. The spacers are steel round an
+1. **Hold.** The magnets' pull on the steel must beat the pins' push (4 × about 20 g at
+   4.68 mm, up to 25 g each) and hold the pack in a drop. The spacers are steel round an
    M2 thread, so the magnet sees an annulus, not a full disc: measure it.
-2. **Contact.** Resistance per contact, and after a few hundred matings.
+2. **Contact.** Resistance per contact on the bare ENIG pads, fresh and after a few hundred
+   matings: the pads are soft gold, and this is what decides whether the discs come back.
 3. **The glue:** the magnets' and the frame's after a few hundred matings.
 
 ## What JLC builds
 
 | Part | Where | JLC / LCSC | Stock (2026-10-28) |
 |---|---|---|---|
-| Target disc, Mill-Max 1578-0-57-15-00-00-03-0 ×4 | device board, back | C21905480 (Global Sourcing) | 117,259 at DigiKey (2026-10-31) |
-| Steel spacer, Würth WA-SMSI 9774010243R ×2 | device board, back | C5360192 | 883 (2026-10-31) |
-| Spring pin, Xinyangze YZP0058-20048-02 (SMD with a peg) ×4 | pack board, outer face | C5157341 | 1,216 (2026-11-01): 304 packs |
+| Pin landing: plain 2.235 mm ENIG pad ×4 | device board, back | none (a pad) | — |
+| Steel spacer, Würth WA-SMSI 9774015243R (M2 × 1.5) ×2 | device board, back | C22431324 | 1,418 (2026-11-01) |
+| Spring pin, Xinyangze YZP0118-20063-02 (SMD with a peg) ×4 | pack board, outer face | C5157302 | 879 (2026-11-01): 219 packs |
 | Magnet, Radial Magnets 8063 (NdFeB N40, 3.18 × 3.18 mm) ×2 | pack board, outer face, glued | DigiKey 469-8063-ND (not JLC) | 3,794 at DigiKey (2026-11-01) |
 | AAA clip MYOUNG MY-AAA-19-J (−) ×2 | pack board, inner face | C6937104 | 5,721 |
 | AAA clip MYOUNG MY-AAA-20-J (+) ×2 | pack board, inner face | C6937107 | 4,248 |
@@ -165,7 +180,7 @@ at DigiKey), with a printed frame doing what the male's body did.
 
 **Order flow, end to end:**
 
-1. Device board at JLC, as today; buy the discs into the order through Global Sourcing first.
+1. Device board at JLC, as today: every part is JLC stock.
 2. Pack board at JLC: 2 layers, 0.8 mm, ENIG; SMT on both faces.
 3. Magnets from DigiKey (469-8063-ND), two per pack.
 4. Case, tray, the pack's frame and the joystick cap: printed at home or at JLC3DP.
@@ -190,7 +205,7 @@ the clips from underneath.
 
 ## What changes on the device's board
 
-- **Out: the two cell clips. In: the pack's contacts** (four discs, two steel spacers),
+- **Out: the two cell clips. In: the pack's contacts** (four pads, two steel spacers),
   south of the MCU, an ESD diode on the minus, mid-point and thermistor lines. The display connector and its tail's slot move south for it; a
   few small parts move with them (the radio's power switch and its timing cap, the
   charger's switch and its two resistors, the display's two decaps, the airgap's series
@@ -229,7 +244,7 @@ open thermistor line shows that the pack is off.
 
 ## Open: bench checks before anything is ordered
 
-- **Hold, contact and glue** of the magnets on the steel and the pins on the discs (above).
+- **Hold, contact and glue** of the magnets on the steel and the pins on the pads (above).
 - **Stock for a run beyond 300 packs:** the pins have 1,216 at JLC (304 packs). Xinyangze
   makes them (www.xyzpogopin.com); other makers' 2.0 mm-flange 30 g pins fit the same land.
 - **The cells are open underneath:** the device rests on them when it lies on its back.
@@ -246,8 +261,9 @@ open thermistor line shows that the pack is off.
 - Xinyangze drawings (via LCSC): YZP0058-20048-02 (2015-05-14), YZP0048-20048-04025-02
   (2020-10-27), YZ103915020T-04025-02 (2015-07-08),
   YZP0048-20048-04025-03 and YZR0158-20050-04025-01 (2022-03-24), YZT0675-20048-04025-01.
-- Mill-Max, 1578 target disc drawing (1578-0-57-15-00-00-03-0, SMT pad 0.088 in).
-- Würth Elektronik, WA-SMSI 9774010243R datasheet (land 5.3 mm, stencil annulus).
+- Mill-Max, 1578 target disc drawing (1578-0-57-15-00-00-03-0, SMT pad 0.088 in: the pads' land).
+- Xinyangze, YZP0118-20063-02 drawing (2017-09-16: 5.50 free, 4.50 working at 25 g, 4.30 pressed) and YZP0058-20048-02 (2015-05-14).
+- Würth Elektronik, WA-SMSI 9774015243R datasheet (M2 × 1.5; land 5.3 mm, stencil annulus).
 - BAT WIRELESS, BWCD-L4.0W2.0H1.0 datasheet (Aug 2025), and YIYUAN YTC1P series drawing, via LCSC.
 - DigiKey, Radial Magnets 8063 / 8003 listings (stock, 2026-11-01).
 - JLC's parts library and LCSC's product API (stock and part numbers, 2026-10-28).
