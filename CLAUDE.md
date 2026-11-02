@@ -121,6 +121,10 @@ Ambire internals into GridCore's.
   must pass before every commit.
 - Power fanouts thick (up to 0.4 mm, capped at the pad's narrow side), never a thin neck
   on a plane via (`widenFanouts.py`).
+- Via in pad is OK on the pack's pogo target pads J_PK1-4 (owner, 2026-11-02): they get no
+  solder (bare ENIG discs the spring pins land on), so a via there wicks nothing. Not on the
+  steel spacers MH_PK1/2 next to them: those are reflowed. `routeDefects.py`/`placementScan.py`
+  still list vias in pads; on J_PK1-4 that is not a defect.
 - In1 = V3V3 plane, In2 = solid GND (parts are on B.Cu and reference In2). One via per
   3.3 V pad, short fanout; never 3.3 V trunks or daisy chains between plane vias.
 - No GND pad-to-via ties — the outer pour plus stitching vias carry GND. This is routing
