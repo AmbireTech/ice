@@ -158,10 +158,18 @@ if has_cell:
     if under:
         print("under the cell (mm to spare): " + ", ".join(under))
 
+# Accepted on a physical fit, not on the drawing: (mm short at the nominal fold, who/when/why).
+# The folds can sit anywhere in the cutout; 0.75 mm further north than nominal gives the
+# touch tail its 1.5 mm. Only up to the measured shortfall: any further move still fails.
+FIT_ACCEPTED = {"J_CTP": (1.55, "owner, 2026-11-02: the fit print with the touch connector 3 mm north was borderline OK")}
+
 for ref, end_y, row in (("J_TFT", nb.TFT_END_Y, nb.TFT_ROW), ("J_CTP", nb.CTP_END_Y, nb.CTP_ROW)):
     row_y = pcbnew.ToMM(fp[ref].GetPosition().y) - row
     slack = end_y - row_y      # positive: the tail end would sit south of the row
-    if slack > 0.5:
+    if ref in FIT_ACCEPTED and 0.5 < slack <= FIT_ACCEPTED[ref][0]:
+        print(f"NOTE {ref}: tail ends {slack:.1f} mm short of the contact row at the nominal fold; "
+              f"accepted ({FIT_ACCEPTED[ref][1]})")
+    elif slack > 0.5:
         errors.append(f"{ref}: tail ends {slack:.1f} mm short of the contact row; move the connector south")
     elif slack < -3.0 - 1e-6:
         errors.append(f"{ref}: {-slack:.1f} mm of tail slack; move the connector north")
