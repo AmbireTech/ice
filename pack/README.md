@@ -39,7 +39,7 @@ frame's pockets. The pin order lives in one place, `PIN_NETS` in `makePack.py`.
 
 **Where the contacts go.** Over the device's discs and spacers, which lie east-west south
 of the device's MCU (x 22.0, y 42.28 in device board coordinates): along the south cell,
-the frame's tab north, the four pins in a row under the cell's south flank, plus at the
+the frame's tab east, the four pins in a row under the cell's south flank, plus at the
 east end. The clips hold only the cells' ends, so the holes are 5.6 mm from any of their steel, and
 the cells lie side by side, 12.8 mm apart: 1.8 mm between neighbouring clips' arms, twice
 the ~0.9 mm each arm swings out as a cell goes in (on the east side those arms are the

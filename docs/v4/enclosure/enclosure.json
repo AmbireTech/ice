@@ -93,9 +93,9 @@
    "lcsc": "- / C22431324",
    "strip": [
     12.12,
-    40.105,
+    38.755,
     31.88,
-    44.455
+    43.105
    ],
    "discD": 2.235,
    "discH": 0.05,
@@ -103,22 +103,22 @@
     {
      "net": "BAT+",
      "x": 25.75,
-     "y": 42.28
+     "y": 40.93
     },
     {
      "net": "MID",
      "x": 23.25,
-     "y": 42.28
+     "y": 40.93
     },
     {
      "net": "NTC",
      "x": 20.75,
-     "y": 42.28
+     "y": 40.93
     },
     {
      "net": "BAT-",
      "x": 18.25,
-     "y": 42.28
+     "y": 40.93
     }
    ],
    "steelD": 4.35,
@@ -126,26 +126,26 @@
    "steel": [
     {
      "x": 14.295,
-     "y": 42.28
+     "y": 40.93
     },
     {
      "x": 29.705,
-     "y": 42.28
+     "y": 40.93
     }
    ]
   },
   "frame": {
    "outline": [
     11.4,
-    38.85,
+    37.5,
     32.6,
-    45.71
+    44.36
    ],
    "tab": [
-    19.485,
-    36.54,
-    24.515,
-    38.85
+    32.6,
+    38.415,
+    34.91,
+    43.445
    ],
    "t": 2.975,
    "slot": [
@@ -155,11 +155,11 @@
    "pegs": [
     [
      16.6,
-     39.88
+     38.53
     ],
     [
      27.4,
-     39.88
+     38.53
     ]
    ],
    "pegHole": 1.1
@@ -172,19 +172,19 @@
    "xy": [
     [
      25.75,
-     42.28
+     40.93
     ],
     [
      23.25,
-     42.28
+     40.93
     ],
     [
      20.75,
-     42.28
+     40.93
     ],
     [
      18.25,
-     42.28
+     40.93
     ]
    ]
   },
@@ -196,11 +196,11 @@
    "xy": [
     [
      14.295,
-     42.28
+     40.93
     ],
     [
      29.705,
-     42.28
+     40.93
     ]
    ]
   },
@@ -360,7 +360,7 @@
     {
      "label": "Gerbers",
      "filename": "ambire-ice-v4_gerbers.zip",
-     "bytes": 411652,
+     "bytes": 405963,
      "part": "enclosure/files/ambire-ice-v4_gerbers.zip.b64.txt",
      "b64": true
     },
@@ -374,7 +374,7 @@
     {
      "label": "Pick and place",
      "filename": "ambire-ice-v4_positions-jlc.csv",
-     "bytes": 5001,
+     "bytes": 4999,
      "part": "enclosure/files/ambire-ice-v4_positions-jlc.csv",
      "b64": false
     }
@@ -383,7 +383,7 @@
     {
      "label": "Gerbers",
      "filename": "ambire-ice-v4_gerbers.zip",
-     "bytes": 411652,
+     "bytes": 405963,
      "part": "enclosure/files/ambire-ice-v4_gerbers.zip.b64.txt",
      "b64": true
     },
@@ -397,7 +397,7 @@
     {
      "label": "Pick and place",
      "filename": "ambire-ice-v4_centroid-pcbway.csv",
-     "bytes": 4997,
+     "bytes": 4999,
      "part": "enclosure/files/ambire-ice-v4_centroid-pcbway.csv",
      "b64": false
     }
@@ -430,7 +430,7 @@
    {
     "label": "Case and battery pack: 3MF, STL and STEP (zip)",
     "filename": "ambire-ice-case.zip",
-    "bytes": 755003,
+    "bytes": 748452,
     "part": "enclosure/files/ambire-ice-case.zip.b64.txt",
     "b64": true
    }

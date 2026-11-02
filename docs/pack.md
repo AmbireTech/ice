@@ -91,7 +91,7 @@ back; a flat back needs a lower camera module.
     as the old male's magnets (3.0 × 2.0 mm) and about 1.6 times the volume. They stand on
     the board over the steel spacers, glued.
   - **The frame** is a printed part with the old male's outline: 21.2 × 6.86 mm, a 5.03 mm
-    tab north, 2.98 mm thick. Two pegs locate it in two holes in the pack board, and it is
+    tab east, 2.98 mm thick. Two pegs locate it in two holes in the pack board, and it is
     glued down. A pocket holds each magnet, and a slot clears the pins. Its face stands
     0.2 mm short of the magnets', so only the magnets touch the steel.
 - **The magnets hold the pack, on the steel.** Steel takes a magnet either way round, so

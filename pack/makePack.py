@@ -337,7 +337,9 @@ def main():
     for y, (w_, e_) in zip(CELL_YS, (("+", "-"), ("-", "+"))):
         text(board, w_, 12.5, y, pcbnew.B_SilkS, 1.6, mirrored=True)
         text(board, e_, 35.5, y, pcbnew.B_SilkS, 1.6, mirrored=True)
-        text(board, "AAA", 24.0, y, pcbnew.B_SilkS, 1.2, mirrored=True)
+        # over the cell's axis, but east of the pins' row when the axis runs past their peg rings
+        near_pins = abs(y - CONN_Y) < 2.0
+        text(board, "AAA", 31.0 if near_pins else 24.0, y, pcbnew.B_SilkS, 1.2, mirrored=True)
     for n, px in PIN.items():                 # north of the frame's tab
         text(board, n.replace("_SENSE", ""), px, _FRAME["tab"][1] - 0.9, pcbnew.F_SilkS, 0.7)
     text(board, "AMBIRE ICE BATTERY PACK v4", 24.0, OUTLINE[1] + 2.2, pcbnew.F_SilkS, 0.9)
