@@ -22,7 +22,7 @@ C_IMU2,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,0.0,,0.0,180.0,0.000,n
 C_IN_BOOST,22uF,Capacitor_SMD:C_0805_2012Metric,C45783,top,0.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 C_MS,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 C_NOR,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
-C_NRST,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
+C_NRST,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 C_OPT,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 C_RADIO1,10uF,Capacitor_SMD:C_0603_1608Metric,C19702,top,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 C_RADIO2,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,top,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
@@ -30,8 +30,8 @@ C_RCT,1nF,Capacitor_SMD:C_0402_1005Metric,C14442,bottom,180.0,,0.0,0.0,0.000,n/a
 C_RIN,1uF,Capacitor_SMD:C_0402_1005Metric,C52923,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 C_SEIN,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 C_SEVCC,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
-C_TFT1,1uF,Capacitor_SMD:C_0402_1005Metric,C52923,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
-C_TFT2,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
+C_TFT1,1uF,Capacitor_SMD:C_0402_1005Metric,C52923,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
+C_TFT2,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 C_U9A,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 C_U9B,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 C_USB3V3,22uF,Capacitor_SMD:C_0805_2012Metric,C45783,top,0.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
@@ -39,7 +39,7 @@ C_USBSW,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,0.0,,0.0,180.0,0.000,
 C_VBAT,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 C_VBUS,4.7uF,Capacitor_SMD:C_0603_1608Metric,C19666,top,0.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 C_VDD1,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
-C_VDD11A,2.2uF,Capacitor_SMD:C_0402_1005Metric,C107369,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
+C_VDD11A,2.2uF,Capacitor_SMD:C_0402_1005Metric,C107369,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 C_VDD11B,2.2uF,Capacitor_SMD:C_0402_1005Metric,C107369,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 C_VDD2,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 C_VDD3,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
@@ -54,7 +54,7 @@ D_ESD,USBLC6-2SC6,Package_TO_SOT_SMD:SOT-23-6,C7519,bottom,0.0,^SOT-23,180.0,0.0
 D_OR,"BAT54C,215",Package_TO_SOT_SMD:SOT-23,C37704,bottom,90.0,^SOT-23,180.0,270.0,0.000,db-rule
 D_PKMID,"PESD5V0S1BL,315",Diode_SMD:D_SOD-882,C84374,bottom,90.0,,0.0,90.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
 D_PKNEG,"PESD5V0S1BL,315",Diode_SMD:D_SOD-882,C84374,bottom,0.0,,0.0,180.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
-D_PKNTC,"PESD5V0S1BL,315",Diode_SMD:D_SOD-882,C84374,bottom,0.0,,0.0,180.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
+D_PKNTC,"PESD5V0S1BL,315",Diode_SMD:D_SOD-882,C84374,bottom,90.0,,0.0,90.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
 D_RADIO,KT-0603G,LED_SMD:LED_0603_1608Metric,C12624,bottom,90.0,,0.0,90.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
 D_REVG,"BAS116,215",Package_TO_SOT_SMD:SOT-23,C48502,bottom,0.0,^SOT-23,180.0,0.0,0.000,db-rule
 J1,TYPE-C-31-M-12,wallet:USB_C_Receptacle_HRO_TYPE-C-31-M-12_BoardEdge,C165948,bottom,180.0,,0.0,0.0,1.460,NO KNOWN CORRECTION -> eye check in JLC preview
