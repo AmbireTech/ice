@@ -251,10 +251,13 @@ MAGNET = {"part": "2x Radial Magnets 8063 (NdFeB N40, 3.18 x 3.18 mm)", "digikey
 # The frame (print part, glued to the pack board): the old male's outline, 21.2 x 6.86 mm
 # with its 5.03 x 2.31 mm tab north, which the window in the back keys (turned end for end
 # the pack would put BAT+ on BAT-). It stands 0.2 mm short of the magnets' faces, so only the
-# magnets touch the steel; a slot over the pins, a pocket per magnet (they sit on the board,
-# glued), two pegs into the pack board's holes.
+# magnets touch the steel; a slot over the pins, a pocket per magnet (they sit on the board),
+# two pegs into the pack board's holes. Each magnet is a hard press fit (owner, 2026-11-02),
+# glued too: three crush ribs run up the pocket, their crests rib_crush inside the magnet's
+# radius, and stop rib_lead short of the face in a ramp the magnet starts on; the bore
+# between them (pocket_d) takes the glue.
 FRAME = {"len": 21.2, "wid": 6.86, "tab": (5.03, 2.31), "t": MAGNET["h"] - 0.2, "slot": (10.3, 2.5),
-         "pocket_d": MAGNET["d"] + 0.15, "peg_d": 1.0, "peg_h": 0.6, "peg_hole": 1.1, "pegs": ((-5.4, -2.4), (5.4, -2.4))}
+         "pocket_d": MAGNET["d"] + 0.15, "rib_r": 0.3, "rib_crush": 0.1, "rib_lead": 0.4, "peg_d": 1.0, "peg_h": 0.6, "peg_hole": 1.1, "pegs": ((-5.4, -2.4), (5.4, -2.4))}
 # Mated: the pins stand this far off the pack board on the pads
 PIN_MATED = CONN_DEV["steel_h"] - CONN_DEV["disc_h"] + MAGNET["h"]
 PAD_DRAW_H = 0.05     # a bare pad adds no height to the stack; the page draws it this thick so it shows
@@ -313,8 +316,9 @@ two top holes onto the pins). Hook the bezel's top edge under the shell's top li
 it down over the screen, then the M2 pan-head screw from the back.
 
 The pack: press the frame's pegs into the two holes beside the pack board's spring pins
-and glue it down (pegs into the board, tab north). Drop a magnet into each pocket onto the
-board, with a drop of glue round it: either pole up, they hold on steel. Glue the pack
+and glue it down (pegs into the board, tab north). Put a drop of glue into each magnet's
+pocket and press a magnet in, hard, down onto the board (a flat tool: the pocket's three
+ribs crush round it): either pole up, they hold on steel. Glue the pack
 board into the tray's top, the frame out. Two AAA cells press into the clips from
 underneath, as marked on the board. The pack snaps onto the back below the camera, the
 frame through the window, the pins on the pads on the device's board, the magnets on the
@@ -996,8 +1000,17 @@ def main():
     frame = rr_prism(*fro, hm[1] - 0.01, z_pcb_top, z_body) + box(tab[0], tab[1], tab[2], fro[1] + 0.5, z_pcb_top, z_body)
     sl, sw = FRAME["slot"]
     frame -= rr_prism(cx - sl / 2, cy - sw / 2, cx + sl / 2, cy + sw / 2, sw / 2 - 0.01, z_pcb_top - 1, z_body + 1)
+    rib_r, lead = FRAME["rib_r"], FRAME["rib_lead"]
+    rib_at = MAGNET["d"] / 2 - FRAME["rib_crush"] + rib_r      # each rib's axis, from the pocket's
     for s_ in (-1, 1):
-        frame -= Pos(cx + s_ * mag_off, -cy, (z_pcb_top + z_body) / 2) * Cylinder(FRAME["pocket_d"] / 2, z_body - z_pcb_top + 2)
+        mx = cx + s_ * mag_off
+        bore = Pos(mx, -cy, (z_pcb_top + z_body) / 2) * Cylinder(FRAME["pocket_d"] / 2, z_body - z_pcb_top)
+        frame -= Pos(mx, -cy, (z_pcb_top + z_body) / 2) * Cylinder(FRAME["pocket_d"] / 2, z_body - z_pcb_top + 2)
+        for a in (90, 210, 330):
+            rx, ry = mx + rib_at * math.cos(math.radians(a)), -cy + rib_at * math.sin(math.radians(a))
+            rib = Pos(rx, ry, z_pcb_top) * Cylinder(rib_r, z_body - lead - z_pcb_top, align=(1, 1, 0))
+            rib += Pos(rx, ry, z_body - lead) * Cone(rib_r, 0.01, lead, align=(1, 1, 0))
+            frame += rib & bore
     for dx, dy in FRAME["pegs"]:
         frame += Pos(cx + dx, -(cy + dy), z_pcb_top - FRAME["peg_h"] / 2) * Cylinder(FRAME["peg_d"] / 2, FRAME["peg_h"])
 
