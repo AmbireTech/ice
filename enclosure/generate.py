@@ -248,7 +248,7 @@ CONN_DEV = {"part": "4x ENIG pad + 2x Wurth 9774015243R", "lcsc": "- / C22431324
 PACK_PINS = {"part": "4x Xinyangze YZP0118-20063-02", "lcsc": "C5157302", "free": 5.50, "work": 4.50, "pressed": 4.30,
              "pitch": 2.5, "plunger_d": 0.9, "barrel_d": 1.5, "barrel": 4.00, "flange_d": 2.0, "flange_h": 0.5}
 MAGNET = {"part": "2x Radial Magnets 8063 (NdFeB N40, 3.18 x 3.18 mm)", "digikey": "469-8063-ND", "d": 3.175, "h": 3.175}
-# The frame (print part, glued to the pack board): the old male's outline, 21.2 x 6.86 mm
+# The frame (print part, epoxied to the pack board over its whole underside: the pegs only locate it): the old male's outline, 21.2 x 6.86 mm
 # with its 5.03 x 2.31 mm tab north, which the window in the back keys (turned end for end
 # the pack would put BAT+ on BAT-). It stands 0.2 mm short of the magnets' faces, so only the
 # magnets touch the steel; a slot over the pins, a pocket per magnet (they sit on the board),
@@ -315,10 +315,13 @@ ribbons through the board's slots into their connectors. Lay the board in the sh
 two top holes onto the pins). Hook the bezel's top edge under the shell's top lip, swing
 it down over the screen, then the M2 pan-head screw from the back.
 
-The pack: press the frame's pegs into the two holes beside the pack board's spring pins
-and glue it down (pegs into the board, tab north). Put a drop of glue into each magnet's
-pocket and press a magnet in, hard, down onto the board (a flat tool: the pocket's three
-ribs crush round it): either pole up, they hold on steel. Glue the pack
+The pack: the frame and the magnets are glued hard to the pack board with epoxy (not
+superglue, which holds poorly on PETG); the pegs only locate the frame while it cures.
+Spread epoxy over the frame's whole underside, press its pegs into the two holes beside
+the pack board's spring pins (tab north) and wipe off what squeezes into the pins' slot.
+Put a drop of epoxy into each magnet's pocket and press a magnet in, hard, down onto the
+board (a flat tool: the pocket's three ribs crush round it): either pole up, they hold on
+steel. Let it cure before the pack goes on the device. Glue the pack
 board into the tray's top, the frame out. Two AAA cells press into the clips from
 underneath, as marked on the board. The pack snaps onto the back below the camera, the
 frame through the window, the pins on the pads on the device's board, the magnets on the
