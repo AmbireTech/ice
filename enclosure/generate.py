@@ -249,8 +249,10 @@ PACK_PINS = {"part": "4x Xinyangze YZP0118-20063-02", "lcsc": "C5157302", "free"
              "pitch": 2.5, "plunger_d": 0.9, "barrel_d": 1.5, "barrel": 4.00, "flange_d": 2.0, "flange_h": 0.5}
 MAGNET = {"part": "2x Radial Magnets 8063 (NdFeB N40, 3.18 x 3.18 mm)", "digikey": "469-8063-ND", "d": 3.175, "h": 3.175}
 # The frame (print part, epoxied to the pack board over its whole underside: the pegs only locate it): the old male's outline, 21.2 x 6.86 mm
-# with its 5.03 x 2.31 mm tab north, which the window in the back keys (turned end for end
-# the pack would put BAT+ on BAT-). It stands 0.2 mm short of the magnets' faces, so only the
+# with its 5.03 x 2.31 mm tab east, which the window in the back keys (turned end for end
+# the pack would put BAT+ on BAT-). East, not north (2026-11-02): north it reached over the
+# MCU (1.58 mm tall under a face 1.70 mm off the board), which held the contacts and the
+# display connector south of them 1.1 mm further from the MCU than the board allows. It stands 0.2 mm short of the magnets' faces, so only the
 # magnets touch the steel; a slot over the pins, a pocket per magnet (they sit on the board),
 # two pegs into the pack board's holes. Each magnet is a hard press fit (owner, 2026-11-02),
 # glued too: three crush ribs run up the pocket, their crests rib_crush inside the magnet's
@@ -318,7 +320,7 @@ it down over the screen, then the M2 pan-head screw from the back.
 The pack: the frame and the magnets are glued hard to the pack board with epoxy (not
 superglue, which holds poorly on PETG); the pegs only locate the frame while it cures.
 Spread epoxy over the frame's whole underside, press its pegs into the two holes beside
-the pack board's spring pins (tab north) and wipe off what squeezes into the pins' slot.
+the pack board's spring pins (tab east) and wipe off what squeezes into the pins' slot.
 Put a drop of epoxy into each magnet's pocket and press a magnet in, hard, down onto the
 board (a flat tool: the pocket's three ribs crush round it): either pole up, they hold on
 steel. Let it cure before the pack goes on the device. Glue the pack
@@ -924,7 +926,7 @@ def main():
     tw, tl = FRAME["tab"]
     strip = (cx - hr[0], cy - hr[1], cx + hr[0], cy + hr[1])
     fro = (cx - hm[0], cy - hm[1], cx + hm[0], cy + hm[1])
-    tab = (cx - tw / 2, fro[1] - tl, cx + tw / 2, fro[1])     # its tab north, over the MCU's edge
+    tab = (fro[2], cy - tw / 2, fro[2] + tl, cy + tw / 2)     # its tab east, off the MCU
     # the pads where the board has them, east to west (J_PK1, the pack's plus, east)
     contacts = [(net, b["fps"][r]["x"], b["fps"][r]["y"]) for net, r in zip(CONN_NETS, CONN_DEV["refs"])]
     if [round(x, 2) for _, x, _ in contacts] != sorted((round(x, 2) for _, x, _ in contacts), reverse=True):
@@ -983,7 +985,7 @@ def main():
     # the device's back: the frame's window (its body and tab) down into the cavity
     fro_win = (fro[0] - CONN_CLR, fro[1] - CONN_CLR, fro[2] + CONN_CLR, fro[3] + CONN_CLR)
     shell -= rr_prism(*fro_win, (fro_win[3] - fro_win[1]) / 2 - 0.01, z_face - 1, z_floor_in + 1)
-    shell -= box(tab[0] - CONN_CLR, tab[1] - CONN_CLR, tab[2] + 0.01, tab[3] + CONN_CLR, z_face - 1, z_floor_in + 1)
+    shell -= box(tab[0] - hm[1], tab[1] - CONN_CLR, tab[2] + CONN_CLR, tab[3] + CONN_CLR, z_face - 1, z_floor_in + 1)
     if bay:
         bay_box = (pcb[0] - FIT / 2, pcb[1] - FIT / 2, pcb[2] + FIT / 2, pcb[3] + FIT / 2)
         in_bay = [(hx, hy) for hx, hy in screw_holes if bay_box[0] - CB_R < hx < bay_box[2] + CB_R and bay_box[1] - CB_R < hy < bay_box[3] + CB_R]
@@ -1000,7 +1002,7 @@ def main():
     tray -= box(pcb[0], pcb[1] - FIT / 2, pcb[2], pcb[3] + FIT / 2, z_pcb_bot, z_face + 1)
 
     # ── the frame (print part): on the pack board's outer face, round the pins and the magnets
-    frame = rr_prism(*fro, hm[1] - 0.01, z_pcb_top, z_body) + box(tab[0], tab[1], tab[2], fro[1] + 0.5, z_pcb_top, z_body)
+    frame = rr_prism(*fro, hm[1] - 0.01, z_pcb_top, z_body) + box(fro[2] - hm[1], tab[1], tab[2], tab[3], z_pcb_top, z_body)
     sl, sw = FRAME["slot"]
     frame -= rr_prism(cx - sl / 2, cy - sw / 2, cx + sl / 2, cy + sw / 2, sw / 2 - 0.01, z_pcb_top - 1, z_body + 1)
     rib_r, lead = FRAME["rib_r"], FRAME["rib_lead"]
@@ -1025,7 +1027,7 @@ def main():
                   f"inside the tray's rim; cells at y {cell_ys[0]:.2f} and {cell_ys[1]:.2f} ({cell_pitch:.2f} apart, the arms {ARM_GAP:.1f} mm apart); "
                   )
     report.append(f"contacts: {CONN_DEV['part']} on the device board at {cx:.2f}, {cy:.2f}; on the pack "
-                  f"{PACK_PINS['part']} and {MAGNET['part']} in the frame (tab north), the magnets on the steel "
+                  f"{PACK_PINS['part']} and {MAGNET['part']} in the frame (tab east), the magnets on the steel "
                   f"{z_back - z_mag:.2f} mm off the board, the frame's face {z_back - z_body:.2f} mm off it, "
                   f"pins at {PIN_MATED:.3f} mm, compressed {PACK_PINS['free'] - PIN_MATED:.2f} of "
                   f"{PACK_PINS['free'] - PACK_PINS['pressed']:.2f} mm on the pads; "
