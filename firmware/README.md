@@ -166,6 +166,7 @@ Against the upstream base:
 | `projects/firmware/src/stm32/main.c` | a production build skips the radio's pairing-secret check on the UART link (there is no secret) |
 | `rust/.../layout_delizia/ui_firmware.rs`, `component/homescreen.rs`, `component_msg_obj.rs` | Delizia's Bluetooth pairing screens (device name, pairing code, waiting), and a swipe up on the home screen |
 | `src/apps/homescreen/__init__.py`, `src/apps/management/ble/pair_from_homescreen.py` (new), `src/ble.py` | the swipe up starts pairing; the boot waits 0.5 s, not 5 s, for a radio that the airgap switch may have off |
+| `src/apps/homescreen/__init__.py` | firmware signed with a "DO NOT USE" vendor header (Trezor's dev keys) says so on the home screen: "Backup needed; dev", or "Dev firmware" when there is no other notice |
 
 What the build drives (compiled, not yet run on a board): the display, touch,
 USB, the boot chain and TrustZone. The backlight is on/off only.

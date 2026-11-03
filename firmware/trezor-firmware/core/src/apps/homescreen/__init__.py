@@ -68,6 +68,14 @@ async def homescreen() -> None:
             False,
         )
 
+    # Ambire: flag firmware signed with Trezor's dev/unsafe vendor headers
+    # ("... DO NOT USE!"); the banner is one line, 240 px wide at most.
+    if "DO NOT USE" in utils.firmware_vendor():
+        if notification and notification[0] == TR.homescreen__title_backup_needed:
+            notification = (notification[0] + "; dev",) + notification[1:]
+        elif notification is None:
+            notification = ("Dev firmware", NotificationLevel.WARNING, False)
+
     res = await run_homescreen(
         label=label, notification=notification, lockable=can_lock_device()
     )
