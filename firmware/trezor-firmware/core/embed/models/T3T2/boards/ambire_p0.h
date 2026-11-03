@@ -28,6 +28,13 @@
 #define POWER_HOLD_PIN GPIO_PIN_5
 #define POWER_HOLD_CLK_EN __HAL_RCC_GPIOE_CLK_ENABLE
 
+// The power key as the MCU sees it: BTN_N, low while pressed (a 2N7002 from
+// the key's node), pulled up by PA0's own pull-up. [ambire_power] in
+// ambire_p0.toml turns a long press into power-off (drops PWR_HOLD).
+#define POWER_KEY_PORT GPIOA
+#define POWER_KEY_PIN GPIO_PIN_0
+#define POWER_KEY_CLK_EN __HAL_RCC_GPIOA_CLK_ENABLE
+
 // Newhaven NHD-2.4-240320AF-CSXP: ST7789Vi, 240x320, strapped for 4-wire SPI
 // (IM2..0 = 110). Write-only: the panel's SDO is not wired, so no
 // DISPLAY_IDENTIFY. SPI1 at 160 MHz / 4 = 40 MHz (ST7789 write cycle >= 16 ns).

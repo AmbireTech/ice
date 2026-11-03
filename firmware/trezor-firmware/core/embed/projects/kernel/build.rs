@@ -8,6 +8,11 @@ fn main() -> Result<()> {
 
         lib.add_source("main.c");
 
+        if cfg!(feature = "ambire_power") {
+            lib.add_source("ambire_power.c");
+            lib.add_define("USE_AMBIRE_POWER", None);
+        }
+
         if cfg!(feature = "ambire_radio") {
             lib.add_source("ambire_radio.c");
             lib.add_define("USE_AMBIRE_RADIO", None);

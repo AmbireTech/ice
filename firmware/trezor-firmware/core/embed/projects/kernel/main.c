@@ -127,6 +127,11 @@
 void ambire_radio_init(void);
 #endif
 
+#ifdef USE_AMBIRE_POWER
+// ambire_power.c (Ambire boards)
+void ambire_power_init(void);
+#endif
+
 void drivers_init() {
   ts_t status;
 
@@ -190,6 +195,10 @@ void drivers_init() {
 
 #ifdef USE_AMBIRE_RADIO
   ambire_radio_init();
+#endif
+
+#ifdef USE_AMBIRE_POWER
+  ambire_power_init();
 #endif
 
 #ifdef USE_BUTTON
