@@ -160,7 +160,7 @@ Against the upstream base:
 | `src/trezor/wire/message_handler.py` | Ambire boards report the exception behind "Firmware error" |
 | `models/T3T2/model_T3T2.h`, `boards/ambire_p0.{h,toml}`, `rust/.../theme/mod.rs`, `welcome_screen.rs`, `src/boot.py` | branding: the board names the product "Ambire"; `[ambire_branding]` puts the flame on the welcome screen (held 3 s) |
 | `rust/.../component/ambire_game.rs` (new), `homescreen.rs` | `[ambire_game]`: a raycaster maze behind 7 quick taps on the home screen |
-| `projects/kernel/ambire_power.c` (new), `main.c`, `build.rs`, `Cargo.toml`, `project.toml` | `[ambire_power]`: hold the power key 3 s and the device switches off (screen dark at once, power gone ~1 s after the key is let go, USB in or not). The press that switched it on does not count. If it is still running 3 s after the key is let go, it restarts |
+| `projects/kernel/ambire_power.c` (new), `main.c`, `build.rs`, `Cargo.toml`, `project.toml` | `[ambire_power]` (proto 0's power latch): hold the power key 3 s and the device switches off (screen dark at once, power gone ~1 s after the key is let go, USB in or not). The press that switched it on does not count. If it is still running 3 s after the key is let go, it restarts |
 | `projects/kernel/ambire_radio.c` (new), `main.c`, `build.rs` | `[ambire_radio]`: the kernel allows the radio's power (RADIO_OFF low; the airgap switch still decides) and says hello on USART3 at boot. Off since `[ble]`: one owner of USART3 (a build with both stops with an error) |
 | `io/nrf/stm32u5/nrf_uart_link.c` (new), `io/nrf/build.rs`, `io/Cargo.toml` | `[nrf] link = "io/nrf_uart_link"`: Trezor's BLE stack talks to the radio over the 2-wire UART instead of SPI with handshake lines (see [Bluetooth](#bluetooth)) |
 | `xtask/src/config.rs` | `exclude_from = [...]` in a board file keeps a peripheral out of the named projects: Bluetooth stays out of the bootloader and prodtest |
@@ -199,8 +199,8 @@ chip's speed.
 
 What is not driven yet: the OPTIGA (not fitted on the first boards), the
 SE050 beyond its random number generator, the camera, the charger and the
-battery gauge. The power key switches the device off only from the firmware:
-in the bootloader, unplug the cell.
+battery gauge. On proto 0 the power key switches the device off only from the
+firmware: in the bootloader, unplug the battery.
 
 ## Bluetooth
 
