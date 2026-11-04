@@ -407,7 +407,7 @@
    {
     "label": "Gerbers",
     "filename": "ambire-ice-v4-pack_gerbers.zip",
-    "bytes": 11958,
+    "bytes": 12000,
     "part": "enclosure/files/ambire-ice-v4-pack_gerbers.zip.b64.txt",
     "b64": true
    },
@@ -428,10 +428,17 @@
   ],
   "case": [
    {
-    "label": "Case and battery pack: 3MF, STL and STEP (zip)",
+    "label": "Case: 3MF and STL (zip)",
     "filename": "ambire-ice-case.zip",
-    "bytes": 748452,
+    "bytes": 382415,
     "part": "enclosure/files/ambire-ice-case.zip.b64.txt",
+    "b64": true
+   },
+   {
+    "label": "Battery pack tray and frame: 3MF and STL (zip)",
+    "filename": "ambire-ice-battery-tray.zip",
+    "bytes": 164120,
+    "part": "enclosure/files/ambire-ice-battery-tray.zip.b64.txt",
     "b64": true
    }
   ]
