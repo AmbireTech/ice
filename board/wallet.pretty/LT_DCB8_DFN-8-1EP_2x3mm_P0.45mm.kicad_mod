@@ -118,6 +118,16 @@
 		(layer "F.CrtYd")
 		(uuid "3f98eed6-c1f1-4450-87ec-ae8faa903ecb")
 	)
+	(fp_poly
+		(pts (xy -1.28 1.15) (xy -1.28 1.75) (xy -1.0 1.45))
+		(stroke
+			(width 0)
+			(type solid)
+		)
+		(fill yes)
+		(layer "F.SilkS")
+		(uuid "4b3e8f3f-b439-4a8e-8707-a301989fc1bd")
+	)
 	(pad "1" smd roundrect
 		(at -0.675 1.4)
 		(size 0.25 0.7)

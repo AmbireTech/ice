@@ -12,6 +12,9 @@
   stock.txt                 JLC's own stock for each part, read live; RUN is the boards in a run
                             (a part whose stock covers fewer is SHORT)
 
+Refuses (writes nothing) when a polarized part's silk shows no readable pin-1 mark
+(scripts/checkPin1Silk.py): JLC holds the order and asks by mail for those.
+
 The origin of the plots and the positions is the outline's bottom-left corner (as the
 device board's export_fab.py does). Rotation: KiCad's angle, bottom parts as 180 - angle;
 JLC's own reference for the clips and the connector differs part by part, so check every
@@ -50,6 +53,13 @@ def jlc_stock(code):
 
 
 def main():
+    # JLC holds the order and asks by mail for any polarized part whose silk does not show
+    # its orientation (scripts/checkPin1Silk.py); a subprocess: one LoadBoard per process
+    pin1 = subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                                        "scripts/checkPin1Silk.py"), BOARD], capture_output=True, text=True)
+    if pin1.returncode != 0:
+        sys.exit("refusing to write the order set:\n" + "\n".join(
+            l for l in pin1.stdout.splitlines() if l.startswith(("ERROR", "pin-1"))))
     shutil.rmtree(OUT, ignore_errors=True)
     gerb = os.path.join(OUT, "gerbers")
     os.makedirs(gerb)

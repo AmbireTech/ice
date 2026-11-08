@@ -42,6 +42,7 @@ $KICAD_PY scripts/syncBoard.py           # dry run; --apply writes; --refresh RE
 $KICAD_PY scripts/checkPinNets.py        # IC pads vs datasheet pin tables, on the board copper
 $KICAD_PY scripts/checkFpc.py            # connector / lever / antenna orientation, tail lengths
 $KICAD_PY scripts/checkParts.py board/wallet.kicad_pcb   # each land vs the land JLC places that part on
+$KICAD_PY scripts/checkPin1Silk.py [BOARD]   # every polarized part's silk shows its orientation (else JLC holds the order and asks)
 $KICAD_PY scripts/refreshKeepouts.py     # redraw the keep-out rule areas after a connector moves
 
 # routing aids (all work on a copy)
