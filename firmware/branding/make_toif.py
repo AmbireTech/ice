@@ -38,7 +38,10 @@ def main():
             check=True, capture_output=True).stdout
     if len(gray) != a.width * a.height:
         sys.exit(f"error: got {len(gray)} pixels, want {a.width * a.height}")
-    packed = bytes((gray[i] & 0xF0) | (gray[i + 1] >> 4) for i in range(0, len(gray), 2))
+    # "TOIG" is trezorlib's grayscale_eh: of each pixel pair the right one in
+    # the high nibble, the left in the low one (the other order swaps every
+    # pair on screen and leaves the edges jagged)
+    packed = bytes((gray[i + 1] & 0xF0) | (gray[i] >> 4) for i in range(0, len(gray), 2))
     z = zlib.compressobj(level=9, wbits=-10)
     data = z.compress(packed) + z.flush()
     a.out.write_bytes(b"TOIG" + struct.pack("<HHI", a.width, a.height, len(data)) + data)
