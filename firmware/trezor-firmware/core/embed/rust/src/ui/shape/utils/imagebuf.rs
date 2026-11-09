@@ -89,4 +89,20 @@ where
     pub fn view(&self) -> BitmapView<'_> {
         self.canvas.view()
     }
+
+    /// Ambire boards, [ambire_camera]: the whole buffer's bytes, for an
+    /// owner that does not show its image meanwhile (the home screen lends
+    /// it to the camera test as frame and decoder memory). Whatever it held
+    /// is overwritten.
+    #[cfg(feature = "ambire_camera")]
+    pub fn raw_bytes(&mut self) -> &mut [u8] {
+        // SAFETY: this instance holds the buffer's lock, and the &mut self
+        // borrow keeps its canvas from being used while the slice lives
+        unsafe {
+            core::slice::from_raw_parts_mut(
+                core::ptr::addr_of_mut!(IMAGE_BUFFER.bytes) as *mut u8,
+                IMAGE_BUFFER_SIZE,
+            )
+        }
+    }
 }

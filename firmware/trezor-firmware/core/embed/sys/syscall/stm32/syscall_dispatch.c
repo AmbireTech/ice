@@ -74,6 +74,10 @@
 #include <sec/optiga.h>
 #endif
 
+#ifdef USE_AMBIRE_CAMERA
+#include <io/camera.h>
+#endif
+
 #ifdef USE_POWER_MANAGER
 #include <io/power_manager.h>
 #endif
@@ -1157,6 +1161,31 @@ __attribute((no_stack_protector)) void syscall_handler(uint32_t *args,
       args[0] = ts_code(status);
     } break;
 #endif
+
+#ifdef USE_AMBIRE_CAMERA
+    case SYSCALL_AMBIRE_CAMERA_OPEN: {
+      args[0] = camera_open(args[0]);
+    } break;
+
+    case SYSCALL_AMBIRE_CAMERA_CLOSE: {
+      camera_close();
+    } break;
+
+    case SYSCALL_AMBIRE_CAMERA_SET_ZOOM: {
+      args[0] = camera_set_zoom(args[0]);
+    } break;
+
+    case SYSCALL_AMBIRE_CAMERA_CAPTURE: {
+      uint8_t *buf = (uint8_t *)args[0];
+      size_t size = args[1];
+      args[0] = camera_capture__verified(buf, size);
+    } break;
+
+    case SYSCALL_AMBIRE_CAMERA_GET_STATUS: {
+      camera_status_t *status = (camera_status_t *)args[0];
+      camera_get_status__verified(status);
+    } break;
+#endif  // USE_AMBIRE_CAMERA
 
     default:
       applet_exit_fatal(applet, "Invalid syscall", __FILE_NAME__, __LINE__);

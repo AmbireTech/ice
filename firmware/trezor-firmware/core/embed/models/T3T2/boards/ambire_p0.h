@@ -9,9 +9,9 @@
 //
 // Not driven by this board file yet: the OPTIGA secure element (I2C4; not
 // fitted on the first boards), the SE050 beyond its random number generator
-// (below), the camera (DCMI), the BQ25185 charger and the MAX17048 battery
-// gauge. The nRF52840 radio (USART3 2-wire, behind the airgap switch) runs
-// Trezor's BLE stack over a UART link (below).
+// (below), the BQ25185 charger and the MAX17048 battery gauge. The nRF52840
+// radio (USART3 2-wire, behind the airgap switch) runs Trezor's BLE stack over
+// a UART link (below). The camera is driven by [ambire_camera] (below).
 
 #define VDD_3V3 1
 
@@ -179,6 +179,51 @@
 #define RADIO_UART_TX_PIN GPIO_PIN_10
 #define RADIO_UART_RX_PORT GPIOB
 #define RADIO_UART_RX_PIN GPIO_PIN_11
+
+// QR camera on J_CAM, [ambire_camera] (io/camera/stm32u5/camera.c): a 24-pin
+// DVP module in the ESP32-CAM pinout (OV2640, OV5640 or GC2145). CAM_EN switches
+// on the module's AVDD and DVDD regulators (100 k pull-down: off while the
+// MCU is in reset); DOVDD is the 3.3 V rail. CAM_RST is RESETB (active low);
+// PWDN is tied low at the connector. XCLK from TIM3_CH2. SCCB on I2C2 with
+// 4.7 k pull-ups. DCMI: 8-bit data on the sensor's Y2..Y9 (its top byte).
+#define CAMERA_EN_PORT GPIOC
+#define CAMERA_EN_PIN GPIO_PIN_12
+#define CAMERA_RST_PORT GPIOE
+#define CAMERA_RST_PIN GPIO_PIN_0
+#define CAMERA_XCLK_PORT GPIOB
+#define CAMERA_XCLK_PIN GPIO_PIN_5
+#define CAMERA_XCLK_AF GPIO_AF2_TIM3
+#define CAMERA_I2C_INSTANCE I2C2
+#define CAMERA_I2C_AF GPIO_AF4_I2C2
+#define CAMERA_I2C_SCL_PORT GPIOB
+#define CAMERA_I2C_SCL_PIN GPIO_PIN_13
+#define CAMERA_I2C_SDA_PORT GPIOB
+#define CAMERA_I2C_SDA_PIN GPIO_PIN_14
+// DCMI: AF10 except D3 (PC9) and D5 (PD3), which are AF4 (ST's GPIO modes
+// database for the U5)
+#define CAMERA_DCMI_PINS                                                     \
+  {                                                                          \
+      {GPIOC, GPIO_PIN_6, GPIO_AF10_DCMI},   /* D0 */                        \
+      {GPIOC, GPIO_PIN_7, GPIO_AF10_DCMI},   /* D1 */                        \
+      {GPIOC, GPIO_PIN_8, GPIO_AF10_DCMI},   /* D2 */                        \
+      {GPIOC, GPIO_PIN_9, GPIO_AF4_DCMI},    /* D3 */                        \
+      {GPIOC, GPIO_PIN_11, GPIO_AF10_DCMI},  /* D4 */                        \
+      {GPIOD, GPIO_PIN_3, GPIO_AF4_DCMI},    /* D5 */                        \
+      {GPIOB, GPIO_PIN_8, GPIO_AF10_DCMI},   /* D6 */                        \
+      {GPIOB, GPIO_PIN_9, GPIO_AF10_DCMI},   /* D7 */                        \
+      {GPIOD, GPIO_PIN_9, GPIO_AF10_DCMI},   /* PIXCLK */                    \
+      {GPIOD, GPIO_PIN_8, GPIO_AF10_DCMI},   /* HSYNC (the sensor's HREF) */ \
+      {GPIOB, GPIO_PIN_7, GPIO_AF10_DCMI},   /* VSYNC */                     \
+  }
+#define CAMERA_VSYNC_PORT GPIOB
+#define CAMERA_VSYNC_PIN GPIO_PIN_7
+#define CAMERA_HREF_PORT GPIOD
+#define CAMERA_HREF_PIN GPIO_PIN_8
+#define CAMERA_PCLK_PORT GPIOD
+#define CAMERA_PCLK_PIN GPIO_PIN_9
+// GPDMA1 channel 7: free on this board (see the radio's channels above)
+#define CAMERA_DMA_CHANNEL GPDMA1_Channel7
+#define CAMERA_DMA_CHANNEL_NUM 7
 
 // No revision straps on proto 0: four unconnected pins with pull-downs read
 // revision 0. A later board can strap them high.

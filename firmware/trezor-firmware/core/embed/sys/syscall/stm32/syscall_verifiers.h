@@ -418,4 +418,15 @@ ts_t app_get_heap__verified(void **heap_ptr, size_t *heap_size);
 
 #endif
 
+// ---------------------------------------------------------------------
+#ifdef USE_AMBIRE_CAMERA
+
+#include <io/camera.h>
+
+bool camera_capture__verified(uint8_t *buf, size_t size);
+
+void camera_get_status__verified(camera_status_t *status);
+
+#endif  // USE_AMBIRE_CAMERA
+
 #endif  // KERNEL

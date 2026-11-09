@@ -168,6 +168,8 @@ Against the upstream base:
 | `rust/.../layout_delizia/ui_firmware.rs`, `component/homescreen.rs`, `component_msg_obj.rs` | Delizia's Bluetooth pairing screens (device name, pairing code, waiting), and a swipe up on the home screen |
 | `src/apps/homescreen/__init__.py`, `src/apps/management/ble/pair_from_homescreen.py` (new), `src/ble.py` | the swipe up starts pairing; the boot waits 0.5 s, not 5 s, for a radio that the airgap switch may have off |
 | `src/apps/homescreen/__init__.py` | firmware signed with a "DO NOT USE" vendor header (Trezor's dev keys) says so on the home screen: "Backup needed; dev", or "Dev firmware" when there is no other notice |
+| `io/camera/` (new: `stm32u5/camera.c`, `qr/`, `inc/io/camera.h`, `inc/io/qr_scan.h`), `io/build.rs`, `io/Cargo.toml`, `sys/syscall/` (numbers, dispatch, verifiers, stubs), `rust/build.rs`, `rust/trezorhal.h`, `rust/src/trezorhal/camera.rs` (new) | `[ambire_camera]`: the QR camera. The kernel drives it (power, XCLK, SCCB, DCMI snapshots by GPDMA into a buffer the app owns); the app decodes with quirc (vendored in `io/camera/qr/quirc`, see its `README.ambire`). See [QR camera test](#qr-camera-test) |
+| `rust/.../component/ambire_camera.rs` (new), `homescreen.rs`, `shape/utils/imagebuf.rs` | `[ambire_camera]`: the camera test screen, which takes the home screen's swipe up while it is built in |
 
 What the build drives (compiled, not yet run on a board): the display, touch,
 USB, the boot chain and TrustZone. The backlight is on/off only.
@@ -198,7 +200,8 @@ someone who gets code running in the chip's secure world can try PINs at the
 chip's speed.
 
 What is not driven yet: the OPTIGA (not fitted on the first boards), the
-SE050 beyond its random number generator, the camera, the charger and the
+SE050 beyond its random number generator, the camera (beyond the test
+screen below), the charger and the
 battery gauge. On proto 0 the power key switches the device off only from the
 firmware: in the bootloader, unplug the battery.
 
@@ -227,6 +230,50 @@ retried.
 
 None of this has run on a board yet: the radio side and the timing (the
 radio's start-up, the power-off time between restarts) are unchecked.
+
+## QR camera test
+
+`[ambire_camera]` in the board file builds a camera test into the firmware.
+While it is in, **the swipe up on the home screen opens the camera test
+instead of Bluetooth pairing** (pairing is then out of reach).
+
+- The top of the screen shows the camera's live picture in gray, 240 x 240.
+  A QR code in view is decoded on the device; while one decodes, the picture
+  gets a green frame, its corners are marked and its text is shown below.
+- **Tap the picture** to step through three zoom levels (the middle one first).
+  Wider views see more; narrower ones resolve smaller or farther codes.
+- **The top-left corner** closes the test and switches the camera off.
+- The lines below the picture: the sensor found, the zoom and frame rate;
+  frames captured and failed, and the capture and decode times; the last code
+  decoded, or what was seen.
+- Before the first frame, the second line shows what the camera's sync lines
+  did after it started (VSYNC and HREF: share of time high per mille / changes
+  seen; PCLK: changes seen). All zero means the sensor is not streaming.
+- A frame that comes in wrong is still shown, with a red border and "FAIL",
+  the bytes that arrived and flags (`0x100` more data than a frame, `0x400`
+  no frame end in time, and the camera interface's own: `0x002` overrun). A
+  sheared picture means lines of the wrong length; a partial one, a frame cut
+  short.
+- If the camera does not start, the screen says why: nothing answered at the
+  sensor's address, an unknown chip id, or the register write that failed,
+  and which bus addresses did answer. Below that: the camera bus lines'
+  resting levels (`SCL 1 SDA 1`: pulled up, nothing holds them down), the bus
+  error of the last chip-id read (`0x04`: nothing acknowledged, `0x20`: timed
+  out) and whether the camera clock leaves the chip (`XCLK` level changes
+  seen; 0: none). When nothing answers, the camera stays powered and clocked
+  on that screen, so its supplies (2.8 V, 1.3 V) and clock can be measured,
+  until the test is closed. Tap to retry.
+
+Supported sensors: the OmniVision OV2640 (the module proto 0 was drawn for)
+and OV5640 and the GalaxyCore GC2145 modules in the ESP32-CAM pinout, told
+apart by their bus addresses and chip ids. On proto 0 the module's pin 1 (its
+own numbering: NC) goes at the end of the connector nearer the board's top
+edge. Each zoom level is a
+sensor mode from Espressif's esp32-camera driver (the register tables in
+`io/camera/stm32u5/camera_sensors.h` are generated from it by
+`bringup/camera/gen_sensor_tables.py` and, for the OV2640,
+`bringup/camera/dump_ov2640_tables.c`). Works on proto 0 with its OV2640
+(2026-11-09); the OV5640 and GC2145 paths are not checked on a board yet.
 
 ## On proto 0 (2026-10-30)
 

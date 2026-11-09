@@ -1724,4 +1724,37 @@ access_violation:
 
 #endif  // USE_APP_LOADING
 
+// ---------------------------------------------------------------------
+#ifdef USE_AMBIRE_CAMERA
+
+// The DMA writes the frame into this buffer after the call returns, so the
+// app must own all of it
+bool camera_capture__verified(uint8_t *buf, size_t size) {
+  if (!probe_write_access(buf, size)) {
+    goto access_violation;
+  }
+
+  return camera_capture(buf, size);
+
+access_violation:
+  apptask_access_violation();
+  return false;
+}
+
+void camera_get_status__verified(camera_status_t *status) {
+  if (!probe_write_access(status, sizeof(*status))) {
+    goto access_violation;
+  }
+
+  camera_status_t status_copy = {0};
+  camera_get_status(&status_copy);
+  *status = status_copy;
+  return;
+
+access_violation:
+  apptask_access_violation();
+}
+
+#endif  // USE_AMBIRE_CAMERA
+
 #endif  // KERNEL

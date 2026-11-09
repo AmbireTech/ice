@@ -20,6 +20,11 @@
 #include <io/ble.h>
 #endif
 
+#ifdef USE_AMBIRE_CAMERA
+#include <io/camera.h>
+#include <io/qr_scan.h>
+#endif
+
 #ifdef USE_BUTTON
 #include <io/button.h>
 #endif

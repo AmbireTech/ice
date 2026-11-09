@@ -847,6 +847,35 @@ ts_t nfc_transceive(const nfc_apdu_message_t *cmd, nfc_apdu_message_t *resp) {
 #endif
 
 // =============================================================================
+// camera.h (Ambire boards)
+// =============================================================================
+
+#ifdef USE_AMBIRE_CAMERA
+
+#include <io/camera.h>
+
+bool camera_open(uint32_t zoom) {
+  return (bool)syscall_invoke1(zoom, SYSCALL_AMBIRE_CAMERA_OPEN);
+}
+
+void camera_close(void) { syscall_invoke0(SYSCALL_AMBIRE_CAMERA_CLOSE); }
+
+bool camera_set_zoom(uint32_t zoom) {
+  return (bool)syscall_invoke1(zoom, SYSCALL_AMBIRE_CAMERA_SET_ZOOM);
+}
+
+bool camera_capture(uint8_t *buf, size_t size) {
+  return (bool)syscall_invoke2((uint32_t)buf, size,
+                               SYSCALL_AMBIRE_CAMERA_CAPTURE);
+}
+
+void camera_get_status(camera_status_t *status) {
+  syscall_invoke1((uint32_t)status, SYSCALL_AMBIRE_CAMERA_GET_STATUS);
+}
+
+#endif  // USE_AMBIRE_CAMERA
+
+// =============================================================================
 // power_manager.h
 // =============================================================================
 

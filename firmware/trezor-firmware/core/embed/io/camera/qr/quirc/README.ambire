@@ -1,0 +1,17 @@
+quirc (https://github.com/dlbeer/quirc), ISC license (LICENSE), commit
+f2e4271: lib/decode.c, identify.c, version_db.c, quirc.h,
+quirc_internal.h.
+
+Not taken: lib/quirc.c (quirc_new/quirc_resize allocate with malloc). The
+firmware has no heap for it; ../qr_scan.c builds the decoder state in a
+caller's buffer instead.
+
+Changed: decode.c, the two big locals moved off the stack (the app's stack is
+32 kB) into the caller's buffer: quirc_decode()'s struct datastream (8.9 kB)
+and quirc_flip()'s struct quirc_code (3.9 kB). Each is now a macro over a
+pointer that ../quirc_decode.c declares before it includes decode.c and sets
+from quirc_ambire_set_scratch(). decode.c no longer builds on its own.
+
+Compiled through ../quirc_*.c, which relax three warnings the firmware treats
+as errors (-Wfloat-conversion, -Wdouble-promotion, -Wsign-compare) and select
+float math.

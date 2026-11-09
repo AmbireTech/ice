@@ -507,8 +507,12 @@ pub struct Homescreen {
     #[cfg(feature = "ambire_game")]
     game: super::ambire_game::Game,
     /// Ambire boards: where the touch began, for the swipe up to Bluetooth
-    #[cfg(feature = "ble")]
+    /// (or to the camera test, when it is built in)
+    #[cfg(any(feature = "ble", feature = "ambire_camera"))]
     swipe_start: Option<Point>,
+    /// Ambire boards: the QR camera test behind the swipe up
+    #[cfg(feature = "ambire_camera")]
+    camera: super::ambire_camera::CameraTest,
 }
 
 pub enum HomescreenMsg {
@@ -519,7 +523,7 @@ pub enum HomescreenMsg {
 }
 
 /// Ambire boards: how far up a touch must travel to count as a swipe
-#[cfg(feature = "ble")]
+#[cfg(any(feature = "ble", feature = "ambire_camera"))]
 const SWIPE_UP_MIN: i16 = 60;
 
 impl Homescreen {
@@ -570,13 +574,15 @@ impl Homescreen {
             label_anim: HideLabelAnimation::new(label_width.max(label_unlocked_width)),
             #[cfg(feature = "ambire_game")]
             game: super::ambire_game::Game::new(),
-            #[cfg(feature = "ble")]
+            #[cfg(any(feature = "ble", feature = "ambire_camera"))]
             swipe_start: None,
+            #[cfg(feature = "ambire_camera")]
+            camera: super::ambire_camera::CameraTest::new(),
         })
     }
 
     /// Ambire boards: true on the touch end of a swipe up
-    #[cfg(feature = "ble")]
+    #[cfg(any(feature = "ble", feature = "ambire_camera"))]
     fn event_swipe_up(&mut self, event: Event) -> bool {
         match event {
             Event::Touch(TouchEvent::TouchStart(pos)) => {
@@ -679,6 +685,12 @@ impl Component for Homescreen {
     }
 
     fn event(&mut self, ctx: &mut EventCtx, event: Event) -> Option<Self::Msg> {
+        // The camera test first: its taps must not count toward the game's
+        #[cfg(feature = "ambire_camera")]
+        if self.camera.event(ctx, event) {
+            return None;
+        }
+
         #[cfg(feature = "ambire_game")]
         if self.game.event(ctx, event) {
             return None;
@@ -694,11 +706,19 @@ impl Component for Homescreen {
 
         self.label_anim.process_event(ctx, event, resume_label);
 
-        #[cfg(feature = "ble")]
+        #[cfg(any(feature = "ble", feature = "ambire_camera"))]
         if self.event_swipe_up(event) {
             // The swipe's touch also started the hold-to-lock delay
             self.delay.stop();
             self.loader.reset();
+            // The camera test takes the swipe up while it is built in; the
+            // home screen never draws its image buffer, so it lends it
+            #[cfg(feature = "ambire_camera")]
+            {
+                self.camera.start(ctx, self.bg_image.raw_bytes());
+                return None;
+            }
+            #[cfg(not(feature = "ambire_camera"))]
             return Some(HomescreenMsg::Bluetooth);
         }
 
@@ -710,6 +730,12 @@ impl Component for Homescreen {
     }
 
     fn render<'s>(&'s self, target: &mut impl Renderer<'s>) {
+        #[cfg(feature = "ambire_camera")]
+        if self.camera.is_active() {
+            self.camera.render(target);
+            return;
+        }
+
         #[cfg(feature = "ambire_game")]
         if self.game.is_active() {
             self.game.render(target);
