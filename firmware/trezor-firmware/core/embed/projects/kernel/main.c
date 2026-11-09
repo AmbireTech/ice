@@ -132,6 +132,10 @@ void ambire_radio_init(void);
 void ambire_power_init(void);
 #endif
 
+#ifdef USE_AMBIRE_CAMERA
+#include <io/camera.h>
+#endif
+
 void drivers_init() {
   ts_t status;
 
@@ -273,6 +277,13 @@ static void kernel_loop(applet_t *coreapp) {
     }
 
   } while (applet_is_alive(coreapp));
+
+#ifdef USE_AMBIRE_CAMERA
+  // Ambire boards: the app is gone however it ended (exit, crash, kill); a
+  // capture it started must not keep its DMA writing, nor the camera stay
+  // powered (the app's own Drop handlers never ran on a crash)
+  camera_close();
+#endif
 }
 
 #ifndef USE_BOOTARGS_RSOD

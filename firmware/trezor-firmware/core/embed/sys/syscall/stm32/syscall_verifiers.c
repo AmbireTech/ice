@@ -1734,6 +1734,15 @@ bool camera_capture__verified(uint8_t *buf, size_t size) {
     goto access_violation;
   }
 
+  // The frame buffer is the app's to draw in, but a capture there would keep
+  // landing on screen after the app is gone (over a kernel error screen):
+  // only the app's own memory may receive frames
+  uintptr_t start = (uintptr_t)buf;
+  uintptr_t fb_start = FB1_RAM_START;
+  if (start < fb_start + FB1_RAM_SIZE && fb_start < start + size) {
+    goto access_violation;
+  }
+
   return camera_capture(buf, size);
 
 access_violation:

@@ -314,6 +314,11 @@ def test_requests(v):
         elif req.data_type == rq.DATA_TYPE_PERSONAL:
             digest = sign_message.message_digest(req.sign_data)
             check(digest.hex() == r["digest"], f"{name}: firmware message digest")
+        elif name == "no-domain-type":
+            # A domain value with no EIP712Domain type is hashed by nobody
+            # (MetaMask v4 hashes an empty domain): the device refuses it
+            # rather than sign something whose shown domain binds nothing
+            expect_data_error(lambda: firmware_typed_digest(req.sign_data), f"{name}: refused")
         else:
             digest = firmware_typed_digest(req.sign_data)
             check(digest.hex() == r["digest"], f"{name}: firmware typed-data digest ({digest.hex()})")
@@ -580,6 +585,50 @@ def test_typed_values():
     )
 
 
+def test_domain_binding():
+    """Audit finding: a domain value EIP712Domain does not declare is never
+    hashed, so it must not pass for a chain binding (nor be accepted at all)"""
+
+    def typed(domain_type, domain, request_chain=None):
+        types = {"T": [{"name": "a", "type": "uint8"}]}
+        if domain_type is not None:
+            types["EIP712Domain"] = [{"name": n, "type": t} for n, t in domain_type]
+        doc = {"types": types, "primaryType": "T", "domain": domain, "message": {"a": 1}}
+        t = td.TypedData(json.dumps(doc).encode())
+        t.check_chain(request_chain)
+        return t
+
+    contract = "0x" + "11" * 20
+    declared = [("name", "string"), ("chainId", "uint256"), ("verifyingContract", "address")]
+    t = typed(declared, {"name": "A", "chainId": 137, "verifyingContract": contract}, 137)
+    check(t.domain_chain_id() == 137, "domain: declared chainId is read")
+    typed(declared, {"name": "A", "chainId": 137, "verifyingContract": contract}, None)
+    expect_data_error(
+        lambda: typed([("name", "string"), ("verifyingContract", "address")],
+                      {"name": "A", "verifyingContract": contract, "chainId": 137}, 137),
+        "domain: undeclared chainId (the audit's attack)",
+    )
+    expect_data_error(
+        lambda: typed([("name", "string")], {"name": "A", "verifyingContract": contract}),
+        "domain: undeclared verifyingContract",
+    )
+    expect_data_error(lambda: typed(None, {"chainId": 1}), "domain: no EIP712Domain type, values present")
+    expect_data_error(
+        lambda: typed([("name", "string")], {"name": "A"}, 1),
+        "domain: request names a network, domain signs none",
+    )
+    expect_data_error(
+        lambda: typed(declared, {"name": "A", "chainId": 1, "verifyingContract": contract}, 137),
+        "domain: chain differs from the request's",
+    )
+    deep = "uint8" + "[]" * 33
+    expect_data_error(
+        lambda: td.TypedData(json.dumps({"types": {"T": [{"name": "a", "type": deep}]},
+                                         "primaryType": "T", "domain": {}, "message": {"a": []}}).encode()),
+        "typed: deeply nested array type refused before recursing",
+    )
+
+
 def test_tx_signature():
     req = rq.SignRequest()
     r, s = bytes(range(32)), bytes(range(32, 64))
@@ -619,7 +668,7 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     for t in (test_requests, test_hostile_requests, test_fuzz):
         t(v)
-    for t in (test_rlp, test_json, test_typed_values, test_tx_signature):
+    for t in (test_rlp, test_json, test_typed_values, test_domain_binding, test_tx_signature):
         t()
     write_device_cbor(v, out)
     print(f"{COUNT[0]} checks, {len(FAILURES)} failures")

@@ -153,9 +153,7 @@ async def sign_request(cbor: AnyBytes) -> bytes:
         from .typed_data import TypedData
 
         typed = TypedData(req.sign_data)
-        domain_chain = typed.domain_chain_id()
-        if None not in (domain_chain, req.chain_id) and domain_chain != req.chain_id:
-            raise DataError("The typed data's chain differs from the request's")
+        typed.check_chain(req.chain_id)
         msg = EthereumSignTypedData(
             address_n=req.address_n,
             primary_type=typed.primary_type,

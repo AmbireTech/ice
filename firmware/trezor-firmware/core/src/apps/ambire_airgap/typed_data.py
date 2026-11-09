@@ -284,10 +284,30 @@ class TypedData:
         self.message = root["message"]
         if not isinstance(self.domain, dict) or not isinstance(self.message, dict):
             raise _fail()
+        # Only the members EIP712Domain declares are hashed: a domain value it
+        # does not declare would be shown nowhere and signed nowhere, yet could
+        # pass for a binding (a chainId that binds nothing). Refuse it.
+        self.domain_members = [m["name"] for m in types.get("EIP712Domain", [])]
+        for key in self.domain:
+            if key not in self.domain_members:
+                raise _fail("The typed data's domain has a value its type does not sign")
 
     def domain_chain_id(self) -> int | None:
-        chain_id = self.domain.get("chainId")
-        return None if chain_id is None else _integer(chain_id)
+        """The domain's chainId, only when EIP712Domain declares (signs) it"""
+        if "chainId" not in self.domain_members or "chainId" not in self.domain:
+            return None
+        return _integer(self.domain["chainId"])
+
+    def check_chain(self, request_chain_id: int | None) -> None:
+        """A request that names a network must get a signature bound to it:
+        the domain must declare (sign) a chainId, and it must be that one"""
+        if request_chain_id is None:
+            return
+        domain_chain = self.domain_chain_id()
+        if domain_chain is None:
+            raise DataError("The typed data is not bound to the request's network")
+        if domain_chain != request_chain_id:
+            raise DataError("The typed data's chain differs from the request's")
 
     def field_type(self, type_name: str) -> EthereumFieldType:
         """As trezorlib's get_field_type, with every size checked"""
@@ -300,6 +320,9 @@ class TypedData:
         if len(type_name) > _MAX_NAME + 8:
             raise _fail("Invalid type")
         if _is_array(type_name):
+            # Refused before the recursion below walks each level
+            if type_name.count("[") > 1:
+                raise _fail("Nested arrays are not supported")
             data_type = EDT.ARRAY
             size = _array_size(type_name)
             entry_type = self.field_type(_array_entry(type_name))

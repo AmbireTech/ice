@@ -225,10 +225,8 @@ typedef enum {
   SYSCALL_TROPIC_ENSURE_FW_UPDATED,
   SYSCALL_TROPIC_GET_UPDATE_STATE,
 
-  // Ambire boards, [ambire_camera]
-  SYSCALL_AMBIRE_CAMERA_OPEN,
+  // Ambire boards, [ambire_camera] (open and set-zoom are below: they block)
   SYSCALL_AMBIRE_CAMERA_CLOSE,
-  SYSCALL_AMBIRE_CAMERA_SET_ZOOM,
   SYSCALL_AMBIRE_CAMERA_CAPTURE,
   SYSCALL_AMBIRE_CAMERA_GET_STATUS,
 
@@ -255,5 +253,11 @@ typedef enum {
   SYSCALL_STORAGE_DELETE,
   SYSCALL_STORAGE_SET_COUNTER,
   SYSCALL_STORAGE_NEXT_COUNTER,
+
+  // Ambire boards, [ambire_camera]: they wait on the sensor for up to ~1 s
+  // (power-up, register tables, the sync-pin probe), so they run in the
+  // kernel thread rather than block the SVC handler
+  SYSCALL_AMBIRE_CAMERA_OPEN,
+  SYSCALL_AMBIRE_CAMERA_SET_ZOOM,
 
 } syscall_number_t;

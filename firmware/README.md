@@ -372,6 +372,26 @@ m/44'/60'/0'/0/i (Ledger Live style accounts). Only the OV2640 path has
 scanned codes on a board so far; the airgapped signing itself has not run on a
 board yet (see `tests/airgap/` for what the host tests cover).
 
+Security review (2026-11-09, an independent audit of the camera, UR, request
+and signing code, compared with Keystone, Keycard Shell, SeedSigner, Jade and
+Passport, and checked against published quirc, BC-UR and wallet advisories):
+no memory corruption, display/sign mismatch, wrong-key signing or sandbox
+escape found; the vendored quirc carries every published fix. Fixed after it:
+
+- Typed data: a domain value that `EIP712Domain` does not declare is refused
+  (nobody hashes it, so it could pose as a chain binding), the chain is read
+  only from a declared `chainId`, and a request that names a network is
+  refused unless the typed data declares and matches it. A dApp's typed data
+  with domain values but no `EIP712Domain` type is therefore refused.
+- The kernel switches the camera off whenever the app ends (also on a crash),
+  and a capture may not target the display's frame buffer.
+- Opening the camera and changing the zoom wait on the sensor for up to a
+  second: they run in the kernel thread, not in the system-call handler.
+
+Known and accepted for now: the request's origin ("ambire") is not shown;
+typed data can be approved without opening its details (Trezor's own EIP-712
+screens); a scan has no time limit (Cancel ends it).
+
 `tests/airgap/run.sh` runs the host tests: the request streams are made with
 the Ambire app's own libraries (all four kinds, still and animated, in order,
 shuffled, with lost and repeated parts, from mixed parts only), malformed and
