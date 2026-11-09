@@ -245,8 +245,88 @@ retried.
   in both chips; ours have none). The bootloader has no Bluetooth: firmware
   updates go over USB.
 
-None of this has run on a board yet: the radio side and the timing (the
-radio's start-up, the power-off time between restarts) are unchecked.
+Works on proto 0 (2026-11-09): bonding with a Mac, THP pairing with code
+entry, an encrypted session, and an EIP-1559 transaction reviewed and
+confirmed on the device; the signature recovers to the device's own
+`m/44'/60'/0'/0/0` address. An idle connection stays up (40 s measured with
+nothing sent).
+
+### What the home screen shows
+
+The top-right corner says where the device stands, re-read every second:
+
+| Shown | Meaning |
+|---|---|
+| `AIR` | the airgap switch is on AIR: no radio, no USB data; the swipe up opens QR signing |
+| `BT off` | Bluetooth is switched off, or the radio does not answer |
+| `BT not paired` | on, but no phone or computer paired yet |
+| `BT pairing` | the pairing screen is up, waiting for a host |
+| `BT ready` | paired; no host connected right now (a paired host can connect at any time, no swipe needed) |
+| `BT connected` (green) | a paired host is connected |
+
+### Driving it from a computer
+
+Two pairings happen, in this order: the computer's operating system bonds
+with the radio (Bluetooth level, a 6-digit code on both screens), then the
+app pairs with the device itself over that link (Trezor's THP, a code shown on
+the device and typed into the app). Both are once per computer.
+
+Set up `trezorctl` with Bluetooth (macOS: use Homebrew's Python, bleak's macOS
+backend does not build on the system Python 3.9):
+
+```sh
+python3.13 -m venv ~/ble-venv
+~/ble-venv/bin/pip install "firmware/trezor-firmware/python[ble,ethereum]" keyrings.alt
+```
+
+1. **Bond (once).** Switch off AIR, unlock, swipe up on the home screen: the
+   device shows its Bluetooth name. On macOS open **System Settings ->
+   Bluetooth and keep that window in front**: macOS only shows its half of the
+   pairing prompt while it is open (otherwise the device shows its code, the
+   Mac never answers, and the connection fails with "Encryption is
+   insufficient"). Then:
+
+   ```sh
+   ~/ble-venv/bin/trezorctl -B ble connect
+   ```
+
+   Both screens show the same six-digit code: tap it on the device and accept
+   it in the Mac's Bluetooth window, within about 30 s. The home screen then
+   reads `BT ready` or `BT connected`.
+2. **Use it.** Each command opens its own connection (`-B` turns Bluetooth
+   on; the path is printed by `trezorctl -B list`):
+
+   ```sh
+   ~/ble-venv/bin/trezorctl -B list
+   ~/ble-venv/bin/trezorctl -B -p ble:<UUID> ethereum get-address -n "m/44h/60h/0h/0/0"
+   ```
+
+   The first command after bonding pairs the app (THP): the device asks to
+   allow the connection, then shows a code; type it at "Enter code from
+   Trezor". Signing offline, EIP-1559 (`-e 2`) on Sepolia, nothing broadcast:
+
+   ```sh
+   ~/ble-venv/bin/trezorctl -B -p ble:<UUID> ethereum sign-tx -n "m/44h/60h/0h/0/0" \
+       -c 11155111 -i 0 -g 21000 -e 2 --max-gas-fee 2gwei --max-priority-fee 1gwei \
+       0x000000000000000000000000000000000000dEaD 0
+   ```
+
+Traps, all on the computer's side:
+
+- **The link lives only as long as the program holding it.** macOS drops a
+  Bluetooth connection when the process that opened it exits, so
+  `ble connect` followed by another command starts on a dead link. Run the
+  command itself (it connects), or keep one script holding the connection.
+- **Keychain prompts on every run:** trezorctl keeps its THP credentials in
+  the macOS keychain and rewrites them each time, so "Always Allow" does not
+  stick. For testing, run it with `PYTHON_KEYRING_BACKEND=keyrings.alt.file.PlaintextKeyring`
+  (credentials in a plain file) and, to start clean without touching your real
+  ones, a separate `HOME=/some/test/dir`.
+- **A stale credential list** (credentials moved to another keyring) fails
+  with "Not found in keyring: trezorctl/thp-credentials/...": the list and the
+  keyring must come from the same `HOME`.
+- Output piped to a file hides the code prompt until the end: set
+  `PYTHONUNBUFFERED=1`.
 
 ## Airgapped signing
 
@@ -340,6 +420,29 @@ sensor mode from Espressif's esp32-camera driver (the register tables in
 `bringup/camera/gen_sensor_tables.py` and, for the OV2640,
 `bringup/camera/dump_ov2640_tables.c`). Works on proto 0 with its OV2640
 (2026-11-09); the OV5640 and GC2145 paths are not checked on a board yet.
+
+## Proto 0 bring-up: complete (2026-11-09)
+
+Every part on proto 0 that the firmware drives has been brought up on the
+board (owner, 2026-11-09):
+
+| Part | Working on proto 0 | Since |
+|---|---|---|
+| STM32U585: boot chain, TrustZone, firmware updates over USB | yes | 2026-10-30 |
+| Power latch, power key (3 s hold switches off) | yes | 2026-11-03 |
+| Display (NHD-2.4, ST7789 over SPI, mirroring fixed) and backlight (on/off) | yes | 2026-10-30 |
+| Touch (FT5426, tail folded into its connector) | yes | 2026-10-30 |
+| USB: THP pairing, wallet creation, signing | yes | 2026-10-30 |
+| SE050 secure element: random numbers mixed into seeds | yes | 2026-10-30 |
+| Radio (nRF52840): Bluetooth bonding, THP, signing | yes | 2026-11-09 |
+| QR camera (OV2640): live picture, QR codes decoded | yes | 2026-11-09 |
+| Airgap switch: USB data and radio cut, position read by the firmware | yes | 2026-11-09 |
+
+Not driven by the firmware, so not part of it: the BQ25185 charger (it
+charges the cell from USB on its own, seen working) and the MAX17048 battery
+gauge (not read yet). The OPTIGA Trust M is not fitted on proto 0.
+Airgapped signing over QR (the airgap menu) is built but has not run on the
+board yet.
 
 ## On proto 0 (2026-10-30)
 
