@@ -1,5 +1,5 @@
-//! Ambire boards, [ambire_camera]: a QR camera test behind the swipe up on
-//! the home screen (in place of Bluetooth pairing while it is built in).
+//! Ambire boards, [ambire_camera]: a QR camera test, in the airgap menu
+//! (the swipe up on the home screen while the airgap switch is on AIR).
 //!
 //! The top 240x240 shows the camera's live grayscale frame; the strip below
 //! the sensor, the frame rate and counters, and the last QR code decoded.
@@ -7,9 +7,8 @@
 //! does not start, the screen says why (what answered on its bus, which
 //! register write failed); a tap retries.
 //!
-//! Memory: the home screen holds the UI's one full-screen image buffer but
-//! never draws it, so the test borrows it while it runs, as the QR decoder's
-//! arena. The DMA writes each frame straight into the decoder's image; the
+//! Memory: the test borrows the UI's one full-screen image buffer, which its
+//! screen holds (ambire_airgap.rs), as the QR decoder's arena. The DMA writes each frame straight into the decoder's image; the
 //! frame is painted first, then decoded (which thresholds it in place), then
 //! the next one captured. Bring-up only: nothing leaves the device.
 
@@ -57,14 +56,14 @@ enum Phase {
 }
 
 /// Draws an 8-bit grayscale bitmap as white over what is beneath (black):
-/// the RGB565 screen can blend MONO8, not copy it
-struct GrayImage<'a> {
-    area: Rect,
-    view: BitmapView<'a>,
+/// the RGB565 screen can blend MONO8, not copy it (the QR scan uses it too)
+pub(super) struct GrayImage<'a> {
+    pub(super) area: Rect,
+    pub(super) view: BitmapView<'a>,
 }
 
 impl<'a> GrayImage<'a> {
-    fn render(self, renderer: &mut impl Renderer<'a>) {
+    pub(super) fn render(self, renderer: &mut impl Renderer<'a>) {
         renderer.render_shape(self);
     }
 }
@@ -642,8 +641,8 @@ impl CameraTest {
 
 impl Drop for CameraTest {
     fn drop(&mut self) {
-        // The home screen is going away (another layout took over): the DMA
-        // must not keep writing a buffer that is no longer ours
+        // The screen is going away (another layout took over): the DMA must
+        // not keep writing a buffer that is no longer ours
         if self.active {
             camera::close();
         }

@@ -179,6 +179,9 @@ impl ComponentMsgObj for Homescreen {
             // Ambire boards: the swipe up to Bluetooth pairing, as Eckhart's menu
             #[cfg(feature = "ble")]
             HomescreenMsg::Bluetooth => Ok(INFO.as_obj()),
+            // Ambire boards: the swipe up while airgapped, the QR signing menu
+            #[cfg(feature = "ambire_camera")]
+            HomescreenMsg::Airgap => "ambire_airgap".try_into(),
         }
     }
 }
@@ -190,6 +193,8 @@ impl ComponentMsgObj for Lockscreen {
             // Only the homescreen sends it
             #[cfg(feature = "ble")]
             HomescreenMsg::Bluetooth => Ok(CANCELLED.as_obj()),
+            #[cfg(feature = "ambire_camera")]
+            HomescreenMsg::Airgap => Ok(CANCELLED.as_obj()),
         }
     }
 }

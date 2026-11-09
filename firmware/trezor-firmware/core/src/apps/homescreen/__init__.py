@@ -90,6 +90,11 @@ async def homescreen() -> None:
         from apps.management.ble.pair_from_homescreen import pair_from_homescreen
 
         return await pair_from_homescreen()
+    elif res == "ambire_airgap":
+        # Ambire boards: the swipe up while airgapped, QR signing ([ambire_camera])
+        from apps.ambire_airgap import airgap_menu
+
+        return await airgap_menu()
     lock_device()
 
 

@@ -136,6 +136,9 @@ static void _librust_qstrs(void) {
   MP_QSTR_allow_cancel;
   MP_QSTR_allow_empty;
   MP_QSTR_allow_pairing;
+  MP_QSTR_ambire_camera_test;
+  MP_QSTR_ambire_scan_ur;
+  MP_QSTR_ambire_show_ur;
   MP_QSTR_amount;
   MP_QSTR_amount_change;
   MP_QSTR_amount_label;
@@ -297,6 +300,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_can_go_back;
   MP_QSTR_cancel;
   MP_QSTR_case_sensitive;
+  MP_QSTR_cbor;
   MP_QSTR_channel_close;
   MP_QSTR_channel_close_all;
   MP_QSTR_channel_info;
@@ -978,6 +982,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_type_for_wire;
   MP_QSTR_unpair;
   MP_QSTR_update_params;
+  MP_QSTR_ur_type;
   MP_QSTR_usb_event;
   MP_QSTR_user_fee_change;
   MP_QSTR_value;

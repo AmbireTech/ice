@@ -991,6 +991,37 @@ extern "C" fn new_show_ble_pairing_code(
     unimplemented!()
 }
 
+// Ambire boards, [ambire_camera]: the airgapped QR screens
+// (layout_delizia/component/ambire_airgap.rs). Prefix parameters with `_` to
+// avoid unused variable warnings when building without them.
+#[cfg(all(feature = "ambire_camera", feature = "layout_delizia"))]
+use crate::ui::layout_delizia::component::ambire_airgap::micropython as ambire_airgap;
+
+extern "C" fn new_ambire_scan_ur(_n_args: usize, _args: *const Obj, _kwargs: *mut Map) -> Obj {
+    #[cfg(all(feature = "ambire_camera", feature = "layout_delizia"))]
+    return ambire_airgap::call(_n_args, _args, _kwargs, ambire_airgap::scan_ur);
+    #[cfg(not(all(feature = "ambire_camera", feature = "layout_delizia")))]
+    unimplemented!()
+}
+
+extern "C" fn new_ambire_show_ur(_n_args: usize, _args: *const Obj, _kwargs: *mut Map) -> Obj {
+    #[cfg(all(feature = "ambire_camera", feature = "layout_delizia"))]
+    return ambire_airgap::call(_n_args, _args, _kwargs, ambire_airgap::show_ur);
+    #[cfg(not(all(feature = "ambire_camera", feature = "layout_delizia")))]
+    unimplemented!()
+}
+
+extern "C" fn new_ambire_camera_test(
+    _n_args: usize,
+    _args: *const Obj,
+    _kwargs: *mut Map,
+) -> Obj {
+    #[cfg(all(feature = "ambire_camera", feature = "layout_delizia"))]
+    return ambire_airgap::call(_n_args, _args, _kwargs, ambire_airgap::camera_test);
+    #[cfg(not(all(feature = "ambire_camera", feature = "layout_delizia")))]
+    unimplemented!()
+}
+
 extern "C" fn new_show_thp_pairing_code(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
     let block = move |_args: &[Obj], kwargs: &Map| {
         let title: TString = kwargs.get(Qstr::MP_QSTR_title)?.try_into()?;
@@ -1976,6 +2007,26 @@ pub static mp_module_trezorui_api: Module = obj_module! {
     ///     """BLE pairing: second screen (pairing code).
     ///     Returns on BLEEvent::{PairingCanceled, Disconnected}."""
     Qstr::MP_QSTR_show_ble_pairing_code => obj_fn_kw!(0, new_show_ble_pairing_code).as_obj(),
+
+    /// def ambire_scan_ur() -> LayoutContext[tuple[str, bytes] | str | UiResult]:
+    ///     """Ambire boards: scan a UR (one QR code or an animated sequence) with
+    ///     the camera. Returns its type and CBOR, a message saying why the scan
+    ///     failed, or CANCELLED."""
+    Qstr::MP_QSTR_ambire_scan_ur => obj_fn_kw!(0, new_ambire_scan_ur).as_obj(),
+
+    /// def ambire_show_ur(
+    ///     *,
+    ///     title: str,
+    ///     ur_type: str,
+    ///     cbor: AnyBytes,
+    /// ) -> LayoutContext[UiResult]:
+    ///     """Ambire boards: show `cbor` as a one-part UR of `ur_type` in a QR
+    ///     code. Raises ValueError if it does not fit one code."""
+    Qstr::MP_QSTR_ambire_show_ur => obj_fn_kw!(0, new_ambire_show_ur).as_obj(),
+
+    /// def ambire_camera_test() -> LayoutContext[UiResult]:
+    ///     """Ambire boards: the QR camera bring-up test."""
+    Qstr::MP_QSTR_ambire_camera_test => obj_fn_kw!(0, new_ambire_camera_test).as_obj(),
 
     /// def wait_ble_host_confirmation() -> LayoutContext[UiResult]:
     ///     """Pairing device: third screen (waiting for host confirmation).

@@ -507,12 +507,9 @@ pub struct Homescreen {
     #[cfg(feature = "ambire_game")]
     game: super::ambire_game::Game,
     /// Ambire boards: where the touch began, for the swipe up to Bluetooth
-    /// (or to the camera test, when it is built in)
+    /// (or to the airgap menu, when the QR camera is built in)
     #[cfg(any(feature = "ble", feature = "ambire_camera"))]
     swipe_start: Option<Point>,
-    /// Ambire boards: the QR camera test behind the swipe up when airgapped
-    #[cfg(feature = "ambire_camera")]
-    camera: super::ambire_camera::CameraTest,
 }
 
 pub enum HomescreenMsg {
@@ -520,6 +517,9 @@ pub enum HomescreenMsg {
     /// Ambire boards: swiped up, Bluetooth pairing (Delizia has no device menu)
     #[cfg(feature = "ble")]
     Bluetooth,
+    /// Ambire boards: swiped up while airgapped, the QR signing menu
+    #[cfg(feature = "ambire_camera")]
+    Airgap,
 }
 
 /// Ambire boards: how far up a touch must travel to count as a swipe
@@ -576,15 +576,13 @@ impl Homescreen {
             game: super::ambire_game::Game::new(),
             #[cfg(any(feature = "ble", feature = "ambire_camera"))]
             swipe_start: None,
-            #[cfg(feature = "ambire_camera")]
-            camera: super::ambire_camera::CameraTest::new(),
         })
     }
 
-    /// Ambire boards: the swipe up goes to the QR camera when the device is
-    /// airgapped, or when there is no Bluetooth to go to
+    /// Ambire boards: the swipe up goes to the QR signing menu when the
+    /// device is airgapped, or when there is no Bluetooth to go to
     #[cfg(feature = "ambire_camera")]
-    fn swipe_up_opens_camera() -> bool {
+    fn swipe_up_opens_airgap() -> bool {
         #[cfg(feature = "ambire_airgap")]
         let airgapped = crate::trezorhal::airgap::engaged();
         #[cfg(not(feature = "ambire_airgap"))]
@@ -696,12 +694,6 @@ impl Component for Homescreen {
     }
 
     fn event(&mut self, ctx: &mut EventCtx, event: Event) -> Option<Self::Msg> {
-        // The camera test first: its taps must not count toward the game's
-        #[cfg(feature = "ambire_camera")]
-        if self.camera.event(ctx, event) {
-            return None;
-        }
-
         #[cfg(feature = "ambire_game")]
         if self.game.event(ctx, event) {
             return None;
@@ -722,13 +714,11 @@ impl Component for Homescreen {
             // The swipe's touch also started the hold-to-lock delay
             self.delay.stop();
             self.loader.reset();
-            // Airgapped (the switch on AIR): the QR camera; otherwise
-            // Bluetooth. The home screen never draws its image buffer, so it
-            // lends it to the camera.
+            // Airgapped (the switch on AIR): the QR signing menu; otherwise
+            // Bluetooth
             #[cfg(feature = "ambire_camera")]
-            if Self::swipe_up_opens_camera() {
-                self.camera.start(ctx, self.bg_image.raw_bytes());
-                return None;
+            if Self::swipe_up_opens_airgap() {
+                return Some(HomescreenMsg::Airgap);
             }
             #[cfg(feature = "ble")]
             return Some(HomescreenMsg::Bluetooth);
@@ -744,12 +734,6 @@ impl Component for Homescreen {
     }
 
     fn render<'s>(&'s self, target: &mut impl Renderer<'s>) {
-        #[cfg(feature = "ambire_camera")]
-        if self.camera.is_active() {
-            self.camera.render(target);
-            return;
-        }
-
         #[cfg(feature = "ambire_game")]
         if self.game.is_active() {
             self.game.render(target);

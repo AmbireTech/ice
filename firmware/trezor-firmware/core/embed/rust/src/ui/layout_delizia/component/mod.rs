@@ -45,8 +45,12 @@ mod trade_screen;
 mod welcome_screen;
 #[cfg(feature = "ambire_game")]
 mod ambire_game;
+#[cfg(all(feature = "ambire_camera", feature = "micropython"))]
+pub mod ambire_airgap;
 #[cfg(feature = "ambire_camera")]
 mod ambire_camera;
+#[cfg(feature = "ambire_camera")]
+mod ambire_ur;
 
 #[cfg(feature = "translations")]
 pub use action_bar::{ActionBar, ActionBarMsg};

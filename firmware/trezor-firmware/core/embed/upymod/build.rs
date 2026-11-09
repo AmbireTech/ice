@@ -1189,6 +1189,11 @@ impl<'a> MpyBuilder<'a> {
 
         files.add(src, "apps/misc/*.py")?;
 
+        // Ambire boards: the airgapped QR signing flow
+        if cfg!(feature = "ambire_camera") {
+            files.add(src, "apps/ambire_airgap/*.py")?;
+        }
+
         if cfg!(feature = "telemetry") {
             files.add(src, "apps/telemetry/*.py")?;
         }

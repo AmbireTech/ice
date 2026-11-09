@@ -172,8 +172,11 @@ Against the upstream base:
 | `src/apps/homescreen/__init__.py`, `src/apps/management/ble/pair_from_homescreen.py` (new), `src/ble.py` | the swipe up starts pairing; the boot waits 0.5 s, not 5 s, for a radio that the airgap switch may have off |
 | `src/apps/homescreen/__init__.py` | firmware signed with a "DO NOT USE" vendor header (Trezor's dev keys) says so on the home screen: "Backup needed; dev", or "Dev firmware" when there is no other notice |
 | `io/camera/` (new: `stm32u5/camera.c`, `qr/`, `inc/io/camera.h`, `inc/io/qr_scan.h`), `io/build.rs`, `io/Cargo.toml`, `sys/syscall/` (numbers, dispatch, verifiers, stubs), `rust/build.rs`, `rust/trezorhal.h`, `rust/src/trezorhal/camera.rs` (new) | `[ambire_camera]`: the QR camera. The kernel drives it (power, XCLK, SCCB, DCMI snapshots by GPDMA into a buffer the app owns); the app decodes with quirc (vendored in `io/camera/qr/quirc`, see its `README.ambire`). See [QR camera test](#qr-camera-test) |
-| `rust/.../component/ambire_camera.rs` (new), `homescreen.rs`, `shape/utils/imagebuf.rs` | `[ambire_camera]`: the camera test screen, behind the home screen's swipe up when airgapped |
-| `io/airgap/` (new), `sys/syscall/`, `rust/src/trezorhal/airgap.rs` (new), `homescreen.rs` | `[ambire_airgap]`: the airgap switch's position (AIRGAP_SENSE) for the UI: the swipe up opens the QR camera on AIR, Bluetooth pairing off AIR |
+| `rust/.../component/ambire_camera.rs` (new), `shape/utils/imagebuf.rs` | `[ambire_camera]`: the camera test screen, in the airgap menu |
+| `io/airgap/` (new), `sys/syscall/`, `rust/src/trezorhal/airgap.rs` (new), `homescreen.rs` | `[ambire_airgap]`: the airgap switch's position (AIRGAP_SENSE) for the UI: the swipe up opens the airgap menu on AIR, Bluetooth pairing off AIR |
+| `rust/.../component/ambire_ur.rs` (new) | `[ambire_camera]`: BC-UR without a heap: minimal bytewords and CRC32, one-part and animated (fountain-coded) URs, as the Ambire app's @ngraveio/bc-ur writes them; strict, every fault an error |
+| `rust/.../component/ambire_airgap.rs` (new), `component/mod.rs`, `homescreen.rs`, `component_msg_obj.rs`, `ui/api/firmware_micropython.rs`, `librust_qstr.h`, `mocks/generated/trezorui_api.pyi` | `[ambire_camera]`: the QR scan screen (camera, quirc, UR assembly in the image buffer), the screen showing a UR as a QR code, the camera test as a screen of its own; `trezorui_api.ambire_scan_ur`, `ambire_show_ur`, `ambire_camera_test`; the home screen's swipe up on AIR returns `"ambire_airgap"` |
+| `src/apps/ambire_airgap/` (new), `src/apps/homescreen/__init__.py`, `upymod/{build.rs,Cargo.toml,qstrdefsport.h}`, `projects/firmware/Cargo.toml` | `[ambire_camera]`: airgapped signing with the Ambire app (see [Airgapped signing](#airgapped-signing)): the menu, connecting, the strict parsing of requests, and Trezor's own Ethereum signing run on them |
 
 **Trezor's name, where it stays** (none of it is shown on the device's
 screens; `branding/check_strings.py out/ambire_p0` accounts for each):
@@ -214,8 +217,8 @@ someone who gets code running in the chip's secure world can try PINs at the
 chip's speed.
 
 What is not driven yet: the OPTIGA (not fitted on the first boards), the
-SE050 beyond its random number generator, the camera (beyond the test
-screen below), the charger and the
+SE050 beyond its random number generator, the camera (beyond airgapped
+signing and its test screen below), the charger and the
 battery gauge. On proto 0 the power key switches the device off only from the
 firmware: in the bootloader, unplug the battery.
 
@@ -245,12 +248,60 @@ retried.
 None of this has run on a board yet: the radio side and the timing (the
 radio's start-up, the power-off time between restarts) are unchecked.
 
+## Airgapped signing
+
+`[ambire_camera]` in the board file builds in signing with the Ambire app over
+QR codes, with no cable and no radio. **The swipe up on the home screen
+follows the airgap switch** (`[ambire_airgap]`): on AIR it opens the airgap
+menu, off AIR Bluetooth pairing. The menu has three entries; the cross at the
+top closes it.
+
+- **Connect to Ambire** shows a QR code: in the Ambire app, add a hardware
+  wallet that connects by QR code and scan it. The app then lists this
+  wallet's addresses. It needs to be done once per wallet (and again for each
+  passphrase).
+- **Scan request**: when the app shows a QR code to sign (still or animated),
+  point the camera at it. The bar under the picture fills as the parts of an
+  animated code come in; the picture's frame flashes green for each one taken.
+  Tap the picture to change the zoom; the top-left corner cancels. The device
+  then shows what is to be signed, with the same screens and warnings as when
+  signing over USB, and after you confirm it shows the signature as a QR code:
+  scan it with the app, then tap Done.
+- **Camera test**: the camera test below, for bring-up.
+
+What can be signed: transactions (legacy and EIP-1559), messages
+(personal_sign) and typed data (EIP-712, including Safe and Ambire smart
+account approvals), for any of the wallet's first million addresses.
+
+The device refuses a request, and says why, when:
+
+- it is for another wallet (another seed, or another passphrase),
+- the address in it is not this wallet's at the path in it,
+- the transaction's network is not the one the request names,
+- it is malformed in any way, or larger than 16 KiB (the app warns before it
+  sends one that large),
+- the QR codes scanned belong to different requests, or are not a request at
+  all (scan again).
+
+With a passphrase set, the device asks for it at every connect and every
+request. Nothing is remembered between requests.
+
+Not available: signing several requests at once (Keystone's batch request),
+EIP-7702 authorizations, and requests for paths other than
+m/44'/60'/0'/0/i (Ledger Live style accounts). Only the OV2640 path has
+scanned codes on a board so far; the airgapped signing itself has not run on a
+board yet (see `tests/airgap/` for what the host tests cover).
+
+`tests/airgap/run.sh` runs the host tests: the request streams are made with
+the Ambire app's own libraries (all four kinds, still and animated, in order,
+shuffled, with lost and repeated parts, from mixed parts only), malformed and
+inconsistent streams, the digests the device would sign (computed by Trezor's
+own Ethereum code on the parsed requests, compared with ethers' and
+MetaMask's), and the device's own QR codes read back by the app's decoders.
+
 ## QR camera test
 
-`[ambire_camera]` in the board file builds a camera test into the firmware.
-**The swipe up on the home screen follows the airgap switch**
-(`[ambire_airgap]`): on AIR it opens the camera test, off AIR Bluetooth
-pairing.
+The camera test is the third entry of the airgap menu.
 
 - The top of the screen shows the camera's live picture in gray, 240 x 240.
   A QR code in view is decoded on the device; while one decodes, the picture

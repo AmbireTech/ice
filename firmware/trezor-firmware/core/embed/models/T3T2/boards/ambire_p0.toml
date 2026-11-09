@@ -18,8 +18,8 @@ panel = "io/display_panel_dem240320b1"
 # the home screen opens Bluetooth pairing off AIR, the QR camera on AIR
 [ambire_airgap]
 
-# The QR camera on J_CAM (OV2640, OV5640 or GC2145): a scanner test screen behind the
-# swipe up on the home screen, in place of Bluetooth pairing
+# The QR camera on J_CAM (OV2640, OV5640 or GC2145): airgapped signing with the Ambire
+# app over QR codes, and a camera test, behind the swipe up on the home screen on AIR
 [ambire_camera]
 
 # Hold the power key 3 s to switch off: the kernel drops PWR_HOLD

@@ -701,6 +701,29 @@ def show_ble_pairing_code(
 
 
 # rust/src/ui/api/firmware_micropython.rs
+def ambire_scan_ur() -> LayoutContext[tuple[str, bytes] | str | UiResult]:
+    """Ambire boards: scan a UR (one QR code or an animated sequence) with
+    the camera. Returns its type and CBOR, a message saying why the scan
+    failed, or CANCELLED."""
+
+
+# rust/src/ui/api/firmware_micropython.rs
+def ambire_show_ur(
+    *,
+    title: str,
+    ur_type: str,
+    cbor: AnyBytes,
+) -> LayoutContext[UiResult]:
+    """Ambire boards: show `cbor` as a one-part UR of `ur_type` in a QR
+    code. Raises ValueError if it does not fit one code."""
+
+
+# rust/src/ui/api/firmware_micropython.rs
+def ambire_camera_test() -> LayoutContext[UiResult]:
+    """Ambire boards: the QR camera bring-up test."""
+
+
+# rust/src/ui/api/firmware_micropython.rs
 def wait_ble_host_confirmation() -> LayoutContext[UiResult]:
     """Pairing device: third screen (waiting for host confirmation).
     Returns on BLEEvent::{PairingCanceled, Disconnected}."""
