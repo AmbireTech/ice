@@ -114,8 +114,12 @@ def jlc_meta(code):
     return None
 
 
-def signature(pads):
-    """Rotation- and mirror-invariant description of a pad field."""
+def signature(pads, holes=None):
+    """Rotation- and mirror-invariant description of a pad field.
+
+    `holes` lists the drill diameters of the land's holes (pegs, NPTH, through-hole pins).
+    Pad COUNT tolerates a pad or two, so a missing hole hides in it: the steel spacers'
+    3.0 mm NPTH (their spigot's hole) went to fab missing that way (2026-11-09)."""
     if not pads:
         return None
     xs = [p[1] for p in pads]
@@ -129,7 +133,8 @@ def signature(pads):
             if d > 0.05 and (pitch is None or d < pitch):
                 pitch = d
     return {"pads": len(pads), "sizes": sizes, "span": span,
-            "pitch": round(pitch, 2) if pitch else None}
+            "pitch": round(pitch, 2) if pitch else None,
+            "holes": sorted(round(h, 2) for h in (holes or []))}
 
 
 def vendor_signature(code):
@@ -163,8 +168,10 @@ def vendor_signature(code):
                 r"(?:\s+[-\d.]+)?\)\s*\(size ([\d.]+) ([\d.]+)\)", text):
             pads.append((m.group(1).strip('"'), float(m.group(2)),
                          float(m.group(3)), float(m.group(4)), float(m.group(5))))
-        return signature(pads)
-    except Exception:
+        holes = [float(d) for d in re.findall(r"\(drill(?:\s+oval)?\s+([\d.]+)", text)]
+        return signature(pads, holes)
+    except Exception as exc:
+        print(f"vendor land for {code} not read: {exc}", file=sys.stderr)
         return None
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
@@ -177,7 +184,9 @@ def board_signature(fp):
              (pad.GetPosition().y - origin.y) / 1e6,
              pad.GetSizeX() / 1e6, pad.GetSizeY() / 1e6)
             for pad in fp.Pads() if pad.IsOnCopperLayer()]   # paste-only apertures are not lands
-    return signature(pads)
+    holes = [min(pad.GetDrillSize().x, pad.GetDrillSize().y) / 1e6
+             for pad in fp.Pads() if pad.GetDrillSize().x > 0]
+    return signature(pads, holes)
 
 
 def compare(board_sig, vendor_sig):
@@ -216,6 +225,12 @@ def compare(board_sig, vendor_sig):
             out.append(f"pad field {board_sig['span'][0]}x{board_sig['span'][1]} mm, "
                        f"vendor's {vendor_sig['span'][0]}x{vendor_sig['span'][1]} mm")
             break
+
+    # Holes are not land style: a peg, a spigot or a through-hole pin needs its hole.
+    if "holes" in vendor_sig:
+        bh, vh = board_sig.get("holes", []), vendor_sig["holes"]
+        if len(bh) != len(vh):
+            out.append(f"{len(bh)} holes on the board {bh}, {len(vh)} on the vendor's land {vh}")
 
     bp, vp = board_sig["pitch"], vendor_sig["pitch"]
     if (board_sig["pads"] > 2 and vendor_sig["pads"] > 2 and bp and vp
@@ -290,7 +305,8 @@ def main(board_path, refresh=False):
             continue
 
         entry = cache.get(code)
-        if refresh or entry is None:
+        stale = bool(entry and entry.get("land") and "holes" not in entry["land"])
+        if refresh or entry is None or stale:
             try:
                 meta = jlc_meta(code)
             except Exception as exc:

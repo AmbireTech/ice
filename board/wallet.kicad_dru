@@ -30,3 +30,10 @@
 (rule "Pack spacers: one spoke"
   (condition "A.Type == 'Pad' && (A.memberOfFootprint('MH_PK1') || A.memberOfFootprint('MH_PK2'))")
   (constraint min_resolved_spokes 1))
+
+# The pack's steel spacers: Wurth's land is the GND pad ringing the spacer's own 3.0 mm NPTH
+# (its spigot drops into it). The pad round its own hole is the design, not a clearance fault.
+(rule "Pack spacers: the land rings its own hole"
+  (severity ignore)
+  (condition "A.Type == 'Pad' && B.Type == 'Pad' && ((A.memberOfFootprint('MH_PK1') && B.memberOfFootprint('MH_PK1')) || (A.memberOfFootprint('MH_PK2') && B.memberOfFootprint('MH_PK2')))")
+  (constraint hole_clearance (min 0mm)))

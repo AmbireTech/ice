@@ -221,6 +221,14 @@ Ambire internals into GridCore's.
 
 ## Traps
 
+- **A footprint carries every hole of the maker's land.** Pegs, spigots and NPTHs are not land
+  style: dropping one is a different part. The steel spacers' 3.0 mm NPTH was left out as "no
+  screw" (2026-11-01); their spigot needs it, and the board went to production without it.
+  `checkParts.py` compares hole counts against JLC's land; any deviation from a datasheet land
+  is the owner's call, written in the footprint's descr.
+- KiCad 10.0.4's Python `SaveBoard` writes `(layers "*.Cu")` for through-hole and NPTH pads
+  the GUI writes as `"*.Cu" "*.Mask"` (in memory they still hold both masks): after a scripted
+  save, put the mask back and diff every pad against the original before installing.
 - KiCad `Flip(FLIP_DIRECTION_LEFT_RIGHT)` on these footprints mirrors **y**, not x.
   Bottom-side rotations are derived empirically and asserted by `checkFpc.py`.
 - `src/parts/mcuAssign.json` can drift from `board/netlist.circuit.json`; `checkMcuAf.py`

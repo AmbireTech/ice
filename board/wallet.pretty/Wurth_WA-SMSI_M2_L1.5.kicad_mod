@@ -1,14 +1,15 @@
-(footprint "Wurth_WA-SMSI_M2_L1.5_NoHole"
+(footprint "Wurth_WA-SMSI_M2_L1.5"
 	(version 20240108)
 	(generator "pcbnew")
 	(layer "F.Cu")
-	(descr "Wurth WA-SMSI 9774015243R SMT steel spacer, M2, 1.5 mm, 4.35 dia (steel, tin): datasheet land 5.3 dia pad, 3.0 NPTH (omitted: no screw), stencil annulus 3.1-5.2. Here the magnet partner of the pack male's magnets.")
+	(descr "Wurth WA-SMSI 9774015243R SMT steel spacer, M2, 1.5 mm, 4.35 dia (steel, tin). Datasheet land: 5.3 dia pad round a 3.0 NPTH, stencil annulus 3.1-5.2. The hole is not optional: the spacer's 2.8 dia x 1.4 mm spigot drops into it (on a 1.0 mm board it stands ~0.4 mm out of the other face). Here the magnet partner of the pack's magnets.")
 	(tags "SMT spacer steel")
 	(property "Reference" "REF**" (at 0 -3.3 0) (layer "F.SilkS") (hide yes) (effects (font (size 0.6 0.6) (thickness 0.1))))
 	(property "Value" "9774015243R" (at 0 3.3 0) (layer "F.Fab") (effects (font (size 0.5 0.5) (thickness 0.08))))
-	(attr smd)
+	(attr smd allow_soldermask_bridges)
 	(fp_circle (center 0 0) (end 2.175 0) (stroke (width 0.1) (type solid)) (fill none) (layer "F.Fab"))
 	(fp_circle (center 0 0) (end 2.7 0) (stroke (width 0.05) (type solid)) (fill none) (layer "F.CrtYd"))
 	(fp_circle (center 0 0) (end 2.075 0) (stroke (width 1.05) (type solid)) (fill none) (layer "F.Paste"))
 	(pad "1" smd circle (at 0 0) (size 5.3 5.3) (layers "F.Cu" "F.Mask"))
+	(pad "" np_thru_hole circle (at 0 0) (size 3 3) (drill 3) (layers "*.Cu" "*.Mask"))
 )

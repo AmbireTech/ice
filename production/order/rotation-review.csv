@@ -64,8 +64,8 @@ J_TFT,54132-4062,wallet:Molex_54132-4062,C505102,bottom,180.0,,0.0,0.0,0.325,NO 
 LS1,MLT-5020,wallet:Buzzer_Huaneng_MLT-5020_5x5.5mm,C94598,bottom,-90.0,,0.0,270.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
 L_BOOST,WPN4020H2R2MT,wallet:L_Sunlord_WPN4020,C98361,top,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 L_BUCK,CKCSA201610-2.2uH/M,Inductor_SMD:L_Cenker_CKCS201610,C5291913,top,0.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
-MH_PK1,9774015243R,wallet:Wurth_WA-SMSI_M2_L1.5_NoHole,C22431324,bottom,180.0,,0.0,0.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
-MH_PK2,9774015243R,wallet:Wurth_WA-SMSI_M2_L1.5_NoHole,C22431324,bottom,180.0,,0.0,0.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
+MH_PK1,9774015243R,wallet:Wurth_WA-SMSI_M2_L1.5,C22431324,bottom,180.0,,0.0,0.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
+MH_PK2,9774015243R,wallet:Wurth_WA-SMSI_M2_L1.5,C22431324,bottom,180.0,,0.0,0.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
 Q_BTN,MMBT3904,Package_TO_SOT_SMD:SOT-23,C20526,bottom,-90.0,^SOT-23,180.0,90.0,0.000,db-rule
 Q_BUZ,AO3416,Package_TO_SOT_SMD:SOT-23,C43307,bottom,90.0,^SOT-23,180.0,270.0,0.000,db-rule
 Q_CHG,2N7002DW-7-F,Package_TO_SOT_SMD:SOT-363_SC-70-6,C83571,bottom,-90.0,^SOT-363,180.0,90.0,0.000,db-rule

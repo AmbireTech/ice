@@ -75,8 +75,11 @@ back; a flat back needs a lower camera module.
     through (ENIG is a tenth of a micron of soft gold over nickel; the pack is rarely taken
     off, and bring-up measures the contacts after a few hundred matings).
   - **Two steel spacers**, Würth WA-SMSI 9774015243R: M2, 1.5 mm tall, 4.35 mm across,
-    tin-plated steel. They sit 15.41 mm apart, under the pack's magnets, on Würth's 5.3 mm
-    land, without the screw hole. JLC C22431324 (1,418 at JLC, 2026-11-01). Their only
+    tin-plated steel. They sit 15.41 mm apart, under the pack's magnets, on Würth's land: a
+    5.3 mm pad round a 3.0 mm unplated hole. The hole is not for a screw: each spacer has a
+    2.8 mm spigot, 1.4 mm long, that drops into it, so the flange sits on the pad. On the
+    1.0 mm board the spigot stands about 0.4 mm out of the front, under the screen's 0.3 mm
+    foam tape. JLC C22431324 (1,418 at JLC, 2026-11-01). Their only
     job is to be steel for the magnets, and to set the gap; they are on ground so they do
     not float.
 - **The pack's half: four single spring pins and two magnets**, on the pack board's outer face.

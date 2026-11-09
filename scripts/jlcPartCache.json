@@ -105,6 +105,7 @@
  "C128396": {
   "describe": "-40\u2103~+85\u2103 12ns 2.3V~3.6V 250ps 2:1 30ns 6pF 6\u03a9 900MHz USB UQFN-10(1.5x2) Analog Switches - Special Purpose ROHS",
   "land": {
+   "holes": [],
    "pads": 10,
    "pitch": 0.5,
    "sizes": [
@@ -156,7 +157,7 @@
   },
   "model": "TS3USB221ARSER",
   "package": "UQFN-10(1.5x2)",
-  "stock": 86368
+  "stock": 73354
  },
  "C132170": {
   "describe": "4.7uF 50V X7R \u00b110% 1206 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
@@ -239,8 +240,9 @@
   "stock": 762618
  },
  "C1518668": {
-  "describe": "USON-10-EP(3x3) Security Verification / Encryption ICs ROHS",
+  "describe": "-25\u2103~+85\u2103 1.62V~5.5V Anti-cracking hardware protection\u3001Secure key storage\u3001Security counter ECC\u3001AES\u3001RSA\u3001SHA-256 I2C USON-10-EP(3x3) Security Verification / Encryption ICs ROHS",
   "land": {
+   "holes": [],
    "pads": 11,
    "pitch": 0.5,
    "sizes": [
@@ -388,6 +390,14 @@
  "C165948": {
   "describe": "-30\u2103~+80\u2103 1 10,000 cycles 16P 20V 5A 7.35mm Female Surface Mount, Right Angle Type-C SMD USB Connectors ROHS",
   "land": {
+   "holes": [
+    0.6,
+    0.6,
+    0.8,
+    0.8,
+    0.8,
+    0.8
+   ],
    "pads": 18,
    "pitch": 0.5,
    "sizes": [
@@ -471,7 +481,7 @@
   },
   "model": "TYPE-C-31-M-12",
   "package": "SMD",
-  "stock": 424577
+  "stock": 311363
  },
  "C16780": {
   "describe": "47uF 6.3V X5R \u00b120% 0805 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
@@ -514,6 +524,7 @@
  "C1848364": {
   "describe": "-40\u2103~+85\u2103 1MHz 2.7V~6.5V 25mA 4\u2030 5 Built-in Charge Pump DC-DC Over Current Protection\u3001Over-Temperature Protection (OTP) PWM VQFN-16-EP(3x3) LED Drivers ROHS",
   "land": {
+   "holes": [],
    "pads": 17,
    "pitch": 0.5,
    "sizes": [
@@ -593,7 +604,7 @@
   },
   "model": "TPS60230RGTR",
   "package": "VQFN-16-EP(3x3)",
-  "stock": 2571
+  "stock": 2254
  },
  "C189619": {
   "describe": "-55\u2103~+105\u2103 100uF 15m\u03a9@100kHz 2000hrs@105\u2103 4.3mm 5.1A@100kHz 6.3V 7.3mm Polarized Polymer \u00b120% SMD,7.3x4.3mm Polymer Aluminum Capacitors ROHS",
@@ -696,6 +707,7 @@
  "C202423": {
   "describe": "SMD-8P,7.5x7.5mm Multi-Directional Switches ROHS",
   "land": {
+   "holes": [],
    "pads": 8,
    "pitch": 1.43,
    "sizes": [
@@ -739,11 +751,12 @@
   },
   "model": "SKRHAAE010",
   "package": "SMD-8P,7.5x7.5mm",
-  "stock": 521
+  "stock": 161
  },
  "C20526": {
   "describe": "-55\u2103~+150\u2103 1 NPN 100 100nA 200mA 200mW 300MHz 300mV 40V 6V NPN SOT-23 Bipolar (BJT) ROHS",
   "land": {
+   "holes": [],
    "pads": 3,
    "pitch": 1.9,
    "sizes": [
@@ -767,11 +780,12 @@
   },
   "model": "MMBT3904(RANGE:100-300)",
   "package": "SOT-23",
-  "stock": 241023
+  "stock": 4197060
  },
  "C2128": {
   "describe": "1.25V@150mA 100V 150mA 1uA@75V 200mW 2A 4ns Independent SOD-323 Switching Diodes ROHS",
   "land": {
+   "holes": [],
    "pads": 2,
    "pitch": 2.34,
    "sizes": [
@@ -791,11 +805,12 @@
   },
   "model": "1N4148WS",
   "package": "SOD-323",
-  "stock": 2884980
+  "stock": 2777251
  },
  "C2143": {
   "describe": "-55\u2103~+150\u2103 1 PNP 100 100nA 200mA 200mW 300MHz 300mV 40V 5V PNP SOT-23 Bipolar (BJT) ROHS",
   "land": {
+   "holes": [],
    "pads": 3,
    "pitch": 1.9,
    "sizes": [
@@ -819,7 +834,7 @@
   },
   "model": "MMBT3906 2A(RANGE:100-300)",
   "package": "SOT-23",
-  "stock": 116461
+  "stock": 170363
  },
  "C21905480": {
   "describe": "- Pogo Pin Spring Probe Connector ROHS",
@@ -838,6 +853,9 @@
  "C22431324": {
   "describe": "- Patch round nut ROHS",
   "land": {
+   "holes": [
+    2.9
+   ],
    "pads": 2,
    "pitch": null,
    "sizes": [
@@ -857,7 +875,7 @@
   },
   "model": "9774015243R",
   "package": "-",
-  "stock": 1418
+  "stock": 582
  },
  "C227183": {
   "describe": "-55\u2103~+155\u2103 50V 62.5mW 665k\u03a9 Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
@@ -1051,6 +1069,7 @@
  "C262567": {
   "describe": "0.3mm 0.5mm 24P 2mm Bottom Contact Copper alloy Slide Lock Surface Mount, Right Angle Tin SMD,P=0.5mm,\u5367\u8d34 FFC, FPC (Flat Flexible) Connector Assemblies ROHS",
   "land": {
+   "holes": [],
    "pads": 26,
    "pitch": 0.5,
    "sizes": [
@@ -1166,7 +1185,7 @@
   },
   "model": "AFC07-S24FCA-00",
   "package": "SMD,P=0.5mm,Surface Mount\uff0cRight Angle",
-  "stock": 48935
+  "stock": 46475
  },
  "C2650415": {
   "describe": "-25\u2103~+85\u2103 1.62V~3.6V 500uA ECC\u30013DES\u3001RSA\u3001SHA-256\u3001AES-128\u3001SHA-1\u3001AES-256\u3001SHA-384\u3001SHA-512 I2C WQFN-20-EP(3x3) Security Verification / Encryption ICs ROHS",
@@ -1325,8 +1344,9 @@
   "stock": 5351
  },
  "C2681320": {
-  "describe": "-40\u2103~+125\u2103 0V~5.5V 1 2A 80m\u03a9 Active High Load Switch SOT-23-6 Power Distribution Switches ROHS",
+  "describe": "-40\u2103~+125\u2103 0V~5.5V 1 2A 80m\u03a9 Active High Load Switch Output discharge function\u3001Soft-start\u3001Reverse current blocking SOT-23-6 Power Distribution Switches ROHS",
   "land": {
+   "holes": [],
    "pads": 6,
    "pitch": 0.95,
    "sizes": [
@@ -1362,7 +1382,7 @@
   },
   "model": "TPS22917DBVR",
   "package": "SOT-23-6",
-  "stock": 19534
+  "stock": 2435
  },
  "C2682616": {
   "describe": "-40\u2103~+85\u2103 1 2.5V~4.5V 3uA I2C Lithium Battery Not supported Not supported DFN-8-EP(2x2) Battery Management ROHS",
@@ -1507,6 +1527,7 @@
  "C2836813": {
   "describe": "-40\u2103~+85\u2103 1.71V~3.6V 16bit 2KB 3.5uA Accelerometer Gyroscope SPI\u3001I2C X,Y,Z X,Y,Z \u00b116g \u00b12000dps LGA-14(2.5x3) Accelerometers ROHS",
   "land": {
+   "holes": [],
    "pads": 14,
    "pitch": 0.5,
    "sizes": [
@@ -1574,7 +1595,7 @@
   },
   "model": "BMI270",
   "package": "LGA-14(2.5x3)",
-  "stock": 26396
+  "stock": 11316
  },
  "C2845237": {
   "describe": "-40\u2103~+125\u2103@(TJ) 1 1.3V~5.5V 1.4MHz\u30011.6MHz\u30012.1MHz 1.8V~5.2V 11uA 2A Adjustable Buck-Boost Buck-Boost Built-in Yes VSON-10(2x3) DC-DC Converters ROHS",
@@ -1635,6 +1656,7 @@
  "C2861352": {
   "describe": "-40\u2103~+125\u2103@(Tj) 1 1.2V 300mA 35uA 48uVrms 5.5V 68dB@(1kHz) Fixed Over Current Protection\u3001Over Temperature Protection Positive SOT-23-5 Voltage Regulators - Linear, Low Drop Out (LDO) Regulators ROHS",
   "land": {
+   "holes": [],
    "pads": 5,
    "pitch": 0.95,
    "sizes": [
@@ -1666,7 +1688,7 @@
   },
   "model": "TLV70312DBVR",
   "package": "SOT-23-5",
-  "stock": 605
+  "stock": 599
  },
  "C2868385": {
   "describe": "-40\u2103~+125\u2103@(Tj) 1 1.3V 300mA 35uA 375mV@(300mA) 48uVrms 5.5V 68dB@(1kHz) Fixed Over Current Protection\u3001Over Temperature Protection Positive SOT-23-5 Voltage Regulators - Linear, Low Drop Out (LDO) Regulators ROHS",
@@ -1813,6 +1835,7 @@
  "C3235557": {
   "describe": "Operating status indication SOT-583 Power Management - Specialized ROHS",
   "land": {
+   "holes": [],
    "pads": 8,
    "pitch": 0.5,
    "sizes": [
@@ -1856,7 +1879,7 @@
   },
   "model": "TPS2116DRLR",
   "package": "SOT-583",
-  "stock": 58001
+  "stock": 52748
  },
  "C326578": {
   "describe": "22uF 6.3V X5R \u00b110% 0805 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
@@ -1875,6 +1898,7 @@
  "C356849": {
   "describe": "-103dBm\u3001-95dBm -40\u2103~+85\u2103 120m 17.05mA 3.3V 8.27mA 8dBm Bluetooth 5.0\u3001Bluetooth 4.2 PWM\u3001SPI\u3001ADC\u3001USB\u3001I2C\u3001ISP\u3001JTAG\u3001DMA nRF52840 Chip SMD,18x13mm Bluetooth Modules ROHS",
   "land": {
+   "holes": [],
    "pads": 43,
    "pitch": 1.24,
    "sizes": [
@@ -2058,11 +2082,12 @@
   },
   "model": "E73-2G4M08S1C",
   "package": "SMD,18x13mm",
-  "stock": 1257
+  "stock": 174
  },
  "C37704": {
   "describe": "1 Pair Common Cathode 200mA 2uA@25V 30V 600mA 800mV@100mA SOT-23 Schottky Diodes ROHS",
   "land": {
+   "holes": [],
    "pads": 3,
    "pitch": 1.9,
    "sizes": [
@@ -2086,7 +2111,7 @@
   },
   "model": "BAT54C,215",
   "package": "SOT-23",
-  "stock": 285659
+  "stock": 410360
  },
  "C37825": {
   "describe": "-55\u2103~+155\u2103 50V 62.5mW 62k\u03a9 Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
@@ -2098,6 +2123,7 @@
  "C398365": {
   "describe": "-40\u2103~+125\u2103@(TJ) 1 1.5MHz 2.5V~5.5V 2A 600mV~5.5V Adjustable Buck Buck Built-in Yes SOT-23-THIN-6 DC-DC Converters ROHS",
   "land": {
+   "holes": [],
    "pads": 6,
    "pitch": 0.95,
    "sizes": [
@@ -2133,7 +2159,7 @@
   },
   "model": "TLV62569PDDCR",
   "package": "SOT-23-THIN-6",
-  "stock": 6318
+  "stock": 17036
  },
  "C4153167": {
   "describe": "LCC-18(9.7x10.1) GNSS Modules ROHS",
@@ -2145,6 +2171,10 @@
  "C431540": {
   "describe": "-20\u2103~+70\u2103 1.4mm 10000 times 12V 2.8mm 50mA 8mm SMD(SMT) Tab SPDT Surface Mount, Right Angle SMD,8x2.8mm Slide Switches ROHS",
   "land": {
+   "holes": [
+    0.9,
+    0.9
+   ],
    "pads": 9,
    "pitch": 1.5,
    "sizes": [
@@ -2192,11 +2222,12 @@
   },
   "model": "MSK12C02",
   "package": "SMD,8x2.8mm",
-  "stock": 183505
+  "stock": 179169
  },
  "C43307": {
   "describe": "-55\u2103~+150\u2103 1 N-channel 1.1V 1.4W 1.65nF 10nC@4.5V 20V 22m\u03a9@4.5V 6.5A 87pF SOT-23 MOSFETs ROHS",
   "land": {
+   "holes": [],
    "pads": 3,
    "pitch": 1.9,
    "sizes": [
@@ -2220,7 +2251,7 @@
   },
   "model": "AO3416",
   "package": "SOT-23",
-  "stock": 49525
+  "stock": 44284
  },
  "C43676": {
   "describe": "-55\u2103~+155\u2103 36k\u03a9 50V 62.5mW Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
@@ -2239,6 +2270,7 @@
  "C462652": {
   "describe": "-40\u2103~+85\u2103 1 1.5V~5.25V 10uA 2A 2MHz 500mV~6V Adjustable Boost Boost Built-in Yes DFN-8(2x3) DC-DC Converters ROHS",
   "land": {
+   "holes": [],
    "pads": 9,
    "pitch": 0.44,
    "sizes": [
@@ -2286,24 +2318,25 @@
   },
   "model": "LTC3539EDCB-2#TRPBF",
   "package": "DFN-8(2x3)",
-  "stock": 2422
+  "stock": 2197
  },
  "C48502": {
   "describe": "1.25V@150mA 215mA 250mW 3pA@75V 4A 800ns 85V Independent SOT-23 Switching Diodes ROHS",
   "land": {
+   "holes": [],
    "pads": 3,
    "pitch": 1.9,
    "sizes": [
     [
-     0.8,
+     0.6,
      1.0
     ],
     [
-     0.8,
+     0.6,
      1.0
     ],
     [
-     0.8,
+     0.6,
      1.0
     ]
    ],
@@ -2314,7 +2347,7 @@
   },
   "model": "BAS116,215",
   "package": "SOT-23",
-  "stock": 42008
+  "stock": 122692
  },
  "C485916": {
   "describe": "-40\u2103~+125\u2103 2.8V~22V 200uA 56m\u03a9 VQFN-HR-12(2x2.5) ORing Controllers ROHS",
@@ -2333,6 +2366,7 @@
  "C49166832": {
   "describe": "-25\u2103~+85\u2103 0.3mm 1mm 2mm 50V 6P Bottom Contact Copper Flip-Top No polarity Surface Mount, Right Angle Tin Without buckle SMD,P=1mm,Surface Mount\uff0cRight Angle FFC, FPC (Flat Flexible) Connector Assemblies ROHS",
   "land": {
+   "holes": [],
    "pads": 8,
    "pitch": 1.0,
    "sizes": [
@@ -2376,7 +2410,7 @@
   },
   "model": "HC-FPC-1.0-6P-FH20",
   "package": "SMD,P=1mm,Surface Mount\uff0cRight Angle",
-  "stock": 5420
+  "stock": 4491
  },
  "C49166842": {
   "describe": "-25\u2103~+85\u2103 0.3mm 1mm 2.5mm 50V 6P Bottom Contact Copper No polarity Slide Lock Surface Mount, Right Angle Tin Without buckle SMD,P=1mm,Surface Mount\uff0cRight Angle FFC, FPC (Flat Flexible) Connector Assemblies ROHS",
@@ -2477,6 +2511,7 @@
  "C505102": {
   "describe": "-20\u2103~+85\u2103 0.3mm 0.5mm 2mm 40P 500mA 50V Bottom Contact Gold Phosphor bronze Slide Lock Surface Mount, Right Angle SMD,P=0.5mm,Surface Mount\uff0cRight Angle FFC, FPC (Flat Flexible) Connector Assemblies ROHS",
   "land": {
+   "holes": [],
    "pads": 42,
    "pitch": 0.5,
    "sizes": [
@@ -2656,7 +2691,7 @@
   },
   "model": "541324062",
   "package": "SMD,P=0.5mm,Surface Mount\uff0cRight Angle",
-  "stock": 4497
+  "stock": 2561
  },
  "C5173252": {
   "describe": "-55\u2103~+125\u2103 1 100nA 12V 360W@8/20us 5V 60pF 7.2V ESD IEC 61000-4-2\u3001IEC 61000-4-5\u3001IEC 61000-4-4 DFN1006-2 ESD and Surge Protection (TVS/ESD) ROHS",
@@ -2685,6 +2720,7 @@
  "C5186957": {
   "describe": "-40\u2103~+125\u2103 1 1.08V~5.5V 1.08V~5.5V 12mA 12mA 2 200Mbps Bidirectional Level translator Output enable high-impedance\u3001Integrated pull-up resistor SPI\u3001JTAG\u3001UART Tri-State VSSOP-8 Translators, Level Shifters ROHS",
   "land": {
+   "holes": [],
    "pads": 8,
    "pitch": 0.5,
    "sizes": [
@@ -2728,11 +2764,12 @@
   },
   "model": "TXU0202DCUR",
   "package": "VSSOP-8",
-  "stock": 17972
+  "stock": 12738
  },
  "C5189434": {
   "describe": "-40\u2103~+125\u2103 1~6 350nA 3V~18V 800mA Charging IC Nickel-Metal Hydride Battery Support WSON-8(2x2) Battery Management ROHS",
   "land": {
+   "holes": [],
    "pads": 9,
    "pitch": 0.5,
    "sizes": [
@@ -2780,11 +2817,12 @@
   },
   "model": "BQ25172DSGR",
   "package": "WSON-8(2x2)",
-  "stock": 2753
+  "stock": 4382
  },
  "C5190917": {
-  "describe": "QFN-20(3x3) Security Verification / Encryption ICs ROHS",
+  "describe": "-40\u2103~+105\u2103 1.62V~3.6V 500uA AES\u3001DES\u3001SHA-256\u3001SHA-1 Anti-cracking hardware protection\u3001Secure key storage I2C QFN-20(3x3) Security Verification / Encryption ICs ROHS",
   "land": {
+   "holes": [],
    "pads": 21,
    "pitch": 0.4,
    "sizes": [
@@ -2880,11 +2918,12 @@
   },
   "model": "SE050E2HQ1/Z01Z3Z",
   "package": "QFN-20(3x3)",
-  "stock": 594
+  "stock": 215
  },
  "C5270986": {
   "describe": "-40\u2103~+85\u2103 1.71V~3.6V 160MHz 2MB 32 Bit 784KB 79 ARM Cortex-M33 Built-in+External FLASH LQFP-100(14x14) Microcontrollers (MCU/MPU/SOC) ROHS",
   "land": {
+   "holes": [],
    "pads": 100,
    "pitch": 0.5,
    "sizes": [
@@ -3296,7 +3335,7 @@
   },
   "model": "STM32U585VIT6Q",
   "package": "LQFP-100(14x14)",
-  "stock": 54
+  "stock": 20
  },
  "C52917434": {
   "describe": "-40\u2103~+85\u2103 0.84mm 120us 160mcd 1uA 200mcd 2kHz 2mm 2mm 3.3V~5.3V 300ns 465nm~470nm 515nm~520nm 520mcd 620nm~625nm 800Kbit/s Built-in power-on reset circuit\u3001Built-in power-on reset circuit\u3001Integrated intelligent reverse connection protection function SMD2020-4P RGB LEDs(Built-in IC) ROHS",
@@ -3347,6 +3386,7 @@
  "C53099": {
   "describe": "-40\u2103~+85\u2103@(Ta) 1 2.8V 220mV@(200mA) 450mA 50uVrms 55uA 6V 70dB@(1kHz) Enable Fixed Positive SOT-23-5 Voltage Regulators - Linear, Low Drop Out (LDO) Regulators ROHS",
   "land": {
+   "holes": [],
    "pads": 5,
    "pitch": 0.95,
    "sizes": [
@@ -3378,7 +3418,7 @@
   },
   "model": "ME6211C28M5G-N",
   "package": "SOT-23-5",
-  "stock": 26017
+  "stock": 19580
  },
  "C5360192": {
   "describe": "- Patch round nut ROHS",
@@ -3724,6 +3764,7 @@
  "C7394016": {
   "describe": "-40\u2103~+85\u2103 1 1.65V~5.5V 10uA 2 24mA 24mA 4.4ns@5V,15pF 74LVC NOR Gate Overvoltage-tolerant input SOT23-5 Logic Gates ROHS",
   "land": {
+   "holes": [],
    "pads": 5,
    "pitch": 0.95,
    "sizes": [
@@ -3755,7 +3796,7 @@
   },
   "model": "SN74LVC1G02DBVR(UMW)",
   "package": "SOT23-5",
-  "stock": 58777
+  "stock": 51462
  },
  "C7435296": {
   "describe": "3.4V~4.2V GPRS\u3001GSM\u3001LTE\u3001EDGE I2C\u3001USB\u3001UART\u3001GPIO\u3001ADC\u3001SIM card SMD,24x24mm 2G/3G/4G/5G Modules ROHS",
@@ -3767,6 +3808,7 @@
  "C7519": {
   "describe": "-40\u2103~+125\u2103 150nA 17V 2 3.5pF 5.25V 5A 6V ESD IEC 61000-4-2 Unidirectional SOT-23-6L ESD and Surge Protection (TVS/ESD) ROHS",
   "land": {
+   "holes": [],
    "pads": 6,
    "pitch": 0.95,
    "sizes": [
@@ -3802,7 +3844,7 @@
   },
   "model": "USBLC6-2SC6",
   "package": "SOT-23-6L",
-  "stock": 47753
+  "stock": 38887
  },
  "C77009": {
   "describe": "1uF 25V X5R \u00b110% 0402 Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
@@ -3875,6 +3917,7 @@
  "C83571": {
   "describe": "-55\u2103~+150\u2103 11pF 2 N-Channel 22pF 230mA 2V 2pF 400mW 60V 7.5\u03a9@5V N-Channel SOT-363 MOSFETs ROHS",
   "land": {
+   "holes": [],
    "pads": 6,
    "pitch": 0.65,
    "sizes": [
@@ -3910,7 +3953,7 @@
   },
   "model": "2N7002DW-7-F",
   "package": "SOT-363",
-  "stock": 25989
+  "stock": 100133
  },
  "C8369": {
   "describe": "-55\u2103~+155\u2103 50V 604\u03a9 62.5mW Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
@@ -3922,6 +3965,7 @@
  "C84374": {
   "describe": "-65\u2103~+150\u2103 1 12A@8/20us 130W@8/20us 14V 35pF 5V 5nA 9.5V Bidirectional ESD IEC 61000-4-2\u3001IEC 61000-4-5 DFN1006-2 ESD and Surge Protection (TVS/ESD) ROHS",
   "land": {
+   "holes": [],
    "pads": 2,
    "pitch": 0.64,
    "sizes": [
@@ -3941,7 +3985,7 @@
   },
   "model": "PESD5V0S1BL,315",
   "package": "DFN1006-2",
-  "stock": 67312
+  "stock": 76076
  },
  "C8545": {
   "describe": "1 N-channel 115mA 2.5V 225mW 25pF 50pF 5pF 5\u03a9@10V 60V N-Channel \u00b120V SOT-23 MOSFETs ROHS",
@@ -4002,6 +4046,7 @@
  "C94598": {
   "describe": "-20\u2103~+70\u2103 100mA 2.5mm 2V~4V 3V 4kHz 5.2mm 5.2mm 75dB Electromagnetic Passive (Externally Driven) SMD,5x5mm Buzzers ROHS",
   "land": {
+   "holes": [],
    "pads": 3,
    "pitch": 3.5,
    "sizes": [
@@ -4025,7 +4070,7 @@
   },
   "model": "MLT-5020",
   "package": "SMD,5x5mm",
-  "stock": 58913
+  "stock": 146968
  },
  "C95361": {
   "describe": "-40\u2103~+85\u2103 32.768kHz 6pF 70k\u03a9 Crystal Oscillator \u00b120ppm SMD3215-2P Crystals ROHS",
@@ -4054,6 +4099,7 @@
  "C98361": {
   "describe": "2.2uH 4.3A 48m\u03a9 7.6A \u00b120% SMD,4x4mm Power Inductors ROHS",
   "land": {
+   "holes": [],
    "pads": 2,
    "pitch": 3.2,
    "sizes": [
@@ -4073,6 +4119,6 @@
   },
   "model": "WPN4020H2R2MT",
   "package": "SMD,4x4mm",
-  "stock": 43280
+  "stock": 41498
  }
 }
