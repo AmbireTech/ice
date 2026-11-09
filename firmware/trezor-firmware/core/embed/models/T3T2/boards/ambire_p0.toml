@@ -14,6 +14,10 @@ panel = "io/display_panel_dem240320b1"
 # A raycaster maze behind 7 quick taps on the home screen (firmware only)
 [ambire_game]
 
+# The airgap switch's position (AIRGAP_SENSE), for the UI: the swipe up on
+# the home screen opens Bluetooth pairing off AIR, the QR camera on AIR
+[ambire_airgap]
+
 # The QR camera on J_CAM (OV2640, OV5640 or GC2145): a scanner test screen behind the
 # swipe up on the home screen, in place of Bluetooth pairing
 [ambire_camera]

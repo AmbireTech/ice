@@ -74,6 +74,10 @@
 #include <sec/optiga.h>
 #endif
 
+#ifdef USE_AMBIRE_AIRGAP
+#include <io/airgap.h>
+#endif
+
 #ifdef USE_AMBIRE_CAMERA
 #include <io/camera.h>
 #endif
@@ -1186,6 +1190,12 @@ __attribute((no_stack_protector)) void syscall_handler(uint32_t *args,
       camera_get_status__verified(status);
     } break;
 #endif  // USE_AMBIRE_CAMERA
+
+#ifdef USE_AMBIRE_AIRGAP
+    case SYSCALL_AMBIRE_AIRGAP_ENGAGED: {
+      args[0] = airgap_engaged();
+    } break;
+#endif  // USE_AMBIRE_AIRGAP
 
     default:
       applet_exit_fatal(applet, "Invalid syscall", __FILE_NAME__, __LINE__);

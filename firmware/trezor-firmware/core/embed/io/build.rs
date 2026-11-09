@@ -1,5 +1,7 @@
 use xbuild::{Result, build_mods};
 
+#[path = "airgap/build.rs"]
+mod airgap;
 #[path = "app_arena/build.rs"]
 mod app_arena;
 #[path = "backlight/build.rs"]
@@ -48,6 +50,7 @@ fn main() -> Result<()> {
         build_mods!(
             lib,
             [
+                airgap if cfg!(feature = "ambire_airgap"),
                 app_arena if cfg!(feature = "app_loading"),
                 backlight if cfg!(feature = "backlight"),
                 ble if cfg!(feature = "ble"),

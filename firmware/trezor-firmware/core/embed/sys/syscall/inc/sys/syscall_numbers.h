@@ -231,6 +231,9 @@ typedef enum {
   SYSCALL_AMBIRE_CAMERA_SET_ZOOM,
   SYSCALL_AMBIRE_CAMERA_CAPTURE,
   SYSCALL_AMBIRE_CAMERA_GET_STATUS,
+
+  // Ambire boards, [ambire_airgap]
+  SYSCALL_AMBIRE_AIRGAP_ENGAGED,
   // ------------------------------------------------------
   // Following syscalls are executed in kernel thread mode
 

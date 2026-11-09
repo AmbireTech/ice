@@ -20,6 +20,10 @@
 #include <io/ble.h>
 #endif
 
+#ifdef USE_AMBIRE_AIRGAP
+#include <io/airgap.h>
+#endif
+
 #ifdef USE_AMBIRE_CAMERA
 #include <io/camera.h>
 #include <io/qr_scan.h>

@@ -510,7 +510,7 @@ pub struct Homescreen {
     /// (or to the camera test, when it is built in)
     #[cfg(any(feature = "ble", feature = "ambire_camera"))]
     swipe_start: Option<Point>,
-    /// Ambire boards: the QR camera test behind the swipe up
+    /// Ambire boards: the QR camera test behind the swipe up when airgapped
     #[cfg(feature = "ambire_camera")]
     camera: super::ambire_camera::CameraTest,
 }
@@ -579,6 +579,17 @@ impl Homescreen {
             #[cfg(feature = "ambire_camera")]
             camera: super::ambire_camera::CameraTest::new(),
         })
+    }
+
+    /// Ambire boards: the swipe up goes to the QR camera when the device is
+    /// airgapped, or when there is no Bluetooth to go to
+    #[cfg(feature = "ambire_camera")]
+    fn swipe_up_opens_camera() -> bool {
+        #[cfg(feature = "ambire_airgap")]
+        let airgapped = crate::trezorhal::airgap::engaged();
+        #[cfg(not(feature = "ambire_airgap"))]
+        let airgapped = false;
+        airgapped || !cfg!(feature = "ble")
     }
 
     /// Ambire boards: true on the touch end of a swipe up
@@ -711,15 +722,18 @@ impl Component for Homescreen {
             // The swipe's touch also started the hold-to-lock delay
             self.delay.stop();
             self.loader.reset();
-            // The camera test takes the swipe up while it is built in; the
-            // home screen never draws its image buffer, so it lends it
+            // Airgapped (the switch on AIR): the QR camera; otherwise
+            // Bluetooth. The home screen never draws its image buffer, so it
+            // lends it to the camera.
             #[cfg(feature = "ambire_camera")]
-            {
+            if Self::swipe_up_opens_camera() {
                 self.camera.start(ctx, self.bg_image.raw_bytes());
                 return None;
             }
-            #[cfg(not(feature = "ambire_camera"))]
+            #[cfg(feature = "ble")]
             return Some(HomescreenMsg::Bluetooth);
+            #[cfg(not(feature = "ble"))]
+            return None;
         }
 
         if self.hold_to_lock {

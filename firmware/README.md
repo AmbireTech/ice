@@ -169,7 +169,8 @@ Against the upstream base:
 | `src/apps/homescreen/__init__.py`, `src/apps/management/ble/pair_from_homescreen.py` (new), `src/ble.py` | the swipe up starts pairing; the boot waits 0.5 s, not 5 s, for a radio that the airgap switch may have off |
 | `src/apps/homescreen/__init__.py` | firmware signed with a "DO NOT USE" vendor header (Trezor's dev keys) says so on the home screen: "Backup needed; dev", or "Dev firmware" when there is no other notice |
 | `io/camera/` (new: `stm32u5/camera.c`, `qr/`, `inc/io/camera.h`, `inc/io/qr_scan.h`), `io/build.rs`, `io/Cargo.toml`, `sys/syscall/` (numbers, dispatch, verifiers, stubs), `rust/build.rs`, `rust/trezorhal.h`, `rust/src/trezorhal/camera.rs` (new) | `[ambire_camera]`: the QR camera. The kernel drives it (power, XCLK, SCCB, DCMI snapshots by GPDMA into a buffer the app owns); the app decodes with quirc (vendored in `io/camera/qr/quirc`, see its `README.ambire`). See [QR camera test](#qr-camera-test) |
-| `rust/.../component/ambire_camera.rs` (new), `homescreen.rs`, `shape/utils/imagebuf.rs` | `[ambire_camera]`: the camera test screen, which takes the home screen's swipe up while it is built in |
+| `rust/.../component/ambire_camera.rs` (new), `homescreen.rs`, `shape/utils/imagebuf.rs` | `[ambire_camera]`: the camera test screen, behind the home screen's swipe up when airgapped |
+| `io/airgap/` (new), `sys/syscall/`, `rust/src/trezorhal/airgap.rs` (new), `homescreen.rs` | `[ambire_airgap]`: the airgap switch's position (AIRGAP_SENSE) for the UI: the swipe up opens the QR camera on AIR, Bluetooth pairing off AIR |
 
 What the build drives (compiled, not yet run on a board): the display, touch,
 USB, the boot chain and TrustZone. The backlight is on/off only.
@@ -213,7 +214,7 @@ Trezor's SPI bus and handshake lines. Messages are Trezor's own, framed with a
 start byte, a length and a checksum; a damaged message is dropped, not
 retried.
 
-- **Pairing:** on the home screen, swipe up. If Bluetooth is off, the device
+- **Pairing:** on the home screen, with the airgap switch off AIR, swipe up. If Bluetooth is off, the device
   offers to turn it on. It then shows its Bluetooth name: select it on the
   phone or computer, check that both show the same six-digit code, and swipe
   up (or tap) to confirm.
@@ -234,8 +235,9 @@ radio's start-up, the power-off time between restarts) are unchecked.
 ## QR camera test
 
 `[ambire_camera]` in the board file builds a camera test into the firmware.
-While it is in, **the swipe up on the home screen opens the camera test
-instead of Bluetooth pairing** (pairing is then out of reach).
+**The swipe up on the home screen follows the airgap switch**
+(`[ambire_airgap]`): on AIR it opens the camera test, off AIR Bluetooth
+pairing.
 
 - The top of the screen shows the camera's live picture in gray, 240 x 240.
   A QR code in view is decoded on the device; while one decodes, the picture

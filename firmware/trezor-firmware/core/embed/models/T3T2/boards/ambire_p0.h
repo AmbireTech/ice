@@ -180,6 +180,12 @@
 #define RADIO_UART_RX_PORT GPIOB
 #define RADIO_UART_RX_PIN GPIO_PIN_11
 
+// The airgap switch's position, [ambire_airgap]: AIRGAP_SENSE, high on AIR
+// (the switch drives it through a series resistor)
+#define AIRGAP_SENSE_PORT GPIOE
+#define AIRGAP_SENSE_PIN GPIO_PIN_7
+#define AIRGAP_SENSE_CLK_EN __HAL_RCC_GPIOE_CLK_ENABLE
+
 // QR camera on J_CAM, [ambire_camera] (io/camera/stm32u5/camera.c): a 24-pin
 // DVP module in the ESP32-CAM pinout (OV2640, OV5640 or GC2145). CAM_EN switches
 // on the module's AVDD and DVDD regulators (100 k pull-down: off while the

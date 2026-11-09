@@ -847,6 +847,20 @@ ts_t nfc_transceive(const nfc_apdu_message_t *cmd, nfc_apdu_message_t *resp) {
 #endif
 
 // =============================================================================
+// airgap.h (Ambire boards)
+// =============================================================================
+
+#ifdef USE_AMBIRE_AIRGAP
+
+#include <io/airgap.h>
+
+bool airgap_engaged(void) {
+  return (bool)syscall_invoke0(SYSCALL_AMBIRE_AIRGAP_ENGAGED);
+}
+
+#endif  // USE_AMBIRE_AIRGAP
+
+// =============================================================================
 // camera.h (Ambire boards)
 // =============================================================================
 

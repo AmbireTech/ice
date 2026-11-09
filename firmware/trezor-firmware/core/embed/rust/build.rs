@@ -288,6 +288,8 @@ fn generate_trezorhal_bindings(lib: &mut CLibrary) -> Result<()> {
             .allowlist_type("ble_state_t")
             .allowlist_type("ble_event_t")
             .allowlist_type("bt_le_addr_t")
+            // airgap switch (Ambire boards)
+            .allowlist_function("airgap_engaged")
             // camera (Ambire boards)
             .allowlist_var("CAMERA_.*")
             .allowlist_type("camera_status_t")

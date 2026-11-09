@@ -25,6 +25,7 @@ sys.workspace = true
 asan = ["models/asan"]
 app_loading = ["io/app_loading", "io/ipc"]
 bootloader_devel = ["sec/bootloader_devel"]
+ambire_airgap = ["io/ambire_airgap"]
 ambire_camera = ["io/ambire_camera"]
 ambire_power = []
 ambire_radio = []
