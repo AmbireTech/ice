@@ -75,6 +75,13 @@ static secbool usb_device_init(void) {
 
   usb_dev_info_t dev_info = dev_info_default;
 
+#ifdef MODEL_USB_INTERFACE
+  // A board may name the interface (Ambire's boards)
+  _Static_assert(sizeof(MODEL_USB_INTERFACE) <= sizeof(dev_info.interface),
+                 "MODEL_USB_INTERFACE too long");
+  memcpy(dev_info.interface, MODEL_USB_INTERFACE, sizeof(MODEL_USB_INTERFACE));
+#endif
+
   return usb_init(&dev_info);
 }
 

@@ -159,6 +159,9 @@ Against the upstream base:
 | `src/trezor/wire/thp/ui.py` | Delizia has no THP pairing screen: the generic confirmation, Eckhart's wording |
 | `src/trezor/wire/message_handler.py` | Ambire boards report the exception behind "Firmware error" |
 | `models/T3T2/model_T3T2.h`, `boards/ambire_p0.{h,toml}`, `rust/.../theme/mod.rs`, `welcome_screen.rs`, `src/boot.py` | branding: the board names the product "Ambire"; `[ambire_branding]` puts the flame on the welcome screen (held 3 s) |
+| `rust/src/translations/ambire_strings.rs` (new), `translations/{mod,translated_string}.rs` | `[ambire_branding]`: the 24 English strings Delizia shows that name Trezor, Trezor Suite or trezor.io, reworded for Ambire ("the Ambire app", ambire.com). Looked up before the built-in English and any translation blob; `en.json` and the generated tables stay as upstream has them. After a sync, `branding/check_strings.py` fails on a new string naming Trezor (and, given `out/ambire_p0`, lists what the binaries still say) |
+| `rust/.../layout_delizia/bootloader/{welcome,menu,mod}.rs`, `res/hs_flame.toif` | `[ambire_branding]`: the bootloader's own texts (welcome "with your Ambire at ambire.com", "REBOOT AMBIRE", "Resetting Ambire", the reset results); the home screen flame redrawn with the fixed pixel order |
+| `boards/ambire_p0.h`, `io/usb/usb_config.c`, `io/usb/stm32/usb.c`, `io/gfx/rsod.c`, `sec/rsod/rsod_special.c` | `MODEL_USB_INTERFACE` ("Ambire Interface"), `MODEL_WEBUSB_URL` (the landing page a bootloader without firmware offers: ambire.com) and `MODEL_SUPPORT_FOOTER` ("Please visit ambire.com" on error screens) in the board header, each beside Trezor's default |
 | `rust/.../component/ambire_game.rs` (new), `homescreen.rs` | `[ambire_game]`: a raycaster maze behind 7 quick taps on the home screen |
 | `projects/kernel/ambire_power.c` (new), `main.c`, `build.rs`, `Cargo.toml`, `project.toml` | `[ambire_power]` (proto 0's power latch): hold the power key 3 s and the device switches off (screen dark at once, power gone ~1 s after the key is let go, USB in or not). The press that switched it on does not count. If it is still running 3 s after the key is let go, it restarts |
 | `projects/kernel/ambire_radio.c` (new), `main.c`, `build.rs` | `[ambire_radio]`: the kernel allows the radio's power (RADIO_OFF low; the airgap switch still decides) and says hello on USART3 at boot. Off since `[ble]`: one owner of USART3 (a build with both stops with an error) |
@@ -171,6 +174,16 @@ Against the upstream base:
 | `io/camera/` (new: `stm32u5/camera.c`, `qr/`, `inc/io/camera.h`, `inc/io/qr_scan.h`), `io/build.rs`, `io/Cargo.toml`, `sys/syscall/` (numbers, dispatch, verifiers, stubs), `rust/build.rs`, `rust/trezorhal.h`, `rust/src/trezorhal/camera.rs` (new) | `[ambire_camera]`: the QR camera. The kernel drives it (power, XCLK, SCCB, DCMI snapshots by GPDMA into a buffer the app owns); the app decodes with quirc (vendored in `io/camera/qr/quirc`, see its `README.ambire`). See [QR camera test](#qr-camera-test) |
 | `rust/.../component/ambire_camera.rs` (new), `homescreen.rs`, `shape/utils/imagebuf.rs` | `[ambire_camera]`: the camera test screen, behind the home screen's swipe up when airgapped |
 | `io/airgap/` (new), `sys/syscall/`, `rust/src/trezorhal/airgap.rs` (new), `homescreen.rs` | `[ambire_airgap]`: the airgap switch's position (AIRGAP_SENSE) for the UI: the swipe up opens the QR camera on AIR, Bluetooth pairing off AIR |
+
+**Trezor's name, where it stays** (none of it is shown on the device's
+screens; `branding/check_strings.py out/ambire_p0` accounts for each):
+`Features.vendor` "trezor.io" (trezorlib checks it), the FIDO attestation
+certificate ("Trezor FIDO Root CA"), the "Trezor Vendor Header" hash domain and
+the dev vendor header itself, the names of the third-party "Trezor Steakhouse"
+Ethereum vaults (the contracts' own names), error messages sent to the host,
+and the USB VID/PID. Debug-only text (the MicroPython REPL banner, debuglink
+errors) and code for features this board does not build (the bootloader's
+Bluetooth, the SD card, prodtest) keep it too.
 
 What the build drives (compiled, not yet run on a board): the display, touch,
 USB, the boot chain and TrustZone. The backlight is on/off only.

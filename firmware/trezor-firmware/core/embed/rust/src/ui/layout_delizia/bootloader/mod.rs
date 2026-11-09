@@ -339,9 +339,23 @@ impl BootloaderUI for UIDelizia {
         }
     }
 
+    #[cfg(not(feature = "ambire_branding"))]
     fn screen_wipe_progress(progress: u16, initialize: bool) {
         Self::screen_progress(
             "Resetting Trezor",
+            progress,
+            initialize,
+            BLD_FG,
+            BLD_WIPE_COLOR,
+            Some((Icon::new(FIRE32), BLD_FG)),
+            None,
+        )
+    }
+
+    #[cfg(feature = "ambire_branding")]
+    fn screen_wipe_progress(progress: u16, initialize: bool) {
+        Self::screen_progress(
+            "Resetting Ambire",
             progress,
             initialize,
             BLD_FG,
@@ -373,6 +387,7 @@ impl BootloaderUI for UIDelizia {
     }
 
     fn screen_wipe_success() {
+        #[cfg(not(feature = "ambire_branding"))]
         let mut frame = ResultScreen::new(
             &RESULT_WIPE,
             Icon::new(CHECK40),
@@ -381,14 +396,33 @@ impl BootloaderUI for UIDelizia {
                 .vertically_centered(),
             true,
         );
+        #[cfg(feature = "ambire_branding")]
+        let mut frame = ResultScreen::new(
+            &RESULT_WIPE,
+            Icon::new(CHECK40),
+            "Ambire reset\nsuccessfully".into(),
+            Label::centered(RECONNECT_MESSAGE.into(), RESULT_WIPE.title_style())
+                .vertically_centered(),
+            true,
+        );
         run(&mut frame, true, false);
     }
 
     fn screen_wipe_fail() {
+        #[cfg(not(feature = "ambire_branding"))]
         let mut frame = ResultScreen::new(
             &RESULT_WIPE,
             Icon::new(WARNING40),
             "Trezor reset was\nnot successful".into(),
+            Label::centered(RECONNECT_MESSAGE.into(), RESULT_WIPE.title_style())
+                .vertically_centered(),
+            true,
+        );
+        #[cfg(feature = "ambire_branding")]
+        let mut frame = ResultScreen::new(
+            &RESULT_WIPE,
+            Icon::new(WARNING40),
+            "Ambire reset was\nnot successful".into(),
             Label::centered(RECONNECT_MESSAGE.into(), RESULT_WIPE.title_style())
                 .vertically_centered(),
             true,

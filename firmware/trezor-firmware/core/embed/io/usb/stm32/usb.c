@@ -594,6 +594,19 @@ static uint8_t usb_class_setup(USBD_HandleTypeDef *dev,
           req->bRequest == USB_WEBUSB_VENDOR_CODE) {
         if (req->wIndex == USB_WEBUSB_REQ_GET_URL &&
             req->wValue == USB_WEBUSB_LANDING_PAGE) {
+#ifdef MODEL_WEBUSB_URL
+          // A board's own landing page (Ambire's boards)
+          static uint8_t webusb_url_board[3 + sizeof(MODEL_WEBUSB_URL) - 1];
+          webusb_url_board[0] = sizeof(webusb_url_board);  // bLength
+          webusb_url_board[1] = USB_WEBUSB_DESCRIPTOR_TYPE_URL;
+          webusb_url_board[2] = USB_WEBUSB_URL_SCHEME_HTTPS;
+          memcpy(&webusb_url_board[3], MODEL_WEBUSB_URL,
+                 sizeof(MODEL_WEBUSB_URL) - 1);
+          wait_random();
+          USBD_CtlSendData(dev, webusb_url_board,
+                           MIN_8bits(req->wLength, sizeof(webusb_url_board)));
+          return USBD_OK;
+#endif
           static const char webusb_url[] = {
               3 + 15,                          // uint8_t bLength
               USB_WEBUSB_DESCRIPTOR_TYPE_URL,  // uint8_t bDescriptorType

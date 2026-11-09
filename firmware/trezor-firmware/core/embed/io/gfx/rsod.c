@@ -27,10 +27,16 @@
 #include <sec/rsod_special.h>
 #include <sys/bootutils.h>
 #include <sys/system.h>
+// A board may point to its own site (MODEL_SUPPORT_FOOTER, Ambire's boards)
+#include <trezor_model.h>
 
 #define RSOD_DEFAULT_TITLE "Internal error";
 #define RSOD_DEFAULT_MESSAGE "Unspecified";
+#ifdef MODEL_SUPPORT_FOOTER
+#define RSOD_DEFAULT_FOOTER MODEL_SUPPORT_FOOTER
+#else
 #define RSOD_DEFAULT_FOOTER "Please visit trezor.io/rsod";
+#endif
 #define RSOD_EXIT_MESSAGE "Exit "  // followed by exit code
 
 #ifdef KERNEL_MODE
@@ -178,6 +184,9 @@ void show_wipe_info(const bootutils_wipe_info_t* info) {
   const char* title = "Device wiped";
   const char* message = ALL_DATA_ERASED_MESSAGE;
   const char* footer = "Please visit trezor.io/rsod";
+#ifdef MODEL_SUPPORT_FOOTER
+  footer = MODEL_SUPPORT_FOOTER;
+#endif
 
   if (info->title[0] != '\0') {
     title = info->title;

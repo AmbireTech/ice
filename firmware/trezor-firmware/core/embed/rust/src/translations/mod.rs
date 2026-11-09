@@ -1,3 +1,5 @@
+#[cfg(feature = "ambire_branding")]
+mod ambire_strings;
 mod blob;
 mod error;
 pub mod flash;

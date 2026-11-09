@@ -10,6 +10,11 @@ impl TranslatedString {
     }
 
     pub fn translate<'a>(self, source: Option<&'a Translations>) -> &'a str {
+        // Ambire boards: the strings naming Trezor, reworded (every language)
+        #[cfg(feature = "ambire_branding")]
+        if let Some(s) = super::ambire_strings::get(self) {
+            return s;
+        }
         source
             .and_then(|s| s.translation(self as _))
             .unwrap_or_else(|| self.untranslated())

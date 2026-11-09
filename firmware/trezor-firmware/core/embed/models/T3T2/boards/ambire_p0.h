@@ -19,6 +19,11 @@
 // flame logo comes with [ambire_branding] in ambire_p0.toml
 #define MODEL_FULL_NAME "Ambire"
 #define MODEL_USB_MANUFACTURER "Ambire"
+// USB interface name, WebUSB landing page (https://, offered by a bootloader
+// with no firmware) and the footer of error screens, in place of Trezor's
+#define MODEL_USB_INTERFACE "Ambire Interface"
+#define MODEL_WEBUSB_URL "ambire.com"
+#define MODEL_SUPPORT_FOOTER "Please visit ambire.com"
 
 // Power latch. The power button lifts the 3.3 V buck-boost's enable; the MCU
 // keeps it up by driving PWR_HOLD high. An RC on the enable holds the rail for

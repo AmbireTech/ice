@@ -40,7 +40,12 @@ impl Component for Welcome {
             .with_fg(GREY)
             .render(target);
 
+        #[cfg(not(feature = "ambire_branding"))]
         shape::Text::new(TEXT_ORIGIN + Offset::y(STRIDE), "with your Trezor", font)
+            .with_fg(GREY)
+            .render(target);
+        #[cfg(feature = "ambire_branding")]
+        shape::Text::new(TEXT_ORIGIN + Offset::y(STRIDE), "with your Ambire", font)
             .with_fg(GREY)
             .render(target);
 
@@ -50,9 +55,18 @@ impl Component for Welcome {
 
         let at_width = font.text_width("at ");
 
+        #[cfg(not(feature = "ambire_branding"))]
         shape::Text::new(
             TEXT_ORIGIN + Offset::new(at_width, 2 * STRIDE),
             "trezor.io/start",
+            font,
+        )
+        .with_fg(WHITE)
+        .render(target);
+        #[cfg(feature = "ambire_branding")]
+        shape::Text::new(
+            TEXT_ORIGIN + Offset::new(at_width, 2 * STRIDE),
+            "ambire.com",
             font,
         )
         .with_fg(WHITE)

@@ -31,7 +31,10 @@ pub struct Menu {
 
 impl Menu {
     pub fn new() -> Self {
+        #[cfg(not(feature = "ambire_branding"))]
         let content_reboot = IconText::new("REBOOT TREZOR", Icon::new(REFRESH24));
+        #[cfg(feature = "ambire_branding")]
+        let content_reboot = IconText::new("REBOOT AMBIRE", Icon::new(REFRESH24));
         let content_reset = IconText::new("FACTORY RESET", Icon::new(FIRE24));
 
         let mut instance = Self {

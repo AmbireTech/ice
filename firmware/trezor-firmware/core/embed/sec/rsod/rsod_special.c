@@ -23,6 +23,8 @@
 #include <sec/rsod_special.h>
 #include <sys/bootutils.h>
 #include <sys/system.h>
+// A board may point to its own site (MODEL_SUPPORT_FOOTER, Ambire's boards)
+#include <trezor_model.h>
 
 #ifdef TREZOR_MODEL_T3W1
 // empty message for T3W1 so that it falls to the more appropriate default
@@ -59,7 +61,13 @@ void __attribute__((noreturn)) show_pin_too_many_screen(void) {
 }
 
 void __attribute__((noreturn)) show_install_restricted_screen(void) {
+#ifdef MODEL_SUPPORT_FOOTER
+  error_shutdown_ex("Install restricted",
+                    "Installation of custom firmware is currently restricted.",
+                    MODEL_SUPPORT_FOOTER);
+#else
   error_shutdown_ex("Install restricted",
                     "Installation of custom firmware is currently restricted.",
                     "Please visit trezor.io/bootloader");
+#endif
 }
