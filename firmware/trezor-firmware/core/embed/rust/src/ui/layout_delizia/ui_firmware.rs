@@ -969,7 +969,9 @@ impl FirmwareUI for UIDelizia {
         };
         let paragraphs = ParagraphVecShort::from_iter([
             Paragraph::new(&theme::TEXT_MAIN_GREY_LIGHT, description),
-            Paragraph::new(&theme::TEXT_SUPER, code).centered(),
+            // Not TEXT_SUPER: its 42 px font has lowercase letters only (digits
+            // draw as "?")
+            Paragraph::new(&theme::TEXT_MONO, code).centered(),
         ])
         .into_paragraphs();
         let screen = BLEHandler::new(
