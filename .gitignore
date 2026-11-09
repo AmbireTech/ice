@@ -20,3 +20,11 @@ art/__pycache__/
 # art/out/: print files rebuilt by art/build_uv.py from the board (~14 MB each)
 art/out/
 art/.venv/
+
+# Per-user and generated files anywhere in the repo
+**/__pycache__/
+*.kicad_prl
+**/.history/
+board/.history_trim/
+# Claude Code's agent worktrees
+.claude/
