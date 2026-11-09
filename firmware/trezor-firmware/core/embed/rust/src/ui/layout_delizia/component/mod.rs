@@ -49,6 +49,8 @@ mod ambire_game;
 pub mod ambire_airgap;
 #[cfg(feature = "ambire_camera")]
 mod ambire_camera;
+#[cfg(any(feature = "ble", feature = "ambire_airgap"))]
+mod ambire_status;
 #[cfg(feature = "ambire_camera")]
 mod ambire_ur;
 

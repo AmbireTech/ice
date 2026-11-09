@@ -508,6 +508,9 @@ pub struct Homescreen {
     game: super::ambire_game::Game,
     /// Ambire boards: where the touch began, for the swipe up to Bluetooth
     /// (or to the airgap menu, when the QR camera is built in)
+    /// Ambire boards: airgapped / Bluetooth status in the top-right corner
+    #[cfg(any(feature = "ble", feature = "ambire_airgap"))]
+    status: super::ambire_status::StatusLine,
     #[cfg(any(feature = "ble", feature = "ambire_camera"))]
     swipe_start: Option<Point>,
 }
@@ -574,6 +577,8 @@ impl Homescreen {
             label_anim: HideLabelAnimation::new(label_width.max(label_unlocked_width)),
             #[cfg(feature = "ambire_game")]
             game: super::ambire_game::Game::new(),
+            #[cfg(any(feature = "ble", feature = "ambire_airgap"))]
+            status: super::ambire_status::StatusLine::new(),
             #[cfg(any(feature = "ble", feature = "ambire_camera"))]
             swipe_start: None,
         })
@@ -705,6 +710,9 @@ impl Component for Homescreen {
 
         Self::event_usb(self, ctx, event);
 
+        #[cfg(any(feature = "ble", feature = "ambire_airgap"))]
+        self.status.event(ctx, event);
+
         let resume_label = unsafe { HOMESCREEN_STATE.label };
 
         self.label_anim.process_event(ctx, event, resume_label);
@@ -776,6 +784,9 @@ impl Component for Homescreen {
                 self.label_device.render(target);
                 self.label_unlocked.render(target);
             });
+
+            #[cfg(any(feature = "ble", feature = "ambire_airgap"))]
+            self.status.render(target);
 
             target.with_origin(y_offset, &|target| {
                 if let Some(notif) = self.get_notification() {
