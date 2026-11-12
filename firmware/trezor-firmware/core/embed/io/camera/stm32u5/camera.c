@@ -425,11 +425,15 @@ static void sccb_lines_probe(void) {
 }
 
 // XCLK's pin read back while the timer drives it: sampled far below 20 MHz
-// it still changes level often; never means no clock leaves the MCU
+// it still changes level often; never means no clock leaves the MCU. The
+// samples are spaced unevenly: a fixed-length loop can lock onto the clock's
+// phase (8 core cycles per XCLK period) and read the same level every time.
 static void xclk_probe(void) {
   uint32_t edges = 0;
   bool prev = (CAMERA_XCLK_PORT->IDR & CAMERA_XCLK_PIN) != 0;
   for (int i = 0; i < 20000; i++) {
+    for (volatile int d = i % 5; d > 0; d--) {
+    }
     bool now = (CAMERA_XCLK_PORT->IDR & CAMERA_XCLK_PIN) != 0;
     edges += now != prev;
     prev = now;
