@@ -426,9 +426,9 @@ The camera test is the third entry of the airgap menu.
   resting levels (`SCL 1 SDA 1`: pulled up, nothing holds them down), the bus
   error of the last chip-id read (`0x04`: nothing acknowledged, `0x20`: timed
   out) and whether the camera clock leaves the chip (`XCLK` level changes
-  seen; 0: none). When nothing answers, the camera stays powered and clocked
-  on that screen, so its supplies (2.8 V, 1.3 V) and clock can be measured,
-  until the test is closed. Tap to retry.
+  seen; 0: none). A camera that does not answer is switched off at once: a
+  module that never answered ran a camera supply regulator hot on proto 0.
+  Tap to retry.
 
 Supported sensors: the OmniVision OV2640 (the module proto 0 was drawn for)
 and OV5640 and the GalaxyCore GC2145 modules in the ESP32-CAM pinout, told

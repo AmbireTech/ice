@@ -691,8 +691,9 @@ bool camera_open(uint32_t zoom) {
             ? CAMERA_ERR_UNKNOWN_ID
             : CAMERA_ERR_NO_SENSOR;
     LOG_ERR("no sensor (id 0x%04x)", (unsigned)g_camera.st.raw_id);
-    // Bring-up: left powered and clocked, so its rails and XCLK can be
-    // measured on the failure screen; camera_close() switches it off
+    // Switched off: a module that does not answer may be loading a rail
+    // (a camera LDO ran hot on proto 0 with modules that never answered)
+    camera_close();
     return false;
   }
   LOG_INF("sensor 0x%04x", (unsigned)g_camera.st.sensor_id);

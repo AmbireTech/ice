@@ -76,8 +76,7 @@ typedef struct {
 
 // Powers the module up, finds the sensor and starts it streaming at `zoom`.
 // Blocks for up to ~1 s. Returns false if no supported sensor came up; the
-// status says why. When nothing answers, the module stays powered and
-// clocked (for measuring its rails) until camera_close().
+// status says why. A module that does not come up is switched off.
 bool camera_open(uint32_t zoom);
 
 // Stops any capture and powers the module down.
