@@ -160,10 +160,11 @@ WALL = 1.8
 FLOOR = 1.2
 LIP = 0.8             # bezel over the glass
 GAP = 0.3             # board edge to wall
-# Sliding and snapping fits, for an FDM print (0.4 mm nozzle; the first print, 2026-10-26,
-# at 0-0.1 mm would not go together): the tongue in the bezel's skirt and inside its
-# fill, the north hook in its groove.
-FIT = 0.2
+# Sliding and snapping fits, for a resin (MSLA) print at calibrated exposure (2026-11-13:
+# the case is printed on an Anycubic Photon Mono M7 Pro): the tongue in the bezel's skirt
+# and inside its fill, the north hook in its groove. An FDM print needs 0.2 (the first
+# print, 2026-10-26, 0.4 mm nozzle, would not go together at 0-0.1).
+FIT = 0.1
 TONGUE_T, TONGUE_H, TONGUE_CLR = 0.8, 1.8, FIT
 BACK_FILLET, FRONT_FILLET = 1.5, 1.2
 # Outer walls lean in toward the back and toward the front, widest at the parting
@@ -182,7 +183,7 @@ CB_R, CB_DEPTH = 2.05, 1.7   # counterbore for the 3.8 x 1.6 mm head, flush with
 BOSS_R, PILOT_R = 2.2, 0.8   # bezel boss, 1.6 mm pilot for M2 self-tapping
 PILOT_TOP_CLR = 0.8  # pilot stops this far under the bezel's front face
 PIN_R = 1.0          # locating pin in a 2.2 mm board hole
-HOOK = (30.0, 0.3, 0.8, 0.15)  # north hook: length, ridge depth, ridge height, clearance
+HOOK = (30.0, 0.3, 0.8, FIT)   # north hook: length, ridge depth, ridge height, clearance
 SOUND_R = 1.0        # hole in the back over the buzzer's top port (MLT-5020: 0.8 mm port)
 SCREW_LENGTHS = (6, 8, 10, 12)
 MIN_ENGAGE = 2.5     # mm of thread in the boss
@@ -220,6 +221,7 @@ ARM_GAP = 2 * ARM_SWING
 SMALL_CLR = 0.3       # the pack board's small parts under the cells' cans
 PACK_PCB_T = 0.8      # the pack's board
 PACK_LEDGE = 1.0      # its north and south edges rest on the tray's walls this far
+PACK_PCB_CLR = 0.1    # the pack board in the tray's top and in the back's bay, each side (the board's own outline tolerance)
 PACK_CLR = 0.3        # the clips to the tray's walls
 PACK_RIM = 1.4        # the tray's walls round the pack board, where the tray seats on the back face
 BAY_CLR = 0.2         # a pack board standing proud of the tray's rim gets a bay in the back this much deeper:
@@ -295,14 +297,15 @@ PRINT_SCHEMES = [
     {"id": "incognito", "label": "Incognito", "ink": None, "mask": "#181A1F", "colour": False},   # plain black, no print
 ]
 
-PRINT_NOTE = """Units are millimetres. Print in see-through resin or PETG (ice blue, orange,
-purple or clear). The fits are set for an FDM printer with a 0.4 mm nozzle (0.2 mm
-between parts that slide or snap). These files have not been printed yet.
+PRINT_NOTE = """Units are millimetres. Print in clear resin on a resin (MSLA) printer, each part
+directly on the build plate as laid out, no supports and no raft. The fits are set for
+resin at calibrated exposure (0.1 mm between parts that slide or snap); a filament
+printer needs 0.2 mm. These files have not been printed yet.
 """
 
 CASE_README = """Ambire Ice v4 case
 
-case.3mf     the four parts laid out for printing (Bambu Studio, OrcaSlicer, PrusaSlicer):
+case.3mf     the four parts laid out for printing (PrusaSlicer, Lychee, CHITUBOX):
              the shell on its back, the bezel face down, the joystick's cap on its sleeve,
              the airgap slider on its flange. The shell and the bezel need no supports.
 case.stl     the same layout for any other slicer (split it into parts to place them yourself)
@@ -1000,7 +1003,7 @@ def main():
     shell -= rr_prism(*fro_win, (fro_win[3] - fro_win[1]) / 2 - 0.01, z_face - 1, z_floor_in + 1)
     shell -= box(tab[0] - hm[1], tab[1] - CONN_CLR, tab[2] + CONN_CLR, tab[3] + CONN_CLR, z_face - 1, z_floor_in + 1)
     if bay:
-        bay_box = (pcb[0] - FIT / 2, pcb[1] - FIT / 2, pcb[2] + FIT / 2, pcb[3] + FIT / 2)
+        bay_box = (pcb[0] - PACK_PCB_CLR, pcb[1] - PACK_PCB_CLR, pcb[2] + PACK_PCB_CLR, pcb[3] + PACK_PCB_CLR)
         in_bay = [(hx, hy) for hx, hy in screw_holes if bay_box[0] - CB_R < hx < bay_box[2] + CB_R and bay_box[1] - CB_R < hy < bay_box[3] + CB_R]
         if in_bay:
             raise SystemExit(f"screw heads {in_bay} would stand in the pack board's bay")
@@ -1012,7 +1015,7 @@ def main():
     tray = rr_prism(*pack_o, PACK_R, z_pack, z_face)
     tray = fillet(tray.edges().group_by(Axis.Z)[0], PACK_FILLET)
     tray -= box(*cav, z_pack - 1, z_face + 1)
-    tray -= box(pcb[0], pcb[1] - FIT / 2, pcb[2], pcb[3] + FIT / 2, z_pcb_bot, z_face + 1)
+    tray -= box(pcb[0], pcb[1] - PACK_PCB_CLR, pcb[2], pcb[3] + PACK_PCB_CLR, z_pcb_bot, z_face + 1)
 
     # ── the frame (print part): on the pack board's outer face, round the pins and the magnets
     frame = rr_prism(*fro, hm[1] - 0.01, z_pcb_top, z_body) + box(fro[2] - hm[1], tab[1], tab[2], tab[3], z_pcb_top, z_body)
