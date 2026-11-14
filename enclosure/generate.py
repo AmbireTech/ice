@@ -306,7 +306,7 @@ printer needs 0.2 mm. These files have not been printed yet.
 CASE_README = """Ambire Ice v4 case
 
 case.3mf     the four parts laid out for printing (PrusaSlicer, Lychee, CHITUBOX):
-             the shell on its back, the bezel face down, the joystick's cap on its sleeve,
+             the shell on its back, the bezel face down, the joystick's cap on its pad,
              the airgap slider on its flange. The shell and the bezel need no supports.
 case.stl     the same layout for any other slicer (split it into parts to place them yourself)
 halves.stl   the shell and the bezel alone, laid out the same way (halves.pwsz: sliced for the
@@ -316,7 +316,7 @@ The parts:
   shell      back shell (standoffs, locating pins, the screw hole, the camera window, the
              window the pack's connector drops through)
   bezel      front bezel (the screen sits in it; the screw threads into its chin)
-  joycap     the joystick's cap: print it standing on its sleeve, dish up; press it straight
+  joycap     the joystick's cap: print it upside down, its flat pad on the plate; press it straight
              onto the stem (a drop of glue if it comes loose)
   airslider  the airgap switch's slider: print it on its flange, grip up; it goes into its
              window in the shell's west wall from inside, grip out, before the board
@@ -1170,7 +1170,7 @@ def main():
 
     size = (out_o[2] - out_o[0], out_o[3] - out_o[1], z_top - z_floor_out)   # the device; the pack adds to it
     print_layout((("shell", shell), ("bezel", Rot(180, 0, 0) * bezel)), OUT / "halves")   # the case alone (resin plate)
-    print_layout((("shell", shell), ("bezel", Rot(180, 0, 0) * bezel), ("joycap", joy_cap),
+    print_layout((("shell", shell), ("bezel", Rot(180, 0, 0) * bezel), ("joycap", Rot(180, 0, 0) * joy_cap),
                   ("airslider", airslider.print_pose(air_slider))), OUT / "case")
     print_layout((("tray", Rot(180, 0, 0) * tray), ("frame", Rot(180, 0, 0) * frame)), OUT / "battery-tray")
     for name, part in (("shell", shell), ("bezel", bezel), ("tray", tray), ("frame", frame), ("joycap", joy_cap), ("airslider", air_slider)):

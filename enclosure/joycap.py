@@ -18,11 +18,13 @@ The stem (ALPS SKRH series drawing, SKRHAAE010 page 2018-03-21, and the switch's
   The drawing gives no mechanical tilt limit beyond the operating travel.
 
 The cap: a sleeve with a square socket over the post (crush ribs on its four flats take
-up the print's tolerance, resin or filament), flaring at 45 deg into a 8 mm pad with a
-shallow dish and a centre dot for the thumb. It nests in a 45 deg countersink in the
+up the print's tolerance, resin or filament), flaring at 45 deg into a flat 8 mm pad with a
+chamfered edge and a centre dimple to find the push by feel. It nests in a 45 deg countersink in the
 bezel's front face, parallel to the flare, so the bezel stops a tilt at about twice the
-switching angle instead of the switch's own stem. It prints standing on its sleeve, dish
-up, with no supports (every overhang is 45 deg; the socket's roof is a 2 mm bridge).
+switching angle instead of the switch's own stem. It prints upside down, the pad flat on
+the plate, with no supports: the plate holds its largest layers, everything above narrows
+(flare, sleeve), the socket opens upward, and the chamfer and the dimple are 45 deg.
+(Standing on its sleeve, an 11 mm2 foot carried the 50 mm2 pad: the resin peel tore at it.)
 """
 
 from __future__ import annotations
@@ -31,7 +33,7 @@ import math
 
 import numpy as np
 from build123d import (
-    Box, Cone, Cylinder, Plane, Polyline, Pos, Rot, RectangleRounded, Sphere, Vector,
+    Box, Cone, Cylinder, Plane, Polyline, Pos, Rot, RectangleRounded, Vector,
                        Axis, extrude, make_face, revolve)
 
 # ── the stem (sources above) ────────────────────────────────────────────────
@@ -52,10 +54,8 @@ RIB_W, RIB_TO = 0.5, POST - 0.1   # ...but four crush ribs, one per flat, bring 
 SLEEVE_R = 2.2          # the sleeve inside the bezel's hole
 HEAD_R = 4.0            # the pad: 8 mm across
 HEAD_BAND = 0.5         # its straight edge above the flare
-DISH_DEPTH = 0.35       # the dish in the top, inside RIM
-RIM = 0.7               # flat land round the dish
-EDGE_R = 0.4            # rounded outer edge
-DOT_R, DOT_H = 0.8, 0.15   # a centre dot to find the push by feel
+CHAMFER = 0.4           # 45 deg outer edge (prints as the first layers' overhang: 45 deg)
+DIMPLE_R, DIMPLE_DEPTH = 0.8, 0.3   # a 45 deg centre dimple to find the push by feel
 MIN_WALL = 0.8          # two 0.4 mm perimeters
 
 # ── the bezel's well round it ───────────────────────────────────────────────
@@ -80,12 +80,12 @@ def _levels(z_top: float) -> dict:
 
 
 def _profile(z_top: float) -> np.ndarray:
-    """The cap's outline in (r, z), bottom up, without the dish (cut later)."""
+    """The cap's outline in (r, z), bottom up, with the dimple."""
     L = _levels(z_top)
-    arc = [(HEAD_R - EDGE_R + EDGE_R * math.cos(a), L["z_rim"] - EDGE_R + EDGE_R * math.sin(a))
-           for a in np.linspace(0, math.pi / 2, 7)]
     pts = [(0.0, L["z_bottom"]), (SLEEVE_R, L["z_bottom"]), (SLEEVE_R, L["z_flare0"]),
-           (HEAD_R, L["z_flare1"]), *arc, (0.0, L["z_rim"])]
+           (HEAD_R, L["z_flare1"]), (HEAD_R, L["z_rim"] - CHAMFER), (HEAD_R - CHAMFER, L["z_rim"]),
+           (DIMPLE_R, L["z_rim"]), (DIMPLE_R - DIMPLE_DEPTH, L["z_rim"] - DIMPLE_DEPTH),
+           (0.0, L["z_rim"] - DIMPLE_DEPTH)]
     return np.array(pts)
 
 
@@ -101,13 +101,6 @@ def joystick_cap(x: float, y: float, z_top: float):
     L = _levels(z_top)
     face = make_face(Plane.XZ * Polyline(*[tuple(p) for p in _profile(z_top)], close=True))
     cap = revolve(face, Axis.Z)
-    # the dish: a sphere cap DISH_DEPTH deep inside the rim, and the dot in its middle
-    r_dish = HEAD_R - RIM
-    rs = (r_dish ** 2 + DISH_DEPTH ** 2) / (2 * DISH_DEPTH)
-    cap -= Pos(0, 0, L["z_rim"] - DISH_DEPTH + rs) * Sphere(rs)
-    rd = (DOT_R ** 2 + DOT_H ** 2) / (2 * DOT_H)
-    z_dish = L["z_rim"] - DISH_DEPTH
-    cap += (Pos(0, 0, z_dish + DOT_H - rd) * Sphere(rd)) & (Pos(0, 0, z_dish) * Cylinder(DOT_R, 2 * DOT_H + 0.4))
     # the socket, turned like the post, with a crush rib on each flat
     socket = Rot(0, 0, POST_TURN) * extrude(RectangleRounded(SOCKET, SOCKET, POST_R), amount=SOCKET_DEPTH)
     cap -= Pos(0, 0, L["z_bottom"] - 0.01) * socket
@@ -164,11 +157,13 @@ def check_cap(z_top: float) -> dict:
     L = _levels(z_top)
     socket_corner = SOCKET / 2 * math.sqrt(2) - POST_R * (math.sqrt(2) - 1)
     wall = SLEEVE_R - socket_corner
-    roof = L["z_rim"] - DISH_DEPTH - STEM_TOP
+    roof = L["z_rim"] - DIMPLE_DEPTH - STEM_TOP
     stop = _tilt_contact(z_top)
     push_gap = GAP * math.sqrt(2)                         # straight down onto a 45 deg well
     if SOCKET_DEPTH > FIT_MAX:
         raise SystemExit(f"joystick cap: socket {SOCKET_DEPTH} mm deep, the post allows {FIT_MAX}")
+    if CHAMFER >= HEAD_BAND:
+        raise SystemExit("joystick cap: the chamfer eats the pad's straight edge")
     if L["z_bottom"] < 3.0 + 0.2:
         raise SystemExit("joystick cap: the sleeve reaches the stem's collar")
     if wall < MIN_WALL or roof < MIN_WALL:
@@ -186,7 +181,7 @@ def check_cap(z_top: float) -> dict:
 def cap_report(z_top: float) -> list[str]:
     c = check_cap(z_top)
     return [f"joystick cap: 8 mm pad {c['z_rim'] - z_top:.2f} mm proud of the front face at its rim "
-            f"({c['z_rim'] - DISH_DEPTH - z_top:.2f} at the dish), nested in a 45 deg well "
+            f"(flat, a {DIMPLE_DEPTH} mm centre dimple), nested in a 45 deg well "
             f"({HOLE_D:.1f} -> {HOLE_D + 2 * WELL_DEPTH:.1f} mm, {WELL_DEPTH} deep)",
             f"joystick cap: switches at {TILT_SWITCH:.1f} deg, the bezel stops it at {c['stop']:.1f} deg; "
             f"{c['push_gap']:.2f} mm free under the flare for the {PUSH_TRAVEL} mm push",
