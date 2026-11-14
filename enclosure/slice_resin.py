@@ -19,9 +19,11 @@ writes one (checked against a file it sliced from the same STL, 2026-11-14):
   - scene.slice and calc_layer_volumes.data carry the per-layer areas, bounds and volumes.
 
   python3 enclosure/slice_resin.py [--stl enclosure/out/halves.stl] [--preset Anycubic@abs_like_resin_pro2@ACF@normal_print]
-                                   [--bottom-time S] [--bottom-layers N]
+                                   [--bottom-time S] [--bottom-layers N] [--lift-speed MM_S]
 
---bottom-time / --bottom-layers change the preset's bottom exposure; the changed preset goes
+--bottom-time / --bottom-layers change the preset's bottom exposure, --lift-speed its lift
+(every layer's peel off the film: a slower lift lets resin refill a pocket sealed against
+the film instead of sucking on it); the changed preset goes
 into the profile's user resins under the same name, as Photon Workshop stores a preset you
 edit, and the factory one stays as it was.
 
@@ -158,6 +160,7 @@ def main():
                     help="a resin preset's name in the profile (resin@film@quality)")
     ap.add_argument("--bottom-time", type=float, default=None, help="bottom layers' exposure, s (default: the preset's)")
     ap.add_argument("--bottom-layers", type=int, default=None, help="how many bottom layers (default: the preset's)")
+    ap.add_argument("--lift-speed", type=float, default=None, help="lift off the film, mm/s (default: the preset's)")
     ap.add_argument("--out", type=Path, default=None, help="default: the STL's path with .pwsz")
     args = ap.parse_args()
     out = args.out or args.stl.with_suffix(".pwsz")
@@ -170,12 +173,11 @@ def main():
         raise SystemExit(f"{args.profile.name}: {len(found)} presets named {args.preset}")
     resin = found[0]
     profile["machine_extern"]["active_resins"] = [args.preset]
-    if args.bottom_time is not None or args.bottom_layers is not None:
+    overrides = {k: v for k, v in (("bott_time", args.bottom_time), ("bott_time_dual", args.bottom_time),
+                                   ("bott_layers", args.bottom_layers), ("zup_speed", args.lift_speed)) if v is not None}
+    if overrides:
         resin = json.loads(json.dumps(resin))
-        if args.bottom_time is not None:
-            resin["slicepara"]["bott_time"] = resin["slicepara"]["bott_time_dual"] = args.bottom_time
-        if args.bottom_layers is not None:
-            resin["slicepara"]["bott_layers"] = args.bottom_layers
+        resin["slicepara"].update(overrides)
         ext = profile["machine_extern"]
         ext["user_resins"] = [r for r in ext.get("user_resins", []) if r["property"]["name"] != args.preset] + [resin]
     sp = resin["slicepara"]
@@ -205,7 +207,7 @@ def main():
     vol_data, raw = layer_volumes(areas, lh)
     ml = raw * RAW_TO_ML
     density, price = resin["property"]["density"], resin["property"]["price"]
-    lift = 2 * sp["zup_height"] / sp["zup_speed"]
+    lift = sp["zup_height"] / sp["zup_speed"] + sp["zup_height"] / sp["zdown_speed"]
     seconds = round(sum(sp["bott_time"] if i < sp["bott_layers"] else sp["exposure_time"] for i in range(n)) + n * lift)
     estimate = {"estimated_cost": ml / 1000 * price, "estimated_cost_currency": resin["property"]["currency"],
                 "estimated_time": seconds, "estimated_volume": ml, "estimated_weight": ml * density, "model_layers_count": n}
@@ -242,7 +244,7 @@ def main():
     print(f"{out}: {n} layers of {lh} mm, {2 * half[0]:.1f} x {2 * half[1]:.1f} mm centred on the plate, "
           f"largest layer {max(areas):.0f} mm2, {sum(areas) * lh / 1000:.2f} ml of part ({ml:.2f} ml estimated), "
           f"~{seconds / 60:.0f} min; {args.preset}, bottom {sp['bott_layers']} x {sp['bott_time']:g} s, "
-          f"then {sp['exposure_time']:.1f} s")
+          f"then {sp['exposure_time']:.1f} s; lift {sp['zup_height']:g} mm at {sp['zup_speed']:g} mm/s")
 
 
 if __name__ == "__main__":
