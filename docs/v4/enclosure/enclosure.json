@@ -430,14 +430,14 @@
    {
     "label": "Case: 3MF and STL (zip)",
     "filename": "ambire-ice-case.zip",
-    "bytes": 354765,
+    "bytes": 375371,
     "part": "enclosure/files/ambire-ice-case.zip.b64.txt",
     "b64": true
    },
    {
     "label": "Battery pack tray and frame: 3MF and STL (zip)",
     "filename": "ambire-ice-battery-tray.zip",
-    "bytes": 164177,
+    "bytes": 164182,
     "part": "enclosure/files/ambire-ice-battery-tray.zip.b64.txt",
     "b64": true
    }

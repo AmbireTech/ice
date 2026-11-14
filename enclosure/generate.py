@@ -166,6 +166,15 @@ GAP = 0.3             # board edge to wall
 # print, 2026-10-26, 0.4 mm nozzle, would not go together at 0-0.1).
 FIT = 0.1
 TONGUE_T, TONGUE_H, TONGUE_CLR = 0.8, 1.8, FIT
+# The bezel's skirt (its outer wall round the tongue) is 0.7-0.9 mm thick, and it holds the
+# pocket the bezel prints sealed against the film: the first resin print (2026-11-14) tore
+# it off at its root. A 45 deg fillet that deep where the skirt meets the slot's ceiling,
+# and the tongue's outer top edge chamfered to clear it by TONGUE_CLR (not along the north
+# hook, whose groove needs the tongue's full top).
+SKIRT_ROOT = 0.5
+# ...and a vent: a slot through the south wall into the chin's pocket, flush with the
+# pocket's ceiling, so the bezel's inside is open to the vat from there on as it prints.
+VENT_W, VENT_OVER_SLOT, VENT_MIN_H = 3.0, 0.4, 0.8   # width; wall kept over the tongue's slot; least height
 BACK_FILLET, FRONT_FILLET = 1.5, 1.2
 # Outer walls lean in toward the back and toward the front, widest at the parting
 # line, so the two halves meet flush: the back and front faces are DRAFT_MM narrower
@@ -894,6 +903,16 @@ def main():
     t_out = GAP + TONGUE_T
     shell -= box(W / 2 - hl / 2 - hc, -t_out - 0.5, W / 2 + hl / 2 + hc, -t_out + hd + hc,
                  hz - hh / 2 - hc, hz + hh / 2 + hc)
+    # The tongue's outer top edge, chamfered clear of the skirt's root fillet: the fillet's
+    # face is the plane offset + z = s_root; the chamfer's sits TONGUE_CLR square off it.
+    hook_span = box(W / 2 - hl / 2 - hc - 0.5, -(GAP + WALL) - 1, W / 2 + hl / 2 + hc + 0.5, 0.5, z_split - 1, z_top + 1)
+    s_root = (GAP + TONGUE_T + TONGUE_CLR) + (TONGUE_H + TONGUE_CLR) - SKIRT_ROOT
+    z_chamfer = z_split + s_root - TONGUE_CLR * math.sqrt(2) - (GAP + TONGUE_T)
+    if TONGUE_H - (z_chamfer - z_split) >= TONGUE_T - 0.2:
+        raise SystemExit("the tongue's chamfer leaves under 0.2 mm of its top")
+    shell -= (rr_prism(*outline(b, GAP + WALL + 1)[:4], outline(b, GAP + WALL + 1)[4], z_chamfer, z_chamfer + 1)
+              - rr_prism_drafted(*tongue_o[:4], tongue_o[4], z_chamfer, z_chamfer + 1, 45)
+              - rr_prism(*in_o[:4], in_o[4], z_chamfer - 1, z_chamfer + 2) - hook_span)
     # ── parts allowed into the floor (USB-C): a pocket over each ──
     for ref in PROTRUDE:
         v = parts[ref]
@@ -1063,6 +1082,9 @@ def main():
     bezel = fillet(bezel.edges().group_by(Axis.Z)[-1], FRONT_FILLET)
     bezel -= rr_prism(*in_o[:4], in_o[4], z_split - 1, z_lip)
     bezel -= rr_prism(*skirt_o[:4], skirt_o[4], z_split - 1, z_split + TONGUE_H + TONGUE_CLR)
+    z_ceil = z_split + TONGUE_H + TONGUE_CLR    # the skirt's root: the fillet up into its corner
+    bezel += (rr_prism(*skirt_o[:4], skirt_o[4], z_ceil - SKIRT_ROOT, z_ceil + 0.01)
+              - rr_prism_drafted(*skirt_o[:4], skirt_o[4], z_ceil - SKIRT_ROOT, z_ceil + 0.01, 45) - hook_span)
     bezel -= rr_prism(*win, 0.8, z_lip - 1, z_top + 1)
     # The north hook's ridge on the skirt's inner face (the bezel prints face down: the
     # ridge's underside is a 0.3 mm step, no support).
@@ -1163,10 +1185,42 @@ def main():
     for _, _, cut_ in openings:
         bezel -= cut_
 
+    # The vent (SKIRT_ROOT's note): on the straight of the south wall, clear of the other
+    # openings and of anything solid the slot would reach into (screw bosses, the joystick).
+    if not front:
+        raise SystemExit("no chin pocket for the vent to open into")
+    vz0, vz1 = z_ceil + VENT_OVER_SLOT, depth
+    if vz1 - vz0 < VENT_MIN_H:
+        raise SystemExit(f"vent: {vz1 - vz0:.2f} mm between the tongue's slot and the chin's ceiling")
+    vy0, vy1 = H + GAP - 0.5, H + GAP + WALL + 1          # board y: from inside the pocket out through the wall
+    r_in = in_o[4]
+    blocked = [(o[1].bounding_box().min.X - 1, o[1].bounding_box().max.X + 1) for o in
+               [(ref, cut_) for ref, side, cut_ in openings if side == "S"]]
+    blocked += [(hx - BOSS_R - 0.5, hx + BOSS_R + 0.5) for hx, hy in screw_holes if hy + BOSS_R > vy0]
+    if joy_box and joy_box[3] > vy0:
+        blocked.append((joy_box[0] - 0.5, joy_box[2] + 0.5))
+    free, x = [], in_o[0] + r_in
+    for a, c in sorted(blocked) + [(in_o[2] - r_in, math.inf)]:
+        if a > x:
+            free.append((x, a))
+        x = max(x, c)
+    span = max(free, key=lambda f: f[1] - f[0])
+    if span[1] - span[0] < VENT_W:
+        raise SystemExit(f"vent: no {VENT_W} mm of free south wall (longest {span[1] - span[0]:.1f})")
+    vx = (span[0] + span[1]) / 2
+    sk = RectangleRounded(VENT_W, vz1 - vz0, (vz1 - vz0) / 2 - 1e-3)
+    bezel -= Pos(vx, -(vy0 + vy1) / 2, (vz0 + vz1) / 2) * Rot(90, 0, 0) * extrude(sk, amount=(vy1 - vy0) / 2, both=True)
+    report.append(f"vent: {VENT_W} x {vz1 - vz0:.2f} mm slot through the bezel's south wall at x {vx:.1f}, "
+                  f"Z {vz0:.2f}-{vz1:.2f} (the chin's pocket open to the vat as the bezel prints face down); "
+                  f"skirt root filleted {SKIRT_ROOT} mm, the tongue chamfered to clear it")
+
     # ── checks that the geometry, not prose, has to satisfy ──
     if win[0] < panel[0] or win[2] > panel[2] or win[1] < panel[1] or win[3] > panel[3]:
         raise SystemExit("display window is larger than the glass")
     assert all(p_.is_valid for p_ in (shell, bezel, tray, frame, joy_cap, air_slider)), "invalid solid"
+    clash = (shell & bezel).volume
+    if clash > 0.01:
+        raise SystemExit(f"the shell and the bezel overlap by {clash:.3f} mm3 assembled")
 
     size = (out_o[2] - out_o[0], out_o[3] - out_o[1], z_top - z_floor_out)   # the device; the pack adds to it
     print_layout((("shell", shell), ("bezel", Rot(180, 0, 0) * bezel)), OUT / "halves")   # the case alone (resin plate)
