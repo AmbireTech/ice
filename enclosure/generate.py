@@ -172,9 +172,13 @@ TONGUE_T, TONGUE_H, TONGUE_CLR = 0.8, 1.8, FIT
 # and the tongue's outer top edge chamfered to clear it by TONGUE_CLR (not along the north
 # hook, whose groove needs the tongue's full top).
 SKIRT_ROOT = 0.5
-# ...and a vent: a slot through the south wall into the chin's pocket, flush with the
-# pocket's ceiling, so the bezel's inside is open to the vat from there on as it prints.
+# ...and vents: slots through every wall into the bezel's inside, so it is open to the vat
+# from just after its face on as it prints (its inside is one hollow; each vent relieves
+# all of it, and their number sets how fast resin gets in). The chin pocket's ceiling meets
+# the walls in a chamfer too, cut back clear of the parts under it.
 VENT_W, VENT_OVER_SLOT, VENT_MIN_H = 3.0, 0.4, 0.8   # width; wall kept over the tongue's slot; least height
+VENTS_PER_WALL, VENT_UNDER_LIP = 2, 0.3               # ...; the side vents' top under the screen's seat
+POCKET_CHAMFER = 0.5
 BACK_FILLET, FRONT_FILLET = 1.5, 1.2
 # Outer walls lean in toward the back and toward the front, widest at the parting
 # line, so the two halves meet flush: the back and front faces are DRAFT_MM narrower
@@ -1148,6 +1152,14 @@ def main():
                              "the chin's pocket would cut the screen's seat")
         bezel -= rr_prism(*in_o[:4], in_o[4], z_split - 1, depth) & box(in_o[0] - 1, north, in_o[2] + 1, in_o[3] + 1,
                                                                       z_split - 2, depth + 1)
+        # its ceiling meets the walls in a 45 deg chamfer, cut back over every part's keep-out
+        c_ = POCKET_CHAMFER
+        ring = ((rr_prism(*in_o[:4], in_o[4], depth - c_, depth + 0.01)
+                 - rr_prism_drafted(*in_o[:4], in_o[4], depth - c_, depth + 0.01, 45))
+                & box(in_o[0] - 1, north, in_o[2] + 1, in_o[3] + 1, depth - c_ - 1, depth + 1))
+        for x0, y0, x1, y1 in keepouts + ([joy_box] if joy_box else []):
+            ring -= box(x0, y0, x1, y1, depth - c_ - 1, depth + 1)
+        bezel += ring
         for hx, hy in screw_holes:
             if hy < north:
                 continue
@@ -1185,34 +1197,66 @@ def main():
     for _, _, cut_ in openings:
         bezel -= cut_
 
-    # The vent (SKIRT_ROOT's note): on the straight of the south wall, clear of the other
-    # openings and of anything solid the slot would reach into (screw bosses, the joystick).
+    # The vents (SKIRT_ROOT's note): VENTS_PER_WALL slots through each wall, clear of the
+    # other openings and of anything solid a slot would reach into. The bezel's inside is
+    # one hollow, so every vent relieves all of it; their number sets how fast resin gets
+    # in. South: into the chin's pocket, flush with its ceiling. North, east, west: into the
+    # screen's pocket, up to VENT_UNDER_LIP under the screen's seat, so the inside is open
+    # to the vat from just after the face on.
     if not front:
-        raise SystemExit("no chin pocket for the vent to open into")
-    vz0, vz1 = z_ceil + VENT_OVER_SLOT, depth
-    if vz1 - vz0 < VENT_MIN_H:
-        raise SystemExit(f"vent: {vz1 - vz0:.2f} mm between the tongue's slot and the chin's ceiling")
-    vy0, vy1 = H + GAP - 0.5, H + GAP + WALL + 1          # board y: from inside the pocket out through the wall
-    r_in = in_o[4]
-    blocked = [(o[1].bounding_box().min.X - 1, o[1].bounding_box().max.X + 1) for o in
-               [(ref, cut_) for ref, side, cut_ in openings if side == "S"]]
-    blocked += [(hx - BOSS_R - 0.5, hx + BOSS_R + 0.5) for hx, hy in screw_holes if hy + BOSS_R > vy0]
-    if joy_box and joy_box[3] > vy0:
-        blocked.append((joy_box[0] - 0.5, joy_box[2] + 0.5))
-    free, x = [], in_o[0] + r_in
-    for a, c in sorted(blocked) + [(in_o[2] - r_in, math.inf)]:
-        if a > x:
-            free.append((x, a))
-        x = max(x, c)
-    span = max(free, key=lambda f: f[1] - f[0])
-    if span[1] - span[0] < VENT_W:
-        raise SystemExit(f"vent: no {VENT_W} mm of free south wall (longest {span[1] - span[0]:.1f})")
-    vx = (span[0] + span[1]) / 2
-    sk = RectangleRounded(VENT_W, vz1 - vz0, (vz1 - vz0) / 2 - 1e-3)
-    bezel -= Pos(vx, -(vy0 + vy1) / 2, (vz0 + vz1) / 2) * Rot(90, 0, 0) * extrude(sk, amount=(vy1 - vy0) / 2, both=True)
-    report.append(f"vent: {VENT_W} x {vz1 - vz0:.2f} mm slot through the bezel's south wall at x {vx:.1f}, "
-                  f"Z {vz0:.2f}-{vz1:.2f} (the chin's pocket open to the vat as the bezel prints face down); "
-                  f"skirt root filleted {SKIRT_ROOT} mm, the tongue chamfered to clear it")
+        raise SystemExit("no chin pocket for the south vents to open into")
+    vz0 = z_ceil + VENT_OVER_SLOT
+
+    def taken(side):          # each other opening on that wall, as an interval along it
+        spans = []
+        for _, s_, cut_ in openings:
+            if s_ == side:
+                bb = cut_.bounding_box()
+                spans.append((bb.min.X - 1, bb.max.X + 1) if side in "NS" else (-bb.max.Y - 1, -bb.min.Y + 1))
+        return spans
+
+    def place(lo, hi, blocked):   # VENTS_PER_WALL centres spread over lo..hi, in free wall
+        free, at = [], lo
+        for a, c in sorted(blocked) + [(hi, math.inf)]:
+            if a - at >= VENT_W + 1:
+                free.append((at + VENT_W / 2 + 0.5, a - VENT_W / 2 - 0.5))
+            at = max(at, c)
+        picks = []
+        for k in range(1, VENTS_PER_WALL + 1):
+            t = lo + (hi - lo) * k / (VENTS_PER_WALL + 1)
+            near = [min(max(t, a), c) for a, c in free]
+            best = min(near, key=lambda q: abs(q - t), default=None)
+            if best is not None and all(abs(best - q) >= VENT_W + 2 for q in picks):
+                picks.append(best)
+        return picks
+
+    s_in = H + GAP - POCKET_CHAMFER - 0.5        # the south vents' inner end (board y), through the pocket's chamfer
+    s_blocked = taken("S") + [(hx - BOSS_R - 0.5, hx + BOSS_R + 0.5) for hx, hy in screw_holes if hy + BOSS_R > s_in]
+    if joy_box and joy_box[3] > s_in:
+        s_blocked.append((joy_box[0] - 0.5, joy_box[2] + 0.5))
+    vz1 = z_lip - VENT_UNDER_LIP
+    vents = [("S", x, depth, s_in) for x in place(in_o[0] + in_o[4], in_o[2] - in_o[4], s_blocked)]
+    vents += [("N", x, vz1, glass[1] + 0.5) for x in place(glass[0] + 1, glass[2] - 1, taken("N"))]
+    vents += [("W", y, vz1, glass[0] + 0.5) for y in place(glass[1] + 1, glass[3] - 1, taken("W"))]
+    vents += [("E", y, vz1, glass[2] - 0.5) for y in place(glass[1] + 1, glass[3] - 1, taken("E"))]
+    for side in "NSEW":
+        if not any(v[0] == side for v in vents):
+            raise SystemExit(f"vent: no {VENT_W} mm of free {side} wall")
+    for side, at, z1, inner in vents:
+        if z1 - vz0 < VENT_MIN_H:
+            raise SystemExit(f"vent ({side}): {z1 - vz0:.2f} mm between the tongue's slot and the pocket's ceiling")
+        sk = RectangleRounded(VENT_W, z1 - vz0, min(VENT_W, z1 - vz0) / 2 - 1e-3)
+        outer = {"S": H + GAP + WALL + 1, "N": -(GAP + WALL) - 1, "E": W + GAP + WALL + 1, "W": -(GAP + WALL) - 1}[side]
+        a, c = sorted((inner, outer))
+        if side in "NS":
+            bezel -= Pos(at, -(a + c) / 2, (vz0 + z1) / 2) * Rot(90, 0, 0) * extrude(sk, amount=(c - a) / 2, both=True)
+        else:
+            bezel -= Pos((a + c) / 2, -at, (vz0 + z1) / 2) * Rot(0, 90, 0) * Rot(0, 0, 90) * extrude(sk, amount=(c - a) / 2, both=True)
+    report.append(f"vents: {len(vents)} slots {VENT_W} mm wide through the bezel's walls ("
+                  + ", ".join(f"{sd} {at:.1f}" for sd, at, _, _ in vents)
+                  + f"), Z {vz0:.2f} to {depth:.2f} (south, into the chin) / {vz1:.2f} (into the screen's pocket); "
+                  f"skirt root filleted {SKIRT_ROOT} mm, the tongue chamfered to clear it; "
+                  f"the chin pocket's ceiling chamfered {POCKET_CHAMFER} mm along its walls, clear of the parts")
 
     # ── checks that the geometry, not prose, has to satisfy ──
     if win[0] < panel[0] or win[2] > panel[2] or win[1] < panel[1] or win[3] > panel[3]:

@@ -19,9 +19,10 @@ writes one (checked against a file it sliced from the same STL, 2026-11-14):
   - scene.slice and calc_layer_volumes.data carry the per-layer areas, bounds and volumes.
 
   python3 enclosure/slice_resin.py [--stl enclosure/out/halves.stl] [--preset Anycubic@abs_like_resin_pro2@ACF@normal_print]
-                                   [--bottom-time S] [--bottom-layers N] [--lift-speed MM_S]
+                                   [--bottom-time S] [--bottom-layers N] [--exposure S] [--lift-speed MM_S]
 
---bottom-time / --bottom-layers change the preset's bottom exposure, --lift-speed its lift
+--bottom-time / --bottom-layers change the preset's bottom exposure, --exposure every other
+layer's, --lift-speed its lift
 (every layer's peel off the film: a slower lift lets resin refill a pocket sealed against
 the film instead of sucking on it); the changed preset goes
 into the profile's user resins under the same name, as Photon Workshop stores a preset you
@@ -160,6 +161,7 @@ def main():
                     help="a resin preset's name in the profile (resin@film@quality)")
     ap.add_argument("--bottom-time", type=float, default=None, help="bottom layers' exposure, s (default: the preset's)")
     ap.add_argument("--bottom-layers", type=int, default=None, help="how many bottom layers (default: the preset's)")
+    ap.add_argument("--exposure", type=float, default=None, help="normal layers' exposure, s (default: the preset's)")
     ap.add_argument("--lift-speed", type=float, default=None, help="lift off the film, mm/s (default: the preset's)")
     ap.add_argument("--out", type=Path, default=None, help="default: the STL's path with .pwsz")
     args = ap.parse_args()
@@ -174,7 +176,8 @@ def main():
     resin = found[0]
     profile["machine_extern"]["active_resins"] = [args.preset]
     overrides = {k: v for k, v in (("bott_time", args.bottom_time), ("bott_time_dual", args.bottom_time),
-                                   ("bott_layers", args.bottom_layers), ("zup_speed", args.lift_speed)) if v is not None}
+                                   ("bott_layers", args.bottom_layers), ("exposure_time", args.exposure),
+                                   ("zup_speed", args.lift_speed)) if v is not None}
     if overrides:
         resin = json.loads(json.dumps(resin))
         resin["slicepara"].update(overrides)
