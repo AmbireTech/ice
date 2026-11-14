@@ -176,8 +176,8 @@ SKIRT_ROOT = 0.5
 # from just after its face on as it prints (its inside is one hollow; each vent relieves
 # all of it, and their number sets how fast resin gets in). The chin pocket's ceiling meets
 # the walls in a chamfer too, cut back clear of the parts under it.
-VENT_W, VENT_OVER_SLOT, VENT_MIN_H = 3.0, 0.4, 0.8   # width; wall kept over the tongue's slot; least height
-VENTS_PER_WALL, VENT_UNDER_LIP = 2, 0.3               # ...; the side vents' top under the screen's seat
+VENT_W, VENT_OVER_SLOT, VENT_MIN_H, VENT_R = 3.0, 0.4, 0.8, 0.4   # width; wall kept over the tongue's slot; least height; corners
+VENTS_PER_WALL, VENT_UNDER_LIP = 2, 0.0               # ...; the side vents' top under the screen's seat (0: flush)
 POCKET_CHAMFER = 0.5
 BACK_FILLET, FRONT_FILLET = 1.5, 1.2
 # Outer walls lean in toward the back and toward the front, widest at the parting
@@ -1201,8 +1201,9 @@ def main():
     # other openings and of anything solid a slot would reach into. The bezel's inside is
     # one hollow, so every vent relieves all of it; their number sets how fast resin gets
     # in. South: into the chin's pocket, flush with its ceiling. North, east, west: into the
-    # screen's pocket, up to VENT_UNDER_LIP under the screen's seat, so the inside is open
-    # to the vat from just after the face on.
+    # screen's pocket, flush with the screen's seat (the face's underside), so the inside is
+    # open to the vat from the first layer after the face (a vent only relieves the layers
+    # printed after it exists).
     if not front:
         raise SystemExit("no chin pocket for the south vents to open into")
     vz0 = z_ceil + VENT_OVER_SLOT
@@ -1245,7 +1246,7 @@ def main():
     for side, at, z1, inner in vents:
         if z1 - vz0 < VENT_MIN_H:
             raise SystemExit(f"vent ({side}): {z1 - vz0:.2f} mm between the tongue's slot and the pocket's ceiling")
-        sk = RectangleRounded(VENT_W, z1 - vz0, min(VENT_W, z1 - vz0) / 2 - 1e-3)
+        sk = RectangleRounded(VENT_W, z1 - vz0, VENT_R)   # square-ish top: open full width from its first layer
         outer = {"S": H + GAP + WALL + 1, "N": -(GAP + WALL) - 1, "E": W + GAP + WALL + 1, "W": -(GAP + WALL) - 1}[side]
         a, c = sorted((inner, outer))
         if side in "NS":
