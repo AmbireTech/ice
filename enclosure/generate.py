@@ -309,6 +309,8 @@ case.3mf     the four parts laid out for printing (PrusaSlicer, Lychee, CHITUBOX
              the shell on its back, the bezel face down, the joystick's cap on its sleeve,
              the airgap slider on its flange. The shell and the bezel need no supports.
 case.stl     the same layout for any other slicer (split it into parts to place them yourself)
+halves.stl   the shell and the bezel alone, laid out the same way (halves.pwsz: sliced for the
+             Anycubic Photon Mono M7 Pro)
 
 The parts:
   shell      back shell (standoffs, locating pins, the screw hole, the camera window, the
@@ -1167,6 +1169,7 @@ def main():
     assert all(p_.is_valid for p_ in (shell, bezel, tray, frame, joy_cap, air_slider)), "invalid solid"
 
     size = (out_o[2] - out_o[0], out_o[3] - out_o[1], z_top - z_floor_out)   # the device; the pack adds to it
+    print_layout((("shell", shell), ("bezel", Rot(180, 0, 0) * bezel)), OUT / "halves")   # the case alone (resin plate)
     print_layout((("shell", shell), ("bezel", Rot(180, 0, 0) * bezel), ("joycap", joy_cap),
                   ("airslider", airslider.print_pose(air_slider))), OUT / "case")
     print_layout((("tray", Rot(180, 0, 0) * tray), ("frame", Rot(180, 0, 0) * frame)), OUT / "battery-tray")

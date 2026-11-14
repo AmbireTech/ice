@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Slice the case's print layout for the Anycubic Photon Mono M7 Pro.
 
-  enclosure/out/case.stl  ->  enclosure/out/case.pwsz   (print it from the Anycubic app or a USB stick)
+  enclosure/out/halves.stl  ->  enclosure/out/halves.pwsz   (print it from the Anycubic app or a USB stick)
 
 The layout prints as generate.py lays it out: every part directly on the plate, no
 supports, no raft, centred on the plate. The .pwsz is written the way Photon Workshop 4.2.0
@@ -18,7 +18,12 @@ writes one (checked against a file it sliced from the same STL, 2026-11-14):
     transition layers per layer, the preset's transition count is left to the printer);
   - scene.slice and calc_layer_volumes.data carry the per-layer areas, bounds and volumes.
 
-  python3 enclosure/slice_resin.py [--stl enclosure/out/case.stl] [--preset Anycubic@abs_like_resin_pro2@ACF@normal_print]
+  python3 enclosure/slice_resin.py [--stl enclosure/out/halves.stl] [--preset Anycubic@abs_like_resin_pro2@ACF@normal_print]
+                                   [--bottom-time S] [--bottom-layers N]
+
+--bottom-time / --bottom-layers change the preset's bottom exposure; the changed preset goes
+into the profile's user resins under the same name, as Photon Workshop stores a preset you
+edit, and the factory one stays as it was.
 
 Needs trimesh, numpy and opencv.
 """
@@ -147,10 +152,12 @@ def previews(mesh, sizes):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--stl", type=Path, default=HERE / "out/case.stl")
+    ap.add_argument("--stl", type=Path, default=HERE / "out/halves.stl")
     ap.add_argument("--profile", type=Path, default=HERE / "resin/anycubic_photon_mono_m7_pro.pwsp")
     ap.add_argument("--preset", default="Anycubic@abs_like_resin_pro2@ACF@normal_print",
                     help="a resin preset's name in the profile (resin@film@quality)")
+    ap.add_argument("--bottom-time", type=float, default=None, help="bottom layers' exposure, s (default: the preset's)")
+    ap.add_argument("--bottom-layers", type=int, default=None, help="how many bottom layers (default: the preset's)")
     ap.add_argument("--out", type=Path, default=None, help="default: the STL's path with .pwsz")
     args = ap.parse_args()
     out = args.out or args.stl.with_suffix(".pwsz")
@@ -163,6 +170,14 @@ def main():
         raise SystemExit(f"{args.profile.name}: {len(found)} presets named {args.preset}")
     resin = found[0]
     profile["machine_extern"]["active_resins"] = [args.preset]
+    if args.bottom_time is not None or args.bottom_layers is not None:
+        resin = json.loads(json.dumps(resin))
+        if args.bottom_time is not None:
+            resin["slicepara"]["bott_time"] = resin["slicepara"]["bott_time_dual"] = args.bottom_time
+        if args.bottom_layers is not None:
+            resin["slicepara"]["bott_layers"] = args.bottom_layers
+        ext = profile["machine_extern"]
+        ext["user_resins"] = [r for r in ext.get("user_resins", []) if r["property"]["name"] != args.preset] + [resin]
     sp = resin["slicepara"]
     lh = round(sp["zthick"], 4)
 
@@ -226,7 +241,8 @@ def main():
     out.write_bytes(buf.getvalue())
     print(f"{out}: {n} layers of {lh} mm, {2 * half[0]:.1f} x {2 * half[1]:.1f} mm centred on the plate, "
           f"largest layer {max(areas):.0f} mm2, {sum(areas) * lh / 1000:.2f} ml of part ({ml:.2f} ml estimated), "
-          f"~{seconds / 60:.0f} min; {args.preset}")
+          f"~{seconds / 60:.0f} min; {args.preset}, bottom {sp['bott_layers']} x {sp['bott_time']:g} s, "
+          f"then {sp['exposure_time']:.1f} s")
 
 
 if __name__ == "__main__":
