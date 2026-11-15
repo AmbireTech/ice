@@ -28,3 +28,6 @@ art/.venv/
 board/.history_trim/
 # Claude Code's agent worktrees
 .claude/
+
+# face-up supported resin layout (enclosure/support_resin.py, slice_resin.py): regenerable, ~70 MB
+enclosure/out/halves_supported.*

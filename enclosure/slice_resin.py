@@ -3,8 +3,9 @@
 
   enclosure/out/halves.stl  ->  enclosure/out/halves.pwsz   (print it from the Anycubic app or a USB stick)
 
-The layout prints as generate.py lays it out: every part directly on the plate, no
-supports, no raft, centred on the plate. The .pwsz is written the way Photon Workshop 4.2.0
+The layout prints as it is laid out, centred on the plate: halves.stl as generate.py lays
+it out (every part directly on the plate, no supports), or halves_supported.ply from
+support_resin.py (face up on a raft and supports). The .pwsz is written the way Photon Workshop 4.2.0
 writes one (checked against a file it sliced from the same STL, 2026-11-14):
 
   - each layer is the mesh's cross-section at the layer's middle, stored as outline
@@ -70,11 +71,15 @@ def section_rings(mesh, z, centre):
         if len(r) >= 3:
             rings.append(r)
     out = []
+    lo = np.array([r.min(axis=0) for r in rings])
+    hi = np.array([r.max(axis=0) for r in rings])
     for i, r in enumerate(rings):
         # nesting depth: a ring inside an even number of others is solid, else a hole
+        # (only rings whose bounding box holds the point can hold it)
         p = r[0]
-        depth = sum(1 for j, o in enumerate(rings) if j != i and cv2.pointPolygonTest(
-            o.astype(np.float32).reshape(-1, 1, 2), (float(p[0]), float(p[1])), False) > 0)
+        around = np.nonzero(np.all((lo <= p) & (p <= hi), axis=1))[0]
+        depth = sum(1 for j in around if j != i and cv2.pointPolygonTest(
+            rings[j].astype(np.float32).reshape(-1, 1, 2), (float(p[0]), float(p[1])), False) > 0)
         ccw = shoelace(r) > 0
         if ccw == (depth % 2 == 0):      # solid must run clockwise, a hole anticlockwise
             r = r[::-1]
@@ -186,7 +191,8 @@ def main():
     sp = resin["slicepara"]
     lh = round(sp["zthick"], 4)
 
-    mesh = trimesh.load(args.stl, force="mesh")
+    # an STL is a triangle soup (its vertices must be merged); a PLY is indexed and kept as written
+    mesh = trimesh.load(args.stl, force="mesh", process=args.stl.suffix.lower() == ".stl")
     if not mesh.is_watertight:
         raise SystemExit(f"{args.stl.name} is not watertight: its sections would not close")
     lo, hi = mesh.bounds
