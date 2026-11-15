@@ -22,6 +22,12 @@ first two directly; the clear case addresses the third.
 
 ## Architecture decision
 
+> **Superseded (owner, 2026-11-15):** the key model below (two keys that never
+> leave their chips, no seed phrase, recovery by the Safe's other owners) is no
+> longer the plan. The device is a seed-phrase wallet built like a Trezor. Why:
+> [direction.md](direction.md), "Key model: a seed, as on a Trezor". The text
+> below stays as the record of the original reasoning.
+
 **Key model: two non-extractable keys, generated inside two secure elements
 from two vendors (NXP SE050 and Infineon OPTIGA Trust M), no seed phrase;
 recovery is the Safe's other owners.** A Donjon-class laser attack on one chip

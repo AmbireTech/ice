@@ -63,6 +63,8 @@ The Safe 5 (T3T1) shares our MCU and OPTIGA but has a 240×240 screen.
    the device genuine (`docs/core/misc/optiga.md`). Our concept had keys
    generated inside two secure elements with no seed. With Trezor firmware the
    SE050 sits unused; keeping our key model is a deep fork of seed and storage.
+   *Decided 2026-11-15: we take Trezor's key model. See "Key model: a seed, as
+   on a Trezor" below.*
 3. **It is our own device, not a Trezor.** We sign with our own boot keys and
    use our own model ID and USB PID. Trezor's 0x1209:0x53C0/0x53C1 are theirs
    (`io/usb/usb_config.c`). We also provision the OPTIGA ourselves: pairing
@@ -169,3 +171,39 @@ The flame is in the board file as ordinary silkscreen (`scripts/silkFlame.py`),
 so the white-on-black and black-on-white schemes need nothing more. The purple
 schemes' colour print is `art/build_uv.py --scheme neon|black|white`; the
 PCBWay order set carries purple on neon.
+
+## 4. Key model: a seed, as on a Trezor (owner, 2026-11-15)
+
+The device is a seed-phrase wallet built like a Trezor: a seed the owner can
+back up, encrypted in the MCU's flash, with secure elements guarding the PIN.
+The original key model (two keys generated inside two secure elements, never
+backed up, recovery by the Safe's other owners; [research.md](research.md)) is
+dropped.
+
+**Why:**
+
+- **The priority is backwards compatibility, not only Safe.** The device has to
+  work with seed phrases and the accounts people already have, and still be a
+  Safe signer.
+- **Building the hardware around Safe was the wrong call.** Safe needs no
+  particular hardware trade-off: any device that signs as an owner serves it.
+
+Two keys on one device, used separately, never backed up and recovered through
+the multisig, is the better scheme on paper. In practice it breaks down twice:
+
+- **A key backup beats multisig recovery.** Recovery there means rotating
+  owners, and rotating keys is messy, above all with signed messages and across
+  networks.
+- **A multisig's value is keys on separate devices.** Two keys inside one
+  device give little of it.
+
+**What follows:**
+
+- The secure elements' job is now PIN-guess limiting, device authenticity and
+  extra randomness. Holding secp256k1 keys inside the chip, the reason the
+  SE050 was picked, is no longer a criterion.
+- Which secure elements stay (OPTIGA Trust M, SE050, TROPIC01) is open.
+  Trezor's own code covers the PIN on the OPTIGA and the TROPIC01; on the SE050
+  it would be our port.
+- Unchanged: on-device Safe transaction decoding, the airgap switch, QR
+  signing, the clear case.
