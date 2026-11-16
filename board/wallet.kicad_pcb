@@ -35902,6 +35902,56 @@
 		(layer "Dwgs.User")
 		(uuid "532ae484-ce9a-441e-a056-8a23791d31b6")
 	)
+	(gr_line
+		(start 5.725 0.900)
+		(end 42.275 0.900)
+		(stroke
+			(width 0.15)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "95eddf0f-3d31-48bd-82c4-0fe5df60bae8")
+	)
+	(gr_line
+		(start 2.500 5.725)
+		(end 2.500 48.750)
+		(stroke
+			(width 0.15)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "d4299a3b-7c95-4a56-8510-6226e72bfd52")
+	)
+	(gr_line
+		(start 2.500 50.250)
+		(end 2.500 51.750)
+		(stroke
+			(width 0.15)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "042a0ec9-3294-4116-97c5-8c5fca03e90e")
+	)
+	(gr_line
+		(start 2.500 53.250)
+		(end 2.500 60.910)
+		(stroke
+			(width 0.15)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "150b91d0-13ee-4851-b7cf-bfdd2fe1a428")
+	)
+	(gr_line
+		(start 45.500 5.725)
+		(end 45.500 60.910)
+		(stroke
+			(width 0.15)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "440394fb-1bd9-43a3-9fbb-8a1351086421")
+	)
 	(gr_arc
 		(start 0 4)
 		(mid 1.171572 1.171572)
