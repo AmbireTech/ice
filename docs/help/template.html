@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0c0d11">
+<title>Ambire Ice Help Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: GridCore's help center (sticky bar, hero search, card grid, popular list,
+   sidebar article). Look: the Ambire Ice page (Poppins / Plex, violet accents, Volt on
+   calls to action). The airgap section uses Signal Blue so it reads as its own mode. */
+:root {
+  --bg: #0c0d11; --panel: #14151b; --panel2: #1c1d26;
+  --line: rgba(220,226,242,.10); --line2: rgba(220,226,242,.20);
+  --text: #eef1fa; --body: #c9cee0; --muted: #9ca2ba; --faint: #6c7189;
+  --accent: #af50ff; --purple: #6000ff; --volt: #d7ff00; --on-volt: #101114;
+  --air: #3871ff; --air-hi: #8fb0ff; --air-bg: #0d1428;
+  --display: "Poppins","Avenir Next","Segoe UI",sans-serif;
+  --sans: "IBM Plex Sans","Helvetica Neue",Arial,sans-serif;
+  --mono: "IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --pad: clamp(16px,4vw,54px);
+}
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; display: flex; flex-direction: column; background: var(--bg); color: var(--body); font: 15px/1.65 var(--sans); }
+#app { flex: 1 0 auto; }
+a { color: inherit; }
+h1, h2, h3 { font-family: var(--display); color: var(--text); font-weight: 600; letter-spacing: -.01em; text-wrap: balance; }
+.mark { width: 16px; height: 24px; color: var(--accent); flex: none; }
+
+/* top bar */
+.top { display: flex; align-items: center; gap: 24px; padding: 14px var(--pad); border-bottom: 1px solid var(--line); background: rgba(12,13,17,.9); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 5; }
+.brand { display: flex; align-items: center; gap: 12px; text-decoration: none; flex: none; }
+.brand b { font: 600 17px/1 var(--display); color: var(--text); }
+.brand span { padding-left: 12px; border-left: 1px solid var(--line2); font: 500 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.top nav { margin-left: auto; display: flex; align-items: center; gap: 20px; font-size: 13px; flex: none; }
+.top nav > a:not(.btn) { color: var(--muted); text-decoration: none; }
+.top nav > a:not(.btn):hover { color: var(--text); }
+.btn { display: inline-flex; align-items: center; min-height: 38px; padding: 0 18px; border-radius: 999px; background: var(--volt); color: var(--on-volt); font: 600 13px/1 var(--display); text-decoration: none; white-space: nowrap; }
+.btn:hover { filter: brightness(1.08); }
+.btn.air { background: var(--air); color: #fff; }
+
+/* search */
+.search { position: relative; width: min(640px,100%); }
+.search input { width: 100%; height: 56px; padding: 0 18px 0 50px; border-radius: 999px; border: 1px solid var(--line2); background: var(--panel) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%239ca2ba' stroke-width='2'%3E%3Ccircle cx='8' cy='8' r='6'/%3E%3Cpath d='m13 13 4 4'/%3E%3C/svg%3E") 19px center no-repeat; color: var(--text); font: 16px var(--sans); -webkit-appearance: none; appearance: none; }
+.search input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px rgba(175,80,255,.15); }
+.search.small { flex: 1; max-width: 420px; }
+.search.small input { height: 40px; font-size: 14px; padding-left: 42px; background-position: 15px center; }
+.results { position: absolute; left: 0; right: 0; top: calc(100% + 6px); margin: 0; padding: 6px 0; list-style: none; text-align: left; background: var(--panel2); border: 1px solid var(--line2); border-radius: 16px; box-shadow: 0 18px 40px #0009; z-index: 10; max-height: 70vh; overflow: auto; }
+.results a { display: block; padding: 10px 16px; text-decoration: none; }
+.results a:hover, .results a:focus { background: rgba(175,80,255,.10); outline: none; }
+.results b { display: block; color: var(--text); font-weight: 600; }
+.results small { display: block; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.results .empty { padding: 10px 16px; color: var(--muted); font-size: 14px; }
+
+/* home */
+.hero { display: flex; flex-direction: column; align-items: center; gap: 26px; padding: 80px var(--pad) 86px; text-align: center; border-bottom: 1px solid var(--line); background: radial-gradient(60% 90% at 50% 0, rgba(96,0,255,.28), transparent 70%), var(--panel); }
+.hero h1 { margin: 0; font-size: clamp(34px,6vw,56px); line-height: 1.02; letter-spacing: -.03em; }
+.main { width: min(1120px,100%); margin: 0 auto; padding: 56px var(--pad) 72px; }
+.narrow { width: min(820px,100%); }
+.cats { display: grid; grid-template-columns: repeat(auto-fill,minmax(300px,1fr)); gap: 16px; }
+.cat { display: flex; flex-direction: column; gap: 8px; padding: 26px; border-radius: 20px; background: var(--panel); border: 1px solid var(--line); text-decoration: none; transition: border-color .15s, transform .15s; }
+.cat:hover { border-color: var(--accent); transform: translateY(-2px); }
+.cat h2 { margin: 0; font-size: 19px; }
+.cat p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+.cat span { margin-top: auto; padding-top: 8px; color: var(--accent); font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+.popular { margin-top: 60px; }
+.popular h2 { font-size: 22px; margin: 0 0 14px; }
+.popular .list { columns: 2; column-gap: 40px; }
+.list { list-style: none; margin: 0; padding: 0; }
+.list li { break-inside: avoid; border-bottom: 1px solid var(--line); }
+.list a { display: flex; justify-content: space-between; gap: 16px; padding: 14px 2px; text-decoration: none; color: var(--text); }
+.list a::after { content: "→"; color: var(--faint); }
+.list a:hover, .list a:hover::after { color: var(--accent); }
+.list .tag { margin-left: auto; }
+
+/* the airgap band: its own block on the home page, not one card among many */
+.airband { position: relative; overflow: hidden; display: grid; grid-template-columns: minmax(0,.95fr) minmax(0,1.05fr); gap: 36px; align-items: center; margin-bottom: 48px; padding: 36px; border-radius: 24px; border: 1px solid rgba(56,113,255,.35); background: radial-gradient(70% 120% at 0 0, rgba(56,113,255,.28), transparent 65%), var(--air-bg); text-decoration: none; }
+.airband .copy { display: grid; gap: 14px; justify-items: start; }
+.airband h2 { margin: 0; font-size: clamp(24px,3vw,32px); line-height: 1.15; }
+.airband p { margin: 0; color: #c7d3f5; max-width: 46ch; }
+.eyebrow { display: inline-flex; align-items: center; gap: 10px; font: 500 11px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--air-hi); }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px; border-radius: 999px; background: rgba(56,113,255,.18); border: 1px solid rgba(56,113,255,.5); color: var(--air-hi); font: 500 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+.pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--air-hi); }
+.pill.draft { background: rgba(254,70,72,.12); border-color: rgba(254,70,72,.45); color: #ff9a9b; }
+.pill.draft::before { background: #ff9a9b; }
+
+/* quick-start steps (airgap only) */
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; counter-reset: s; }
+.steps li { counter-increment: s; position: relative; padding: 16px 16px 16px 58px; border-radius: 16px; background: rgba(12,13,17,.55); border: 1px solid rgba(56,113,255,.22); }
+.steps li::before { content: counter(s); position: absolute; left: 16px; top: 15px; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: var(--air); color: #fff; font: 600 14px/1 var(--display); }
+.steps b { display: block; color: var(--text); font: 600 15px/1.3 var(--display); margin-bottom: 4px; }
+.steps span { display: block; color: #b9c6ea; font-size: 13.5px; line-height: 1.5; }
+.steps span b { display: inline; font: inherit; font-weight: 600; margin: 0; }
+.sec-air { padding: 32px; border-radius: 24px; border: 1px solid rgba(56,113,255,.35); background: radial-gradient(70% 120% at 0 0, rgba(56,113,255,.22), transparent 65%), var(--air-bg); margin-bottom: 36px; display: grid; gap: 20px; }
+.sec-air h2 { margin: 0; font-size: 18px; }
+.switch { width: 100%; max-width: 220px; justify-self: end; }
+
+/* section and article pages */
+.crumbs { font-size: 13px; color: var(--muted); margin-bottom: 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.crumbs a { color: var(--muted); text-decoration: none; }
+.crumbs a:hover { color: var(--text); }
+.crumbs i { font-style: normal; color: var(--faint); }
+.crumbs span:last-child { color: var(--body); }
+.main > h1, .article h1 { margin: 0 0 10px; font-size: clamp(28px,4.4vw,40px); line-height: 1.1; letter-spacing: -.02em; }
+.lede { margin: 0 0 28px; color: var(--muted); }
+.layout { display: grid; grid-template-columns: 250px minmax(0,1fr); gap: 56px; align-items: start; }
+.side { position: sticky; top: 92px; font-size: 14px; }
+.side h2 { margin: 0 0 10px; font: 500 12px/1.3 var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+.side h2 a { text-decoration: none; }
+.side ul { list-style: none; margin: 0; padding: 0; border-left: 1px solid var(--line); }
+.side a { display: block; padding: 7px 14px; color: var(--muted); text-decoration: none; line-height: 1.4; }
+.side a:hover { color: var(--text); }
+.side a[aria-current] { color: var(--text); box-shadow: inset 2px 0 var(--accent); }
+.is-air .side a[aria-current] { box-shadow: inset 2px 0 var(--air); }
+.article { max-width: 720px; }
+.article h1 { margin-bottom: 24px; }
+.article h3 { font-size: 17px; margin: 28px 0 6px; }
+.article p { margin: 0 0 16px; }
+.article ul, .article ol { margin: 0 0 18px; padding-left: 22px; }
+.article li { margin: 6px 0; }
+.article b { color: var(--text); font-weight: 600; }
+.article a { color: var(--accent); }
+.is-air .article a { color: var(--air-hi); }
+.article code { background: var(--panel2); padding: 1px 6px; border-radius: 6px; font: 13px var(--mono); }
+.note { margin: 0 0 18px; padding: 14px 18px; border-radius: 14px; background: rgba(175,80,255,.08); border: 1px solid rgba(175,80,255,.28); }
+.note p:last-child { margin: 0; }
+.article .steps { grid-template-columns: 1fr; margin: 0 0 20px; padding: 0; }
+.article .steps li { margin: 0; color: #c7d3f5; background: rgba(56,113,255,.06); }
+.article .steps li b { display: inline; font: inherit; font-weight: 600; margin: 0; }
+.draftnote { margin: 0 0 22px; padding: 10px 14px; border-radius: 12px; border: 1px dashed rgba(254,70,72,.45); color: #ffb3b4; font-size: 13px; }
+.badges { display: flex; gap: 8px; margin-bottom: 12px; }
+
+/* footer */
+.foot { display: flex; flex-wrap: wrap; align-items: center; gap: 18px 28px; padding: 40px var(--pad); border-top: 1px solid var(--line); background: var(--panel); }
+.foot div { display: flex; flex-direction: column; }
+.foot b { color: var(--text); font: 600 18px/1.3 var(--display); }
+.foot span { color: var(--muted); font-size: 14px; }
+.foot nav { margin-left: auto; display: flex; gap: 20px; font-size: 13px; }
+.foot nav a { color: var(--muted); text-decoration: none; }
+.foot nav a:hover { color: var(--text); }
+
+a:focus-visible, input:focus-visible { outline: 2px solid var(--volt); outline-offset: 2px; }
+
+@media (max-width: 860px) {
+  .top { flex-wrap: wrap; gap: 12px 16px; }
+  .top nav > a:not(.btn) { display: none; }
+  .search.small { order: 3; flex-basis: 100%; max-width: none; }
+  .layout { grid-template-columns: 1fr; gap: 0; }
+  .side { position: static; order: 2; margin-top: 40px; padding-top: 28px; border-top: 1px solid var(--line); }
+  .popular .list { columns: 1; }
+  .airband { grid-template-columns: 1fr; padding: 26px; }
+}
+@media (max-width: 620px) {
+  .top nav { display: none; }
+  .hero { padding: 56px var(--pad) 60px; }
+  .main { padding-top: 36px; }
+  .cats, .steps { grid-template-columns: 1fr; }
+  .sec-air { padding: 22px; }
+  .foot nav { margin-left: 0; }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="#/"><svg class="mark" viewBox="152 0 133 200" fill="currentColor" aria-hidden="true"><path d="M196.677 28.5842L184.32 63.602C184.251 63.7983 184.222 64.0065 184.236 64.2141C184.249 64.4218 184.305 64.6244 184.4 64.8098L195.913 87.459L164.272 105.394C164.181 105.446 164.079 105.479 163.974 105.49C163.869 105.502 163.763 105.492 163.662 105.46C163.561 105.429 163.468 105.377 163.388 105.308C163.308 105.239 163.243 105.154 163.197 105.059L156.35 90.7985C156.234 90.5591 156.183 90.2937 156.201 90.0284C156.218 89.7631 156.305 89.507 156.451 89.2852L196.371 28.4387C196.384 28.4143 196.404 28.394 196.427 28.3798C196.451 28.3656 196.478 28.3582 196.506 28.3582C196.533 28.3582 196.56 28.3656 196.584 28.3798C196.608 28.394 196.627 28.4143 196.64 28.4387C196.658 28.4581 196.67 28.4815 196.676 28.5069C196.683 28.5322 196.683 28.5588 196.677 28.5842Z"/><path d="M258.643 75.505L284.854 131.39C284.99 131.68 285.033 132.005 284.975 132.321C284.918 132.637 284.764 132.926 284.534 133.15L215.612 199.781C215.503 199.887 215.366 199.958 215.217 199.987C215.068 200.015 214.914 199.998 214.774 199.939C214.634 199.88 214.515 199.781 214.432 199.655C214.348 199.528 214.303 199.38 214.303 199.228V137.967L257.756 96.0006C257.904 95.8582 258.022 95.6876 258.103 95.499C258.184 95.3103 258.227 95.1074 258.228 94.902L258.352 75.5705C258.352 75.5357 258.364 75.502 258.385 75.4748C258.407 75.4476 258.437 75.4287 258.471 75.421C258.505 75.4134 258.541 75.4176 258.572 75.4328C258.603 75.4481 258.628 75.4736 258.643 75.505Z"/><path d="M214.878 0.223515L243.953 71.5761C244.031 71.7639 244.072 71.9655 244.072 72.1691C244.072 72.3727 244.031 72.5743 243.953 72.7621L196.946 182.843C196.896 182.958 196.819 183.058 196.722 183.137C196.626 183.215 196.511 183.269 196.389 183.293C196.267 183.317 196.14 183.312 196.021 183.276C195.901 183.241 195.792 183.177 195.703 183.091L152.468 141.292C152.2 141.032 152.036 140.684 152.005 140.312C151.975 139.94 152.08 139.569 152.301 139.269L213.976 55.6424C214.17 55.3763 214.275 55.0552 214.274 54.7257V0.33266C214.268 0.257404 214.289 0.182337 214.334 0.121948C214.38 0.0615584 214.446 0.0201256 214.52 0.00565629C214.594 -0.00881302 214.671 0.00470573 214.735 0.0435967C214.8 0.0824877 214.848 0.143991 214.87 0.216244L214.878 0.223515Z"/></svg><b>Ambire Ice</b><span>Help Center</span></a>
+  <form class="search small" role="search" data-search hidden><input type="search" placeholder="Search for answers" autocomplete="off" aria-label="Search the help center"><ol class="results" hidden></ol></form>
+  <nav id="topnav"></nav>
+</header>
+<div id="app"></div>
+<footer class="foot" id="foot"></footer>
+
+<script type="application/json" id="help-data"><!--HELP_DATA--></script>
+<script>
+// Renders the help center from the embedded articles.json (build.py inlines it), with
+// hash routes: #/, #/<section>, #/<section>/<article>, #/?q=<words>.
+// Article links in the JSON are site paths (/help/<section>/<article>/); here they map to
+// hash routes, so the page also works opened straight from disk.
+const DATA = JSON.parse(document.getElementById("help-data").textContent)
+const SECTIONS = DATA.sections
+const BASE = DATA.basePath
+
+const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
+const route = (sec, art) => "#/" + [sec, art].filter(Boolean).join("/")
+const findSection = id => SECTIONS.find(s => s.id === id)
+const findArticle = ref => {
+  const [s, a] = ref.split("/")
+  const sec = findSection(s)
+  const art = sec && sec.articles.find(x => x.id === a)
+  return art ? { sec, art } : null
+}
+
+function href(url) {
+  if (!url.startsWith(BASE)) return url
+  const parts = url.slice(BASE.length).split("/").filter(Boolean)
+  return route(parts[0], parts[1])
+}
+
+function inline(text) {
+  return esc(text)
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, label, url) => {
+      const external = /^https?:/.test(url)
+      return `<a href="${href(url)}"${external ? ' target="_blank" rel="noopener"' : ""}>${label}</a>`
+    })
+}
+
+// The subset of Markdown the articles use: paragraphs, "- " lists, "1. " lists,
+// "### " headings and "> " notes. Numbered lists in the airgap section become step cards.
+function markdown(body, stepCards) {
+  return body.split(/\n{2,}/).map(block => {
+    const lines = block.split("\n")
+    if (block.startsWith("### ")) return `<h3>${inline(block.slice(4))}</h3>`
+    if (lines.every(l => l.startsWith("> "))) return `<div class="note"><p>${inline(lines.map(l => l.slice(2)).join(" "))}</p></div>`
+    if (lines.every(l => l.startsWith("- "))) return `<ul>${lines.map(l => `<li>${inline(l.slice(2))}</li>`).join("")}</ul>`
+    if (lines.every(l => /^\d+\. /.test(l))) {
+      const items = lines.map(l => `<li>${inline(l.replace(/^\d+\. /, ""))}</li>`).join("")
+      return stepCards ? `<ol class="steps">${items}</ol>` : `<ol>${items}</ol>`
+    }
+    return `<p>${inline(lines.join(" "))}</p>`
+  }).join("\n")
+}
+
+const plain = md => md.replace(/\*\*|`|^[-#>] |^\d+\. /gm, "").replace(/\[([^\]]+)\]\([^)]+\)/g, "$1").replace(/\s+/g, " ").trim()
+const INDEX = SECTIONS.flatMap(sec => sec.articles.map(art => ({ sec, art, title: art.title.toLowerCase(), text: plain(art.body) })))
+
+function search(words) {
+  return INDEX.map(e => {
+    let score = 0
+    for (const w of words) {
+      if (e.title.includes(w)) score += 5
+      else if (e.text.toLowerCase().includes(w)) score += 1
+      else return null
+    }
+    return { e, score }
+  }).filter(Boolean).sort((a, b) => b.score - a.score).slice(0, 8).map(h => h.e)
+}
+
+function snippet(text, word) {
+  const at = Math.max(0, text.toLowerCase().indexOf(word) - 40)
+  return (at > 0 ? "…" : "") + text.slice(at, at + 120) + (text.length > at + 120 ? "…" : "")
+}
+
+function wireSearch(form) {
+  const input = form.querySelector("input")
+  const list = form.querySelector(".results")
+  const render = () => {
+    const words = input.value.toLowerCase().split(/\s+/).filter(w => w.length > 1)
+    if (!words.length) return void (list.hidden = true)
+    const hits = search(words)
+    list.innerHTML = hits.length
+      ? hits.map(({ sec, art, text }) => `<li><a href="${route(sec.id, art.id)}"><b>${esc(art.title)}</b><small>${esc(sec.title)} · ${esc(snippet(text, words[0]))}</small></a></li>`).join("")
+      : `<li class="empty">No articles match. Try other words, or email ${esc(DATA.contact.email)}.</li>`
+    list.hidden = false
+  }
+  input.addEventListener("input", render)
+  input.addEventListener("focus", () => { if (input.value) render() })
+  form.addEventListener("submit", event => {
+    event.preventDefault()
+    const first = list.querySelector("a")
+    if (first) location.hash = first.getAttribute("href")
+  })
+  document.addEventListener("click", event => { if (!form.contains(event.target)) list.hidden = true })
+  return { input, render }
+}
+
+const searchForm = q => `<form class="search" role="search" data-search><input type="search" placeholder="Search for answers" autocomplete="off" aria-label="Search the help center" value="${esc(q || "")}"><ol class="results" hidden></ol></form>`
+const crumbs = items => `<nav class="crumbs" aria-label="Breadcrumb"><a href="#/">Help Center</a>${items.map(([label, to]) => ` <i>›</i> ${to ? `<a href="${to}">${esc(label)}</a>` : `<span>${esc(label)}</span>`}`).join("")}</nav>`
+const count = n => `${n} article${n === 1 ? "" : "s"}`
+const articleList = sec => `<ul class="list">${sec.articles.map(a => `<li><a href="${route(sec.id, a.id)}">${esc(a.title)}</a></li>`).join("")}</ul>`
+const steps = qs => `<ol class="steps">${qs.map(s => `<li><b>${esc(s.title)}</b><span>${inline(s.text)}</span></li>`).join("")}</ol>`
+
+// The airgap switch, drawn on AIR: the slider at the top, the radio light off.
+const SWITCH = `<svg class="switch" viewBox="0 0 220 120" aria-hidden="true">
+  <rect x="8" y="10" width="204" height="100" rx="18" fill="#0c0d11" stroke="rgba(143,176,255,.35)"/>
+  <rect x="34" y="28" width="44" height="64" rx="10" fill="#14151b" stroke="rgba(143,176,255,.3)"/>
+  <rect x="40" y="34" width="32" height="26" rx="6" fill="#3871ff"/>
+  <text x="56" y="105" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="9" fill="#8fb0ff" letter-spacing="1.5">SWITCH</text>
+  <text x="96" y="52" font-family="IBM Plex Mono, monospace" font-size="15" fill="#eef1fa" letter-spacing="2">AIR</text>
+  <text x="96" y="76" font-family="IBM Plex Sans, sans-serif" font-size="11" fill="#9ca2ba">USB data: cut</text>
+  <text x="96" y="92" font-family="IBM Plex Sans, sans-serif" font-size="11" fill="#9ca2ba">Radio: no power</text>
+  <circle cx="192" cy="40" r="6" fill="#1c1d26" stroke="rgba(143,176,255,.35)"/>
+</svg>`
+
+function airBand(sec) {
+  return `<a class="airband" href="${route(sec.id)}">
+    <div class="copy">
+      <span class="eyebrow"><span class="pill">AIR</span> ${esc(sec.title)}</span>
+      <h2>Sign with QR codes. No cable, no radio.</h2>
+      <p>One switch on the side cuts USB data and the radio in hardware. Requests and signatures travel only as animated QR codes you can see.</p>
+      <span class="btn air">Open the QR guide · ${count(sec.articles.length)}</span>
+    </div>
+    ${steps(sec.quickstart)}
+  </a>`
+}
+
+function home(q) {
+  const air = SECTIONS.filter(s => s.style === "airgap")
+  const rest = SECTIONS.filter(s => s.style !== "airgap")
+  const popular = DATA.popular.map(findArticle)
+  return `<section class="hero"><h1>How can we help?</h1>${searchForm(q)}</section>
+  <main class="main">
+    ${air.map(airBand).join("")}
+    <div class="cats">${rest.map(s => `<a class="cat" href="${route(s.id)}"><h2>${esc(s.title)}</h2><p>${esc(s.description)}</p><span>${count(s.articles.length)}</span></a>`).join("")}</div>
+    <section class="popular"><h2>Popular articles</h2><ul class="list">${popular.map(({ sec, art }) => `<li><a href="${route(sec.id, art.id)}">${esc(art.title)}</a></li>`).join("")}</ul></section>
+  </main>`
+}
+
+function sectionPage(sec) {
+  const air = sec.style === "airgap"
+  return `<main class="main narrow${air ? " is-air" : ""}">
+    ${crumbs([[sec.title]])}
+    ${air ? `<div class="badges"><span class="pill">AIR</span></div>` : ""}
+    <h1>${esc(sec.title)}</h1>
+    <p class="lede">${esc(sec.description)}</p>
+    ${air ? `<div class="sec-air"><div style="display:flex;justify-content:space-between;gap:20px;align-items:center;flex-wrap:wrap"><h2>Quick start</h2>${SWITCH}</div>${steps(sec.quickstart)}</div>` : ""}
+    ${articleList(sec)}
+  </main>`
+}
+
+function articlePage(sec, art) {
+  const air = sec.style === "airgap"
+  return `<main class="main layout${air ? " is-air" : ""}">
+    <aside class="side"><h2><a href="${route(sec.id)}">${esc(sec.title)}</a></h2>
+      <ul>${sec.articles.map(a => `<li><a href="${route(sec.id, a.id)}"${a.id === art.id ? ' aria-current="page"' : ""}>${esc(a.title)}</a></li>`).join("")}</ul></aside>
+    <article class="article">
+      ${crumbs([[sec.title, route(sec.id)], [art.title]])}
+      ${air || art.status ? `<div class="badges">${air ? `<span class="pill">AIR</span>` : ""}${art.status ? `<span class="pill draft">${esc(art.status)}</span>` : ""}</div>` : ""}
+      <h1>${esc(art.title)}</h1>
+      ${art.status === "needs-answer" ? `<p class="draftnote">Draft: some details here wait on an answer before this goes live.</p>` : ""}
+      ${markdown(art.body, air)}
+    </article>
+  </main>`
+}
+
+function notFound() {
+  return `<main class="main narrow">${crumbs([["Not found"]])}<h1>Page not found</h1><p class="lede">That article does not exist. Try searching, or go back to the <a href="#/">Help Center</a>.</p></main>`
+}
+
+function render() {
+  const [path, query] = location.hash.replace(/^#\/?/, "").split("?")
+  const [s, a] = path.split("/").filter(Boolean)
+  const q = new URLSearchParams(query || "").get("q")
+  const sec = s && findSection(s)
+  const art = sec && a && sec.articles.find(x => x.id === a)
+  const app = document.getElementById("app")
+  if (!s) app.innerHTML = home(q)
+  else if (sec && !a) app.innerHTML = sectionPage(sec)
+  else if (art) app.innerHTML = articlePage(sec, art)
+  else app.innerHTML = notFound()
+
+  document.title = art ? `${art.title} | Ambire Ice Help Center` : sec ? `${sec.title} | Ambire Ice Help Center` : "Ambire Ice Help Center"
+  const topSearch = document.querySelector(".top [data-search]")
+  topSearch.hidden = !s
+  topSearch.querySelector("input").value = ""
+  topSearch.querySelector(".results").hidden = true
+  app.querySelectorAll("[data-search]").forEach(form => { const w = wireSearch(form); if (q) w.render() })
+  window.scrollTo(0, 0)
+}
+
+document.getElementById("topnav").innerHTML = DATA.links.map(l => `<a href="${esc(l.href)}" target="_blank" rel="noopener">${esc(l.label)}</a>`).join("") + `<a class="btn" href="mailto:${esc(DATA.contact.email)}">Contact support</a>`
+document.getElementById("foot").innerHTML = `<div><b>Still need help?</b><span>${esc(DATA.contact.line)}</span></div><a class="btn" href="mailto:${esc(DATA.contact.email)}">${esc(DATA.contact.email)}</a><nav><a href="#/">Help Center</a>${DATA.links.map(l => `<a href="${esc(l.href)}" target="_blank" rel="noopener">${esc(l.label)}</a>`).join("")}</nav>`
+wireSearch(document.querySelector(".top [data-search]"))
+window.addEventListener("hashchange", render)
+render()
+</script>
+</body>
+</html>

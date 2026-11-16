@@ -1,0 +1,292 @@
+{
+  "format": "ambire-ice-help/1",
+  "product": "Ambire Ice",
+  "updated": "2026-11-16",
+  "basePath": "/help/",
+  "contact": {
+    "email": "support@ambire.com",
+    "line": "Email us and a person answers."
+  },
+  "links": [
+    { "label": "ambire.com/ice", "href": "https://ambire.com/ice" }
+  ],
+  "popular": [
+    "getting-started/set-up",
+    "airgap/connect-ambire",
+    "connect/bluetooth",
+    "backup/recovery-phrase",
+    "signing/clear-signing",
+    "power/charging"
+  ],
+  "sections": [
+    {
+      "id": "getting-started",
+      "title": "Getting started",
+      "description": "Setting up Ice and the apps it works with.",
+      "style": "standard",
+      "articles": [
+        {
+          "id": "whats-in-the-box",
+          "title": "What's in the box?",
+          "status": "needs-answer",
+          "body": "- **Ambire Ice**, the device.\n- **The battery pack**, already on the back of the device.\n\nThe AAA cells are not included: use two of your own. See [Which batteries can I use?](/help/power/batteries/)\n\n> If the box holds a card with words already written on it, or the device asks for a PIN you never set, do not use it. A genuine Ice always creates a new recovery phrase in front of you."
+        },
+        {
+          "id": "set-up",
+          "title": "How do I set up Ambire Ice?",
+          "body": "1. Put two AAA cells in the battery pack, or plug Ice into USB-C.\n2. Press the centre of the joystick to switch it on.\n3. Choose **Create new wallet**, or **Restore wallet** if you already have a recovery phrase.\n4. Write down the recovery phrase Ice shows you, on paper, in order. Ice then asks for a few of the words to check you have them.\n5. Choose a PIN.\n6. Connect Ice to the Ambire app over [USB](/help/connect/usb/), [Bluetooth](/help/connect/bluetooth/) or [QR codes](/help/airgap/connect-ambire/).\n\nTake your time with step 4: those words are your wallet."
+        },
+        {
+          "id": "which-apps",
+          "title": "Which apps work with Ice?",
+          "status": "needs-answer",
+          "body": "Ice works with **Ambire Wallet**:\n\n- **Browser extension:** connect with a USB cable.\n- **Mobile app (iOS and Android):** connect over Bluetooth.\n- **Either one, fully offline:** sign with QR codes, with the airgap switch on AIR. See [Airgapped mode](/help/airgap/).\n\nIce works with regular accounts and with Safe accounts, where it signs as one of the owners."
+        },
+        {
+          "id": "genuine",
+          "title": "How do I know my Ice is genuine?",
+          "body": "Ice is built to be checked, not trusted:\n\n- **Look through the case.** Every part sits on the back of the board, behind clear plastic. Nothing should be hidden under tape, glue or extra wiring.\n- **Open it.** Undo the one small M2 screw and the front hooks off. Compare the board with the published files at [ambire.com/ice](https://ambire.com/ice), then close it again.\n- **Start fresh.** A new Ice has no wallet on it. It creates your recovery phrase during setup. Never use a device that came with words already chosen or a PIN already set."
+        }
+      ]
+    },
+    {
+      "id": "backup",
+      "title": "Recovery phrase and PIN",
+      "description": "Back up your wallet, protect it, and restore it.",
+      "style": "standard",
+      "articles": [
+        {
+          "id": "recovery-phrase",
+          "title": "What is a recovery phrase?",
+          "status": "needs-answer",
+          "body": "Your recovery phrase is a list of words that Ice creates when you set it up. **The words are your wallet.** Ice keeps them locked behind your PIN; the paper copy is your backup.\n\n- If Ice is lost, broken or reset, the words bring back every account on any new Ice.\n- Anyone who sees the words can take your funds, without needing your device or PIN.\n\nThe words are standard, so the same phrase also works in other wallets that follow the same standard."
+        },
+        {
+          "id": "store-backup",
+          "title": "How should I keep my recovery phrase safe?",
+          "body": "- Write it on paper, or stamp it into metal. Keep it somewhere dry and private.\n- Never take a photo of it, type it into a phone or computer, or keep it in a password manager or cloud drive.\n- Never tell anyone the words. **Ambire will never ask for them**, not by email, chat or phone.\n- To check your backup without risk, use **Check backup** in Ice's settings: you enter the words on Ice and it tells you whether they match."
+        },
+        {
+          "id": "pin",
+          "title": "How does the PIN work?",
+          "body": "The PIN unlocks Ice each time you switch it on. You choose it during setup and can change it in **Settings**.\n\nEach wrong guess makes Ice wait longer before the next try. **After 16 wrong PINs in a row, Ice erases itself.** Your funds are safe as long as you have your recovery phrase: restore it on Ice and choose a new PIN.\n\nThe PIN is entered on Ice's own screen only, never in the app."
+        },
+        {
+          "id": "forgot-pin",
+          "title": "I forgot my PIN. What now?",
+          "body": "A PIN cannot be reset or recovered, by you or by Ambire. To use Ice again:\n\n1. Erase Ice: in **Settings**, choose **Wipe device**.\n2. Choose **Restore wallet** and enter your recovery phrase.\n3. Choose a new PIN.\n\nYour accounts come back exactly as they were. Without the recovery phrase, they cannot."
+        },
+        {
+          "id": "passphrase",
+          "title": "What is a passphrase?",
+          "body": "A passphrase is an optional extra word you add to your recovery phrase. **Each passphrase opens a completely separate wallet**, and an empty passphrase opens your normal one.\n\n- A typo opens a different, empty wallet, not an error.\n- If you forget the passphrase, nobody can recover that wallet, even with your recovery phrase.\n- Ice never stores it: it asks every time.\n\nUse one only if you understand these points and keep the passphrase backed up apart from your recovery phrase."
+        },
+        {
+          "id": "restore",
+          "title": "How do I restore a wallet on Ice?",
+          "body": "1. Switch Ice on and choose **Restore wallet**. On an Ice that already has a wallet, wipe it first in **Settings**.\n2. Enter your recovery phrase word by word on Ice's screen.\n3. Choose a PIN.\n\nYou can restore a 12, 18 or 24-word phrase from another wallet that follows the same standard, and Ice shows the same accounts. Enter the words only on Ice, never in an app or website."
+        }
+      ]
+    },
+    {
+      "id": "connect",
+      "title": "USB and Bluetooth",
+      "description": "Connecting Ice to the Ambire app with a cable or wirelessly.",
+      "style": "standard",
+      "articles": [
+        {
+          "id": "usb",
+          "title": "How do I connect over USB?",
+          "body": "1. Make sure the airgap switch on the left edge is **not** on AIR.\n2. Plug Ice into your computer with a USB-C data cable.\n3. Unlock Ice with your PIN.\n4. In the Ambire extension, add a hardware wallet and choose Ambire Ice.\n\nOn AIR, the USB cable still charges Ice but carries no data, so the app cannot see it."
+        },
+        {
+          "id": "bluetooth",
+          "title": "How do I pair Ice over Bluetooth?",
+          "body": "1. Make sure the airgap switch is **not** on AIR.\n2. Unlock Ice and swipe up on the home screen. If Bluetooth is off, Ice offers to turn it on.\n3. Ice shows its Bluetooth name. Select it on your phone or computer.\n4. Check that both screens show the same six-digit code, then confirm on Ice. Do this within about 30 seconds.\n5. The Ambire app may then show its own code: Ice displays it, you type it into the app.\n\nYou pair once per phone or computer. After that, a paired device connects by itself; there is nothing to swipe."
+        },
+        {
+          "id": "status",
+          "title": "What does the corner of the home screen mean?",
+          "body": "The top-right corner shows how Ice is connected right now:\n\n- **AIR:** the airgap switch is on AIR. No radio, no USB data. Swiping up opens QR signing.\n- **BT off:** Bluetooth is switched off.\n- **BT not paired:** Bluetooth is on, but no phone or computer is paired yet.\n- **BT pairing:** the pairing screen is open, waiting for your phone or computer.\n- **BT ready:** paired, nothing connected at the moment.\n- **BT connected** (green): a paired phone or computer is connected."
+        },
+        {
+          "id": "bluetooth-safety",
+          "title": "Is Bluetooth safe to use?",
+          "body": "Yes. Ice treats Bluetooth as an untrusted pipe:\n\n- Everything between the Ambire app and Ice is encrypted, after a pairing you confirm on Ice's own screen.\n- Nothing is signed until you check it on Ice's screen and confirm it there.\n- Your keys never leave Ice, over Bluetooth or any other way.\n\nIf you would rather have no radio at all, slide the airgap switch to AIR: it cuts the radio's power in hardware. See [Airgapped mode](/help/airgap/)."
+        }
+      ]
+    },
+    {
+      "id": "airgap",
+      "title": "Airgapped mode (QR)",
+      "description": "Sign with animated QR codes: no cable, no radio.",
+      "style": "airgap",
+      "quickstart": [
+        { "title": "Flip to AIR", "text": "Slide the airgap switch on the left edge to AIR. Radio and USB data are now cut." },
+        { "title": "Connect once", "text": "Swipe up on the home screen, choose **Connect to Ambire**, and scan Ice's QR code with the app." },
+        { "title": "Scan the request", "text": "When the app shows a QR code to sign, choose **Scan request** and point Ice's camera at it." },
+        { "title": "Check and sign", "text": "Check the details on Ice's screen, confirm, and let the app scan Ice's signature QR." }
+      ],
+      "articles": [
+        {
+          "id": "what-is-airgapped",
+          "title": "What is airgapped mode?",
+          "body": "In airgapped mode Ice has no connection to anything: **no USB data and no radio**. The only way in or out is a QR code on a screen, which you can see.\n\nThe app shows a QR code with the request, Ice reads it with its camera on the back, you check and confirm on Ice, and Ice shows the signature as a QR code for the app to read.\n\nUse it when you want the strongest separation between your keys and your phone or computer, for example for a vault or a Safe that holds most of your funds. It is slower than USB or Bluetooth, but nothing can reach Ice without you holding it up to a screen."
+        },
+        {
+          "id": "airgap-switch",
+          "title": "How does the airgap switch work?",
+          "body": "The switch is on Ice's left edge. Slide it with a thumbnail.\n\n- **On AIR**, it cuts the radio's power and the USB data lines **in hardware**. No software, not even Ice's own, can turn them back on.\n- **The light is wired to the radio itself**, so it cannot lie: if the light is off, the radio has no power.\n- USB-C still charges the battery pack on AIR. Only the data is cut.\n- The home screen shows **AIR** in its top-right corner, and swiping up opens QR signing instead of Bluetooth pairing.\n\nSlide it back and Bluetooth and USB return within a second, without a restart."
+        },
+        {
+          "id": "connect-ambire",
+          "title": "How do I connect Ice to Ambire by QR?",
+          "body": "You do this once per wallet.\n\n1. Slide the airgap switch to AIR and unlock Ice.\n2. Swipe up on the home screen and choose **Connect to Ambire**. Ice shows a QR code.\n3. In the Ambire app, add a hardware wallet that connects by QR code, and scan Ice's code.\n4. The app lists your wallet's accounts. Pick the ones you want.\n\nThe QR code holds only what the app needs to find your accounts: no keys, nothing that can spend. If you use a passphrase, connect once for each passphrase."
+        },
+        {
+          "id": "sign-qr",
+          "title": "How do I sign by QR?",
+          "body": "1. Start the transaction or message in the Ambire app. It shows a QR code, sometimes an animated one.\n2. On Ice, swipe up and choose **Scan request**. Point the camera on the back at the app's QR code, about 15 cm away.\n3. The bar under the picture fills as the parts of an animated code arrive; the frame flashes green for each one.\n4. Ice shows what you are signing, with the same screens and warnings as over USB. Check it, then confirm.\n5. Ice shows the signature as a QR code. Scan it with the app, then tap **Done** on Ice.\n\nYou can sign transactions, messages and typed data, including Safe and Ambire smart account approvals. Ice remembers nothing between requests."
+        },
+        {
+          "id": "scan-tips",
+          "title": "The QR code won't scan. What can I try?",
+          "body": "- Hold Ice about 15 cm from the screen, square to it, and keep it still.\n- Turn the phone or computer screen's brightness up, and avoid glare on it.\n- **Tap the picture** on Ice to change the zoom.\n- For an animated code, keep pointing until the bar fills. It does not matter which part you start on.\n- If Ice says the codes belong to different requests, the app started a new one: cancel on Ice and scan again."
+        },
+        {
+          "id": "request-refused",
+          "title": "Why did Ice refuse a QR request?",
+          "body": "Ice checks every request before it shows it, and says why it refused:\n\n- **Another wallet:** the request is for a different recovery phrase or a different passphrase. Connect this wallet to the app first.\n- **Wrong account:** the address in the request is not one of this wallet's.\n- **Wrong network:** the transaction is for a different network than the request says.\n- **Not a valid request:** it is damaged, not a signing request, or larger than Ice accepts. Scan again; if it repeats, the request itself is the problem.\n\nA refusal means nothing was signed."
+        },
+        {
+          "id": "qr-limits",
+          "title": "What can't be signed over QR?",
+          "body": "Over QR codes, Ice does not sign:\n\n- several requests at once (a batch request): sign them one by one,\n- EIP-7702 authorizations,\n- accounts created in a non-standard way, such as Ledger Live-style accounts,\n- very large requests: the app warns you before it shows one.\n\nFor these, switch off AIR and use USB or Bluetooth."
+        }
+      ]
+    },
+    {
+      "id": "signing",
+      "title": "Signing and Safe",
+      "description": "What Ice shows before you sign, and Safe accounts.",
+      "style": "standard",
+      "articles": [
+        {
+          "id": "clear-signing",
+          "title": "What does Ice show before I sign?",
+          "body": "Ice rebuilds every request itself and shows it in plain terms on its own screen: who receives what, on which network, and for which fee. **What you see on Ice is what you sign**, whatever the app or website shows.\n\n- For a Safe transaction, Ice decodes each action, and each step of a batch, one by one.\n- For messages and typed data, Ice shows the content, and decodes Safe and Ambire approvals.\n\nAlways compare the address on Ice with the one you expect. If anything looks different from what you meant to do, reject it on Ice."
+        },
+        {
+          "id": "delegatecall",
+          "title": "Why did Ice block a DELEGATECALL?",
+          "body": "A DELEGATECALL lets other code act with your Safe's full authority. It is how the Bybit Safe lost $1.4 billion in 2025: the signers approved a transaction their devices could not decode.\n\nIce blocks a DELEGATECALL unless its target is on a short list of known, safe contracts. If Ice blocked one, do not try to get around it: the request is either a mistake or an attack."
+        },
+        {
+          "id": "safe-owner",
+          "title": "How do I use Ice as a Safe owner?",
+          "body": "1. Connect Ice to the Ambire app (USB, Bluetooth or QR).\n2. Add one of Ice's addresses as an owner of your Safe.\n3. From then on, each Safe transaction waiting for your signature is shown and signed on Ice.\n\nChanges to a Safe's owners, threshold or modules get their own warning screens on Ice, because they change who controls the Safe. Read them carefully."
+        }
+      ]
+    },
+    {
+      "id": "power",
+      "title": "Power and battery",
+      "description": "Batteries, charging, and switching on and off.",
+      "style": "standard",
+      "articles": [
+        {
+          "id": "switch-on-off",
+          "title": "How do I switch Ice on and off?",
+          "status": "needs-answer",
+          "body": "**On:** press the centre of the joystick. There is no separate power button.\n\n**Off:** TBD.\n\nIce also runs straight from USB-C, with or without cells in the pack."
+        },
+        {
+          "id": "batteries",
+          "title": "Which batteries can I use?",
+          "body": "The battery pack on the back takes **two AAA cells**:\n\n- **Rechargeable NiMH** (such as eneloop): the best choice. Ice charges them for you.\n- **Lithium or alkaline:** Ice runs on them, but never charges them.\n\nUse two cells of the same kind and charge level. The pack is held by magnets and fits only one way round; you rarely need to take it off."
+        },
+        {
+          "id": "charging",
+          "title": "How does the battery pack charge?",
+          "body": "Plug Ice into USB-C. The pack charges in the device, also with the airgap switch on AIR.\n\nIce charges only when it has identified **both** cells as NiMH rechargeables. Alkaline or lithium cells, or a mixed pair, are never charged, so a wrong cell cannot leak or overheat. Ice simply runs on them until they are empty."
+        },
+        {
+          "id": "battery-life",
+          "title": "How long does the battery last?",
+          "body": "About **3 hours of active use** on a pair of high-capacity NiMH cells (our estimate, before final measurements). Most of the time Ice is off, and it uses no battery then.\n\nWithout cells, Ice runs from USB-C and stays on while it is plugged in."
+        }
+      ]
+    },
+    {
+      "id": "firmware",
+      "title": "Firmware and open source",
+      "description": "Updates, Trezor's firmware, and building your own.",
+      "style": "standard",
+      "articles": [
+        {
+          "id": "update",
+          "title": "How do I update Ice's firmware?",
+          "status": "needs-answer",
+          "body": "Firmware updates go **over USB only**, never over Bluetooth or QR.\n\n1. Slide the airgap switch off AIR.\n2. Connect Ice with a USB-C data cable.\n3. TBD: how the update is started.\n4. Confirm the update on Ice's screen.\n\nYour wallet and settings stay on Ice through an update. Keep your recovery phrase at hand anyway."
+        },
+        {
+          "id": "trezor-firmware",
+          "title": "Does Ice run Trezor's firmware?",
+          "body": "Ice is built on Trezor's open-source firmware, which has protected wallets for over a decade. We follow Trezor's updates closely and add what Ice needs on top: its hardware, the Ambire app, clear signing for Safe, and airgapped QR signing.\n\nIce is its own device, not a Trezor. Its firmware is signed by Ambire, and Trezor does not support it."
+        },
+        {
+          "id": "build-your-own",
+          "title": "Can I check or build Ice myself?",
+          "body": "Yes. Ice is open hardware and open source:\n\n- The board files are ready to order from a board maker (JLCPCB or PCBWay).\n- The case, the battery pack's tray, the joystick cap and the airgap switch's slider print on a home 3D printer.\n- The firmware is published too.\n\nEverything is at [ambire.com/ice](https://ambire.com/ice)."
+        }
+      ]
+    },
+    {
+      "id": "troubleshooting",
+      "title": "Troubleshooting",
+      "description": "Common problems and quick fixes.",
+      "style": "standard",
+      "articles": [
+        {
+          "id": "wont-turn-on",
+          "title": "Ice won't turn on",
+          "body": "- Plug Ice into USB-C and press the centre of the joystick. It runs from USB without cells.\n- If it starts on USB but not on its own, the cells are empty or in the wrong way round. Check the markings in the pack.\n- Check the pack sits flat on the back. It fits only one way round."
+        },
+        {
+          "id": "usb-not-detected",
+          "title": "The app can't see Ice over USB",
+          "body": "- **Check the airgap switch.** On AIR, USB charges but carries no data. This is the most common cause.\n- Unlock Ice: the app sees it only after the PIN.\n- Try another cable. Some USB-C cables only charge.\n- Try another USB port, without a hub."
+        },
+        {
+          "id": "bluetooth-wont-pair",
+          "title": "Bluetooth won't pair",
+          "body": "- Slide the airgap switch off AIR. On AIR, Ice says the radio is off.\n- Confirm the code on both screens within about 30 seconds.\n- **On a Mac**, keep System Settings, Bluetooth open and in front while pairing. Otherwise the Mac never shows its half of the prompt.\n- If Ice was paired before, remove it from your phone or computer's Bluetooth list, then pair again."
+        },
+        {
+          "id": "lost-or-broken",
+          "title": "I lost my Ice, or it broke",
+          "body": "Your funds are not on the device. They are in your recovery phrase.\n\n1. Restore your recovery phrase on a new Ice. See [How do I restore a wallet on Ice?](/help/backup/restore/)\n2. Your accounts come back as they were.\n\nIf someone may have your lost Ice **and** your PIN, or may have seen your recovery phrase, move your funds to a new wallet with a new recovery phrase. For a Safe, replace the lost owner with a new one."
+        }
+      ]
+    },
+    {
+      "id": "orders",
+      "title": "Orders and delivery",
+      "description": "Reserving, deposits, colours and delivery.",
+      "style": "standard",
+      "articles": [
+        {
+          "id": "reserve",
+          "title": "How do I get an Ice?",
+          "status": "needs-answer",
+          "body": "Reserve one at [ambire.com/ice](https://ambire.com/ice).\n\n- **Batch 2 is $159**, limited to 200 devices. Batch 1 is sold out.\n- Reserve with a **$10 deposit**, which counts toward the price.\n- Four colours: Ice Blue, Orange Crush, Atomic Purple and Crystal Clear.\n\nPictures on the site are illustrative; the shipped device may differ in shape and colour."
+        },
+        {
+          "id": "delivery",
+          "title": "When will my Ice arrive?",
+          "body": "Delivery is expected **within 6 months** of reserving.\n\nWhen it arrives, check the device before you set it up: see [How do I know my Ice is genuine?](/help/getting-started/genuine/)"
+        }
+      ]
+    }
+  ]
+}
