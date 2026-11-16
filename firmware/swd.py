@@ -377,10 +377,24 @@ shutdown"""
             time.sleep(0.5)
         if sb & 0xFFFFFF80 != BOARDLOADER_START:
             print(f"setting SECBOOTADD0 = {BOARDLOADER_START:#010x}")
-            log, _ = self.run(
-                f"init; reset halt; stm32l4x option_write 0 0x4C {BOARDLOADER_START:#x} 0xFFFFFF80;"
-                " stm32l4x option_load 0; shutdown", check=False)
-            print("\n".join(l for l in log.splitlines() if "rror" in l))
+            # By hand: OpenOCD 0.12's option_write left the value in the register only (a
+            # reset brought back 0x0C000000, and the chip booted the erased secret area).
+            # With TZEN on, the register takes a secure write; OPTSTRT must finish (BSY)
+            # before anything resets the chip, and OBL_LAUNCH loads the result.
+            ns, s = FLASH_R_NS, FLASH_R_NS + SECURE_OFFSET
+            log, _ = self.run(f"""init; reset halt; stm32x5x_ahb_ap_secure_access
+mww {ns + 0x08:#x} 0x45670123; mww {ns + 0x08:#x} 0xCDEF89AB
+mww {ns + 0x10:#x} 0x08192A3B; mww {ns + 0x10:#x} 0x4C5D6E7F
+mww {ns + 0x20:#x} 0xFFFFFFFF
+mww {s + 0x4C:#x} {BOARDLOADER_START | 0x7C:#x}
+mmw {ns + 0x28:#x} 0x00020000 0
+set i 0
+while {{([mrw {ns + 0x20:#x}] & 0x10000) && $i < 100}} {{ sleep 10; incr i }}
+echo [format "@@ nssr %08X" [mrw {ns + 0x20:#x}]]
+catch {{mmw {ns + 0x28:#x} 0x08000000 0}}
+sleep 500
+shutdown""", check=False)
+            print("\n".join(l for l in log.splitlines() if "@@ nssr" in l and not l.endswith("00000000")))
             time.sleep(0.5)
         r = self.read_regs([("optr", FLASH_R_NS + 0x40), ("secboot0", FLASH_R_NS + 0x4C)])
         ok = isinstance(r["optr"], int) and r["optr"] >> 31 & 1 and \
@@ -425,7 +439,6 @@ shutdown"""
             self.ssh(f"rm -rf {CHUNK_DIR}")
             if subprocess.run(["scp", "-q", "-r", str(work), f"{self.host}:{CHUNK_DIR}"]).returncode:
                 die(f"could not copy the image to {self.host}")
-        shutil.rmtree(work)
         print(f"writing {image.name} ({len(data)} bytes) at {at:#010x}: {len(steps)} pieces of "
               f"{CHUNK // 1024} KB")
         t = time.monotonic()
@@ -513,7 +526,8 @@ shutdown"""
             if time.monotonic() > deadline:
                 break
             print("  no clean SWD connection yet, retrying")
-        same = len(re.findall(r"^@@ same ", log, re.M))
+        shutil.rmtree(work)  # only now: a local OpenOCD reads the pieces from here
+        same =len(re.findall(r"^@@ same ", log, re.M))
         if same:
             print(f"  {same} pieces already on the chip, skipped")
         retries = re.findall(r"^@@ retry (\S+) (.*)$", log, re.M)
