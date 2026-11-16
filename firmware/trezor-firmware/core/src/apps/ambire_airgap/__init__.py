@@ -15,6 +15,23 @@ if TYPE_CHECKING:
 
 _TITLE_ERROR = "Request rejected"
 
+# Diagnostics: the last steps of the menu's run, and how the previous run
+# ended when it was not by the menu's own close (an exception that escaped, or
+# the task closed from outside). Shown at the next swipe up, since a task
+# being closed cannot draw anything itself.
+_trail: list[str] = []
+_last_end: str | None = None
+
+
+def _step(what: str) -> None:
+    _trail.append(what)
+    if len(_trail) > 6:
+        _trail.pop(0)
+
+
+def _describe(e: BaseException) -> str:
+    return "{}: {}\nafter: {}".format(e.__class__.__name__, e, " > ".join(_trail))
+
 
 async def _show_ur(title: str, ur_type: str, cbor: AnyBytes) -> None:
     with trezorui_api.ambire_show_ur(title=title, ur_type=ur_type, cbor=cbor) as layout:
@@ -45,10 +62,14 @@ async def connect() -> None:
 
 
 async def scan_request() -> None:
+    _step("import signer")
     from .sign import sign_request
 
+    _step("open scanner")
     with trezorui_api.ambire_scan_ur() as layout:
+        _step("scanning")
         res = await interact(layout, None, raise_on_cancel=None)
+    _step("scan result " + ("CANCELLED" if res is trezorui_api.CANCELLED else type(res).__name__))
     if res is trezorui_api.CANCELLED:
         return
     if isinstance(res, str):
@@ -59,7 +80,9 @@ async def scan_request() -> None:
     if ur_type != "eth-sign-request":
         await _show_error(_TITLE_ERROR, "This code is not a signing request.")
         return
+    _step("sign " + ur_type)
     signature = await sign_request(cbor)
+    _step("show signature")
     await _show_ur("Scan with Ambire", "eth-signature", signature)
 
 
@@ -69,6 +92,31 @@ async def camera_test() -> None:
 
 
 async def airgap_menu() -> None:
+    global _last_end
+    if _last_end is not None:
+        why, _last_end = _last_end, None
+        await _show_error("Last airgap run ended", why)
+    _trail.clear()
+    _step("menu")
+    try:
+        await _menu()
+        _step("menu closed")
+    except GeneratorExit as e:
+        # The task was closed from outside: it cannot draw any more. Kept for
+        # the next swipe up, and re-raised so the workflow ends as it must.
+        _last_end = _describe(e)
+        log.error(__name__, "airgap menu closed: %s", _last_end)
+        raise
+    except BaseException as e:
+        # Escaped the menu's own handlers (its error screen included): shown
+        # now if the screen still works, else at the next swipe up
+        _last_end = _describe(e)
+        log.error(__name__, "airgap menu ended: %s", _last_end)
+        await _show_error("Airgap menu failed", _last_end)
+        _last_end = None
+
+
+async def _menu() -> None:
     entries = (
         ("Scan request", scan_request),
         ("Connect to Ambire", connect),
@@ -82,11 +130,15 @@ async def airgap_menu() -> None:
         ) as layout:
             choice = await interact(layout, None, raise_on_cancel=None)
         if not isinstance(choice, int):
+            if choice is not trezorui_api.CANCELLED:
+                raise RuntimeError("menu returned " + repr(choice))
             # Closed: back to the home screen
             return
         current = choice
+        _step(entries[choice][0])
         try:
             await entries[choice][1]()
+            _step("back to menu")
         except wire.ActionCancelled:
             log.debug(__name__, "cancelled on the device")
         except wire.Error as e:
@@ -97,4 +149,4 @@ async def airgap_menu() -> None:
             # A fault of ours: say so instead of dropping back to the home
             # screen without a word
             log.exception(__name__, e)
-            await _show_error("Something went wrong", e.__class__.__name__)
+            await _show_error("Something went wrong", _describe(e))
