@@ -30,6 +30,36 @@ The binaries land in `firmware/out/<board>/`. `combined-firmware.bin` is the
 whole chain (boardloader, bootloader, secure monitor, firmware) for a blank
 chip.
 
+Boards: `ambire_p0` (proto 0) and `ambire_v4` (v4: proto 0's pins, the airgap
+switch's sense on PB15 instead of PE7). Build the one on the bench
+(`BOARD=ambire_v4 firmware/docker-build.sh`): a proto 0 build on v4 never sees
+AIR, and the swipe up says "Bluetooth is off" instead of opening QR signing.
+
+## trezorctl
+
+One copy, in the repo (git-ignored), from the vendored trezorlib; set up once
+per checkout (macOS: Homebrew's Python, bleak's macOS backend does not build
+on the system Python 3.9). Never install it anywhere else.
+
+```sh
+/opt/homebrew/bin/python3.13 -m venv firmware/.venv
+firmware/.venv/bin/pip install "firmware/trezor-firmware/python[ble,ethereum]" keyrings.alt
+```
+
+## Update the firmware over USB (no jig)
+
+A board that already has the bootloader updates over USB, the normal Trezor
+flow: no probe. Airgap switch off AIR (AIR cuts USB data), device in the
+bootloader ("Waiting for host..."), then:
+
+```sh
+firmware/.venv/bin/trezorctl list        # "Trezor T3T2 bootloader"
+firmware/.venv/bin/trezorctl firmware update -f firmware/out/ambire_v4/firmware.bin
+```
+
+It flashes `firmware.bin` only (not the combined image) and reboots into it.
+The jig and `swd.py` are for blank chips, the bootloader itself and the radio.
+
 ## Flash a blank board
 
 `swd.py` drives OpenOCD and gdb (`brew install open-ocd arm-none-eabi-gdb`).
@@ -142,6 +172,7 @@ Against the upstream base:
 | Where (`core/embed/`) | What |
 |---|---|
 | `models/T3T2/boards/ambire_p0.{toml,h}` | the board: pins from `src/parts/mcuAssign.json`, drivers |
+| `models/T3T2/boards/ambire_v4.{toml,h}` (new) | v4: ambire_p0's toml with its own header, which includes ambire_p0.h and moves AIRGAP_SENSE to PB15 |
 | `io/display/i8080/display_io_spi.c` (new) | ST7789 over 4-wire SPI: polled commands, frame buffer by GPDMA as 16-bit frames |
 | `io/display/i8080/display_io.h`, `display_driver.c`, `display_fb.c`, `display_panel.c` | `DISPLAY_SPI` switches beside the parallel bus |
 | `io/display/build.rs`, `io/Cargo.toml` | the `display_spi` driver |
@@ -271,13 +302,7 @@ with the radio (Bluetooth level, a 6-digit code on both screens), then the
 app pairs with the device itself over that link (Trezor's THP, a code shown on
 the device and typed into the app). Both are once per computer.
 
-Set up `trezorctl` with Bluetooth (macOS: use Homebrew's Python, bleak's macOS
-backend does not build on the system Python 3.9):
-
-```sh
-python3.13 -m venv ~/ble-venv
-~/ble-venv/bin/pip install "firmware/trezor-firmware/python[ble,ethereum]" keyrings.alt
-```
+`trezorctl` is `firmware/.venv/bin/trezorctl` ([trezorctl](#trezorctl)).
 
 1. **Bond (once).** Switch off AIR, unlock, swipe up on the home screen: the
    device shows its Bluetooth name. On macOS open **System Settings ->
@@ -287,7 +312,7 @@ python3.13 -m venv ~/ble-venv
    insufficient"). Then:
 
    ```sh
-   ~/ble-venv/bin/trezorctl -B ble connect
+   firmware/.venv/bin/trezorctl -B ble connect
    ```
 
    Both screens show the same six-digit code: tap it on the device and accept
@@ -297,8 +322,8 @@ python3.13 -m venv ~/ble-venv
    on; the path is printed by `trezorctl -B list`):
 
    ```sh
-   ~/ble-venv/bin/trezorctl -B list
-   ~/ble-venv/bin/trezorctl -B -p ble:<UUID> ethereum get-address -n "m/44h/60h/0h/0/0"
+   firmware/.venv/bin/trezorctl -B list
+   firmware/.venv/bin/trezorctl -B -p ble:<UUID> ethereum get-address -n "m/44h/60h/0h/0/0"
    ```
 
    The first command after bonding pairs the app (THP): the device asks to
@@ -306,7 +331,7 @@ python3.13 -m venv ~/ble-venv
    Trezor". Signing offline, EIP-1559 (`-e 2`) on Sepolia, nothing broadcast:
 
    ```sh
-   ~/ble-venv/bin/trezorctl -B -p ble:<UUID> ethereum sign-tx -n "m/44h/60h/0h/0/0" \
+   firmware/.venv/bin/trezorctl -B -p ble:<UUID> ethereum sign-tx -n "m/44h/60h/0h/0/0" \
        -c 11155111 -i 0 -g 21000 -e 2 --max-gas-fee 2gwei --max-priority-fee 1gwei \
        0x000000000000000000000000000000000000dEaD 0
    ```
