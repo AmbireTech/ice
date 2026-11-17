@@ -1175,8 +1175,8 @@ __attribute((no_stack_protector)) void syscall_handler(uint32_t *args,
       camera_close();
     } break;
 
-    case SYSCALL_AMBIRE_CAMERA_SET_ZOOM: {
-      args[0] = camera_set_zoom(args[0]);
+    case SYSCALL_AMBIRE_CAMERA_SET_MODE: {
+      args[0] = camera_set_mode(args[0]);
     } break;
 
     case SYSCALL_AMBIRE_CAMERA_CAPTURE: {

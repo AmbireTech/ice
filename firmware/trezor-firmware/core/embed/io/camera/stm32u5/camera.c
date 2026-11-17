@@ -9,21 +9,29 @@
  * first, because an OV5640-style read (two address bytes) would write the
  * second byte into a GC2145 register.
  *
- * Every frame is CAMERA_FRAME_W x CAMERA_FRAME_H Y8. The zoom levels are
- * esp32-camera's proven output modes (sensors/ov5640.c, gc2145.c):
+ * Every frame is side x side Y8 (the side chosen with the mode, io/camera.h).
+ * The zoom levels, by sensor pixels per frame pixel:
  *
- *   OV5640  0: 240x240 from the 1920x1920 centre square (binned, scaled)
- *           1: 640x480 (4:3, binned, scaled), DCMI crop of the centre 240x240
+ *   OV2640  0: 600x600 centre of SVGA mode (800x600, the full height), scaled
+ *              by the DSP to side
+ *           1: 2side x 2side centre of UXGA mode (1600x1200), scaled 2:1
+ *           2: side x side centre of UXGA mode: native pixels
+ *   GC2145  0: 3side window subsampled 1/3 (the sensor skips; it has no
+ *              averaging scaler)
+ *           1: 2side window subsampled 1/2
+ *           2: side window, native pixels
+ *   OV5640  0: side x side from the 1920x1920 centre square (binned, scaled)
+ *           1: 640x480 (4:3, binned, scaled), DCMI crop of the centre
  *           2: 1024x768 likewise
- *   GC2145  0: 720x720 centre window subsampled 1/3 to 240x240
- *           1: 480x480 window subsampled 1/2
- *           2: 240x240 window, native pixels
- *   OV2640  0: 240x240 from the 1200x1200 square, CIF mode (FRAMESIZE_240X240)
- *           1: 400x400 centre window of SVGA mode (800x600), scaled
- *           2: 400x400 centre window of UXGA mode (1600x1200), scaled
+ *
+ * The OV5640 modes are esp32-camera's (sensors/ov5640.c); the OV2640 and
+ * GC2145 windows use esp32-camera's own window registers (set_window(),
+ * set_framesize()) at other sizes.
  *
  * A capture is one DCMI snapshot into a buffer the app owns, by GPDMA1
- * (block mode, no interrupts): camera_get_status() polls it and closes it.
+ * (no interrupts): a frame over 64 KiB is cut into blocks of a linked list,
+ * since one block counts at most 65535 bytes. camera_get_status() polls it
+ * and closes it.
  */
 
 #include <trezor_bsp.h>
@@ -49,9 +57,14 @@ LOG_DECLARE(camera);
 
 #define XCLK_HZ 20000000U
 
-// The slowest modes (OV5640 1024x768, OV2640 UXGA) run a few frames a second and a snapshot
-// waits for the next frame start: two frame times, and some slack
-#define CAPTURE_TIMEOUT_MS 1000
+// The slowest modes (OV2640 UXGA at its stock clock, ~2 fps) take ~0.5 s a
+// frame, and a snapshot waits for the next frame start: two frame times, and
+// some slack
+#define CAPTURE_TIMEOUT_MS 1500
+// One GPDMA block counts at most 65535 bytes: a frame goes in blocks of at
+// most this (a multiple of the 4-byte transfers), chained by a linked list
+#define DMA_BLOCK_MAX 65532U
+#define DMA_BLOCKS_MAX 4
 // Sync-pin probe after the sensor starts: longer than one frame at ~4 fps
 #define PROBE_MS 300
 
@@ -78,10 +91,22 @@ typedef struct {
   bool crop;
   uint32_t crop_start;  // CWSTRTR
   uint32_t crop_size;   // CWSIZER
+  uint32_t frame_bytes;
   uint32_t capture_start_ms;
+  uint32_t capture_buf;
 } camera_driver_t;
 
 static camera_driver_t g_camera;
+
+// The capture's linked list after its first block: each item reloads the
+// block size (CBR1), the destination (CDAR) and the link (CLLR). The list
+// must not cross a 64 KiB boundary (CLBAR holds its upper half): aligned to
+// its own size, it cannot.
+static uint32_t g_dma_lli[DMA_BLOCKS_MAX][4] __attribute__((aligned(64)));
+_Static_assert(sizeof(g_dma_lli) <= 64, "the list's alignment must cover it");
+_Static_assert((uint32_t)CAMERA_SIDE_MAX * CAMERA_SIDE_MAX <=
+                   (uint32_t)DMA_BLOCK_MAX * DMA_BLOCKS_MAX,
+               "the largest frame must fit the linked list");
 
 // ---------------------------------------------------------------------------
 // SCCB
@@ -168,17 +193,26 @@ typedef struct {
   uint8_t pll_mult, pll_sys_div, pll_pre_div, pll_root_div, pclk_div;
 } ov5640_mode_t;
 
-// esp32-camera set_framesize() for FRAMESIZE_240X240 (1:1 ratio), VGA and XGA
-// (4:3), all binned and scaled; XCLK 20 MHz gives a 10 MHz PCLK in each
+// esp32-camera set_framesize() for FRAMESIZE_240X240 (1:1 ratio, here at the
+// frame's side), VGA and XGA (4:3), all binned and scaled; XCLK 20 MHz gives a
+// 10 MHz PCLK in each
 static const ov5640_mode_t g_ov5640_modes[CAMERA_ZOOM_LEVELS] = {
     {240, 240, 320, 0, 2543, 1951, 16, 8, 2060, 984, 20, 1, 1, 1, 8},
     {640, 480, 0, 0, 2623, 1951, 16, 8, 2060, 984, 10, 1, 2, 1, 2},
     {1024, 768, 0, 0, 2623, 1951, 16, 8, 2644, 984, 10, 1, 2, 1, 2},
 };
 
-static bool ov5640_set_mode(uint32_t zoom) {
-  const ov5640_mode_t *m = &g_ov5640_modes[zoom];
+static bool ov5640_set_mode(uint32_t zoom, uint32_t side) {
+  ov5640_mode_t mode = g_ov5640_modes[zoom];
+  const ov5640_mode_t *m = &mode;
   uint8_t isp01 = 0;
+  if (zoom == CAMERA_ZOOM_WIDE) {
+    mode.w = mode.h = (uint16_t)side;
+  }
+  // Sensor pixels per frame pixel, x10: the square's 1920, or the 2592-wide
+  // field over the mode's width
+  g_camera.st.scale_x10 =
+      zoom == CAMERA_ZOOM_WIDE ? 19200 / side : 25920U / m->w;
 
   bool ok =
       // Y8 out of the YUV422 ISP path (sensor_fmt_grayscale)
@@ -205,15 +239,15 @@ static bool ov5640_set_mode(uint32_t zoom) {
       reg_write(0x3103, 0x13);
 
   g_camera.byte_select = false;
-  g_camera.crop = m->w != CAMERA_FRAME_W || m->h != CAMERA_FRAME_H;
+  g_camera.crop = m->w != side || m->h != side;
   if (g_camera.crop) {
     // Y8: one byte (one pixel clock) per pixel
-    uint32_t x0 = (m->w - CAMERA_FRAME_W) / 2;
-    uint32_t y0 = (m->h - CAMERA_FRAME_H) / 2;
+    uint32_t x0 = (m->w - side) / 2;
+    uint32_t y0 = (m->h - side) / 2;
     g_camera.crop_start =
         (y0 << DCMI_CWSTRT_VST_Pos) | (x0 << DCMI_CWSTRT_HOFFCNT_Pos);
-    g_camera.crop_size = ((uint32_t)(CAMERA_FRAME_H - 1) << DCMI_CWSIZE_VLINE_Pos) |
-                         ((uint32_t)(CAMERA_FRAME_W - 1) << DCMI_CWSIZE_CAPCNT_Pos);
+    g_camera.crop_size = ((side - 1) << DCMI_CWSIZE_VLINE_Pos) |
+                         ((side - 1) << DCMI_CWSIZE_CAPCNT_Pos);
   }
   return ok;
 }
@@ -232,22 +266,18 @@ static bool ov5640_init(void) {
 // ---------------------------------------------------------------------------
 // GC2145
 
-// esp32-camera set_framesize() in subsample mode: window side for a 240x240
-// output, and the subsample register 0x99 (0x9b..0xa2 stay 0 for these)
-static const struct {
-  uint16_t win;
-  uint8_t ratio;
-} g_gc2145_modes[CAMERA_ZOOM_LEVELS] = {
-    {720, 0x33},  // 1/3
-    {480, 0x22},  // 1/2
-    {240, 0x11},  // 1/1
-};
+// esp32-camera set_framesize() in subsample mode: the subsample register
+// 0x99 for 1/3, 1/2 and 1/1 (0x9b..0xa2 stay 0 for these), by zoom level
+static const uint8_t g_gc2145_ratio[CAMERA_ZOOM_LEVELS] = {0x33, 0x22, 0x11};
 
-static bool gc2145_set_mode(uint32_t zoom) {
-  uint16_t win = g_gc2145_modes[zoom].win;
-  uint16_t row = (1200 - win) / 2;
-  uint16_t col = (1600 - win) / 2;
-  uint16_t out = CAMERA_FRAME_W;
+static bool gc2145_set_mode(uint32_t zoom, uint32_t side) {
+  uint32_t step = (uint32_t)(CAMERA_ZOOM_LEVELS - zoom);  // 3, 2, 1
+  uint16_t win = (uint16_t)(side * step);
+  // Even starts keep the Bayer phase (the colour order) of the full array
+  uint16_t row = (uint16_t)(((1200 - win) / 2) & ~1U);
+  uint16_t col = (uint16_t)(((1600 - win) / 2) & ~1U);
+  uint16_t out = (uint16_t)side;
+  g_camera.st.scale_x10 = step * 10;
 
   bool ok = reg_write(0xfe, 0x00) && reg_write(0x90, 0x01) &&
             reg_write(0x09, (uint8_t)(row >> 8)) &&
@@ -258,7 +288,7 @@ static bool gc2145_set_mode(uint32_t zoom) {
             reg_write(0x0e, (uint8_t)(win + 8)) &&
             reg_write(0x0f, (uint8_t)((win + 16) >> 8)) &&
             reg_write(0x10, (uint8_t)(win + 16)) &&
-            reg_write(0x99, g_gc2145_modes[zoom].ratio);
+            reg_write(0x99, g_gc2145_ratio[zoom]);
   for (uint16_t reg = 0x9b; ok && reg <= 0xa2; reg++) {
     ok = reg_write(reg, 0x00);
   }
@@ -272,10 +302,25 @@ static bool gc2145_set_mode(uint32_t zoom) {
   return ok;
 }
 
+// Clock (CAMERA_MODE_CLOCK): 0 slows the PCLK to <= 15 MHz as esp32-camera
+// does on the plain ESP32 (0xf8 low bits = 2, 0xfa high nibble = 2); 1 keeps
+// the start-up table's PLL setting, which esp32-camera runs on the ESP32-S3.
+// Tune (CAMERA_MODE_TUNE): 0 the table's image pipeline; 1 and 2 a lower AEC
+// luma target (P1:0x13, 0x40 -> 0x30: a bright screen clips less) and the
+// denoiser off (P0:0x80 bit 2, DN_en: it smooths fine modules away). The
+// GC2145's AEC has no exposure cap that esp32-camera documents, so 2 adds
+// nothing to 1.
+static bool gc2145_set_tuning(uint32_t clock, uint32_t tune) {
+  bool screen = tune != 0;
+  return reg_write(0xfe, 0x00) && reg_write(0xf8, clock ? 0x83 : 0x82) &&
+         reg_write(0xfa, clock ? 0x00 : 0x20) &&
+         reg_write(0x80, screen ? 0xfb : 0xff) && reg_write(0xfe, 0x01) &&
+         reg_write(0x13, screen ? 0x30 : 0x40) && reg_write(0xfe, 0x00);
+}
+
 static bool gc2145_init(void) {
-  // esp32-camera reset(): software reset, the default table, then (as on the
-  // plain ESP32) PCLK slowed to <= 15 MHz (0xf8 low bits = 2, 0xfa high
-  // nibble = 2), and YUV422 output
+  // esp32-camera reset(): software reset, the default table, and YUV422
+  // output (the clock: gc2145_set_tuning())
   if (!reg_write(0xfe, 0xe0)) {
     return false;
   }
@@ -284,8 +329,7 @@ static bool gc2145_init(void) {
     return false;
   }
   systick_delay_ms(100);
-  return reg_write(0xfe, 0x00) && reg_write(0xf8, 0x82) &&
-         reg_write(0xfa, 0x20) && reg_write(0x84, 0x02);
+  return reg_write(0xfe, 0x00) && reg_write(0x84, 0x02);
 }
 
 // ---------------------------------------------------------------------------
@@ -300,36 +344,26 @@ static bool reg_write_table8(const uint8_t (*regs)[2]) {
   return true;
 }
 
-typedef struct {
-  const uint8_t (*mode_regs)[2];  // the sensor mode (resolution) table
-  uint16_t ox, oy, mx, my;        // window into the mode's field
-  uint8_t clkrc;                  // CLKRC: bit 7 clock doubler, divider - 1
-  uint8_t dvp_sp;                 // R_DVP_SP: bit 7 auto, PCLK divider
-} ov2640_mode_t;
-
-// esp32-camera set_framesize()/set_window() for a 240x240 output. Zoom 0 is
-// its FRAMESIZE_240X240 (1:1 ratio in CIF: the 1200x1200 square / 4, the
-// height capped at 296); 1 and 2 are 400x400 centre windows of the SVGA and
-// UXGA fields. Clocks as esp32-camera sets them on the ESP32-S3 (doubler on).
-static const ov2640_mode_t g_ov2640_modes[CAMERA_ZOOM_LEVELS] = {
-    {ov2640_to_cif_regs, 50, 0, 300, 296, 0x83, 0x88},
-    {ov2640_to_svga_regs, 200, 100, 400, 400, 0x87, 0x88},
-    {ov2640_to_uxga_regs, 600, 400, 400, 400, 0x87, 0x8C},
-};
-
-static bool ov2640_set_mode(uint32_t zoom) {
-  const ov2640_mode_t *m = &g_ov2640_modes[zoom];
+// esp32-camera set_window(): a window (ox, oy, mx x my) of a sensor mode's
+// field, scaled by the DSP to the frame's side. Clocks as esp32-camera sets
+// them on the ESP32-S3 (CLKRC: doubler on, divider 8 or 4; R_DVP_SP: auto
+// PCLK), or with `clock` the divider at 2: the internal clock 4x (UXGA, SVGA)
+// or 2x (CIF) as fast, 20 MHz from the 20 MHz XCLK (the sensor is rated to
+// 36 MHz), so ~4x the frame rate and a quarter of the longest exposure.
+static bool ov2640_set_window(const uint8_t (*mode_regs)[2], uint16_t ox,
+                              uint16_t oy, uint16_t mx_px, uint16_t my_px,
+                              uint32_t side, uint8_t clkrc, uint8_t dvp_sp) {
   // set_window(): the DSP's window and zoom registers count in units of 4
-  uint16_t mx = m->mx / 4, my = m->my / 4;
-  uint16_t w = CAMERA_FRAME_W / 4, h = CAMERA_FRAME_H / 4;
+  uint16_t mx = mx_px / 4, my = my_px / 4;
+  uint16_t w = (uint16_t)(side / 4), h = (uint16_t)(side / 4);
   const uint8_t win[][2] = {
       {0xff, 0x00},  // DSP bank
       {0x51, (uint8_t)mx},                                   // HSIZE
       {0x52, (uint8_t)my},                                   // VSIZE
-      {0x53, (uint8_t)m->ox},                                // XOFFL
-      {0x54, (uint8_t)m->oy},                                // YOFFL
-      {0x55, (uint8_t)(((my >> 1) & 0x80) | ((m->oy >> 4) & 0x70) |
-                       ((mx >> 5) & 0x08) | ((m->ox >> 8) & 0x07))},  // VHYX
+      {0x53, (uint8_t)ox},                                   // XOFFL
+      {0x54, (uint8_t)oy},                                   // YOFFL
+      {0x55, (uint8_t)(((my >> 1) & 0x80) | ((oy >> 4) & 0x70) |
+                       ((mx >> 5) & 0x08) | ((ox >> 8) & 0x07))},  // VHYX
       {0x57, (uint8_t)((mx >> 2) & 0x80)},                   // TEST
       {0x5a, (uint8_t)w},                                    // ZMOW
       {0x5b, (uint8_t)h},                                    // ZMOH
@@ -338,19 +372,77 @@ static bool ov2640_set_mode(uint32_t zoom) {
   };
 
   bool ok = reg_write(0xff, 0x00) && reg_write(0x05, 0x01) &&  // DSP bypass
-            reg_write_table8(m->mode_regs) && reg_write_table8(win) &&
-            reg_write(0xff, 0x01) && reg_write(0x11, m->clkrc) &&  // CLKRC
-            reg_write(0xff, 0x00) && reg_write(0xd3, m->dvp_sp) &&  // R_DVP_SP
+            reg_write_table8(mode_regs) && reg_write_table8(win) &&
+            reg_write(0xff, 0x01) && reg_write(0x11, clkrc) &&  // CLKRC
+            reg_write(0xff, 0x00) && reg_write(0xd3, dvp_sp) &&  // R_DVP_SP
             reg_write(0x05, 0x00);  // DSP on
   systick_delay_ms(10);
   // set_pixformat() again: required after a resolution change
   ok = ok && reg_write_table8(ov2640_yuv422_regs);
   systick_delay_ms(10);
+  return ok;
+}
+
+static bool ov2640_set_mode(uint32_t zoom, uint32_t side, uint32_t clock) {
+  bool ok;
+  if (zoom == CAMERA_ZOOM_WIDE) {
+    // SVGA's field is the array at half resolution: 600x600 is 1200x1200
+    g_camera.st.scale_x10 = 12000 / side;
+    ok = ov2640_set_window(ov2640_to_svga_regs, 100, 0, 600, 600, side,
+                           clock ? 0x81 : 0x87, 0x88);
+  } else {
+    uint16_t win = (uint16_t)(zoom == CAMERA_ZOOM_HALF ? 2 * side : side);
+    g_camera.st.scale_x10 = zoom == CAMERA_ZOOM_HALF ? 20 : 10;
+    ok = ov2640_set_window(ov2640_to_uxga_regs, (uint16_t)((1600 - win) / 2),
+                           (uint16_t)((1200 - win) / 2), win, win, side,
+                           clock ? 0x81 : 0x87, 0x8C);
+  }
 
   // YUYV (IMAGE_MODE 0: high byte first): the Y is every even byte
   g_camera.byte_select = true;
   g_camera.crop = false;
   return ok;
+}
+
+// Tune (CAMERA_MODE_TUNE), from esp32-camera's own register tables:
+//  0: its defaults (AE level 0, gain ceiling 8x, SDE off, AEC on)
+//  1: for a phone screen: AE level -1 (AEW/AEB/VV 0x34/0x1c/0x00: a bright
+//     screen clips less), contrast +2 (the DSP's SDE), gain ceiling 16x
+//  2: as 1, the exposure fixed at about 8 ms (AEC off, AGC on): an animated
+//     code moved by hand smears less. In lines of the mode: UXGA lines are
+//     1922 internal clocks, SVGA's 1190 (assumed from the datasheet's
+//     timing), at 5 MHz (stock) or 20 MHz (fast clock).
+static bool ov2640_set_tuning(uint32_t zoom, uint32_t clock, uint32_t tune) {
+  bool screen = tune != 0;
+  const uint8_t sde_off[][2] = {{0xff, 0x00}, {0x7c, 0x00}, {0x7d, 0x00},
+                                {0, 0}};
+  // contrast_regs[+2]: SDE contrast on, then its gain and offset
+  const uint8_t sde_contrast[][2] = {
+      {0xff, 0x00}, {0x7c, 0x00}, {0x7d, 0x04}, {0x7c, 0x07}, {0x7d, 0x20},
+      {0x7d, 0x28}, {0x7d, 0x0c}, {0x7d, 0x06}, {0, 0}};
+  bool ok = reg_write_table8(screen ? sde_contrast : sde_off) &&
+            reg_write(0xff, 0x01) &&
+            reg_write(0x24, screen ? 0x34 : 0x40) &&  // AEW
+            reg_write(0x25, screen ? 0x1c : 0x38) &&  // AEB
+            reg_write(0x26, screen ? 0x00 : 0x82) &&  // VV
+            reg_write(0x14, screen ? 0x68 : 0x48);    // COM9: gain ceiling
+  if (!ok) {
+    return false;
+  }
+
+  if (tune < 2) {
+    // COM8: banding filter, AGC and AEC on (esp32-camera's start-up value)
+    return reg_write(0x13, 0xe5);
+  }
+  uint32_t line_clocks = zoom == CAMERA_ZOOM_WIDE ? 1190 : 1922;
+  uint32_t clock_khz = clock ? 20000 : 5000;
+  uint32_t lines = 8 * clock_khz / line_clocks;  // 8 ms
+  uint8_t reg04 = 0, reg45 = 0;
+  return reg_write(0x13, 0xe4) &&  // COM8: AEC off
+         sccb_read8(0x04, &reg04) && sccb_read8(0x45, &reg45) &&
+         reg_write(0x04, (uint8_t)((reg04 & ~3U) | (lines & 3U))) &&
+         reg_write(0x10, (uint8_t)(lines >> 2)) &&  // AEC[9:2]
+         reg_write(0x45, (uint8_t)((reg45 & ~0x3FU) | ((lines >> 10) & 0x3FU)));
 }
 
 static bool ov2640_init(void) {
@@ -568,21 +660,37 @@ static void probe_sync_pins(void) {
           (unsigned)st->href_high_pm, (unsigned)hr_edges, (unsigned)pc_edges);
 }
 
-static bool sensor_set_mode(uint32_t zoom) {
+static bool mode_valid(uint32_t mode) {
+  uint32_t side = CAMERA_MODE_SIDE(mode);
+  return CAMERA_MODE_ZOOM(mode) < CAMERA_ZOOM_LEVELS && side >= CAMERA_SIDE_MIN &&
+         side <= CAMERA_SIDE_MAX && CAMERA_MODE_CLOCK(mode) < CAMERA_CLOCKS &&
+         CAMERA_MODE_TUNE(mode) < CAMERA_TUNES;
+}
+
+static bool sensor_set_mode(uint32_t mode) {
+  uint32_t zoom = CAMERA_MODE_ZOOM(mode);
+  uint32_t side = CAMERA_MODE_SIDE(mode);
+  uint32_t clock = CAMERA_MODE_CLOCK(mode);
+  uint32_t tune = CAMERA_MODE_TUNE(mode);
   bool ok;
   switch (g_camera.st.sensor_id) {
     case CAMERA_SENSOR_OV5640:
-      ok = ov5640_set_mode(zoom);
+      ok = ov5640_set_mode(zoom, side);
       break;
     case CAMERA_SENSOR_GC2145:
-      ok = gc2145_set_mode(zoom);
+      ok = gc2145_set_tuning(clock, tune) && gc2145_set_mode(zoom, side);
       break;
     default:
-      ok = ov2640_set_mode(zoom);
+      ok = ov2640_set_mode(zoom, side, clock) &&
+           ov2640_set_tuning(zoom, clock, tune);
       break;
   }
   if (ok) {
     g_camera.st.zoom = zoom;
+    g_camera.st.side = side;
+    g_camera.st.clock = clock;
+    g_camera.st.tune = tune;
+    g_camera.frame_bytes = (uint32_t)CAMERA_FRAME_BYTES(side);
     // The new mode's first frames come out of a reconfigured pipeline
     systick_delay_ms(100);
     probe_sync_pins();
@@ -640,11 +748,12 @@ void camera_close(void) {
   g_camera.st.state = CAMERA_STATE_OFF;
 }
 
-bool camera_open(uint32_t zoom) {
+bool camera_open(uint32_t mode) {
   camera_close();
   memset(&g_camera, 0, sizeof(g_camera));
-  if (zoom >= CAMERA_ZOOM_LEVELS) {
-    zoom = 0;
+  if (!mode_valid(mode)) {
+    g_camera.st.open_error = CAMERA_ERR_BAD_MODE;
+    return false;
   }
 
   clocks_enable();
@@ -710,27 +819,29 @@ bool camera_open(uint32_t zoom) {
       ok = ov2640_init();
       break;
   }
-  if (!ok || !sensor_set_mode(zoom)) {
+  if (!ok || !sensor_set_mode(mode)) {
     camera_close();
     return false;
   }
   return true;
 }
 
-bool camera_set_zoom(uint32_t zoom) {
+bool camera_set_mode(uint32_t mode) {
   if (!g_camera.powered || g_camera.st.sensor_id == CAMERA_SENSOR_NONE ||
-      zoom >= CAMERA_ZOOM_LEVELS) {
+      !mode_valid(mode)) {
     return false;
   }
   dma_stop();
   DCMI->CR = 0;
   g_camera.st.state = CAMERA_STATE_IDLE;
-  return sensor_set_mode(zoom);
+  return sensor_set_mode(mode);
 }
 
 bool camera_capture(uint8_t *buf, size_t size) {
+  uint32_t bytes = g_camera.frame_bytes;
   if (!g_camera.powered || g_camera.st.sensor_id == CAMERA_SENSOR_NONE ||
-      g_camera.st.state == CAMERA_STATE_BUSY || size < CAMERA_FRAME_SIZE || ((uintptr_t)buf & 3U) != 0) {
+      g_camera.st.state == CAMERA_STATE_BUSY || bytes == 0 || size < bytes ||
+      ((uintptr_t)buf & 3U) != 0) {
     return false;
   }
 
@@ -738,21 +849,43 @@ bool camera_capture(uint8_t *buf, size_t size) {
   DCMI->CR &= ~DCMI_CR_CAPTURE;
   DCMI->ICR = 0x1F;
 
-  // DCMI data register (words) to the buffer (words, incrementing), one
-  // block of the frame's size; the channel is privileged like the kernel
+  // The frame in equal blocks of whole words, each at most DMA_BLOCK_MAX
+  uint32_t blocks = (bytes + DMA_BLOCK_MAX - 1) / DMA_BLOCK_MAX;
+  uint32_t block = ((bytes + blocks - 1) / blocks + 3U) & ~3U;
+  uint32_t dst = (uint32_t)buf;
+
+  // After the first block, each list item loads the next block's size and
+  // destination, and the link to the item after it (none after the last)
+  const uint32_t update = DMA_CLLR_UB1 | DMA_CLLR_UDA | DMA_CLLR_ULL;
+  for (uint32_t i = 1; i < blocks; i++) {
+    uint32_t at = block * i;
+    uint32_t *item = g_dma_lli[i - 1];
+    item[0] = (i + 1 < blocks ? block : bytes - at) & DMA_CBR1_BNDT;  // CBR1
+    item[1] = dst + at;                                               // CDAR
+    item[2] = i + 1 < blocks
+                  ? (((uint32_t)g_dma_lli[i] & DMA_CLLR_LA) | update)
+                  : 0;  // CLLR
+  }
+  __DSB();
+
+  // DCMI data register (words) to the buffer (words, incrementing); the
+  // transfer-complete flag only after the list's last block; the channel is
+  // privileged like the kernel
   DMA_Channel_TypeDef *ch = CAMERA_DMA_CHANNEL;
   GPDMA1->PRIVCFGR |= 1U << CAMERA_DMA_CHANNEL_NUM;
   ch->CCR = 0;
-  ch->CLBAR = 0;
-  ch->CLLR = 0;
+  ch->CLBAR = (uint32_t)g_dma_lli & DMA_CLBAR_LBA;
   ch->CTR1 = (2U << DMA_CTR1_SDW_LOG2_Pos) | (2U << DMA_CTR1_DDW_LOG2_Pos) |
              DMA_CTR1_DINC | DMA_CTR1_DAP;
-  ch->CTR2 = GPDMA1_REQUEST_DCMI_PSSI << DMA_CTR2_REQSEL_Pos;
-  ch->CBR1 = CAMERA_FRAME_SIZE;
+  ch->CTR2 = (GPDMA1_REQUEST_DCMI_PSSI << DMA_CTR2_REQSEL_Pos) |
+             (3U << DMA_CTR2_TCEM_Pos);
+  ch->CBR1 = (blocks > 1 ? block : bytes) & DMA_CBR1_BNDT;
   ch->CSAR = (uint32_t)&DCMI->DR;
-  ch->CDAR = (uint32_t)buf;
+  ch->CDAR = dst;
+  ch->CLLR = blocks > 1 ? (((uint32_t)g_dma_lli[0] & DMA_CLLR_LA) | update) : 0;
   ch->CCR = (3U << DMA_CCR_PRIO_Pos) | DMA_CCR_EN;  // high priority
 
+  g_camera.capture_buf = dst;
   g_camera.capture_start_ms = systick_ms();
   g_camera.st.state = CAMERA_STATE_BUSY;
   DCMI->CR |= DCMI_CR_CAPTURE;
@@ -764,7 +897,8 @@ static void capture_finish(bool ok, uint32_t flags) {
   camera_status_t *st = &g_camera.st;
 
   DCMI->CR &= ~DCMI_CR_CAPTURE;
-  st->last_bytes = CAMERA_FRAME_SIZE - (ch->CBR1 & DMA_CBR1_BNDT);
+  // Where the destination has got to: the bytes written, over all blocks
+  st->last_bytes = ch->CDAR - g_camera.capture_buf;
   st->last_flags = flags | (DCMI->RISR & 0x1F);
   st->last_capture_ms = systick_ms() - g_camera.capture_start_ms;
   dma_stop();
@@ -803,7 +937,7 @@ static void capture_poll(void) {
   // A whole frame fills the buffer a little before the frame-end flag (that
   // waits for VSYNC). Data still coming after it has nowhere to go and
   // overruns the DCMI's FIFO: a frame longer than expected (the buffer holds
-  // its first CAMERA_FRAME_SIZE bytes).
+  // its first frame_bytes).
   if ((csr & DMA_CSR_TCF) && (ris & DCMI_RIS_OVR_RIS)) {
     capture_finish(false, CAMERA_FLAG_DMA_FULL);
     return;

@@ -15,3 +15,10 @@ from quirc_ambire_set_scratch(). decode.c no longer builds on its own.
 Compiled through ../quirc_*.c, which relax three warnings the firmware treats
 as errors (-Wfloat-conversion, -Wdouble-promotion, -Wsign-compare) and select
 float math.
+
+Added beside it, in ../quirc_identify.c (identify.c itself unedited):
+quirc_ambire_end(), quirc_end() with a choice of threshold (Otsu, Otsu x
+1.1, a local box mean) and the capstone grouping test in an affine frame
+instead of one capstone's perspective; quirc_ambire_regrid(), which retries a
+grid at another size. Both found and measured with the host simulation in
+firmware/bringup/camera/qrsim.

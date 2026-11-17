@@ -8,14 +8,19 @@
 //! - [`AirgapQr`] shows a one-part UR as a QR code (the device's answers).
 //! - [`CameraTestScreen`] is the camera bring-up test as a screen of its own.
 //!
-//! Memory: no heap. The scan takes the UI's image buffer (a whole screen,
-//! 150 KB): the QR decoder and its frame first, then the QR text, then the UR
-//! assembler's work buffer (the message and its pool of mixed parts).
+//! Memory ([`ScanMemory`], ambire_camera.rs): the frame is the UI's image
+//! buffer (a whole screen, 150 KB); the QR decoder's state, the QR text and
+//! the UR assembler's work buffer (the message and its pool of mixed parts)
+//! are a loan from the MicroPython heap while the scan runs, or share the
+//! image buffer with a smaller frame when the heap has no such block.
 
 use sys::time::Instant;
 
 use super::super::fonts;
-use super::ambire_camera::{CameraTest, GrayImage};
+use super::ambire_camera::{
+    push_code, push_trunc, push_u32, settings, zoom_name, CameraTest, GrayPreview, ScanMemory,
+    VIEW,
+};
 use super::ambire_ur::{self, Assembler, Status};
 use crate::micropython::{Error, Obj};
 use crate::strutil::TString;
@@ -28,7 +33,7 @@ use crate::ui::event::TouchEvent;
 use crate::ui::geometry::{Alignment, Offset, Point, Rect};
 use crate::ui::layout::obj::ComponentMsgObj;
 use crate::ui::layout::result::{CANCELLED, CONFIRMED};
-use crate::ui::shape::{self, Bitmap, BitmapFormat, ImageBuffer, Renderer, Rgb565Canvas};
+use crate::ui::shape::{self, Renderer};
 
 /// trezor-crypto's hashes for the UR layer
 pub struct FirmwareHasher;
@@ -47,21 +52,14 @@ const GREEN: Color = Color::rgb(0xd7, 0xff, 0x00);
 const GREY: Color = Color::rgb(0xa0, 0xa0, 0xa0);
 const DARK_GREY: Color = Color::rgb(0x30, 0x30, 0x30);
 
-/// The camera frame is drawn 1:1 at the top of the screen
-const VIEW: i16 = camera::FRAME_W as i16;
 const EXIT_SIZE: i16 = 48;
 const MARGIN: i16 = 8;
 /// The longest QR text taken: the app's parts are under 500 characters
 const TEXT_MAX: usize = 2048;
 /// The frame stays green this long after a part was taken
 const ACCEPTED_SHOW_MS: u32 = 400;
-/// The middle zoom first (see io/camera/stm32u5/camera.c)
-const START_ZOOM: u32 = 1;
-
-fn image_buffer() -> Result<ImageBuffer<Rgb565Canvas<'static>>, Error> {
-    // The size is nominal: the screens take the whole buffer's bytes
-    Ok(ImageBuffer::new(Offset::new(1, 1))?)
-}
+/// The UR pool asked for beyond its minimum: room for more mixed parts
+const POOL_WANT: usize = 8 * 1024;
 
 /// Draws the exit corner (an "x" in a box), as the camera test does
 fn render_exit<'s>(target: &mut impl Renderer<'s>) {
@@ -99,16 +97,14 @@ pub enum ScanMsg {
 }
 
 pub struct AirgapScan {
-    /// Holds the image buffer's lock while the scan uses its bytes
-    _buffer: ImageBuffer<Rgb565Canvas<'static>>,
-    /// The image buffer: the decoder's arena, then the QR text, then the work
-    /// buffer
-    arena: *mut u8,
-    arena_len: usize,
-    qr_len: usize,
-    /// The decoder's image, which the camera captures into
+    /// The frame, the decoder's state and the work buffers
+    mem: ScanMemory,
+    /// The QR text buffer, then the UR work buffer
+    extra: *mut u8,
+    extra_len: usize,
+    /// The decoder's image, which the camera captures into, and its side
     image: *mut u8,
-    frame: Option<Bitmap<'static>>,
+    side: usize,
     phase: Phase,
     camera_on: bool,
     capturing: bool,
@@ -118,33 +114,33 @@ pub struct AirgapScan {
     zoom: u32,
     asm: Assembler,
     accepted_at: Option<Instant>,
+    /// The decoder's last view of a code (for the diagnostic line)
+    qr: camera::QrResult,
 }
 
 impl AirgapScan {
     pub fn new() -> Result<Self, Error> {
-        let mut buffer = image_buffer()?;
-        let bytes = buffer.raw_bytes();
-        let (arena, arena_len) = (bytes.as_mut_ptr(), bytes.len());
-        // 16-byte steps keep the decoder's 8-byte alignment
-        let qr_len = camera::qr_arena_size().next_multiple_of(16);
-        if arena_len < qr_len + TEXT_MAX + ambire_ur::MESSAGE_AREA + ambire_ur::MIN_POOL {
-            return Err(Error::RuntimeError(c"Image buffer too small for the QR scan"));
-        }
+        let mem = ScanMemory::new(TEXT_MAX + ambire_ur::MESSAGE_AREA + POOL_WANT)?;
+        let side = mem.sides()[0];
+        let regions = mem
+            .regions(side, TEXT_MAX + ambire_ur::MESSAGE_AREA + ambire_ur::MIN_POOL)
+            .ok_or(Error::RuntimeError(c"Image buffer too small for the QR scan"))?;
         Ok(Self {
-            _buffer: buffer,
-            arena,
-            arena_len,
-            qr_len,
+            extra: regions.extra,
+            extra_len: regions.extra_len,
             image: core::ptr::null_mut(),
-            frame: None,
+            side,
+            mem,
             phase: Phase::Starting,
             camera_on: false,
             capturing: false,
             have_frame: false,
             scan_pending: false,
-            zoom: START_ZOOM,
+            zoom: settings().zoom,
             asm: Assembler::new(),
             accepted_at: None,
+            // SAFETY: a plain C struct of integers; all zero is valid
+            qr: unsafe { core::mem::zeroed() },
         })
     }
 
@@ -155,43 +151,46 @@ impl AirgapScan {
     ///
     /// The slices must not outlive the screen, nor be taken twice at a time.
     unsafe fn text_and_work<'a>(&self) -> (&'a mut [u8], &'a mut [u8]) {
-        // SAFETY: both lie in the image buffer after the decoder's arena,
-        // which this screen holds locked; nothing else uses them, and the
-        // camera's DMA writes only the decoder's image
-        let rest = unsafe {
-            core::slice::from_raw_parts_mut(self.arena.add(self.qr_len), self.arena_len - self.qr_len)
-        };
+        // SAFETY: the extra region (the loan or the image buffer after the
+        // decoder's state), which this screen holds; nothing else uses it,
+        // and the camera's DMA writes only the decoder's image
+        let rest = unsafe { core::slice::from_raw_parts_mut(self.extra, self.extra_len) };
         rest.split_at_mut(TEXT_MAX)
     }
 
     fn work(&self) -> &[u8] {
-        let at = self.qr_len + TEXT_MAX;
         // SAFETY: as in text_and_work()
-        unsafe { core::slice::from_raw_parts(self.arena.add(at), self.arena_len - at) }
+        unsafe {
+            core::slice::from_raw_parts(self.extra.add(TEXT_MAX), self.extra_len - TEXT_MAX)
+        }
+    }
+
+    fn mode(&self) -> camera::Mode {
+        let s = settings();
+        camera::Mode {
+            zoom: self.zoom,
+            side: self.side,
+            clock: s.clock,
+            tune: s.tune,
+        }
     }
 
     fn open(&mut self) -> Result<(), &'static str> {
-        // SAFETY: the arena is the image buffer's start (16-byte aligned),
-        // reserved for the decoder while this screen lives
-        let ok = unsafe { camera::qr_init(self.arena, self.qr_len) };
-        self.image = camera::qr_image();
-        if !ok || self.image.is_null() {
+        let regions = self
+            .mem
+            .regions(self.side, TEXT_MAX + ambire_ur::MESSAGE_AREA + ambire_ur::MIN_POOL)
+            .ok_or("The QR decoder did not start.")?;
+        // SAFETY: the regions are this screen's, reserved for the decoder
+        // while it lives (the extra region after the state is the work
+        // buffers', apart)
+        let ok =
+            unsafe { camera::qr_init(regions.image, self.side, regions.state, regions.state_len) };
+        if !ok {
             return Err("The QR decoder did not start.");
         }
-        // SAFETY: the decoder's image, FRAME_SIZE bytes; painted only between
-        // a finished capture and the next (step()); dropped with the screen
-        let bytes: &'static [u8] =
-            unsafe { core::slice::from_raw_parts(self.image, camera::FRAME_SIZE) };
-        self.frame = Bitmap::new(
-            BitmapFormat::MONO8,
-            None,
-            Offset::new(VIEW, camera::FRAME_H as i16),
-            None,
-            bytes,
-        )
-        .ok();
+        self.image = regions.image;
         self.camera_on = true;
-        if !camera::open(self.zoom) {
+        if !camera::open(self.mode()) {
             return Err("The camera did not start. Run the camera test for details.");
         }
         Ok(())
@@ -213,9 +212,10 @@ impl AirgapScan {
     }
 
     fn start_capture(&mut self) {
-        // SAFETY: the decoder's image (8-byte aligned), untouched until the
-        // capture is done or failed: step() paints and decodes it only then
-        self.capturing = unsafe { camera::capture(self.image) };
+        // SAFETY: the decoder's image (16-byte aligned, side x side),
+        // untouched until the capture is done or failed: step() paints and
+        // decodes it only then
+        self.capturing = unsafe { camera::capture(self.image, self.side * self.side) };
     }
 
     /// Decodes the painted frame and hands a code's text to the assembler
@@ -224,6 +224,7 @@ impl AirgapScan {
         let (text, work) = unsafe { self.text_and_work() };
         // SAFETY: called between captures only (step())
         let qr = unsafe { camera::qr_scan(text) };
+        self.qr = qr;
         if qr.decoded == 0 {
             return None;
         }
@@ -284,7 +285,7 @@ impl AirgapScan {
     fn next_zoom(&mut self, ctx: &mut EventCtx) -> Option<ScanMsg> {
         self.zoom = (self.zoom + 1) % camera::ZOOM_LEVELS;
         // Stops a running capture; blocks while the sensor settles
-        let ok = camera::set_zoom(self.zoom);
+        let ok = camera::set_mode(self.mode());
         self.capturing = false;
         // The image may be decoded already (thresholded): black until the
         // next frame
@@ -356,10 +357,11 @@ impl Component for AirgapScan {
         // Repaints come right after a capture ends (step()), before the next
         // one starts
         let view = Rect::new(Point::zero(), Point::new(VIEW, VIEW));
-        if let (true, Some(frame)) = (self.have_frame, &self.frame) {
-            GrayImage {
+        if self.have_frame && !self.image.is_null() {
+            GrayPreview {
                 area: view,
-                view: frame.view().with_fg(Color::white()),
+                src: self.image,
+                side: self.side,
             }
             .render(target);
         }
@@ -391,7 +393,21 @@ impl Component for AirgapScan {
             1 => "Tap the picture to zoom (middle)",
             _ => "Tap the picture to zoom (close)",
         };
-        shape::Text::new(Point::new(MARGIN, VIEW + 68), hint, fonts::FONT_SUB)
+        shape::Text::new(Point::new(MARGIN, VIEW + 60), hint, fonts::FONT_SUB)
+            .with_fg(GREY)
+            .render(target);
+
+        // Diagnostics: the frame and zoom, and the decoder's last view of a
+        // code (version, pixels per module)
+        let mut diag: heapless::String<64> = heapless::String::new();
+        push_u32(&mut diag, self.side as u32);
+        push_trunc(&mut diag, "px ");
+        push_trunc(&mut diag, zoom_name(self.zoom));
+        if self.qr.grids > 0 {
+            push_trunc(&mut diag, "  ");
+            push_code(&mut diag, &self.qr);
+        }
+        shape::Text::new(Point::new(MARGIN, VIEW + 78), diag.as_str(), fonts::FONT_SUB)
             .with_fg(GREY)
             .render(target);
     }
@@ -516,7 +532,6 @@ impl crate::trace::Trace for AirgapQr {
 // --- The camera test, on its own ---------------------------------------------------
 
 pub struct CameraTestScreen {
-    buffer: ImageBuffer<Rgb565Canvas<'static>>,
     test: CameraTest,
     started: bool,
 }
@@ -524,8 +539,7 @@ pub struct CameraTestScreen {
 impl CameraTestScreen {
     pub fn new() -> Result<Self, Error> {
         Ok(Self {
-            buffer: image_buffer()?,
-            test: CameraTest::new(),
+            test: CameraTest::new()?,
             started: false,
         })
     }
@@ -541,8 +555,7 @@ impl Component for CameraTestScreen {
     fn event(&mut self, ctx: &mut EventCtx, event: Event) -> Option<Self::Msg> {
         if !self.started {
             if let Event::Attach(_) = event {
-                // The test borrows the buffer this screen holds locked
-                self.test.start(ctx, self.buffer.raw_bytes());
+                self.test.start(ctx);
                 self.started = true;
             }
             return None;

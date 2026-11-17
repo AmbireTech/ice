@@ -868,14 +868,14 @@ bool airgap_engaged(void) {
 
 #include <io/camera.h>
 
-bool camera_open(uint32_t zoom) {
-  return (bool)syscall_invoke1(zoom, SYSCALL_AMBIRE_CAMERA_OPEN);
+bool camera_open(uint32_t mode) {
+  return (bool)syscall_invoke1(mode, SYSCALL_AMBIRE_CAMERA_OPEN);
 }
 
 void camera_close(void) { syscall_invoke0(SYSCALL_AMBIRE_CAMERA_CLOSE); }
 
-bool camera_set_zoom(uint32_t zoom) {
-  return (bool)syscall_invoke1(zoom, SYSCALL_AMBIRE_CAMERA_SET_ZOOM);
+bool camera_set_mode(uint32_t mode) {
+  return (bool)syscall_invoke1(mode, SYSCALL_AMBIRE_CAMERA_SET_MODE);
 }
 
 bool camera_capture(uint8_t *buf, size_t size) {

@@ -225,7 +225,7 @@ typedef enum {
   SYSCALL_TROPIC_ENSURE_FW_UPDATED,
   SYSCALL_TROPIC_GET_UPDATE_STATE,
 
-  // Ambire boards, [ambire_camera] (open and set-zoom are below: they block)
+  // Ambire boards, [ambire_camera] (open and set-mode are below: they block)
   SYSCALL_AMBIRE_CAMERA_CLOSE,
   SYSCALL_AMBIRE_CAMERA_CAPTURE,
   SYSCALL_AMBIRE_CAMERA_GET_STATUS,
@@ -258,6 +258,6 @@ typedef enum {
   // (power-up, register tables, the sync-pin probe), so they run in the
   // kernel thread rather than block the SVC handler
   SYSCALL_AMBIRE_CAMERA_OPEN,
-  SYSCALL_AMBIRE_CAMERA_SET_ZOOM,
+  SYSCALL_AMBIRE_CAMERA_SET_MODE,
 
 } syscall_number_t;

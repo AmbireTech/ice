@@ -1,7 +1,7 @@
 /*
  * Ambire boards, [ambire_camera]: QR code decoding of grayscale camera frames
- * (quirc), app side. No heap: the decoder, its image included, lives in a
- * buffer the caller owns. The camera captures straight into that image.
+ * (quirc), app side. No heap: the decoder's image and its state live in
+ * buffers the caller owns. The camera captures straight into the image.
  */
 
 #pragma once
@@ -15,21 +15,36 @@ typedef struct {
   int32_t version;       // QR version of the decoded code
   int32_t mirrored;      // 1: it decoded only mirrored
   int32_t payload_len;   // its whole payload length (may exceed what fits)
-  int32_t corners[8];    // x, y of its four corners, clockwise from top left
+  // The code reported (the one decoded, else the last one tried): its grid
+  // side in modules (17 + 4 x version, as quirc measured it; 0: none), its
+  // four corners (x, y, clockwise from top left) and its pixels per module x10
+  // (the mean side over the grid side)
+  int32_t grid_size;
+  int32_t corners[8];
+  int32_t px_per_module_x10;
+  // The frame before decoding, measured on its centre half: mean brightness
+  // (0-255), the share of clipped (>= 250) and black (<= 5) pixels per mille,
+  // and the edge width x10 in pixels (the contrast range over the steepest
+  // gradients: 10 is a one-pixel step, more is blur)
+  int32_t mean_y;
+  int32_t clipped_pm;
+  int32_t black_pm;
+  int32_t edge_x10;
+  // The threshold used: 0 quirc's Otsu, 1 Otsu x 1.1, 2 the local mean. The
+  // next frame tries the next one when this one did not decode.
+  int32_t threshold;
   uint32_t identify_ms;  // time spent finding codes
   uint32_t decode_ms;    // time spent decoding them
 } qr_scan_result_t;
 
-// Bytes of arena qr_scan_init() needs for w x h images
-size_t qr_scan_arena_size(int w, int h);
+// Bytes of decoder state qr_scan_init() needs for w x h images (the image
+// itself apart)
+size_t qr_scan_state_size(int w, int h);
 
-// Builds the decoder in `arena` (8-byte aligned) for w x h images. False if
-// the arena is too small.
-bool qr_scan_init(uint8_t *arena, size_t size, int w, int h);
-
-// The w x h grayscale image the decoder reads, inside the arena (8-byte
-// aligned); NULL before qr_scan_init()
-uint8_t *qr_scan_image(void);
+// Builds the decoder for the w x h image at `image` (the camera captures into
+// it), its state in `state` (8-byte aligned, qr_scan_state_size() bytes).
+// False if a buffer is misaligned or too small.
+bool qr_scan_init(uint8_t *image, int w, int h, uint8_t *state, size_t size);
 
 // Looks for QR codes in the image and decodes them; the first that decodes
 // (as is, or mirrored) is copied to `payload` (at most `payload_max` bytes).

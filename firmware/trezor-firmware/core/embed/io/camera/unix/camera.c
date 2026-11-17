@@ -9,7 +9,7 @@
 
 static camera_status_t g_status;
 
-bool camera_open(uint32_t zoom) {
+bool camera_open(uint32_t mode) {
   memset(&g_status, 0, sizeof(g_status));
   g_status.open_error = CAMERA_ERR_NO_SENSOR;
   return false;
@@ -17,7 +17,7 @@ bool camera_open(uint32_t zoom) {
 
 void camera_close(void) { g_status.state = CAMERA_STATE_OFF; }
 
-bool camera_set_zoom(uint32_t zoom) { return false; }
+bool camera_set_mode(uint32_t mode) { return false; }
 
 bool camera_capture(uint8_t *buf, size_t size) { return false; }
 

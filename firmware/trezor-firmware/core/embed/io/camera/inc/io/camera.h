@@ -15,14 +15,40 @@
 
 #include <trezor_types.h>
 
-// Every frame is a CAMERA_FRAME_W x CAMERA_FRAME_H grayscale (Y8) image, one
-// byte per pixel, rows top to bottom
-#define CAMERA_FRAME_W 240
-#define CAMERA_FRAME_H 240
-#define CAMERA_FRAME_SIZE (CAMERA_FRAME_W * CAMERA_FRAME_H)
+// Every frame is a square side x side grayscale (Y8) image, one byte per
+// pixel, rows top to bottom. The side is chosen at camera_open() /
+// camera_set_mode(): a multiple of 8 from CAMERA_SIDE_MIN to CAMERA_SIDE_MAX
+#define CAMERA_SIDE_MIN 160
+#define CAMERA_SIDE_MAX 400
+#define CAMERA_FRAME_BYTES(side) ((size_t)(side) * (size_t)(side))
 
-// Zoom levels: 0 is the widest view, each next one a narrower centre window
+// Zoom levels, by sensor pixels per frame pixel (the field of view grows with
+// the side): 0 the widest (about the sensor's full height, scaled down),
+// 1 a 2x window averaged 2:1 (subsampled on the GC2145), 2 native pixels
 #define CAMERA_ZOOM_LEVELS 3
+#define CAMERA_ZOOM_WIDE 0
+#define CAMERA_ZOOM_HALF 1
+#define CAMERA_ZOOM_NATIVE 2
+
+// Sensor clock: 0 as esp32-camera runs it (slow for the ESP32's sake),
+// 1 faster (OV2640: 4x the internal clock; GC2145: the PLL table's own
+// PCLK). The OV5640 ignores it.
+#define CAMERA_CLOCKS 2
+// Image tuning: 0 esp32-camera's defaults, 1 for phone screens (lower
+// exposure target, more contrast; GC2145: denoise off), 2 as 1 with a
+// short fixed exposure and automatic gain (OV2640; the GC2145 as 1). The
+// OV5640 ignores it.
+#define CAMERA_TUNES 3
+
+// What to capture, packed into one word for camera_open() and
+// camera_set_mode()
+#define CAMERA_MODE(zoom, side, clock, tune)                     \
+  ((uint32_t)(zoom) | ((uint32_t)(side) / 8) << 8 |              \
+   (uint32_t)(clock) << 16 | (uint32_t)(tune) << 24)
+#define CAMERA_MODE_ZOOM(mode) ((mode) & 0xFF)
+#define CAMERA_MODE_SIDE(mode) ((((mode) >> 8) & 0xFF) * 8)
+#define CAMERA_MODE_CLOCK(mode) (((mode) >> 16) & 0xFF)
+#define CAMERA_MODE_TUNE(mode) (((mode) >> 24) & 0xFF)
 
 // SCCB chip ids
 #define CAMERA_SENSOR_NONE 0
@@ -42,6 +68,7 @@
 #define CAMERA_ERR_NO_SENSOR 1   // nothing answered at SCCB 0x30 or 0x3C
 #define CAMERA_ERR_UNKNOWN_ID 2  // something answered with another chip id
 #define CAMERA_ERR_SCCB_WRITE 3  // a register write was not acknowledged
+#define CAMERA_ERR_BAD_MODE 4    // the mode word is out of range
 
 typedef struct {
   uint32_t state;
@@ -50,6 +77,10 @@ typedef struct {
   uint32_t open_error;  // CAMERA_ERR_*
   uint32_t error_reg;   // the register whose write failed
   uint32_t zoom;
+  uint32_t side;   // frames are side x side
+  uint32_t clock;  // CAMERA_MODE_CLOCK of the mode running
+  uint32_t tune;   // CAMERA_MODE_TUNE of the mode running
+  uint32_t scale_x10;  // sensor pixels per frame pixel, x10 (10: native)
   uint32_t frames;           // whole frames captured
   uint32_t failures;         // captures that timed out or came short / long
   uint32_t last_bytes;       // bytes the DMA wrote in the last capture
@@ -74,20 +105,21 @@ typedef struct {
   uint32_t xclk_edges;
 } camera_status_t;
 
-// Powers the module up, finds the sensor and starts it streaming at `zoom`.
-// Blocks for up to ~1 s. Returns false if no supported sensor came up; the
-// status says why. A module that does not come up is switched off.
-bool camera_open(uint32_t zoom);
+// Powers the module up, finds the sensor and starts it streaming in `mode`
+// (CAMERA_MODE()). Blocks for up to ~1 s. Returns false if no supported
+// sensor came up or the mode is invalid; the status says why. A module that
+// does not come up is switched off.
+bool camera_open(uint32_t mode);
 
 // Stops any capture and powers the module down.
 void camera_close(void);
 
-// Changes the zoom level (stops a running capture). False if the camera is
-// off or the sensor refused the change.
-bool camera_set_zoom(uint32_t zoom);
+// Changes the mode (stops a running capture). False if the camera is off,
+// the mode is invalid or the sensor refused the change.
+bool camera_set_mode(uint32_t mode);
 
-// Starts capturing the next whole frame into `buf` (CAMERA_FRAME_SIZE bytes,
-// 4-byte aligned). The buffer belongs to the camera until camera_get_status()
+// Starts capturing the next whole frame into `buf` (at least
+// CAMERA_FRAME_BYTES(side) bytes of the mode running, 4-byte aligned). The buffer belongs to the camera until camera_get_status()
 // reports DONE or FAILED, or the camera is closed.
 bool camera_capture(uint8_t *buf, size_t size);
 
