@@ -13,6 +13,7 @@
 #include "fqr.h"
 
 extern int fqr_opt[16];
+extern double fqr_prof[8];
 const uint8_t *fqr_debug_gray(const fqr_t *s);
 void fqr_debug_point(const fqr_t *s, float x, float y, float *px, float *py);
 
@@ -162,6 +163,13 @@ int main(int argc, char **argv) {
     free(px);
   }
   printf("decoded %d of %d, %.2f ms a frame\n", decoded, argc - 1, total_ms / (argc - 1));
+  if (getenv("FQR_PROF")) {
+    static const char *names[] = {"binarize", "finders", "grid", "sample", "soften", "equalise", "decode"};
+    int runs = (argc - 1) * (getenv("FQR_REPS") ? atoi(getenv("FQR_REPS")) : 1);
+    for (int i = 0; i < 7; i++) {
+      printf("  %s %.3f ms\n", names[i], fqr_prof[i] / runs);
+    }
+  }
   free(state);
   return failures ? 1 : 0;
 }

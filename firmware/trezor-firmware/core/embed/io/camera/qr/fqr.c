@@ -23,13 +23,30 @@
 #define WARP_STEP 4    // residual lattice spacing, modules
 #define WARP_N (MAXD / WARP_STEP + 3)
 #define ENV_N (MAXD / 4 + 3)
+#ifndef EQ_ROUNDS
+#define EQ_ROUNDS 6    // equaliser rounds
+#endif
 
 #ifdef FQR_HOST_TUNE
 #include <stdio.h>
+#include <time.h>
 int fqr_opt[16];
+double fqr_prof[8];  // ms: binarize, finders, grid, sample, soften, equalise, decode
 #define OPT(i) fqr_opt[i]
+static double prof_now(void) {
+  struct timespec t;
+  clock_gettime(CLOCK_MONOTONIC, &t);
+  return (double)t.tv_sec * 1e3 + (double)t.tv_nsec / 1e6;
+}
+#define PROF(i, call)                 \
+  do {                                \
+    double prof_t = prof_now();       \
+    call;                             \
+    fqr_prof[i] += prof_now() - prof_t; \
+  } while (0)
 #else
 #define OPT(i) 0
+#define PROF(i, call) call
 #endif
 
 typedef struct {
@@ -78,6 +95,7 @@ struct fqr {
 
   int func_version;
   uint8_t func[(MAXD * MAXD + 7) / 8];
+  int8_t known[MAXD * MAXD];  // per module: 64 known light, -64 known dark, 0 data
   uint8_t gray[MAXD * MAXD];
   int8_t soft[MAXD * MAXD];
   int8_t soft2[MAXD * MAXD];
@@ -304,6 +322,42 @@ static int total_codewords(int version) {
   return r / 8;
 }
 
+// A module whose value the standard fixes: 1 dark, 0 light, -1 data (or
+// format and version bits)
+static int known_module(int version, int x, int y) {
+  int D = 17 + 4 * version;
+  for (int f = 0; f < 3; f++) {
+    int ox = f == 1 ? D - 7 : 0, oy = f == 2 ? D - 7 : 0;
+    int i = x - ox, j = y - oy;
+    if (i >= -1 && i <= 7 && j >= -1 && j <= 7) {
+      if (i < 0 || j < 0 || i > 6 || j > 6) {
+        return 0;
+      }
+      int r = i < j ? i : j, m = 6 - (i > j ? i : j);
+      int ring = r < m ? r : m;
+      return ring != 1;
+    }
+  }
+  if (x == 6 || y == 6) {
+    return ((x + y) & 1) == 0;
+  }
+  int pos[MAX_ALIGN];
+  int n = align_positions(version, pos);
+  for (int a = 0; a < n; a++) {
+    for (int b = 0; b < n; b++) {
+      if ((a == 0 && b == 0) || (a == 0 && b == n - 1) || (a == n - 1 && b == 0)) {
+        continue;
+      }
+      int i = x - pos[a], j = y - pos[b];
+      if (i >= -2 && i <= 2 && j >= -2 && j <= 2) {
+        int ring = (i < 0 ? -i : i) > (j < 0 ? -j : j) ? (i < 0 ? -i : i) : (j < 0 ? -j : j);
+        return ring != 1;
+      }
+    }
+  }
+  return -1;
+}
+
 static inline int is_func(const fqr_t *s, int D, int x, int y) {
   int i = y * D + x;
   return (s->func[i >> 3] >> (i & 7)) & 1;
@@ -335,6 +389,12 @@ static void build_func(fqr_t *s, int version) {
         int i = y * D + x;
         s->func[i >> 3] |= (uint8_t)(1 << (i & 7));
       }
+    }
+  }
+  for (int y = 0; y < D; y++) {
+    for (int x = 0; x < D; x++) {
+      int k = known_module(version, x, y);
+      s->known[y * D + x] = (int8_t)(k < 0 ? 0 : k ? -64 : 64);
     }
   }
   s->func_version = version;
@@ -653,18 +713,20 @@ static void binarize(fqr_t *s) {
     for (int bx = 0; bx < bw; bx++) {
       int x1 = bx * BLOCK + BLOCK > w ? w : bx * BLOCK + BLOCK;
       int y1 = by * BLOCK + BLOCK > h ? h : by * BLOCK + BLOCK;
-      unsigned sum = 0, mn = 255, mx = 0;
-      for (int y = by * BLOCK; y < y1; y++) {
+      // every other pixel of every other row: a quarter of the block
+      unsigned sum = 0, mn = 255, mx = 0, cnt = 0;
+      for (int y = by * BLOCK; y < y1; y += 2) {
         const uint8_t *row = img + (size_t)y * (size_t)s->stride;
-        for (int x = bx * BLOCK; x < x1; x++) {
+        for (int x = bx * BLOCK; x < x1; x += 2) {
           unsigned v = row[x];
           sum += v;
           mn = v < mn ? v : mn;
           mx = v > mx ? v : mx;
+          cnt++;
         }
       }
       int i = by * bw + bx;
-      s->bsum[i] = (uint16_t)(sum / (unsigned)((x1 - bx * BLOCK) * (y1 - by * BLOCK)));
+      s->bsum[i] = (uint16_t)(sum / cnt);
       s->bmin[i] = (uint8_t)mn;
       s->bmax[i] = (uint8_t)mx;
     }
@@ -695,7 +757,6 @@ static void binarize(fqr_t *s) {
   }
 
   memset(s->col, 0, (size_t)w * sizeof(uint16_t));
-  memset(s->bits, 0, (size_t)s->bpr * (size_t)h);
   int rows = 0;
   for (int y = 0; y <= SMALL_R && y < h; y++) {
     const uint8_t *row = img + (size_t)y * (size_t)s->stride;
@@ -713,32 +774,49 @@ static void binarize(fqr_t *s) {
       sum += s->col[x];
       cols++;
     }
-    for (int x = 0; x < w; x++) {
-      int cnt = rows * cols;
-      int d = row[x] * cnt - sum;
-      int tol = bt[x / BLOCK] * cnt;
-      int dark = d < -tol || (d <= tol && row[x] < bm[x / BLOCK]);
-      if (dark) {
-        out[x >> 3] |= (uint8_t)(1 << (x & 7));
+    for (int x = 0; x < w;) {
+      // a block of 8 pixels: one threshold pair, one byte of the bitmap
+      int mean = bm[x / BLOCK], tolv = bt[x / BLOCK];
+      int end = x + BLOCK > w ? w : x + BLOCK;
+      unsigned byte = 0;
+      if (x - SMALL_R >= 0 && end + SMALL_R < w) {
+        int cnt = rows * (2 * SMALL_R + 1), tol = tolv * cnt;
+        const uint16_t *cp = s->col + x;
+        for (int i = 0; i < BLOCK; i++) {
+          int v = row[x + i], d = v * cnt - sum;
+          byte |= (unsigned)(d < -tol || (d <= tol && v < mean)) << i;
+          sum += cp[i + SMALL_R + 1] - cp[i - SMALL_R];
+        }
+        x = end;
+      } else {
+        for (int i = 0; x < end; x++, i++) {
+          int cnt = rows * cols, tol = tolv * cnt;
+          int v = row[x], d = v * cnt - sum;
+          byte |= (unsigned)(d < -tol || (d <= tol && v < mean)) << i;
+          if (x + SMALL_R + 1 < w) {
+            sum += s->col[x + SMALL_R + 1];
+            cols++;
+          }
+          if (x - SMALL_R >= 0) {
+            sum -= s->col[x - SMALL_R];
+            cols--;
+          }
+        }
       }
-      if (x + SMALL_R + 1 < w) {
-        sum += s->col[x + SMALL_R + 1];
-        cols++;
-      }
-      if (x - SMALL_R >= 0) {
-        sum -= s->col[x - SMALL_R];
-        cols--;
-      }
+      *out++ = (uint8_t)byte;
     }
-    if (y + SMALL_R + 1 < h) {
-      const uint8_t *add = img + (size_t)(y + SMALL_R + 1) * (size_t)s->stride;
+    const uint8_t *add = y + SMALL_R + 1 < h ? img + (size_t)(y + SMALL_R + 1) * (size_t)s->stride : NULL;
+    const uint8_t *sub = y - SMALL_R >= 0 ? img + (size_t)(y - SMALL_R) * (size_t)s->stride : NULL;
+    if (add != NULL && sub != NULL) {
+      for (int x = 0; x < w; x++) {
+        s->col[x] = (uint16_t)(s->col[x] + add[x] - sub[x]);
+      }
+    } else if (add != NULL) {
       for (int x = 0; x < w; x++) {
         s->col[x] = (uint16_t)(s->col[x] + add[x]);
       }
       rows++;
-    }
-    if (y - SMALL_R >= 0) {
-      const uint8_t *sub = img + (size_t)(y - SMALL_R) * (size_t)s->stride;
+    } else if (sub != NULL) {
       for (int x = 0; x < w; x++) {
         s->col[x] = (uint16_t)(s->col[x] - sub[x]);
       }
@@ -880,34 +958,37 @@ static void row_hit(fqr_t *s, int y, int xend, const int c[5]) {
 
 static void find_finders(fqr_t *s) {
   s->ncand = 0;
+  uint16_t *run = s->col;  // the row's runs (the column sums are done with)
   for (int y = 0; y < s->h; y++) {
-    int c[5] = {0, 0, 0, 0, 0}, state = 0;
+    // The row as runs, whole bytes of one colour at a time
     const uint8_t *row = s->bits + (size_t)y * (size_t)s->bpr;
-    for (int x = 0; x < s->w; x++) {
-      int dark = (row[x >> 3] >> (x & 7)) & 1;
-      if (dark) {
-        if (state & 1) {
-          state++;
+    int n = 0, len = 0, colour = row[0] & 1, first = colour;
+    for (int x = 0; x < s->w;) {
+      unsigned byte = row[x >> 3];
+      if (s->w - x >= 8 && byte == (colour ? 0xFFu : 0u)) {
+        len += 8;
+        x += 8;
+        continue;
+      }
+      int end = x + 8 > s->w ? s->w : x + 8;
+      for (; x < end; x++, byte >>= 1) {
+        if ((int)(byte & 1) == colour) {
+          len++;
+        } else {
+          run[n++] = (uint16_t)len;
+          len = 1;
+          colour = !colour;
         }
-        c[state]++;
-      } else if (state & 1) {
-        c[state]++;
-      } else if (state == 4) {
-        if (ratio_ok(c)) {
-          row_hit(s, y, x, c);
-        }
-        c[0] = c[2];
-        c[1] = c[3];
-        c[2] = c[4];
-        c[3] = 1;
-        c[4] = 0;
-        state = 3;
-      } else if (c[0] > 0) {
-        c[++state]++;
       }
     }
-    if (state == 4 && ratio_ok(c)) {
-      row_hit(s, y, s->w, c);
+    run[n++] = (uint16_t)len;
+    // Five runs starting at a dark one
+    int x = first ? 0 : run[0];
+    for (int i = first ? 0 : 1; i + 4 < n; x += run[i] + run[i + 1], i += 2) {
+      int c[5] = {run[i], run[i + 1], run[i + 2], run[i + 3], run[i + 4]};
+      if (c[2] >= c[0] && c[2] >= c[4] && ratio_ok(c)) {
+        row_hit(s, y, x + c[0] + c[1] + c[2] + c[3] + c[4], c);
+      }
     }
   }
   // Best first: a finder is hit by the rows through its centre, 3 modules
@@ -1098,32 +1179,46 @@ static float locate(fqr_t *s, pt_t *c, pt_t ux, pt_t uy, int T, float R, int K) 
       }
     }
   }
+  // Every other shift first, then the shifts around the best of those
   float best = -2;
   int bx = 0, by = 0;
   float tn = (float)nw * (float)(n - nw);
-  for (int sy = 0; sy < shifts; sy++) {
-    for (int sx = 0; sx < shifts; sx++) {
-      const uint8_t *p = s->patch + sy * side + sx;
-      uint32_t sum = 0, sumw = 0, sq = 0;
-      for (int k = 0; k < n; k++) {
-        uint32_t v = p[s->toff[k]];
-        sum += v;
-        sq += v * v;
-        if (s->twhite[k]) {
-          sumw += v;
+  for (int i = 0; i < shifts * shifts; i++) {
+    s->score[i] = -2;
+  }
+  for (int pass = 0; pass < 2; pass++) {
+    int x0 = pass ? (bx > 0 ? bx - 1 : 0) : 0, x1 = pass ? (bx < shifts - 1 ? bx + 1 : bx) : shifts - 1;
+    int y0 = pass ? (by > 0 ? by - 1 : 0) : 0, y1 = pass ? (by < shifts - 1 ? by + 1 : by) : shifts - 1;
+    int step = pass ? 1 : 2;
+    for (int sy = y0; sy <= y1; sy += step) {
+      for (int sx = x0; sx <= x1; sx += step) {
+        if (s->score[sy * shifts + sx] > -2) {
+          continue;
         }
-      }
-      float var = (float)n * (float)sq - (float)sum * (float)sum;
-      float num = (float)n * (float)sumw - (float)nw * (float)sum;
-      float sc = var > 1.0f ? num / sqrtf(var * tn) : 0;
-      s->score[sy * shifts + sx] = sc;
-      if (sc > best) {
-        best = sc;
-        bx = sx;
-        by = sy;
+        const uint8_t *p = s->patch + sy * side + sx;
+        uint32_t sum = 0, sumw = 0, sq = 0;
+        for (int k = 0; k < n; k++) {
+          uint32_t v = p[s->toff[k]];
+          sum += v;
+          sq += v * v;
+          if (s->twhite[k]) {
+            sumw += v;
+          }
+        }
+        float var = (float)n * (float)sq - (float)sum * (float)sum;
+        float num = (float)n * (float)sumw - (float)nw * (float)sum;
+        float sc = var > 1.0f ? num / sqrtf(var * tn) : 0;
+        s->score[sy * shifts + sx] = sc;
+        if (sc > best) {
+          best = sc;
+          bx = sx;
+          by = sy;
+        }
       }
     }
   }
+  // (the best's four neighbours were all scored in the second pass, or lie
+  // off the search area)
   float ox = (float)bx, oy = (float)by;
   if (bx > 0 && bx < shifts - 1) {
     float l = s->score[by * shifts + bx - 1], r = s->score[by * shifts + bx + 1];
@@ -1386,22 +1481,18 @@ static float build_grid(fqr_t *s, int D, float est_dim, float R, int K) {
 static void sample_grid(fqr_t *s) {
   int D = s->dim;
   for (int y = 0; y < D; y++) {
+    float my = (float)y + 0.5f;
+    pt_t c = grid_point(s, 0.5f, my), below = grid_point(s, 0.5f, my + 1.0f);
     for (int x = 0; x < D; x++) {
-      float mx = (float)x + 0.5f, my = (float)y + 0.5f;
-      pt_t c = grid_point(s, mx, my);
-      pt_t r = grid_point(s, mx + 0.25f, my), d = grid_point(s, mx, my + 0.25f);
-      float ax = r.x - c.x, ay = r.y - c.y, bx = d.x - c.x, by = d.y - c.y;
+      // a quarter module along each axis, from the next module's centre
+      pt_t next = grid_point(s, (float)x + 1.5f, my), nb = grid_point(s, (float)x + 1.5f, my + 1.0f);
+      float ax = (next.x - c.x) * 0.25f, ay = (next.y - c.y) * 0.25f;
+      float bx = (below.x - c.x) * 0.25f, by = (below.y - c.y) * 0.25f;
       float v = 2 * sample(s, c.x, c.y) + sample(s, c.x + ax, c.y + ay) + sample(s, c.x - ax, c.y - ay) +
                 sample(s, c.x + bx, c.y + by) + sample(s, c.x - bx, c.y - by);
-      v /= 6.0f;
-      if (OPT(4) == 1) {
-        v = v * v / 255.0f;
-      } else if (OPT(4) == 2) {
-        v = 255.0f * powf(v / 255.0f, 2.2f);
-      } else if (OPT(4) == 3) {
-        v = 255.0f * powf(v / 255.0f, 1.5f);
-      }
-      s->gray[y * D + x] = (uint8_t)(v + 0.5f);
+      s->gray[y * D + x] = (uint8_t)(v / 6.0f + 0.5f);
+      c = next;
+      below = nb;
     }
   }
 }
@@ -1460,42 +1551,6 @@ static void soften(fqr_t *s) {
   }
 }
 
-// A module whose value the standard fixes: 1 dark, 0 light, -1 data (or
-// format and version bits)
-static int known_module(int version, int x, int y) {
-  int D = 17 + 4 * version;
-  for (int f = 0; f < 3; f++) {
-    int ox = f == 1 ? D - 7 : 0, oy = f == 2 ? D - 7 : 0;
-    int i = x - ox, j = y - oy;
-    if (i >= -1 && i <= 7 && j >= -1 && j <= 7) {
-      if (i < 0 || j < 0 || i > 6 || j > 6) {
-        return 0;
-      }
-      int r = i < j ? i : j, m = 6 - (i > j ? i : j);
-      int ring = r < m ? r : m;
-      return ring != 1;
-    }
-  }
-  if (x == 6 || y == 6) {
-    return ((x + y) & 1) == 0;
-  }
-  int pos[MAX_ALIGN];
-  int n = align_positions(version, pos);
-  for (int a = 0; a < n; a++) {
-    for (int b = 0; b < n; b++) {
-      if ((a == 0 && b == 0) || (a == 0 && b == n - 1) || (a == n - 1 && b == 0)) {
-        continue;
-      }
-      int i = x - pos[a], j = y - pos[b];
-      if (i >= -2 && i <= 2 && j >= -2 && j <= 2) {
-        int ring = (i < 0 ? -i : i) > (j < 0 ? -j : j) ? (i < 0 ? -i : i) : (j < 0 ? -j : j);
-        return ring != 1;
-      }
-    }
-  }
-  return -1;
-}
-
 // Undoes the blur between modules. At 3 px a module each module's grey value
 // carries a share of its neighbours'; the shares (edge and diagonal
 // neighbours) are fitted to the frame itself by least squares over all
@@ -1505,28 +1560,35 @@ static int known_module(int version, int x, int y) {
 static void equalise(fqr_t *s, int version) {
   int D = 17 + 4 * version, cells = D * D;
   int8_t *z = s->soft, *b = s->soft2, *nz = s->eq;
-  for (int y = 0; y < D; y++) {
-    for (int x = 0; x < D; x++) {
-      int k = known_module(version, x, y);
-      b[y * D + x] = (int8_t)(k < 0 ? (z[y * D + x] >= 0 ? 64 : -64) : k ? -64 : 64);
-    }
+  const int8_t *known = s->known;
+  build_func(s, version);
+  for (int i = 0; i < cells; i++) {
+    b[i] = known[i] ? known[i] : (int8_t)(z[i] >= 0 ? 64 : -64);
   }
-  for (int it = 0; it < 6; it++) {
+#define B(xx, yy) ((xx) < 0 || (yy) < 0 || (xx) >= D || (yy) >= D ? 64 : b[(yy) * D + (xx)])
+  for (int it = 0; it < EQ_ROUNDS; it++) {
+    // Least squares of z on (b, edge neighbours, diagonal neighbours, 1)
     float A[4][5];
     memset(A, 0, sizeof(A));
     for (int y = 0; y < D; y++) {
+      int32_t r[4][5];
+      memset(r, 0, sizeof(r));
       for (int x = 0; x < D; x++) {
-#define B(xx, yy) ((xx) < 0 || (yy) < 0 || (xx) >= D || (yy) >= D ? 64 : b[(yy) * D + (xx)])
-        float f[5];
-        f[0] = (float)b[y * D + x];
-        f[1] = (float)(B(x - 1, y) + B(x + 1, y) + B(x, y - 1) + B(x, y + 1));
-        f[2] = (float)(B(x - 1, y - 1) + B(x + 1, y - 1) + B(x - 1, y + 1) + B(x + 1, y + 1));
-        f[3] = 64.0f;
-        f[4] = (float)z[y * D + x];
+        int32_t f[5];
+        f[0] = b[y * D + x];
+        f[1] = B(x - 1, y) + B(x + 1, y) + B(x, y - 1) + B(x, y + 1);
+        f[2] = B(x - 1, y - 1) + B(x + 1, y - 1) + B(x - 1, y + 1) + B(x + 1, y + 1);
+        f[3] = 64;
+        f[4] = z[y * D + x];
         for (int i = 0; i < 4; i++) {
           for (int j = i; j < 5; j++) {
-            A[i][j] += f[i] * f[j];
+            r[i][j] += f[i] * f[j];
           }
+        }
+      }
+      for (int i = 0; i < 4; i++) {
+        for (int j = i; j < 5; j++) {
+          A[i][j] += (float)r[i][j];
         }
       }
     }
@@ -1536,8 +1598,7 @@ static void equalise(fqr_t *s, int version) {
       }
     }
     float k[4] = {1, 0, 0, 0};
-    bool solved = true;
-    for (int c = 0; c < 4 && solved; c++) {
+    for (int c = 0; c < 4; c++) {
       int piv = c;
       for (int r = c + 1; r < 4; r++) {
         if (fabsf(A[r][c]) > fabsf(A[piv][c])) {
@@ -1545,8 +1606,7 @@ static void equalise(fqr_t *s, int version) {
         }
       }
       if (fabsf(A[piv][c]) < 1e-3f) {
-        solved = false;
-        break;
+        return;  // a degenerate grid (all one value): left as it is
       }
       for (int j = 0; j < 5; j++) {
         float t = A[c][j];
@@ -1560,9 +1620,6 @@ static void equalise(fqr_t *s, int version) {
         }
       }
     }
-    if (!solved) {
-      return;
-    }
     for (int c = 3; c >= 0; c--) {
       float v = A[c][4];
       for (int j = c + 1; j < 4; j++) {
@@ -1570,34 +1627,29 @@ static void equalise(fqr_t *s, int version) {
       }
       k[c] = v / A[c][c];
     }
+    // Each module with its neighbours' share taken out, in 1/256
+    bool last = it == EQ_ROUNDS - 1;
     float k0 = k[0] < 0.2f ? 0.2f : k[0];
-    bool last = it == 5;
+    int32_t g = (int32_t)(256.0f / k0 * (last ? 1.0f : 2.0f));
+    int32_t k1 = (int32_t)(k[1] * 256.0f), k2 = (int32_t)(k[2] * 256.0f), k3 = (int32_t)(k[3] * 64.0f * 256.0f);
+    int32_t lim = last ? 127 : 64;
     for (int y = 0; y < D; y++) {
       for (int x = 0; x < D; x++) {
-        int n4 = B(x - 1, y) + B(x + 1, y) + B(x, y - 1) + B(x, y + 1);
-        int nd = B(x - 1, y - 1) + B(x + 1, y - 1) + B(x - 1, y + 1) + B(x + 1, y + 1);
-#undef B
-        float v = ((float)z[y * D + x] - k[1] * (float)n4 - k[2] * (float)nd - k[3] * 64.0f) / k0;
-        if (!last) {
-          v *= 2.0f;
-          v = v < -64 ? -64 : v > 64 ? 64 : v;
-        } else {
-          v = v < -127 ? -127 : v > 127 ? 127 : v;
-        }
-        nz[y * D + x] = (int8_t)v;
+        int32_t n4 = B(x - 1, y) + B(x + 1, y) + B(x, y - 1) + B(x, y + 1);
+        int32_t nd = B(x - 1, y - 1) + B(x + 1, y - 1) + B(x - 1, y + 1) + B(x + 1, y + 1);
+        int32_t v = ((z[y * D + x] * 256 - k1 * n4 - k2 * nd - k3) / 256) * g / 256;
+        nz[y * D + x] = (int8_t)(v < -lim ? -lim : v > lim ? lim : v);
       }
     }
     if (last) {
       memcpy(z, nz, (size_t)cells);
       return;
     }
-    for (int y = 0; y < D; y++) {
-      for (int x = 0; x < D; x++) {
-        int kn = known_module(version, x, y);
-        b[y * D + x] = kn < 0 ? nz[y * D + x] : kn ? -64 : 64;
-      }
+    for (int i = 0; i < cells; i++) {
+      b[i] = known[i] ? known[i] : nz[i];
     }
   }
+#undef B
 }
 
 // ---------------------------------------------------------------- frames
@@ -1623,10 +1675,10 @@ static void report_grid(const fqr_t *s, fqr_result_t *res) {
 // the frames before it (if they show the same code) and decode the sum
 static bool read_grid(fqr_t *s, uint8_t *payload, size_t max, fqr_result_t *res) {
   int D = s->dim, version = (D - 17) / 4, cells = D * D;
-  sample_grid(s);
-  soften(s);
+  PROF(3, sample_grid(s));
+  PROF(4, soften(s));
   if (!OPT(5)) {
-    equalise(s, version);
+    PROF(5, equalise(s, version));
   }
   s->have_soft = 1;
   report_grid(s, res);
@@ -1634,7 +1686,8 @@ static bool read_grid(fqr_t *s, uint8_t *payload, size_t max, fqr_result_t *res)
     res->stage = FQR_STAGE_GRID;
   }
   res->fused = 1;
-  bool ok = decode_soft(s, s->soft, version, payload, max, res);
+  bool ok;
+  PROF(6, ok = decode_soft(s, s->soft, version, payload, max, res));
 
   // Same code as the frames summed so far? Their signs agree on most
   // modules; another code's agree on half
@@ -1714,7 +1767,8 @@ bool fqr_scan(fqr_t *s, const uint8_t *gray, int stride, uint8_t *payload, size_
       s->fin[i].x = s->tfin[i].x + s->tvel[i].x * (float)s->track;
       s->fin[i].y = s->tfin[i].y + s->tvel[i].y * (float)s->track;
     }
-    float sc = build_grid(s, s->tdim, 0, 3.0f, 2);
+    float sc;
+    PROF(2, sc = build_grid(s, s->tdim, 0, 3.0f, 2));
     if (sc > 0.35f) {
       res->tracked = 1;
       res->finders = 3;
@@ -1724,8 +1778,8 @@ bool fqr_scan(fqr_t *s, const uint8_t *gray, int stride, uint8_t *payload, size_
     }
   }
 
-  binarize(s);
-  find_finders(s);
+  PROF(0, binarize(s));
+  PROF(1, find_finders(s));
   res->finders = s->ncand;
   int nc = s->ncand > 8 ? 8 : s->ncand;
   // Triples: the corner finder is where the two legs meet square and equal
@@ -1789,7 +1843,8 @@ bool fqr_scan(fqr_t *s, const uint8_t *gray, int stride, uint8_t *payload, size_
     float cu = fabsf(ux) > fabsf(uy) ? fabsf(ux) / lu : fabsf(uy) / lu;
     float mod = (A->hs + A->vs + B->hs + B->vs + C->hs + C->vs) / 42.0f * cu;
     float est = (lu + lv) * 0.5f / mod + 7.0f;
-    float sc = build_grid(s, 0, est, 1.5f, 4);
+    float sc;
+    PROF(2, sc = build_grid(s, 0, est, 1.5f, 4));
     if (sc < 0.35f) {
       continue;
     }
