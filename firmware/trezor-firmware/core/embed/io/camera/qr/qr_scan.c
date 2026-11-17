@@ -205,6 +205,34 @@ static bool decode_grid(struct quirc *q, int i, uint8_t *payload,
   return true;
 }
 
+// Edge sharpening before the threshold, in place: each pixel moves away from
+// the mean of its four neighbours by as much again (a Laplacian unsharp mask).
+// A soft module edge, smeared over a few pixels, gets a steep step back, so a
+// module the blur had pulled toward its neighbours' gray lands on its own
+// side of the threshold. Two rows of originals are kept (the row above and
+// this one); the border pixels stay as they are.
+#define SHARPEN_ROW_MAX 512
+
+static void sharpen(uint8_t *img, int w, int h) {
+  static uint8_t above[SHARPEN_ROW_MAX], here[SHARPEN_ROW_MAX];
+  if (w > SHARPEN_ROW_MAX || w < 3 || h < 3) {
+    return;
+  }
+  memcpy(above, img, (size_t)w);
+  for (int y = 1; y < h - 1; y++) {
+    uint8_t *row = img + y * w;
+    const uint8_t *below = row + w;
+    memcpy(here, row, (size_t)w);
+    for (int x = 1; x < w - 1; x++) {
+      int c = here[x];
+      int lap = 4 * c - above[x] - below[x] - here[x - 1] - here[x + 1];
+      int v = c + lap / 4;
+      row[x] = (uint8_t)(v < 0 ? 0 : v > 255 ? 255 : v);
+    }
+    memcpy(above, here, (size_t)w);
+  }
+}
+
 void qr_scan(uint8_t *payload, size_t payload_max, qr_scan_result_t *result) {
   memset(result, 0, sizeof(*result));
   struct quirc *q = g_qr.q;
@@ -215,6 +243,7 @@ void qr_scan(uint8_t *payload, size_t payload_max, qr_scan_result_t *result) {
   measure_frame(q, result);
 
   uint32_t start = systick_ms();
+  sharpen(q->image, q->w, q->h);
   // quirc_begin() only hands out q->image, which already holds the frame
   quirc_begin(q, NULL, NULL);
   result->threshold = g_qr.threshold;

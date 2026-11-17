@@ -214,7 +214,7 @@ impl ScanMemory {
 /// PREVIEW_MIRROR), so that what is up in front of the device is up on the
 /// screen. Only the preview and its markers turn: the decoder reads codes at
 /// any angle.
-const PREVIEW_QUARTERS: u8 = 1;
+const PREVIEW_QUARTERS: u8 = 3;
 const PREVIEW_MIRROR: bool = false;
 
 /// The frame pixel shown at preview position (x, y), both in frame pixels
@@ -243,9 +243,8 @@ pub(super) fn frame_to_preview(x: usize, y: usize, side: usize) -> (usize, usize
 
 /// Draws a side x side grayscale frame scaled to `area` (VIEW x VIEW), as
 /// white over what is beneath (black): the RGB565 screen can blend MONO8,
-/// not copy it. Each preview pixel averages the 2x2 frame pixels at its
-/// position (a low-pass, so the preview shows no aliasing the decoder does not
-/// see). Band by band through a small buffer on the stack, only the bands the
+/// not copy it. Each preview pixel is the frame pixel at its position (no
+/// averaging: the preview is as sharp as the frame). Band by band through a small buffer on the stack, only the bands the
 /// canvas shows.
 pub(super) struct GrayPreview {
     pub area: Rect,
@@ -293,13 +292,7 @@ impl<'a> Shape<'a> for GrayPreview {
                     let dst = &mut buf[j * out..(j + 1) * out];
                     for (x, d) in dst.iter_mut().enumerate() {
                         let (sx, sy) = preview_to_frame(x * side / out, py, side);
-                        let sx1 = (sx + 1).min(side - 1);
-                        let sy1 = (sy + 1).min(side - 1);
-                        let sum = frame[sy * side + sx] as u32
-                            + frame[sy * side + sx1] as u32
-                            + frame[sy1 * side + sx] as u32
-                            + frame[sy1 * side + sx1] as u32;
-                        *d = (sum / 4) as u8;
+                        *d = frame[sy * side + sx];
                     }
                 }
                 if let Ok(bitmap) = Bitmap::new(

@@ -468,7 +468,7 @@ static bool ov2640_set_mode(uint32_t zoom, uint32_t side, uint32_t clock) {
 // code is): its 98th percentile is held near AE_TARGET, the exposure at most
 // AE_MAX_MS, gain making up the rest.
 #define AE_TARGET 200
-#define AE_MAX_MS 10
+#define AE_MAX_MS 6
 #define AE_GAIN16_MAX 128  // 8x
 
 // OV2640 GAIN (0x00): (bit7+1)(bit6+1)(bit5+1)(bit4+1)(1 + bits[3:0]/16)

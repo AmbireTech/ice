@@ -35,7 +35,7 @@
 // PCLK). The OV5640 ignores it.
 #define CAMERA_CLOCKS 2
 // Image tuning. OV2640: 0 exposure set from the frames (the bright centre
-// held below clipping, at most ~10 ms), 1 the sensor's own AEC, 2 its AEC
+// held below clipping, at most ~6 ms), 1 the sensor's own AEC, 2 its AEC
 // for phone screens (lower target, more contrast). GC2145: 0 and 1 its
 // defaults, 2 for phone screens (lower target, denoise off). The OV5640
 // ignores it.

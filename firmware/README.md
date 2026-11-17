@@ -450,7 +450,7 @@ why one does not read.
   driver runs it, which the camera also falls back to by itself after three
   failed captures) and the exposure (`auto exp`, the default on the OV2640:
   set from each frame so the brightest part of the picture's centre, the
-  screen with the code, does not clip, at most about 10 ms against smear;
+  screen with the code, does not clip, at most about 6 ms against smear;
   `sens AE`: the sensor's own automatic exposure, which averages the whole
   view and so overexposes a screen in a dim room; `scr AE`: the same, with a
   lower target and more contrast). The QR scan of a request then uses the zoom, clock and tuning
