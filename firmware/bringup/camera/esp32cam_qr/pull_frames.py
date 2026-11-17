@@ -57,6 +57,33 @@ def open_board(port):
     return s
 
 
+SLOTS = 16
+
+
+def fetch_slot(s, slot, tries=4):
+    """(header bytes, pixels) of one slot, None if empty; retried on a bad transfer"""
+    for attempt in range(tries):
+        s.write(f"D {slot}\n".encode())
+        tag = s.read(4)
+        if tag == b"DONE":
+            s.readline()
+            return None
+        if tag == b"FRM2":
+            raw_h = s.read(HEADER.size)
+            w, h = HEADER.unpack(raw_h)[2:4]
+            px = s.read(w * h)
+            tail = s.read(8)
+            s.readline()  # "DONE 1"
+            if (len(px) == w * h and tail[:4] == b"END1"
+                    and struct.unpack("<I", tail[4:8])[0] == zlib.crc32(px, zlib.crc32(raw_h))):
+                return raw_h, px
+        print(f"slot {slot}: bad transfer (try {attempt + 1} of {tries})", file=sys.stderr)
+        time.sleep(1.0)
+        s.reset_input_buffer()
+    print(f"slot {slot}: given up", file=sys.stderr)
+    return None
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--port", default="/dev/cu.usbserial-1120")
@@ -71,24 +98,13 @@ def main():
     out = HERE.parents[2] / "out" / "esp32qr" / time.strftime("%Y%m%d-%H%M%S")
     out.mkdir(parents=True, exist_ok=True)
     s = open_board(a.port)
-    s.write(b"D\n")
     saved = 0
-    while True:
-        tag = s.read(4)
-        if tag == b"DONE":
-            print(f"board sent {s.readline().decode().strip()} frame(s)")
-            break
-        if tag != b"FRM2":
-            sys.exit(f"out of step: {tag!r}{s.read(40)!r}")
-        raw_h = s.read(HEADER.size)
-        (magic, seq, w, h, px_x10, err, ver, decoded, thr, agc, grids, aec, dms) = HEADER.unpack(raw_h)
-        px = s.read(w * h)
-        tail = s.read(8)
-        crc_ok = (len(px) == w * h and tail[:4] == b"END1"
-                  and struct.unpack("<I", tail[4:8])[0] == zlib.crc32(px, zlib.crc32(raw_h)))
-        if not crc_ok:
-            print(f"frame {seq}: corrupted in transfer, skipped", file=sys.stderr)
+    for slot in range(SLOTS):
+        got = fetch_slot(s, slot)
+        if got is None:
             continue
+        raw_h, px = got
+        (magic, seq, w, h, px_x10, err, ver, decoded, thr, agc, grids, aec, dms) = HEADER.unpack(raw_h)
         kind = "ok" if decoded else "miss"
         name = f"{seq:05d}_{kind}_{px_x10 // 10}.{px_x10 % 10}ppm"
         path = out / f"{name}.pgm"

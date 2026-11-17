@@ -259,6 +259,7 @@ void qr_scan(uint8_t *payload, size_t payload_max, qr_scan_result_t *result) {
   uint32_t identified = systick_ms();
   result->identify_ms = identified - start;
   result->grids = q->num_grids;
+  result->capstones = q->num_capstones;
 
   for (int i = 0; i < q->num_grids && !result->decoded; i++) {
     // quirc's grid size first, then its neighbours: a size misread by one
@@ -288,4 +289,49 @@ void qr_scan(uint8_t *payload, size_t payload_max, qr_scan_result_t *result) {
   }
 
   result->decode_ms = systick_ms() - identified;
+}
+
+bool qr_scan_code_area(int32_t box[4]) {
+  const struct quirc *q = g_qr.q;
+  if (q == NULL || q->num_capstones < 2) {
+    return false;
+  }
+  int x0 = q->w, y0 = q->h, x1 = 0, y1 = 0;
+  for (int i = 0; i < q->num_capstones; i++) {
+    for (int c = 0; c < 4; c++) {
+      const struct quirc_point *p = &q->capstones[i].corners[c];
+      x0 = p->x < x0 ? p->x : x0;
+      y0 = p->y < y0 ? p->y : y0;
+      x1 = p->x > x1 ? p->x : x1;
+      y1 = p->y > y1 ? p->y : y1;
+    }
+  }
+  // Three or more span the code (a finder pattern's width of quiet zone
+  // around); two may be one side of it: the third is up to their spacing away
+  int grow;
+  if (q->num_capstones >= 3) {
+    int cw = 0;
+    for (int c = 1; c < 4; c++) {
+      int dx = q->capstones[0].corners[c].x - q->capstones[0].corners[0].x;
+      int dy = q->capstones[0].corners[c].y - q->capstones[0].corners[0].y;
+      int d = (dx < 0 ? -dx : dx) + (dy < 0 ? -dy : dy);
+      cw = d > cw ? d : cw;
+    }
+    grow = cw / 2 + 2;
+  } else {
+    int dx = q->capstones[1].center.x - q->capstones[0].center.x;
+    int dy = q->capstones[1].center.y - q->capstones[0].center.y;
+    grow = (dx < 0 ? -dx : dx) + (dy < 0 ? -dy : dy);
+  }
+  box[0] = x0 - grow < 0 ? 0 : x0 - grow;
+  box[1] = y0 - grow < 0 ? 0 : y0 - grow;
+  box[2] = x1 + grow >= q->w ? q->w - 1 : x1 + grow;
+  box[3] = y1 + grow >= q->h ? q->h - 1 : y1 + grow;
+  return true;
+}
+
+void qr_scan_set_threshold(int threshold) {
+  if (threshold >= 0 && threshold < QUIRC_AMBIRE_THRESHOLDS) {
+    g_qr.threshold = threshold;
+  }
 }

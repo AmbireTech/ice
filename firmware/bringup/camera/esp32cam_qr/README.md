@@ -30,9 +30,12 @@ board's verdict and the host decoder's on each:
 
 They land in `firmware/out/esp32qr/<time>/`.
 
+A serial `T` replays the saved frames through the board's decoder and
+times each look.
+
 ## What it prints
 
-    QR OK v11 4.2 px/module (frame 381, decode 120 ms)
+    QR OK v7 3.9 px/module, read at 1.5x (frame 381, decode 1150 ms)
     UR:ETH-SIGN-REQUEST/...
 
 once per code (again only when the code changes, or after 3 s), and every
@@ -55,10 +58,13 @@ closer.
 - Exposure set from the frames, as on the signer: the brightest part of the
   view's centre held below clipping, the exposure at most about 10 ms against
   hand blur, gain making up the rest.
-- A frame that shows a code but does not decode is tried with each of the
-  decoder's thresholds, for up to about 0.5 s; the decoder itself stops a
-  frame's grid retries after 300 ms (each retry refits the grid, and a frame
-  that would not decode once took 3-6 s and tripped the watchdog).
+- A frame that shows a code but does not decode is tried with the decoder's
+  other thresholds (up to 0.3 s), then, if finder patterns are in view, read
+  once more upscaled (1.5x, 2x, 1.5x in turn, the local-mean threshold): the
+  decoder misses most codes of 3-4 px a module at 1x. On the first 12 near
+  misses saved, 0 decoded at 1x, 8 with these looks (1.5x: ~0.9 s on the
+  board). The decoder stops a frame's grid retries after 300 ms.
+- Built at -O2 with the PSRAM at 80 MHz: the upscaled look runs from PSRAM.
 - The decoder runs on the second core, so the first core's idle task (which
   the watchdog watches) always gets to run.
 - The sensor is powered down before each start: the board sometimes reads

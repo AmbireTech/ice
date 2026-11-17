@@ -9,6 +9,8 @@
 
 #include <io/qr_scan.h>
 
+#include "qr_roi.h"
+
 static unsigned char *read_pgm(const char *path, int *w, int *h) {
   FILE *f = fopen(path, "rb");
   if (f == NULL) {
@@ -67,8 +69,41 @@ int main(int argc, char **argv) {
         break;
       }
     }
-    printf("%s  %s  v%d %d.%dpx/m t%d grids %d err %d mean %d clip %d edge %d.%d", argv[a],
-           r.decoded ? "OK" : "NO", (int)r.version, (int)(r.px_per_module_x10 / 10),
+    const char *how = "";
+    if (!r.decoded && getenv("QR_NO_ROI") == NULL) {
+      // The scanners' second looks: the whole frame upscaled, each scale
+      static const qr_roi_scale_t scales[] = {
+          {3, 2, QR_ROI_LINEAR, 2}, {2, 1, QR_ROI_LINEAR, 2}, {5, 2, QR_ROI_CUBIC, 2}};
+      // QR_ROI_PASSES: passes per scale (the ESP32 does 1, at threshold 2)
+      int roi_passes = getenv("QR_ROI_PASSES") ? atoi(getenv("QR_ROI_PASSES")) : 3;
+      static const char *names[] = {" (1.5x linear)", " (2x linear)", " (2.5x cubic)"};
+      size_t roi_len = qr_roi_image_size(w, h, 5, 2);
+      size_t roi_state_len = qr_scan_state_size(w * 5 / 2 + 1, h * 5 / 2 + 1);
+      unsigned char *roi = aligned_alloc(16, (roi_len + 15) & ~(size_t)15);
+      unsigned char *roi_state = aligned_alloc(16, (roi_state_len + 15) & ~(size_t)15);
+      // QR_ROI_BOX=<bytes>: as the ESP32 does it, the code's area (from the
+      // finder patterns the last 1x pass found) in a buffer of that size
+      const char *box_env = getenv("QR_ROI_BOX");
+      int32_t box[4];
+      bool have_box = box_env != NULL && qr_scan_code_area(box);
+      for (int k = 0; roi != NULL && roi_state != NULL && k < 3 && (box_env == NULL || have_box); k++) {
+        qr_scan_result_t rr = {0};
+        bool ok = have_box
+                      ? qr_roi_decode_box(px, w, h, box, scales[k], roi_passes, roi, (size_t)atol(box_env),
+                                          roi_state, roi_state_len, payload, sizeof(payload) - 1, &rr)
+                      : qr_roi_decode(px, w, h, NULL, scales[k], roi_passes, roi, roi_state, roi_state_len,
+                                      payload, sizeof(payload) - 1, &rr);
+        if (ok) {
+          how = names[k];
+          r = rr;
+          break;
+        }
+      }
+      free(roi);
+      free(roi_state);
+    }
+    printf("%s  %s%s  v%d %d.%dpx/m t%d grids %d err %d mean %d clip %d edge %d.%d", argv[a],
+           r.decoded ? "OK" : "NO", how, (int)r.version, (int)(r.px_per_module_x10 / 10),
            (int)(r.px_per_module_x10 % 10), (int)r.threshold, (int)r.grids, (int)r.error,
            (int)r.mean_y, (int)r.clipped_pm, (int)(r.edge_x10 / 10), (int)(r.edge_x10 % 10));
     if (r.decoded) {

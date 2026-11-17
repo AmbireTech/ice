@@ -10,6 +10,7 @@
 
 typedef struct {
   int32_t grids;         // QR codes found in the image (decoded or not)
+  int32_t capstones;     // finder patterns found (a code needs three)
   int32_t decoded;       // 1: `payload` holds the first one that decoded
   int32_t error;         // quirc_decode_error_t of the last failed decode
   int32_t version;       // QR version of the decoded code
@@ -50,3 +51,13 @@ bool qr_scan_init(uint8_t *image, int w, int h, uint8_t *state, size_t size);
 // (as is, or mirrored) is copied to `payload` (at most `payload_max` bytes).
 // The image is used up: it is thresholded in place.
 void qr_scan(uint8_t *payload, size_t payload_max, qr_scan_result_t *result);
+
+// After qr_scan(): the area a code is in, from what the last scan found (x0,
+// y0, x1, y1, frame pixels): the code reported, else the finder patterns
+// grown by their spacing (with two of three, the third lies within that).
+// False if it found fewer than two finder patterns.
+bool qr_scan_code_area(int32_t box[4]);
+
+// The threshold the next qr_scan() uses (0 Otsu, 1 Otsu x 1.1, 2 the local
+// mean); it then cycles as usual
+void qr_scan_set_threshold(int threshold);

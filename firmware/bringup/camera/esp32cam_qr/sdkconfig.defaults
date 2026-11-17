@@ -6,8 +6,15 @@ CONFIG_FREERTOS_HZ=1000
 # The ESP32-CAM's PSRAM holds the frames and the decoder
 CONFIG_SPIRAM=y
 CONFIG_SPIRAM_USE_MALLOC=y
+# The upscaled second look runs from PSRAM: at 80 MHz (with the flash, which
+# shares its clock) instead of 40
+CONFIG_SPIRAM_SPEED_80M=y
+CONFIG_ESPTOOLPY_FLASHFREQ_80M=y
 # The decoder task's stack holds quirc's work structures' pointers only
 CONFIG_ESP_MAIN_TASK_STACK_SIZE=16384
 # Errors only: results are printed with printf; the camera driver's overflow
 # warnings would interleave with them
 CONFIG_LOG_DEFAULT_LEVEL_ERROR=y
+
+# Speed over debuggability: the decoder is float- and loop-heavy
+CONFIG_COMPILER_OPTIMIZATION_PERF=y
