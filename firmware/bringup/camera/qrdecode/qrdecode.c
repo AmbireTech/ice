@@ -61,6 +61,8 @@ int main(int argc, char **argv) {
     }
     qr_scan_result_t r = {0};
     unsigned char payload[600] = {0};
+    // The grey frame for the decoder's sub-pixel re-reads (QR_NO_GRAY: none)
+    qr_scan_set_gray(getenv("QR_NO_GRAY") ? NULL : px);
     // One pass per threshold, each on a fresh copy (a pass thresholds in place)
     for (int t = 0; t < 3; t++) {
       memcpy(image, px, (size_t)w * h);
@@ -86,6 +88,7 @@ int main(int argc, char **argv) {
       const char *box_env = getenv("QR_ROI_BOX");
       int32_t box[4];
       bool have_box = box_env != NULL && qr_scan_code_area(box);
+      qr_scan_set_gray(NULL);  // the upscaled image has no grey copy
       for (int k = 0; roi != NULL && roi_state != NULL && k < 3 && (box_env == NULL || have_box); k++) {
         qr_scan_result_t rr = {0};
         bool ok = have_box

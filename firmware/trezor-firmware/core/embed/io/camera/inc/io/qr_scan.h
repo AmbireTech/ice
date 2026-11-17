@@ -61,3 +61,8 @@ bool qr_scan_code_area(int32_t box[4]);
 // The threshold the next qr_scan() uses (0 Otsu, 1 Otsu x 1.1, 2 the local
 // mean); it then cycles as usual
 void qr_scan_set_threshold(int threshold);
+
+// The frame before thresholding (the same size as the decoder's image), which
+// a failed grid is read again from, sub-pixel; NULL (the default) when the
+// caller keeps none
+void qr_scan_set_gray(const uint8_t *gray);

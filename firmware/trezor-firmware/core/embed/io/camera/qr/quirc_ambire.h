@@ -32,3 +32,12 @@ void quirc_ambire_end(struct quirc *q, int threshold, uint8_t *local_mem);
 
 // Sets grid `index` to `grid_size` modules and redoes its perspective
 void quirc_ambire_regrid(struct quirc *q, int index, int grid_size);
+
+// Grid `index` read again (quirc_extract()'s output), the sampling points
+// moved by (du, dv) modules. With `gray` (the frame before thresholding,
+// q->w x q->h) each cell is read from it as BoofCV does: bilinear samples at
+// the cell centre and 0.2 module either way on each axis, each against the
+// mean grey of the cell's surroundings, by majority; without, from the
+// thresholded image as quirc does, the offset alone (Krux's retry).
+void quirc_ambire_extract(const struct quirc *q, int index, struct quirc_code *code,
+                          const uint8_t *gray, float du, float dv);

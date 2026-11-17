@@ -161,3 +161,79 @@ void quirc_ambire_regrid(struct quirc *q, int index, int grid_size) {
   q->grids[index].grid_size = grid_size;
   setup_qr_perspective(q, index);
 }
+
+// Sub-pixel perspective_map()
+static void map_f(const quirc_float_t *c, quirc_float_t u, quirc_float_t v, float *x, float *y) {
+  quirc_float_t den = (quirc_float_t)1 / (c[6] * u + c[7] * v + (quirc_float_t)1.0);
+  *x = (float)((c[0] * u + c[1] * v + c[2]) * den);
+  *y = (float)((c[3] * u + c[4] * v + c[5]) * den);
+}
+
+// Bilinear grey at (x, y), pixel centres at integer coordinates
+static int gray_at(const uint8_t *g, int w, int h, float x, float y) {
+  if (x < 0) x = 0;
+  if (y < 0) y = 0;
+  if (x > (float)(w - 1)) x = (float)(w - 1);
+  if (y > (float)(h - 1)) y = (float)(h - 1);
+  int x0 = (int)x, y0 = (int)y;
+  int x1 = x0 + 1 < w ? x0 + 1 : x0, y1 = y0 + 1 < h ? y0 + 1 : y0;
+  int fx = (int)((x - (float)x0) * 256.0f), fy = (int)((y - (float)y0) * 256.0f);
+  const uint8_t *r0 = g + y0 * w, *r1 = g + y1 * w;
+  int top = r0[x0] * (256 - fx) + r0[x1] * fx;
+  int bot = r1[x0] * (256 - fx) + r1[x1] * fx;
+  return (top * (256 - fy) + bot * fy) >> 16;
+}
+
+void quirc_ambire_extract(const struct quirc *q, int index, struct quirc_code *code,
+                          const uint8_t *gray, float du, float dv) {
+  const struct quirc_grid *qr = &q->grids[index];
+  memset(code, 0, sizeof(*code));
+  if (index < 0 || index >= q->num_grids) {
+    return;
+  }
+  int n = qr->grid_size;
+  perspective_map(qr->c, 0.0, 0.0, &code->corners[0]);
+  perspective_map(qr->c, n, 0.0, &code->corners[1]);
+  perspective_map(qr->c, n, n, &code->corners[2]);
+  perspective_map(qr->c, 0.0, n, &code->corners[3]);
+  code->size = n;
+  if (n > QUIRC_MAX_GRID_SIZE) {
+    return;
+  }
+
+  int i = 0;
+  for (int y = 0; y < n; y++) {
+    for (int x = 0; x < n; x++, i++) {
+      quirc_float_t u = (quirc_float_t)x + 0.5f + du, v = (quirc_float_t)y + 0.5f + dv;
+      bool dark;
+      if (gray == NULL) {
+        struct quirc_point p;
+        perspective_map(qr->c, u, v, &p);
+        dark = p.y >= 0 && p.y < q->h && p.x >= 0 && p.x < q->w && q->pixels[p.y * q->w + p.x];
+      } else {
+        // The surroundings' mean: a 5 x 5 lattice over +-2 modules (a code
+        // is about half dark, so this sits between its dark and light)
+        int sum = 0;
+        for (int b = -2; b <= 2; b++) {
+          for (int a = -2; a <= 2; a++) {
+            float sx, sy;
+            map_f(qr->c, u + (quirc_float_t)a, v + (quirc_float_t)b, &sx, &sy);
+            sum += gray_at(gray, q->w, q->h, sx, sy);
+          }
+        }
+        int mean = sum / 25;
+        static const float pts[5][2] = {{0, 0}, {-0.2f, 0}, {0.2f, 0}, {0, -0.2f}, {0, 0.2f}};
+        int votes = 0;
+        for (int k = 0; k < 5; k++) {
+          float sx, sy;
+          map_f(qr->c, u + pts[k][0], v + pts[k][1], &sx, &sy);
+          votes += gray_at(gray, q->w, q->h, sx, sy) < mean;
+        }
+        dark = votes >= 3;
+      }
+      if (dark) {
+        code->cell_bitmap[i >> 3] |= (uint8_t)(1 << (i & 7));
+      }
+    }
+  }
+}

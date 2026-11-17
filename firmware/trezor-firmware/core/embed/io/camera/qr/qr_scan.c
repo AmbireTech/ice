@@ -169,18 +169,46 @@ static void report_code(const struct quirc_code *code,
 
 // Extracts and decodes grid `i` (as is, then mirrored); true and the code in
 // the result if it decoded, else the failure
+// The grey frame before thresholding, if the caller keeps one (NULL: none)
+static const uint8_t *g_gray;
+
+void qr_scan_set_gray(const uint8_t *gray) { g_gray = gray; }
+
+static quirc_decode_error_t decode_code(struct quirc_code *code, struct quirc_data *data,
+                                        bool *mirrored) {
+  quirc_decode_error_t err = quirc_decode(code, data);
+  *mirrored = false;
+  if (err == QUIRC_ERROR_DATA_ECC) {
+    // ISO 18004:2015 allows mirrored codes; quirc's documented retry
+    quirc_flip(code);
+    err = quirc_decode(code, data);
+    *mirrored = true;
+  }
+  return err;
+}
+
 static bool decode_grid(struct quirc *q, int i, uint8_t *payload,
                         size_t payload_max, qr_scan_result_t *result) {
   struct quirc_code *code = g_qr.code;
   struct quirc_data *data = g_qr.data;
   quirc_extract(q, i, code);
-  quirc_decode_error_t err = quirc_decode(code, data);
-  bool mirrored = false;
-  if (err == QUIRC_ERROR_DATA_ECC) {
-    // ISO 18004:2015 allows mirrored codes; quirc's documented retry
-    quirc_flip(code);
-    err = quirc_decode(code, data);
-    mirrored = true;
+  bool mirrored;
+  quirc_decode_error_t err = decode_code(code, data, &mirrored);
+  // quirc reads each module from one rounded pixel of the thresholded image;
+  // at 3-4 px a module that misreads cells. Read again: from the grey frame
+  // (a 5-point vote per cell, sub-pixel) when there is one, and at sampling
+  // offsets of a fraction of a module (Krux's retry)
+  static const float offsets[][2] = {{0, 0},     {0.2f, 0},  {-0.2f, 0}, {0, 0.2f},
+                                     {0, -0.2f}, {0.35f, 0}, {-0.35f, 0}, {0, 0.35f},
+                                     {0, -0.35f}};
+  for (size_t k = g_gray != NULL ? 0 : 1;
+       err != QUIRC_SUCCESS && k < sizeof(offsets) / sizeof(offsets[0]); k++) {
+    quirc_decode_error_t first = err;
+    quirc_ambire_extract(q, i, code, g_gray, offsets[k][0], offsets[k][1]);
+    err = decode_code(code, data, &mirrored);
+    if (err != QUIRC_SUCCESS) {
+      err = first;  // the first reading's error is the one reported
+    }
   }
   // The first failure is kept: quirc's own reading of the grid
   if (err != QUIRC_SUCCESS) {
