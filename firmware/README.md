@@ -438,8 +438,8 @@ why one does not read.
   code decodes, the picture gets a green frame, the start of its text shows
   along the picture's bottom edge, and its corners are marked (green; purple
   when a code was found but did not decode).
-- **Tap the picture** to step through three zoom levels (the middle one
-  first): **wide** (about the sensor's full height, scaled down), **2:1** (on
+- **Tap the picture** to step through three zoom levels (the wide one
+  first: hold the code close so it fills the picture): **wide** (about the sensor's full height, scaled down), **2:1** (on
   the OV2640, the sensor's half-resolution mode at its own pixels: the detail
   of a 2:1 window at about four times the frame rate) and **native** (one sensor pixel
   per frame pixel: the most detail, the narrowest view). A dense code needs

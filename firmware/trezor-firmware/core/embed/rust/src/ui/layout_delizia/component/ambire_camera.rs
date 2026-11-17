@@ -73,9 +73,12 @@ pub(super) struct Settings {
     pub tune: u32,
 }
 
-/// The middle zoom first (see io/camera/stm32u5/camera.c)
+/// The wide zoom first (see io/camera/stm32u5/camera.c): the whole field of
+/// view, so a code is held close and fills it, as other wallets with this
+/// module scan. A 61-module code filling the 384 px frame gets ~5 px a
+/// module; the 2:1 window made the user hold the code twice as far away.
 static mut SETTINGS: Settings = Settings {
-    zoom: 1,
+    zoom: 0,
     side: 0,
     // The fast clock: more frames, shorter exposures (the driver falls back
     // to the stock clock where captures fail)
