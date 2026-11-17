@@ -368,7 +368,9 @@ top closes it.
 - **Scan request**: when the app shows a QR code to sign (still or animated),
   point the camera at it. The bar under the picture fills as the parts of an
   animated code come in; the picture's frame flashes green for each one taken.
-  Tap the picture to change the zoom; the top-left corner cancels. The device
+  Tap the picture to change the zoom (the line under it names the zoom and,
+  once a code is seen, its version and pixels per module); the scan uses the
+  clock and tuning last set in the camera test. The top-left corner cancels. The device
   then shows what is to be signed, with the same screens and warnings as when
   signing over USB, and after you confirm it shows the signature as a QR code:
   scan it with the app, then tap Done.
@@ -426,25 +428,65 @@ MetaMask's), and the device's own QR codes read back by the app's decoders.
 
 ## QR camera test
 
-The camera test is the third entry of the airgap menu.
+The camera test is the third entry of the airgap menu. It decodes any QR
+code, so it is the place to try the Ambire app's own request codes and see
+why one does not read.
 
-- The top of the screen shows the camera's live picture in gray, 240 x 240.
-  A QR code in view is decoded on the device; while one decodes, the picture
-  gets a green frame, its corners are marked and its text is shown below.
-- **Tap the picture** to step through three zoom levels (the middle one first).
-  Wider views see more; narrower ones resolve smaller or farther codes.
+- The top of the screen shows the camera's live picture in gray, scaled down
+  to 240 x 240 from the frame the decoder sees (384 x 384 normally). While a
+  code decodes, the picture gets a green frame, the start of its text shows
+  along the picture's bottom edge, and its corners are marked (green; purple
+  when a code was found but did not decode).
+- **Tap the picture** to step through three zoom levels (the middle one
+  first): **wide** (about the sensor's full height, scaled down), **2:1** (a
+  window twice the frame's size, scaled 2:1) and **native** (one sensor pixel
+  per frame pixel: the most detail, the narrowest view). A dense code needs
+  the native or 2:1 level.
+- **The buttons along the bottom** change, from left to right: the frame size
+  (384, 288 or 240 pixels a side), the sensor clock (`clk std`, as the
+  reference driver runs it, or `clk fast`) and the tuning (`tune std`;
+  `screen`: a lower exposure target and more contrast, for a phone screen;
+  `scr+exp`: as `screen` with a short fixed exposure, against smear when the
+  code moves). The QR scan of a request then uses the zoom, clock and tuning
+  last set here, until the device restarts.
 - **The top-left corner** closes the test and switches the camera off.
-- The lines below the picture: the sensor found, the zoom and frame rate;
-  frames captured and failed, and the capture and decode times; the last code
-  decoded, or what was seen.
-- Before the first frame, the second line shows what the camera's sync lines
-  did after it started (VSYNC and HREF: share of time high per mille / changes
-  seen; PCLK: changes seen). All zero means the sensor is not streaming.
-- A frame that comes in wrong is still shown, with a red border and "FAIL",
-  the bytes that arrived and flags (`0x100` more data than a frame, `0x400`
-  no frame end in time, and the camera interface's own: `0x002` overrun). A
-  sheared picture means lines of the wrong length; a partial one, a frame cut
-  short.
+
+The three lines under the picture:
+
+| Line | Example | Meaning |
+|---|---|---|
+| 1 | `OV2640 384 native 1.0x 7.5fps` | sensor, frame size, zoom, sensor pixels per frame pixel, frames per second |
+| 2 | `v11 3.6px/m OK 12/16 t0` | the code found: its QR version and pixels per module; `OK`, or why it did not decode; how many of the last 16 frames decoded; the threshold used (0, 1, 2: see below) |
+| 3 | `Y143 clip 2% edge 1.4 90+40ms` | the frame's mean brightness (0-255), the share of clipped white, the edge width in pixels (1.0 is a sharp step; larger is blur), the capture and decode times |
+
+Reading them:
+
+- **Pixels per module** is what decides a dense code: below 3 it rarely
+  decodes, about 4 is needed for most frames to decode, 5 with soft focus.
+  Move closer (or to a narrower zoom) to raise it, as long as the whole code
+  stays in the picture. The app's request codes are version 11 (61 modules
+  across).
+- **Edge width** is the focus: when it comes near half the pixels per
+  module, blur is what stops the code, not the size. A fixed-focus module
+  focused far away blurs a code held close.
+- **Clipped white** above a few per cent: the screen is too bright for the
+  exposure; try the `screen` tuning.
+- A code found but not decoded says why: `GRID SIZE` or `VERSION` (the grid
+  was misread), `FORMAT ECC` or `DATA ECC` (too many modules read wrong:
+  blur, too few pixels per module, or a code partly out of the picture).
+- **The threshold** (where gray turns black or white) changes from frame to
+  frame while codes do not decode: 0 one level for the whole frame, 1 the
+  same 10 % higher, 2 a local level (better with uneven light or glare). It
+  stays where a frame decoded.
+- Before the first frame, line 3 shows what the camera's sync lines did after
+  it started (VSYNC and HREF: share of time high per mille / changes seen;
+  PCLK: changes seen). All zero means the sensor is not streaming.
+- A frame that comes in wrong is still shown, with a red border and "FAIL"
+  on line 3: the bytes that arrived and flags (`0x100` more data than a
+  frame, `0x400` no frame end in time, and the camera interface's own:
+  `0x002` overrun). A sheared picture means lines of the wrong length; a
+  partial one, a frame cut short. If this starts with `clk fast`, go back to
+  `clk std`.
 - If the camera does not start, the screen says why: nothing answered at the
   sensor's address, an unknown chip id, or the register write that failed,
   and which bus addresses did answer. Below that: the camera bus lines'
@@ -454,17 +496,35 @@ The camera test is the third entry of the airgap menu.
   seen; 0: none). A camera that does not answer is switched off at once: a
   module that never answered ran a camera supply regulator hot on proto 0.
   Tap to retry.
+- The 384 frame needs about 50 kB (the test) or 75 kB (a request scan) of
+  the firmware's working memory while the camera runs. When that is not
+  available, the camera runs at 288 and the size button offers 288 and 240
+  only.
 
 Supported sensors: the OmniVision OV2640 (the module proto 0 was drawn for)
 and OV5640 and the GalaxyCore GC2145 modules in the ESP32-CAM pinout, told
 apart by their bus addresses and chip ids. On proto 0 the module's pin 1 (its
 own numbering: NC) goes at the end of the connector nearer the board's top
-edge. Each zoom level is a
-sensor mode from Espressif's esp32-camera driver (the register tables in
-`io/camera/stm32u5/camera_sensors.h` are generated from it by
-`bringup/camera/gen_sensor_tables.py` and, for the OV2640,
-`bringup/camera/dump_ov2640_tables.c`). Works on proto 0 with its OV2640
-(2026-11-09); the OV5640 and GC2145 paths are not checked on a board yet.
+edge. The zoom levels:
+
+| Sensor | wide | 2:1 | native |
+|---|---|---|---|
+| OV2640 | the centre square of its 800 x 600 mode (the full height), scaled | a window twice the frame of its full-resolution mode, scaled 2:1 | the frame's size from its full-resolution mode |
+| GC2145 | a window three times the frame, every third pixel | twice the frame, every other pixel | the frame's size |
+| OV5640 | the full-height square, scaled | 640 x 480 mode, centre cut | 1024 x 768 mode, centre cut |
+
+The GC2145 cannot average when it scales down: its wider levels skip pixels.
+The OV5640's levels are not native pixels (its full resolution is 5 MP); its
+clock and tuning buttons do nothing. The start-up register tables come from
+Espressif's esp32-camera driver (`io/camera/stm32u5/camera_sensors.h`,
+generated by `bringup/camera/gen_sensor_tables.py` and, for the OV2640,
+`bringup/camera/dump_ov2640_tables.c`). Proto 0's OV2640 showed pictures and
+decoded codes at 240 x 240 (2026-11-09); the 384 frames, the clock and tuning
+options, and the OV5640 and GC2145 paths have not run on a board yet.
+
+`bringup/camera/qrsim` is a host simulation of the decoder on rendered phone
+screens (see its README): what the frame size and the decoder changes above
+were chosen by.
 
 ## Proto 0 bring-up: complete (2026-11-09)
 
