@@ -24,10 +24,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "driver/uart.h"
 #include "esp_camera.h"
 #include "esp_event.h"
 #include "esp_http_server.h"
 #include "esp_log.h"
+#include "esp_rom_crc.h"
+#include "esp_timer.h"
 #include "esp_netif.h"
 #include "esp_wifi.h"
 #include "nvs_flash.h"
@@ -552,6 +555,65 @@ static esp_err_t status_get(httpd_req_t *req) {
   return httpd_resp_send(req, buf, (ssize_t)b.len);
 }
 
+// One setting by name (the page's /set and the serial "S" command): NULL when
+// applied, else why not
+static const char *apply_setting(const char *var, int val) {
+  static char msg[96];
+  if (strcmp(var, "defaults") == 0) {
+    memset(g_setting_user, 0, sizeof(g_setting_user));
+    return camera_switch(&g_mode) == ESP_OK ? NULL : g_last_error;
+  }
+
+  cam_mode_t next = g_mode;
+  bool mode_var = true;
+  if (strcmp(var, "framesize") == 0) {
+    if (!framesize_offered(val)) {
+      return "framesize not offered";
+    }
+    next.framesize = (framesize_t)val;
+  } else if (strcmp(var, "field") == 0) {
+    if (val < 0 || val >= FIELD_COUNT) {
+      return "field: 0 full, 1 wide, 2 half, 3 native";
+    }
+    next.field = (field_t)val;
+  } else if (strcmp(var, "format") == 0) {
+    if (val != 0 && val != 1) {
+      return "format: 0 jpeg, 1 gray";
+    }
+    next.gray = val == 1;
+  } else if (strcmp(var, "xclk") == 0) {
+    if (val != 10 && val != 20) {
+      return "xclk: 10 or 20 (MHz)";
+    }
+    next.xclk_mhz = val;
+  } else {
+    mode_var = false;
+  }
+  if (mode_var) {
+    return camera_switch(&next) == ESP_OK ? NULL : g_last_error;
+  }
+
+  int id = setting_find(var);
+  if (id < 0) {
+    return "unknown var";
+  }
+  if (val < SETTINGS[id].min || val > SETTINGS[id].max) {
+    return "val out of range";
+  }
+  if (!g_cam_running) {
+    return "camera not running";
+  }
+  sensor_t *s = esp_camera_sensor_get();
+  int r = setting_call(s, id, val);
+  if (r != 0) {
+    snprintf(msg, sizeof(msg), "driver setter for %s=%d returned %d", var, val, r);
+    return msg;
+  }
+  g_setting_value[id] = val;
+  g_setting_user[id] = true;
+  return NULL;
+}
+
 static esp_err_t set_get(httpd_req_t *req) {
   char *q = get_query(req);
   char var[24] = "";
@@ -560,73 +622,16 @@ static esp_err_t set_get(httpd_req_t *req) {
     return send_error(req, "400 Bad Request", "need ?var=NAME&val=INT");
   }
   int val = 0;
-  bool have_val;
+  bool have_val = false;
   bool val_ok = query_int(q, "val", &val, &have_val);
   free(q);
-
-  if (strcmp(var, "defaults") == 0) {
-    memset(g_setting_user, 0, sizeof(g_setting_user));
-    if (camera_switch(&g_mode) != ESP_OK) {
-      return send_error(req, "500 Internal Server Error", g_last_error);
-    }
-    return status_get(req);
-  }
-  if (!val_ok || !have_val) {
+  if (strcmp(var, "defaults") != 0 && (!val_ok || !have_val)) {
     return send_error(req, "400 Bad Request", "val missing or not an integer");
   }
-
-  cam_mode_t next = g_mode;
-  bool mode_var = true;
-  if (strcmp(var, "framesize") == 0) {
-    if (!framesize_offered(val)) {
-      return send_error(req, "400 Bad Request", "framesize not offered");
-    }
-    next.framesize = (framesize_t)val;
-  } else if (strcmp(var, "field") == 0) {
-    if (val < 0 || val >= FIELD_COUNT) {
-      return send_error(req, "400 Bad Request", "field: 0 full, 1 wide, 2 half, 3 native");
-    }
-    next.field = (field_t)val;
-  } else if (strcmp(var, "format") == 0) {
-    if (val != 0 && val != 1) {
-      return send_error(req, "400 Bad Request", "format: 0 jpeg, 1 gray");
-    }
-    next.gray = val == 1;
-  } else if (strcmp(var, "xclk") == 0) {
-    if (val != 10 && val != 20) {
-      return send_error(req, "400 Bad Request", "xclk: 10 or 20 (MHz)");
-    }
-    next.xclk_mhz = val;
-  } else {
-    mode_var = false;
+  const char *err = apply_setting(var, val);
+  if (err != NULL) {
+    return send_error(req, "400 Bad Request", err);
   }
-
-  if (mode_var) {
-    if (camera_switch(&next) != ESP_OK) {
-      return send_error(req, "500 Internal Server Error", g_last_error);
-    }
-    return status_get(req);
-  }
-
-  int id = setting_find(var);
-  if (id < 0) {
-    return send_error(req, "400 Bad Request", "unknown var");
-  }
-  if (val < SETTINGS[id].min || val > SETTINGS[id].max) {
-    return send_error(req, "400 Bad Request", "val out of range");
-  }
-  if (!g_cam_running) {
-    return send_error(req, "503 Service Unavailable", "camera not running");
-  }
-  sensor_t *s = esp_camera_sensor_get();
-  int r = setting_call(s, id, val);
-  if (r != 0) {
-    char msg[80];
-    snprintf(msg, sizeof(msg), "driver setter for %s=%d returned %d", var, val, r);
-    return send_error(req, "500 Internal Server Error", msg);
-  }
-  g_setting_value[id] = val;
-  g_setting_user[id] = true;
   return status_get(req);
 }
 
@@ -837,6 +842,169 @@ static void http_start(void) {
   }
 }
 
+
+// ---------------------------------------------------------------------------
+// Serial (UART0, the USB-serial cable): frames and settings without Wi-Fi.
+// After boot the log goes quiet (it would land inside frames) and the port
+// stays at 115200 until the host asks for more. Commands, one per line:
+//   B <baud>      "OK\n" at the old rate, then the new one; back to 115200 if
+//                 no command arrives at the new rate within 2 s (an adapter
+//                 that cannot run it)
+//   G [skip]      a grayscale frame: "FRM1", u16 width, u16 height, u32 length
+//                 (little endian), the Y8 bytes, "END1", u32 CRC-32 of the
+//                 bytes (zlib's); or "ERR <why>\n"
+//   S <var> <val> a setting, as the page's /set: "OK\n" or "ERR <why>\n"
+//   Q             "ST <framesize> <field> <gray> <xclk> <aec_value> <gain>\n"
+
+#define SERIAL_BAUD_BOOT 115200
+#define SERIAL_TRIAL_MS 2000
+
+// Set by "B": the rate on trial, and when the trial ends
+static uint32_t g_serial_trial_baud;
+static int64_t g_serial_trial_end_us;
+
+static void serial_reply(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+static void serial_reply(const char *fmt, ...) {
+  char line[160];
+  va_list ap;
+  va_start(ap, fmt);
+  int n = vsnprintf(line, sizeof(line), fmt, ap);
+  va_end(ap);
+  if (n > (int)sizeof(line) - 1) {
+    n = (int)sizeof(line) - 1;
+  }
+  uart_write_bytes(UART_NUM_0, line, (size_t)n);
+}
+
+static void serial_frame(int skip) {
+  if (!g_cam_running) {
+    serial_reply("ERR camera not running: %s\n", g_last_error);
+    return;
+  }
+  if (!g_mode.gray) {
+    serial_reply("ERR camera is in JPEG mode: S format 1\n");
+    return;
+  }
+  for (int i = 0; i <= skip; i++) {
+    camera_fb_t *fb = esp_camera_fb_get();
+    if (fb == NULL) {
+      serial_reply("ERR no frame: capture timed out\n");
+      return;
+    }
+    if (i < skip) {
+      esp_camera_fb_return(fb);
+      continue;
+    }
+    if (fb->len != fb->width * fb->height) {
+      serial_reply("ERR frame is %u bytes, %ux%u expected\n", (unsigned)fb->len,
+                   (unsigned)fb->width, (unsigned)fb->height);
+      esp_camera_fb_return(fb);
+      return;
+    }
+    uint8_t head[12] = {'F', 'R', 'M', '1'};
+    head[4] = (uint8_t)fb->width;
+    head[5] = (uint8_t)(fb->width >> 8);
+    head[6] = (uint8_t)fb->height;
+    head[7] = (uint8_t)(fb->height >> 8);
+    for (int b = 0; b < 4; b++) {
+      head[8 + b] = (uint8_t)(fb->len >> (8 * b));
+    }
+    uart_write_bytes(UART_NUM_0, head, sizeof(head));
+    uart_write_bytes(UART_NUM_0, fb->buf, fb->len);
+    uint32_t crc = esp_rom_crc32_le(0, fb->buf, fb->len);
+    uint8_t tail[8] = {'E', 'N', 'D', '1', (uint8_t)crc, (uint8_t)(crc >> 8),
+                       (uint8_t)(crc >> 16), (uint8_t)(crc >> 24)};
+    uart_write_bytes(UART_NUM_0, tail, sizeof(tail));
+    esp_camera_fb_return(fb);
+  }
+}
+
+static void serial_command(char *line) {
+  char *cmd = strtok(line, " \r");
+  if (cmd == NULL) {
+    return;
+  }
+  if (strcmp(cmd, "G") == 0) {
+    char *a = strtok(NULL, " \r");
+    int skip = a != NULL ? atoi(a) : 0;
+    serial_frame(skip < 0 ? 0 : skip > 30 ? 30 : skip);
+  } else if (strcmp(cmd, "S") == 0) {
+    char *var = strtok(NULL, " \r");
+    char *val = strtok(NULL, " \r");
+    if (var == NULL || (val == NULL && strcmp(var, "defaults") != 0)) {
+      serial_reply("ERR S <var> <val>\n");
+      return;
+    }
+    const char *err = apply_setting(var, val != NULL ? atoi(val) : 0);
+    if (err != NULL) {
+      serial_reply("ERR %s\n", err);
+    } else {
+      serial_reply("OK\n");
+    }
+  } else if (strcmp(cmd, "B") == 0) {
+    char *a = strtok(NULL, " \r");
+    int baud = a != NULL ? atoi(a) : 0;
+    if (baud < 9600 || baud > 3000000) {
+      serial_reply("ERR B <baud>\n");
+      return;
+    }
+    serial_reply("OK\n");
+    uart_wait_tx_done(UART_NUM_0, pdMS_TO_TICKS(100));
+    uart_set_baudrate(UART_NUM_0, (uint32_t)baud);
+    uart_flush_input(UART_NUM_0);
+    g_serial_trial_baud = (uint32_t)baud;
+    g_serial_trial_end_us = esp_timer_get_time() + SERIAL_TRIAL_MS * 1000;
+  } else if (strcmp(cmd, "Q") == 0) {
+    sensor_t *s = g_cam_running ? esp_camera_sensor_get() : NULL;
+    serial_reply("ST %d %d %d %d %d %d\n", (int)g_mode.framesize, (int)g_mode.field,
+                 g_mode.gray ? 1 : 0, g_mode.xclk_mhz, s ? s->status.aec_value : -1,
+                 s ? s->status.agc_gain : -1);
+  } else {
+    serial_reply("ERR unknown command %s (G, S, Q)\n", cmd);
+  }
+}
+
+static void serial_task(void *arg) {
+  (void)arg;
+  esp_err_t err = uart_driver_install(UART_NUM_0, 1024, 0, 0, NULL, 0);
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "serial: UART driver failed: %s", esp_err_to_name(err));
+    vTaskDelete(NULL);
+    return;
+  }
+  // printf, not the log (errors only): the host waits for this line
+  printf("ov2640ref: serial ready at %d baud (B to change), log off\n", SERIAL_BAUD_BOOT);
+  fflush(stdout);
+  vTaskDelay(pdMS_TO_TICKS(50));
+  esp_log_level_set("*", ESP_LOG_NONE);
+  char line[80];
+  size_t n = 0;
+  for (;;) {
+    uint8_t c;
+    if (uart_read_bytes(UART_NUM_0, &c, 1, pdMS_TO_TICKS(100)) != 1) {
+      if (g_serial_trial_baud != 0 && esp_timer_get_time() > g_serial_trial_end_us) {
+        // Nothing understood at the new rate: back to the boot rate
+        g_serial_trial_baud = 0;
+        uart_set_baudrate(UART_NUM_0, SERIAL_BAUD_BOOT);
+        uart_flush_input(UART_NUM_0);
+        n = 0;
+      }
+      continue;
+    }
+    if (c == '\n') {
+      line[n] = '\0';
+      bool trial = g_serial_trial_baud != 0;
+      serial_command(line);
+      if (trial && strncmp(line, "B", 1) != 0) {
+        g_serial_trial_baud = 0;  // a command arrived at the new rate: kept
+      }
+      n = 0;
+    } else if (n < sizeof(line) - 1) {
+      line[n++] = (char)c;
+    }
+  }
+}
+
 void app_main(void) {
   esp_err_t err = nvs_flash_init();
   if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -852,4 +1020,5 @@ void app_main(void) {
   }
   wifi_start_ap();
   http_start();
+  xTaskCreate(serial_task, "serial", 4096, NULL, 5, NULL);
 }
