@@ -233,6 +233,14 @@ static void sharpen(uint8_t *img, int w, int h) {
   }
 }
 
+// Time a frame may spend on its grids. Each size retry redoes quirc's
+// perspective fit (81 passes over the whole grid): a frame with a code that
+// would not decode took 3-6 s on an ESP32 at 240 MHz. Past the budget the
+// frame gives up; the next one tries again (with the next threshold).
+#ifndef QR_SCAN_BUDGET_MS
+#define QR_SCAN_BUDGET_MS 300
+#endif
+
 void qr_scan(uint8_t *payload, size_t payload_max, qr_scan_result_t *result) {
   memset(result, 0, sizeof(*result));
   struct quirc *q = g_qr.q;
@@ -258,6 +266,10 @@ void qr_scan(uint8_t *payload, size_t payload_max, qr_scan_result_t *result) {
     int measured = q->grids[i].grid_size;
     static const int8_t sizes[] = {0, 4, -4, 8, -8};
     for (size_t k = 0; k < sizeof(sizes); k++) {
+      // The first grid's own reading always gets its decode
+      if ((i > 0 || k > 0) && systick_ms() - start > QR_SCAN_BUDGET_MS) {
+        break;
+      }
       int size = measured + sizes[k];
       if (size < 21 || size > QUIRC_MAX_GRID_SIZE) {
         continue;

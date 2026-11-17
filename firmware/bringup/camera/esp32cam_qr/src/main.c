@@ -24,7 +24,10 @@
 #include <string.h>
 
 #include "driver/gpio.h"
+#include "driver/uart.h"
 #include "esp_camera.h"
+#include "esp_partition.h"
+#include "esp_rom_crc.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
 #include "esp_timer.h"
@@ -283,8 +286,209 @@ static void print_payload(const uint8_t *p, int n) {
   putchar('\n');
 }
 
-void app_main(void) {
-  printf("\nQR scanner (ESP32-CAM, OV2640, the signer's decoder)\n");
+// ---------------------------------------------------------------------------
+// Near-miss frames, kept in flash (opening the serial port resets the board,
+// which would lose them in RAM). Slot 0..SLOTS_MISS-1: frames that showed a
+// code that did not decode, at least 2.5 px a module, one every 2 s at most;
+// the rest: decoded frames, one every 10 s. A serial "D" dumps them.
+
+#define SLOT_SIZE 0x20000
+#define SLOTS 16
+#define SLOTS_MISS 12
+#define FRAME_MAGIC 0x31465251u  // "QRF1"
+
+typedef struct {
+  uint32_t magic;
+  uint32_t seq;
+  uint16_t w, h;
+  int16_t px_x10;
+  uint8_t error, version, decoded, threshold, agc, grids;
+  uint16_t aec;
+  uint16_t decode_ms;
+  uint8_t pad[8];
+} frame_header_t;
+_Static_assert(sizeof(frame_header_t) == 32, "the header is 32 bytes");
+
+static const esp_partition_t *g_frames;
+static uint32_t g_seq;
+static volatile bool g_quiet, g_pause;
+
+static void frames_init(void) {
+  g_frames = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, "frames");
+  if (g_frames == NULL) {
+    printf("no 'frames' partition: near-miss frames are not kept\n");
+    return;
+  }
+  int kept = 0;
+  for (int i = 0; i < SLOTS; i++) {
+    frame_header_t h;
+    if (esp_partition_read(g_frames, (size_t)i * SLOT_SIZE, &h, sizeof(h)) == ESP_OK &&
+        h.magic == FRAME_MAGIC) {
+      kept++;
+      if (h.seq >= g_seq) {
+        g_seq = h.seq + 1;
+      }
+    }
+  }
+  printf("%d saved frames in flash (D dumps them, E erases)\n", kept);
+}
+
+static void frames_save(const uint8_t *px, const scan_mode_t *m, const qr_scan_result_t *r,
+                        const ae_t *ae, int decode_ms) {
+  static int64_t last_miss_us = -10000000, last_ok_us = -100000000;
+  static uint32_t n_miss, n_ok;
+  if (g_frames == NULL) {
+    return;
+  }
+  int64_t now = esp_timer_get_time();
+  int slot;
+  if (r->decoded) {
+    if (now - last_ok_us < 10000000) {
+      return;
+    }
+    last_ok_us = now;
+    slot = SLOTS_MISS + (int)(n_ok++ % (SLOTS - SLOTS_MISS));
+  } else {
+    if (r->grids == 0 || r->px_per_module_x10 < 25 || now - last_miss_us < 2000000) {
+      return;
+    }
+    last_miss_us = now;
+    slot = (int)(n_miss++ % SLOTS_MISS);
+  }
+  frame_header_t h = {
+      .magic = FRAME_MAGIC,
+      .seq = g_seq++,
+      .w = (uint16_t)m->w,
+      .h = (uint16_t)m->h,
+      .px_x10 = (int16_t)r->px_per_module_x10,
+      .error = (uint8_t)r->error,
+      .version = (uint8_t)r->version,
+      .decoded = (uint8_t)r->decoded,
+      .threshold = (uint8_t)r->threshold,
+      .agc = (uint8_t)ae->agc,
+      .grids = (uint8_t)r->grids,
+      .aec = (uint16_t)ae->aec,
+      .decode_ms = (uint16_t)(decode_ms > 65535 ? 65535 : decode_ms),
+  };
+  size_t at = (size_t)slot * SLOT_SIZE;
+  esp_err_t err = esp_partition_erase_range(g_frames, at, SLOT_SIZE);
+  if (err == ESP_OK) {
+    err = esp_partition_write(g_frames, at + sizeof(h), px, (size_t)m->w * m->h);
+  }
+  if (err == ESP_OK) {
+    // The header last: a slot cut short by a reset has no magic
+    err = esp_partition_write(g_frames, at, &h, sizeof(h));
+  }
+  if (err != ESP_OK) {
+    printf("saving a frame failed: %s\n", esp_err_to_name(err));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Serial commands (UART0, the USB-serial cable), one per line:
+//   B <baud>  "OK" at the old rate, then the new one (back to 115200 after 2 s
+//             without a command at the new rate)
+//   D         every saved frame: "FRM2", the 32-byte header, the pixels, "END1",
+//             CRC-32 (zlib's) of header and pixels; then "DONE <n>"
+//   E         erase the saved frames
+
+static void uart_out(const void *p, size_t n) { uart_write_bytes(UART_NUM_0, p, n); }
+
+static void frames_dump(void) {
+  static uint8_t chunk[4096];
+  int sent = 0;
+  for (int i = 0; g_frames != NULL && i < SLOTS; i++) {
+    frame_header_t h;
+    size_t at = (size_t)i * SLOT_SIZE;
+    if (esp_partition_read(g_frames, at, &h, sizeof(h)) != ESP_OK || h.magic != FRAME_MAGIC) {
+      continue;
+    }
+    uart_out("FRM2", 4);
+    uart_out(&h, sizeof(h));
+    uint32_t crc = esp_rom_crc32_le(0, (const uint8_t *)&h, sizeof(h));
+    size_t left = (size_t)h.w * h.h, off = at + sizeof(h);
+    while (left > 0) {
+      size_t n = left < sizeof(chunk) ? left : sizeof(chunk);
+      if (esp_partition_read(g_frames, off, chunk, n) != ESP_OK) {
+        memset(chunk, 0, n);  // the CRC then tells the host this frame is bad
+      }
+      crc = esp_rom_crc32_le(crc, chunk, n);
+      uart_out(chunk, n);
+      off += n;
+      left -= n;
+    }
+    uint8_t tail[8] = {'E', 'N', 'D', '1', (uint8_t)crc, (uint8_t)(crc >> 8),
+                       (uint8_t)(crc >> 16), (uint8_t)(crc >> 24)};
+    uart_out(tail, sizeof(tail));
+    sent++;
+  }
+  char line[24];
+  int n = snprintf(line, sizeof(line), "DONE %d\n", sent);
+  uart_out(line, (size_t)n);
+}
+
+static void serial_task(void *arg) {
+  (void)arg;
+  esp_err_t err = uart_driver_install(UART_NUM_0, 1024, 0, 0, NULL, 0);
+  if (err != ESP_OK) {
+    printf("serial commands off: UART driver failed (%s)\n", esp_err_to_name(err));
+    vTaskDelete(NULL);
+    return;
+  }
+  uint32_t trial_baud = 0;
+  int64_t trial_end = 0;
+  char line[48];
+  size_t n = 0;
+  for (;;) {
+    uint8_t c;
+    if (uart_read_bytes(UART_NUM_0, &c, 1, pdMS_TO_TICKS(100)) != 1) {
+      if (trial_baud != 0 && esp_timer_get_time() > trial_end) {
+        trial_baud = 0;
+        uart_set_baudrate(UART_NUM_0, 115200);
+        g_quiet = false;
+      }
+      continue;
+    }
+    if (c != '\n') {
+      if (n < sizeof(line) - 1) {
+        line[n++] = (char)c;
+      }
+      continue;
+    }
+    line[n] = '\0';
+    n = 0;
+    if (line[0] == 'B') {
+      int baud = atoi(line + 1);
+      if (baud < 9600 || baud > 3000000) {
+        uart_out("ERR B <baud>\n", 13);
+        continue;
+      }
+      g_quiet = true;  // no status lines inside the transfer
+      vTaskDelay(pdMS_TO_TICKS(50));
+      uart_out("OK\n", 3);
+      uart_wait_tx_done(UART_NUM_0, pdMS_TO_TICKS(100));
+      uart_set_baudrate(UART_NUM_0, (uint32_t)baud);
+      uart_flush_input(UART_NUM_0);
+      trial_baud = (uint32_t)baud;
+      trial_end = esp_timer_get_time() + 2000000;
+    } else if (line[0] == 'D') {
+      trial_baud = 0;  // a command arrived: the rate is kept
+      g_quiet = true;
+      g_pause = true;
+      vTaskDelay(pdMS_TO_TICKS(600));  // the scan loop finishes its frame
+      frames_dump();
+      g_pause = false;
+    } else if (line[0] == 'E') {
+      g_pause = true;
+      vTaskDelay(pdMS_TO_TICKS(600));
+      esp_err_t e = g_frames ? esp_partition_erase_range(g_frames, 0, g_frames->size) : ESP_FAIL;
+      g_pause = false;
+      uart_out(e == ESP_OK ? "OK\n" : "ERR erase\n", e == ESP_OK ? 3 : 10);
+    }
+  }
+}
+
+static void scan_main(void) {
 
   scan_mode_t m;
   if (!choose_mode(&m)) {
@@ -331,9 +535,14 @@ void app_main(void) {
   qr_scan_result_t seen = {0};  // the last frame that found a code
 
   for (;;) {
+    while (g_pause) {
+      vTaskDelay(pdMS_TO_TICKS(50));
+    }
     camera_fb_t *fb = esp_camera_fb_get();
     if (fb == NULL) {
-      printf("no frame (capture timed out)\n");
+      if (!g_quiet) {
+        printf("no frame (capture timed out)\n");
+      }
       continue;
     }
     if (fb->len != img_len) {
@@ -350,13 +559,21 @@ void app_main(void) {
     int64_t t0 = esp_timer_get_time();
     for (int pass = 0; pass < 3; pass++) {
       memcpy(image, fb->buf, img_len);
-      qr_scan(payload, sizeof(payload), &r);
-      if (r.decoded || r.grids == 0) {
+      qr_scan_result_t pr;
+      qr_scan(payload, sizeof(payload), &pr);
+      // The pass that got furthest is reported: a decode, else one that found a code
+      if (pass == 0 || pr.decoded || (pr.grids > 0 && r.grids == 0)) {
+        r = pr;
+      }
+      // Further thresholds only while the frame is young: a frame that shows
+      // a code is worth ~0.5 s, then the next frame is the better try
+      if (r.decoded || pr.grids == 0 || esp_timer_get_time() - t0 > 500000) {
         break;
       }
     }
     int decode_ms = (int)((esp_timer_get_time() - t0) / 1000);
     decode_ms_sum += (uint32_t)decode_ms;
+    frames_save(fb->buf, &m, &r, &ae, decode_ms);
     esp_camera_fb_return(fb);
 
     // Lets the idle task run (the task watchdog watches it)
@@ -369,7 +586,7 @@ void app_main(void) {
       decodes++;
       int n = r.payload_len < (int)sizeof(payload) ? r.payload_len : (int)sizeof(payload);
       bool same = n == last_len && memcmp(payload, last_payload, (size_t)n) == 0;
-      if (!same || now - last_print_us > 3000000) {
+      if (!g_quiet && (!same || now - last_print_us > 3000000)) {
         printf("QR OK v%d %d.%d px/module (frame %u, decode %d ms)\n", (int)r.version,
                (int)(r.px_per_module_x10 / 10), (int)(r.px_per_module_x10 % 10),
                (unsigned)frames, decode_ms);
@@ -380,7 +597,7 @@ void app_main(void) {
       }
     }
 
-    if (now - status_us > 4000000) {
+    if (now - status_us > 4000000 && !g_quiet) {
       float fps = (float)fps_frames * 1e6f / (float)(now - fps_t0);
       int avg_ms = fps_frames ? (int)(decode_ms_sum / fps_frames) : 0;
       decode_ms_sum = 0;
@@ -403,4 +620,20 @@ void app_main(void) {
       fps_frames = 0;
     }
   }
+}
+
+static void scan_task(void *arg) {
+  (void)arg;
+  scan_main();
+  printf("scanning stopped\n");
+  vTaskDelete(NULL);
+}
+
+void app_main(void) {
+  printf("\nQR scanner (ESP32-CAM, OV2640, the signer's decoder)\n");
+  frames_init();
+  xTaskCreatePinnedToCore(serial_task, "serial", 4096, NULL, 4, NULL, 0);
+  // Core 1: the decoder runs for up to ~0.5 s a frame, and the task watchdog
+  // watches core 0's idle task
+  xTaskCreatePinnedToCore(scan_task, "scan", 16384, NULL, 5, NULL, 1);
 }

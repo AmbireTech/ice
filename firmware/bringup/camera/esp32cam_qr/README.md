@@ -19,6 +19,17 @@ Watch the result:
 Opening the port restarts the board; it scans a few seconds later. Hold the
 code so it fills most of the view (at least half its width), steady.
 
+## Saved frames
+
+Frames that showed a code but did not decode (at least 2.5 px a module, one
+every 2 s) and a few decoded ones are kept in the board's flash, so they
+survive the restart that opening the port causes. Pull them, with the
+board's verdict and the host decoder's on each:
+
+    ~/.platformio/penv/bin/python firmware/bringup/camera/esp32cam_qr/pull_frames.py [--erase]
+
+They land in `firmware/out/esp32qr/<time>/`.
+
 ## What it prints
 
     QR OK v11 4.2 px/module (frame 381, decode 120 ms)
@@ -36,7 +47,7 @@ closer.
 ## How it sets the camera up
 
 - Grayscale at 400x296, the whole field of view: the sensor's fast mode,
-  about 25 frames a second; the decoder keeps up with 6-7 a second. 800x600
+  about 25 frames a second; the decoder keeps up with about 10 a second. 800x600
   was measured too: 2.2 frames a second at best and 600 ms a decode, too slow
   to scan by hand.
 - The sensor clock at XCLK/2 where frames still arrive whole (checked at
@@ -45,6 +56,10 @@ closer.
   view's centre held below clipping, the exposure at most about 10 ms against
   hand blur, gain making up the rest.
 - A frame that shows a code but does not decode is tried with each of the
-  decoder's thresholds.
+  decoder's thresholds, for up to about 0.5 s; the decoder itself stops a
+  frame's grid retries after 300 ms (each retry refits the grid, and a frame
+  that would not decode once took 3-6 s and tripped the watchdog).
+- The decoder runs on the second core, so the first core's idle task (which
+  the watchdog watches) always gets to run.
 - The sensor is powered down before each start: the board sometimes reads
   no valid chip id after a reset otherwise.
