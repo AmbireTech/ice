@@ -1,22 +1,22 @@
 /*
- * QR scanner on an Ai-Thinker ESP32-CAM with an OV2640, for comparison with
- * the signer: the signer's own QR decoder (io/camera/qr/qr_scan.c and its
- * quirc, built from the firmware's sources) on Espressif's camera driver.
- * Results are printed as text on the USB-serial port (115200 baud):
+ * QR scanner on an Ai-Thinker ESP32-CAM with an OV2640: the signer's video
+ * QR decoder (io/camera/qr/fqr.c, built from the firmware's sources) on
+ * Espressif's camera driver. Results are printed as text on the USB-serial
+ * port (115200 baud):
  *
- *   QR OK v11 4.2 px/module (frame 381, decode 212 ms)
+ *   QR OK v7 3.9 px/module, tracked (frame 381, decode 34 ms)
  *   UR:ETH-SIGN-REQUEST/...
  *
  * and every few seconds one status line saying what the decoder sees.
  *
- * The sensor runs in grayscale at the largest frame size that streams
- * reliably here (checked at start: SVGA, VGA, CIF, QVGA), over the whole
- * field of view. Exposure is set from the frames, as on the signer: the
- * sensor's own AEC averages the whole view, mostly a dim room around a bright
- * screen, and overexposes the screen; here the brightest part of the frame's
- * centre is held below clipping, the exposure capped against hand blur, gain
- * making up the rest. A frame that shows a code but does not decode is tried
- * with each of the decoder's thresholds.
+ * Frames are 400x296 grayscale, decoded where the driver put them (the
+ * decoder does not modify a frame). Which sensor pixels make a frame is the
+ * mode (serial "R <mode>", MODES below). Exposure is set from the frames, as
+ * on the signer: the sensor's own AEC averages the whole view, mostly a dim
+ * room around a bright screen, and overexposes the screen; here the
+ * brightest part of the code's area (the frame's centre until a code is
+ * seen) is held below clipping, the exposure capped against hand blur, gain
+ * making up the rest.
  */
 
 #include <stdio.h>
@@ -34,9 +34,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#include <io/qr_scan.h>
-
-#include "qr_roi.h"
+#include "fqr.h"
 
 static const char *TAG = "qrscan";
 
@@ -72,32 +70,41 @@ static camera_config_t camera_config(framesize_t fs, size_t fb_count) {
   return c;
 }
 
-// Frame sizes offered over serial ("R <name>"), and the fallbacks when the
-// asked one does not stream. SVGA: the sensor's own pixels at half its
-// resolution (the detail a 2x look only interpolates), ~2 fps; CIF: a quarter
-// of them, ~25 fps, with the upscaled looks.
-static const struct {
+// Which sensor pixels make the 400x296 frame, chosen over serial
+// ("R <name>"). The OV2640 reads its array out in one of three ways, and its
+// DSP then crops and scales (the driver's set_res_raw: readout, window
+// offset, window size, output size):
+//   cif   the sensor's CIF readout: every 4th pixel pair, the whole view.
+//         The fastest (the sensor's short frame), the coarsest sampling.
+//   half  SVGA readout (every 2nd pixel pair), the whole view, scaled 2:1
+//         by the DSP: the same view from 4x the pixels.
+//   full  UXGA readout (every pixel), the whole view, scaled 4:1 by the DSP:
+//         the same view from 16x the pixels; the sensor's slowest frame.
+//   zoom  SVGA readout, the centre 400x296 as it is: half the view each
+//         way at twice the pixels a module.
+// `lines`: sensor lines a frame lasts (the exposure cap is in lines).
+typedef struct {
   const char *name;
-  framesize_t fs;
-} SIZES[] = {{"svga", FRAMESIZE_SVGA}, {"vga", FRAMESIZE_VGA}, {"cif", FRAMESIZE_CIF},
-             {"qvga", FRAMESIZE_QVGA}};
-#define DEFAULT_SIZE FRAMESIZE_SVGA
-static const framesize_t FALLBACKS[] = {FRAMESIZE_CIF, FRAMESIZE_QVGA};
+  int readout;  // ov2640 readout for set_res_raw (0 UXGA, 1 SVGA, 2 CIF); -1: the driver's CIF
+  int ox, oy, tw, th;
+  int lines;
+} cam_mode_t;
+static const cam_mode_t MODES[] = {
+    {"cif", -1, 0, 0, 0, 0, 336},
+    {"half", 1, 0, 4, 800, 592, 672},
+    {"full", 0, 0, 8, 1600, 1184, 1248},
+    {"zoom", 1, 200, 152, 400, 296, 672},
+};
+#define N_MODES ((int)(sizeof(MODES) / sizeof(MODES[0])))
+#define DEFAULT_MODE 0
+#define FRAME_W 400
+#define FRAME_H 296
 
-static const char *size_name(framesize_t fs) {
-  for (size_t i = 0; i < sizeof(SIZES) / sizeof(SIZES[0]); i++) {
-    if (SIZES[i].fs == fs) {
-      return SIZES[i].name;
-    }
-  }
-  return "?";
-}
-
-// Set by the serial "R" command: the frame size to restart at (-1: none)
-static volatile int g_size_req = -1;
+// Set by the serial "R" command: the mode to restart in (-1: none)
+static volatile int g_mode_req = -1;
 
 typedef struct {
-  framesize_t fs;
+  const cam_mode_t *mode;
   int w, h;
   float fps;
 } scan_mode_t;
@@ -106,9 +113,8 @@ typedef struct {
 // starts
 static bool camera_start(framesize_t fs) {
   size_t w = resolution[fs].width, h = resolution[fs].height;
-  // Two buffers (the driver fills one while we decode the other) where the
-  // PSRAM holds them beside our two frame-sized buffers
-  size_t fb_count = w * h <= 320 * 240 ? 2 : (w * h <= 640 * 480 ? 2 : 1);
+  // Two buffers: the driver fills one while we decode the other
+  size_t fb_count = 2;
   for (int attempt = 1; attempt <= 5; attempt++) {
     // The sensor powered down for a while first (PWDN high): a reset of the
     // ESP32 alone leaves it powered, and some starts then read no valid chip id
@@ -159,25 +165,31 @@ static bool camera_check(scan_mode_t *m) {
   return good >= 6;
 }
 
-static bool choose_mode(framesize_t want, scan_mode_t *m) {
-  framesize_t order[1 + sizeof(FALLBACKS) / sizeof(FALLBACKS[0])];
-  order[0] = want;
-  memcpy(&order[1], FALLBACKS, sizeof(FALLBACKS));
-  for (size_t i = 0; i < sizeof(order) / sizeof(order[0]); i++) {
-    m->fs = order[i];
-    m->w = resolution[m->fs].width;
-    m->h = resolution[m->fs].height;
-    if (!camera_start(m->fs)) {
-      continue;
-    }
+// Starts the camera in `mode`; false if it does not start or stream
+static bool start_mode(const cam_mode_t *mode, scan_mode_t *m) {
+  m->mode = mode;
+  m->w = FRAME_W;
+  m->h = FRAME_H;
+  if (!camera_start(FRAMESIZE_CIF)) {
+    return false;
+  }
+  sensor_t *s = esp_camera_sensor_get();
+  if (s == NULL) {
+    printf("no sensor after the camera started\n");
+  } else if (mode->readout >= 0 &&
+             s->set_res_raw(s, mode->readout, 0, 0, 0, mode->ox, mode->oy, mode->tw, mode->th,
+                            FRAME_W, FRAME_H, false, false) != 0) {
+    printf("mode %s: the sensor refused the window\n", mode->name);
+  } else {
+    vTaskDelay(pdMS_TO_TICKS(300));
     if (camera_check(m)) {
       return true;
     }
-    printf("%dx%d does not stream reliably here, trying smaller\n", m->w, m->h);
-    esp_err_t d = esp_camera_deinit();
-    if (d != ESP_OK) {
-      printf("camera deinit: %s\n", esp_err_to_name(d));
-    }
+    printf("mode %s does not stream whole frames here\n", mode->name);
+  }
+  esp_err_t d = esp_camera_deinit();
+  if (d != ESP_OK) {
+    printf("camera deinit: %s\n", esp_err_to_name(d));
   }
   return false;
 }
@@ -232,9 +244,8 @@ static void ae_apply(sensor_t *s, const ae_t *ae) {
 }
 
 static void ae_start(sensor_t *s, const scan_mode_t *m, ae_t *ae) {
-  // Lines a frame lasts in the sensor's mode (the driver uses CIF timing up
-  // to 400x296, SVGA above): the 10 ms cap in lines from the measured rate
-  int lines = m->w * m->h <= 400 * 296 ? 336 : 672;
+  // The 10 ms cap in sensor lines, from the measured frame rate
+  int lines = m->mode->lines;
   float fps = m->fps > 0.5f ? m->fps : 5.0f;
   ae->aec_max = (int)((float)lines * fps * AE_MAX_MS / 1000.0f);
   if (ae->aec_max < 8) {
@@ -248,14 +259,21 @@ static void ae_start(sensor_t *s, const scan_mode_t *m, ae_t *ae) {
   ae_apply(s, ae);
 }
 
-// After each frame: the centre's 98th percentile steers exposure and gain
-static void ae_step(sensor_t *s, ae_t *ae, const uint8_t *px, int w, int h) {
+// After each frame: the 98th percentile of the code's area `box` (x0, y0,
+// x1, y1; NULL: the frame's centre half) steers exposure and gain
+static void ae_step(sensor_t *s, ae_t *ae, const uint8_t *px, int w, int h, const int32_t *box) {
   uint32_t hist[64] = {0}, n = 0;
-  for (int y = h / 4; y < h * 3 / 4; y += 4) {
-    for (int x = w / 4; x < w * 3 / 4; x += 4) {
+  int x0 = box ? box[0] : w / 4, x1 = box ? box[2] : w * 3 / 4;
+  int y0 = box ? box[1] : h / 4, y1 = box ? box[3] : h * 3 / 4;
+  int step = (x1 - x0) * (y1 - y0) > 20000 ? 4 : 2;
+  for (int y = y0; y < y1; y += step) {
+    for (int x = x0; x < x1; x += step) {
       hist[px[y * w + x] >> 2]++;
       n++;
     }
+  }
+  if (n < 64) {
+    return;
   }
   uint32_t above = 0;
   int bin = 63;
@@ -266,12 +284,10 @@ static void ae_step(sensor_t *s, ae_t *ae, const uint8_t *px, int w, int h) {
 
   ae_t next = *ae;
   if (p98 >= 250) {
-    // Clipped: halve the exposure, then the gain
-    if (next.aec > 2) {
-      next.aec /= 2;
-    } else if (next.agc > 0) {
-      next.agc = next.agc > 3 ? next.agc - 3 : 0;
-    }
+    // Clipped: exposure and gain down together (two saved frames were
+    // 42-46 % clipped at gain 4 when they came down one at a time)
+    next.aec = next.aec > 2 ? next.aec / 2 : 1;
+    next.agc = next.agc > 4 ? next.agc - 4 : 0;
   } else {
     int want = ae->aec * AE_TARGET / (p98 > 8 ? p98 : 8);
     if (want * 100 > ae->aec * 85 && want * 100 < ae->aec * 118) {
@@ -299,10 +315,10 @@ static void ae_step(sensor_t *s, ae_t *ae, const uint8_t *px, int w, int h) {
 
 // ---------------------------------------------------------------------------
 
-static const char *qr_error_name(int e) {
-  static const char *names[] = {"ok", "grid size", "version", "format ECC",
-                                "data ECC", "data type", "data overflow", "data underflow"};
-  return e >= 0 && e < (int)(sizeof(names) / sizeof(names[0])) ? names[e] : "?";
+static const char *stage_name(int stage) {
+  static const char *names[] = {"no finder patterns", "finder patterns but no grid",
+                                "a grid but no format", "the data did not correct", "decoded"};
+  return stage >= 0 && stage < (int)(sizeof(names) / sizeof(names[0])) ? names[stage] : "?";
 }
 
 static void print_payload(const uint8_t *p, int n) {
@@ -315,13 +331,14 @@ static void print_payload(const uint8_t *p, int n) {
 // ---------------------------------------------------------------------------
 // Near-miss frames, kept in flash (opening the serial port resets the board,
 // which would lose them in RAM). Slot 0..SLOTS_MISS-1: frames that showed a
-// code (finder patterns in view) that did not decode, one every 2 s at most;
-// the rest: decoded frames, one every 10 s. A serial "D" dumps them.
+// code (a grid, or at least finder patterns) that did not decode, one every
+// 2 s at most; the rest: decoded frames, one every 10 s. A serial "D" dumps
+// them.
 
-// Slots hold an SVGA frame (480 000 bytes and the header)
-#define SLOT_SIZE 0x80000
-#define SLOTS 4
-#define SLOTS_MISS 3
+// Slots hold a 400x296 frame (118 400 bytes and the header)
+#define SLOT_SIZE 0x20000
+#define SLOTS 16
+#define SLOTS_MISS 12
 #define FRAME_MAGIC 0x31465251u  // "QRF1"
 
 typedef struct {
@@ -329,7 +346,9 @@ typedef struct {
   uint32_t seq;
   uint16_t w, h;
   int16_t px_x10;
-  uint8_t error, version, decoded, threshold, agc, grids;
+  // stage: FQR_STAGE_*; flags: bit 0 tracked, bits 1-3 the camera mode,
+  // bits 4-7 frames summed (15: more)
+  uint8_t stage, version, decoded, flags, agc, finders;
   uint16_t aec;
   uint16_t decode_ms;
   uint8_t pad[8];
@@ -363,7 +382,7 @@ static void frames_init(void) {
   printf("%d saved frames in flash (D dumps them, E erases)\n", kept);
 }
 
-static void frames_save(const uint8_t *px, const scan_mode_t *m, const qr_scan_result_t *r,
+static void frames_save(const uint8_t *px, const scan_mode_t *m, const fqr_result_t *r,
                         const ae_t *ae, int decode_ms) {
   static int64_t last_miss_us = -10000000, last_ok_us = -100000000;
   static uint32_t n_miss, n_ok;
@@ -382,7 +401,7 @@ static void frames_save(const uint8_t *px, const scan_mode_t *m, const qr_scan_r
     last_ok_us = now;
     slot = SLOTS_MISS + (int)(n_ok++ % (SLOTS - SLOTS_MISS));
   } else {
-    if (r->capstones < 2 || now - last_miss_us < 2000000) {
+    if (r->stage < FQR_STAGE_FINDERS || now - last_miss_us < 2000000) {
       return;
     }
     last_miss_us = now;
@@ -394,12 +413,13 @@ static void frames_save(const uint8_t *px, const scan_mode_t *m, const qr_scan_r
       .w = (uint16_t)m->w,
       .h = (uint16_t)m->h,
       .px_x10 = (int16_t)r->px_per_module_x10,
-      .error = (uint8_t)r->error,
+      .stage = (uint8_t)r->stage,
       .version = (uint8_t)r->version,
       .decoded = (uint8_t)r->decoded,
-      .threshold = (uint8_t)r->threshold,
+      .flags = (uint8_t)((r->tracked ? 1 : 0) | (int)(m->mode - MODES) << 1 |
+                         (r->fused > 15 ? 15 : r->fused) << 4),
       .agc = (uint8_t)ae->agc,
-      .grids = (uint8_t)r->grids,
+      .finders = (uint8_t)(r->finders > 255 ? 255 : r->finders),
       .aec = (uint16_t)ae->aec,
       .decode_ms = (uint16_t)(decode_ms > 65535 ? 65535 : decode_ms),
   };
@@ -526,15 +546,15 @@ static void serial_task(void *arg) {
       }
       name[strcspn(name, " \r")] = '\0';
       int found = -1;
-      for (size_t i = 0; i < sizeof(SIZES) / sizeof(SIZES[0]); i++) {
-        if (strcmp(name, SIZES[i].name) == 0) {
-          found = (int)SIZES[i].fs;
+      for (int i = 0; i < N_MODES; i++) {
+        if (strcmp(name, MODES[i].name) == 0) {
+          found = i;
         }
       }
       if (found < 0) {
-        printf("R svga | vga | cif | qvga\n");
+        printf("R cif | half | full | zoom\n");
       } else {
-        g_size_req = found;
+        g_mode_req = found;
       }
     } else if (line[0] == 'E') {
       g_pause = true;
@@ -546,16 +566,21 @@ static void serial_task(void *arg) {
   }
 }
 
-// Scans at frame size `want` until the serial "R" asks for another (returns
+// The decoder's time per stage (fqr.c, FQR_PROF)
+extern uint32_t fqr_prof[8];
+uint32_t fqr_prof_us(void) { return (uint32_t)esp_timer_get_time(); }
+
+// Scans in camera mode `want` until the serial "R" asks for another (returns
 // true then, the camera stopped and every buffer freed) or a fatal error
 // (false)
-static bool scan_main(framesize_t want) {
+static bool scan_main(int want) {
   bool restart = false;
-  uint8_t *image = NULL, *state = NULL, *roi = NULL, *roi_state = NULL;
+  uint8_t *state = NULL, *saved = NULL;
 
   scan_mode_t m;
-  if (!choose_mode(want, &m)) {
-    printf("FATAL: the camera does not start or stream in any mode; check the module\n");
+  if (!start_mode(&MODES[want], &m) &&
+      (want == DEFAULT_MODE || !start_mode(&MODES[DEFAULT_MODE], &m))) {
+    printf("FATAL: the camera does not start or stream; check the module\n");
     return false;
   }
   sensor_t *s = esp_camera_sensor_get();
@@ -564,130 +589,89 @@ static bool scan_main(framesize_t want) {
     goto out;
   }
   fastest_clock(s, &m);
-  printf("camera: PID 0x%02x, %dx%d (%s) grayscale, whole field of view, %.1f fps\n",
-         s->id.PID, m.w, m.h, size_name(m.fs), m.fps);
+  printf("camera: PID 0x%02x, %dx%d grayscale, mode %s, %.1f fps\n", s->id.PID, m.w, m.h,
+         m.mode->name, m.fps);
 
   size_t img_len = (size_t)m.w * m.h;
-  size_t state_len = qr_scan_state_size(m.w, m.h);
-  // Internal RAM where it fits: quirc's flood fill reads the image in no
-  // particular order, which the PSRAM's cache serves slowly
-  image = heap_caps_aligned_alloc(16, img_len, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+  size_t state_len = fqr_state_size(m.w, m.h);
+  // Internal RAM where it fits (the PSRAM is slower)
   state = heap_caps_aligned_alloc(16, state_len, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-  bool internal = image != NULL && state != NULL;
+  bool internal = state != NULL;
   if (!internal) {
-    heap_caps_free(image);
-    heap_caps_free(state);
-    image = heap_caps_aligned_alloc(16, img_len, MALLOC_CAP_SPIRAM);
     state = heap_caps_aligned_alloc(16, state_len, MALLOC_CAP_SPIRAM);
   }
-  printf("decoder in %s RAM\n", internal ? "internal" : "PSRAM");
-  if (image == NULL || state == NULL || !qr_scan_init(image, m.w, m.h, state, state_len)) {
-    printf("FATAL: decoder setup failed (%u + %u bytes)\n", (unsigned)img_len,
-           (unsigned)state_len);
+  fqr_t *qr = state != NULL ? fqr_init(state, state_len, m.w, m.h) : NULL;
+  if (qr == NULL) {
+    printf("FATAL: decoder setup failed (%u bytes)\n", (unsigned)state_len);
     goto out;
   }
-
-  // The second look (qr_roi.h): the frame upscaled, in PSRAM, at the small
-  // frame sizes only (an SVGA frame has the sensor's own detail instead).
-  // The replay uses roi to hold a saved frame: at least a frame's size.
-  bool looks = (size_t)m.w * m.h <= 400 * 296;
-  size_t roi_len = looks ? qr_roi_image_size(m.w, m.h, 2, 1) : img_len;
-  size_t roi_state_len = qr_scan_state_size(m.w * 2 + 1, m.h * 2 + 1);
-  roi = heap_caps_aligned_alloc(16, roi_len, MALLOC_CAP_SPIRAM);
-  roi_state = looks ? heap_caps_aligned_alloc(16, roi_state_len, MALLOC_CAP_SPIRAM) : NULL;
-  if (looks && (roi == NULL || roi_state == NULL)) {
-    printf("no PSRAM for the upscaled second look (%u + %u bytes): 1x only\n",
-           (unsigned)roi_len, (unsigned)roi_state_len);
-    looks = false;
-  }
-  // One look a frame, in turn, each one pass at the local-mean threshold
-  // (it read nearly every upscaled near miss): 1.5x linear read the most and
-  // is the cheapest, so two frames in three; 2x linear reads a few others.
-  // (2.5x cubic read one more of 12 at ~5 s a look: left out.)
-  static const qr_roi_scale_t scales[] = {
-      {3, 2, QR_ROI_LINEAR, 2}, {2, 1, QR_ROI_LINEAR, 2}, {3, 2, QR_ROI_LINEAR, 2}};
-  static const char *const scale_names[] = {"1.5x", "2x", "1.5x"};
-  const int n_scales = (int)(sizeof(scales) / sizeof(scales[0]));
-  uint32_t scale_turn = 0;
-  const char *how = "1x";
+  printf("decoder: %u bytes of state in %s RAM, frames read where the driver put them\n",
+         (unsigned)state_len, internal ? "internal" : "PSRAM");
 
   ae_t ae;
   ae_start(s, &m, &ae);
-  printf("scanning: show a QR code to the camera, filling most of the view "
-         "(serial: R svga|vga|cif changes the frame size)\n");
+  printf("scanning: show a QR code to the camera (serial: R cif|half|full|zoom changes "
+         "the camera mode, T times the saved frames)\n");
 
   static uint8_t payload[1200], last_payload[1200];
   int last_len = -1;
   int64_t last_print_us = 0, status_us = esp_timer_get_time(), fps_t0 = status_us;
-  uint32_t frames = 0, decodes = 0, fps_frames = 0, decode_ms_sum = 0;
-  qr_scan_result_t seen = {0};  // the last frame that found a code
+  int64_t first_seen_us = 0;  // when finder patterns came into view (0: none in view)
+  uint32_t frames = 0, decodes = 0, changes = 0, fps_frames = 0, decode_ms_sum = 0;
+  uint32_t win_decodes = 0, win_tracked = 0;
+  fqr_result_t seen = {0};  // the furthest a frame got since the last status line
+  bool have_box = false;
+  int32_t box[4];
 
   for (;;) {
     while (g_pause) {
       vTaskDelay(pdMS_TO_TICKS(50));
     }
-    if (g_size_req >= 0) {
+    if (g_mode_req >= 0) {
       restart = true;
       break;
     }
     if (g_replay) {
-      // Each saved frame: 1x with every threshold, then each upscaled look
+      // Each saved frame decoded on its own, then once more as the next frame
+      // of a video (tracked): what a frame costs with and without the search
       int n = 0, ok = 0;
-      for (int slot = 0; g_frames != NULL && slot < SLOTS; slot++) {
+      if (saved == NULL) {
+        saved = heap_caps_malloc(img_len, MALLOC_CAP_SPIRAM);
+      }
+      for (int slot = 0; g_frames != NULL && saved != NULL && slot < SLOTS; slot++) {
         frame_header_t fh;
         size_t at = (size_t)slot * SLOT_SIZE;
-        if (roi == NULL || esp_partition_read(g_frames, at, &fh, sizeof(fh)) != ESP_OK ||
+        if (esp_partition_read(g_frames, at, &fh, sizeof(fh)) != ESP_OK ||
             fh.magic != FRAME_MAGIC || fh.w != m.w || fh.h != m.h ||
-            esp_partition_read(g_frames, at + sizeof(fh), roi, img_len) != ESP_OK) {
+            esp_partition_read(g_frames, at + sizeof(fh), saved, img_len) != ESP_OK) {
           continue;
         }
-        // roi holds the saved frame for the replay; the upscaled looks then
-        // need their own buffer: the frame is copied to the camera-sized image
-        static uint8_t *saved = NULL;
-        if (saved == NULL) {
-          saved = heap_caps_malloc(img_len, MALLOC_CAP_SPIRAM);
-        }
-        if (saved == NULL) {
-          printf("replay: no memory\n");
-          break;
-        }
-        memcpy(saved, roi, img_len);
         n++;
+        fqr_result_t r1, r2;
+        fqr_reset(qr);
+        memset(fqr_prof, 0, sizeof(fqr_prof));
         int64_t t1 = esp_timer_get_time();
-        int look_ms[4] = {0};  // n_scales <= 4
-        qr_scan_result_t rr = {0};
-        const char *at_scale = "-";
-        qr_scan_set_gray(saved);
-        for (int pass = 0; pass < 3 && !rr.decoded; pass++) {
-          memcpy(image, saved, img_len);
-          qr_scan(payload, sizeof(payload), &rr);
-        }
-        qr_scan_set_gray(NULL);
-        if (rr.decoded) {
-          at_scale = "1x";
-        }
-        for (int k = 0; looks && k < n_scales && !rr.decoded; k++) {
-          qr_scan_result_t ur = {0};
-          int64_t tl = esp_timer_get_time();
-          if (qr_roi_decode(saved, m.w, m.h, NULL, scales[k], 1, roi, roi_state, roi_state_len,
-                            payload, sizeof(payload), &ur)) {
-            rr = ur;
-            at_scale = scale_names[k];
-          }
-          look_ms[k] = (int)((esp_timer_get_time() - tl) / 1000);
-        }
-        if (!qr_scan_init(image, m.w, m.h, state, state_len)) {
-          printf("FATAL: decoder setup failed after the replay\n");
-          goto out;
-        }
-        ok += rr.decoded != 0;
-        printf("replay frame %u (%s on the board then): %s %s, %d ms (looks %d/%d/%d/%d ms)\n",
+        bool ok1 = fqr_scan(qr, saved, m.w, payload, sizeof(payload), &r1);
+        int64_t t2 = esp_timer_get_time();
+        uint32_t p[7];
+        memcpy(p, fqr_prof, sizeof(p));
+        bool ok2 = fqr_scan(qr, saved, m.w, payload, sizeof(payload), &r2);
+        int64_t t3 = esp_timer_get_time();
+        ok += ok1;
+        printf("replay frame %u (%s on the board then): %s, %d ms (threshold %u, finders %u, grid %u, "
+               "sample %u, levels %u, equalise %u, decode %u us); again as video: %s%s, %d ms\n",
                (unsigned)fh.seq, fh.decoded ? "decoded" : "missed",
-               rr.decoded ? "DECODED at" : "not decoded", at_scale,
-               (int)((esp_timer_get_time() - t1) / 1000), look_ms[0], look_ms[1], look_ms[2],
-               look_ms[3]);  // the replay tries the looks once each (the 1.5x twice)
+               ok1 ? "DECODED" : stage_name((int)r1.stage), (int)((t2 - t1) / 1000), (unsigned)p[0],
+               (unsigned)p[1], (unsigned)p[2], (unsigned)p[3], (unsigned)p[4], (unsigned)p[5],
+               (unsigned)p[6], ok2 ? "DECODED" : stage_name((int)r2.stage),
+               r2.tracked ? " tracked" : "", (int)((t3 - t2) / 1000));
+        vTaskDelay(1);
+      }
+      if (saved == NULL) {
+        printf("replay: no memory for a frame\n");
       }
       printf("replay: %d of %d saved frames decoded\n", ok, n);
+      fqr_reset(qr);
       g_replay = false;
     }
     camera_fb_t *fb = esp_camera_fb_get();
@@ -703,65 +687,45 @@ static bool scan_main(framesize_t want) {
     }
     frames++;
     fps_frames++;
-    ae_step(s, &ae, fb->buf, m.w, m.h);
+    ae_step(s, &ae, fb->buf, m.w, m.h, have_box ? box : NULL);
 
-    // Each pass thresholds the image in place: a code found but not decoded
-    // gets the decoder's other thresholds on fresh copies
-    qr_scan_result_t r = {0};
+    fqr_result_t r;
     int64_t t0 = esp_timer_get_time();
-    // The camera's frame stays untouched: failed grids are read again from it
-    qr_scan_set_gray(fb->buf);
-    for (int pass = 0; pass < 3; pass++) {
-      memcpy(image, fb->buf, img_len);
-      qr_scan_result_t pr;
-      qr_scan(payload, sizeof(payload), &pr);
-      // The pass that got furthest is reported: a decode, else one that found a code
-      if (pass == 0 || pr.decoded || (pr.grids > 0 && r.grids == 0)) {
-        r = pr;
-      }
-      // Further thresholds only while the frame is young: a frame that shows
-      // a code is worth ~0.5 s, then the next frame is the better try
-      if (r.decoded || pr.grids == 0 || esp_timer_get_time() - t0 > 300000) {
-        break;
-      }
-    }
-    how = "1x";
-    // quirc at 1x often misses a code of 3-4 px a module, or misreads it:
-    // with finder patterns in view, one upscaled look as well
-    qr_scan_set_gray(NULL);  // the upscaled image has no grey copy
-    if (!r.decoded && r.capstones >= 2 && looks) {
-      int k = (int)(scale_turn++ % (uint32_t)n_scales);
-      qr_scan_result_t rr = {0};
-      if (qr_roi_decode(fb->buf, m.w, m.h, NULL, scales[k], 1, roi, roi_state, roi_state_len,
-                        payload, sizeof(payload), &rr)) {
-        r = rr;
-        how = scale_names[k];
-      }
-      // The decoder back on the 1x frames
-      if (!qr_scan_init(image, m.w, m.h, state, state_len)) {
-        printf("FATAL: decoder setup failed after the second look\n");
-        goto out;
-      }
-    }
+    bool ok = fqr_scan(qr, fb->buf, m.w, payload, sizeof(payload), &r);
     int decode_ms = (int)((esp_timer_get_time() - t0) / 1000);
     decode_ms_sum += (uint32_t)decode_ms;
+    have_box = fqr_code_area(qr, box);
     frames_save(fb->buf, &m, &r, &ae, decode_ms);
     esp_camera_fb_return(fb);
 
     // Lets the idle task run (the task watchdog watches it)
     vTaskDelay(1);
     int64_t now = esp_timer_get_time();
-    if (r.grids > 0) {
+    if (r.stage >= seen.stage) {
       seen = r;
     }
-    if (r.decoded) {
+    if (r.stage >= FQR_STAGE_FINDERS) {
+      if (first_seen_us == 0) {
+        first_seen_us = t0;
+      }
+    } else {
+      first_seen_us = 0;
+    }
+    win_tracked += r.tracked != 0;
+    if (ok) {
       decodes++;
+      win_decodes++;
       int n = r.payload_len < (int)sizeof(payload) ? r.payload_len : (int)sizeof(payload);
       bool same = n == last_len && memcmp(payload, last_payload, (size_t)n) == 0;
+      changes += !same;
       if (!g_quiet && (!same || now - last_print_us > 3000000)) {
-        printf("QR OK v%d %d.%d px/module, read at %s (frame %u, decode %d ms)\n",
-               (int)r.version, (int)(r.px_per_module_x10 / 10),
-               (int)(r.px_per_module_x10 % 10), how, (unsigned)frames, decode_ms);
+        printf("QR OK v%d %d.%d px/module, %s", (int)r.version, (int)(r.px_per_module_x10 / 10),
+               (int)(r.px_per_module_x10 % 10), r.tracked ? "tracked" : "found");
+        if (r.fused > 1) {
+          printf(", %d frames summed", (int)r.fused);
+        }
+        printf(" (frame %u, decode %d ms, %d ms after it came into view)\n", (unsigned)frames,
+               decode_ms, (int)((now - first_seen_us) / 1000));
         print_payload(payload, n);
         memcpy(last_payload, payload, (size_t)n);
         last_len = n;
@@ -770,34 +734,33 @@ static bool scan_main(framesize_t want) {
     }
 
     if (now - status_us > 4000000 && !g_quiet) {
-      float fps = (float)fps_frames * 1e6f / (float)(now - fps_t0);
+      float secs = (float)(now - fps_t0) / 1e6f;
+      float fps = (float)fps_frames / secs;
       int avg_ms = fps_frames ? (int)(decode_ms_sum / fps_frames) : 0;
       decode_ms_sum = 0;
-      printf("scanning [%.1f fps, decode %d ms]: ", fps, avg_ms);
-      if (seen.grids > 0 && !seen.decoded) {
-        printf("%u decoded; last code seen not decoded (%s, v%d, %d.%d "
-               "px/module, exposure %d gain %d)\n",
-               (unsigned)decodes, qr_error_name((int)seen.error), (int)seen.version,
+      printf("scanning [%.1f fps, decode %d ms]: %u decoded (%.1f a second, %u tracked frames), ",
+             fps, avg_ms, (unsigned)decodes, (float)win_decodes / secs, (unsigned)win_tracked);
+      if (seen.stage >= FQR_STAGE_GRID) {
+        printf("%s: v%d, %d.%d px/module, %d of its alignment patterns, timing %d %%", 
+               seen.decoded ? "last code" : stage_name((int)seen.stage), (int)seen.version,
                (int)(seen.px_per_module_x10 / 10), (int)(seen.px_per_module_x10 % 10),
-               ae.aec, ae.agc);
-      } else if (seen.grids == 0) {
-        printf("%u decoded; no code in view (exposure %d gain %d)\n",
-               (unsigned)decodes, ae.aec, ae.agc);
+               (int)seen.aligns, (int)seen.timing_x100);
       } else {
-        printf("%u decoded\n", (unsigned)decodes);
+        printf("%s", seen.stage == FQR_STAGE_FINDERS ? stage_name(1) : "no code in view");
       }
+      printf(" (exposure %d gain %d, %u codes read)\n", ae.aec, ae.agc, (unsigned)changes);
       memset(&seen, 0, sizeof(seen));
       status_us = now;
       fps_t0 = now;
       fps_frames = 0;
+      win_decodes = 0;
+      win_tracked = 0;
     }
   }
 
 out:
-  heap_caps_free(image);
   heap_caps_free(state);
-  heap_caps_free(roi);
-  heap_caps_free(roi_state);
+  heap_caps_free(saved);
   esp_err_t d = esp_camera_deinit();
   if (d != ESP_OK) {
     printf("camera stop: %s\n", esp_err_to_name(d));
@@ -807,21 +770,20 @@ out:
 
 static void scan_task(void *arg) {
   (void)arg;
-  framesize_t fs = DEFAULT_SIZE;
-  while (scan_main(fs)) {
-    fs = (framesize_t)g_size_req;
-    g_size_req = -1;
-    printf("restarting at %s\n", size_name(fs));
+  int mode = DEFAULT_MODE;
+  while (scan_main(mode)) {
+    mode = g_mode_req;
+    g_mode_req = -1;
+    printf("restarting in mode %s\n", MODES[mode].name);
   }
   printf("scanning stopped\n");
   vTaskDelete(NULL);
 }
 
 void app_main(void) {
-  printf("\nQR scanner (ESP32-CAM, OV2640, the signer's decoder)\n");
+  printf("\nQR scanner (ESP32-CAM, OV2640, the signer's video decoder)\n");
   frames_init();
   xTaskCreatePinnedToCore(serial_task, "serial", 4096, NULL, 4, NULL, 0);
-  // Core 1: the decoder runs for up to ~0.5 s a frame, and the task watchdog
-  // watches core 0's idle task
+  // Core 1: the task watchdog watches core 0's idle task
   xTaskCreatePinnedToCore(scan_task, "scan", 16384, NULL, 5, NULL, 1);
 }

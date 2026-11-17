@@ -13,8 +13,12 @@
 #include "fqr.h"
 
 extern int fqr_opt[16];
-extern double fqr_prof[8];
-const uint8_t *fqr_debug_gray(const fqr_t *s);
+extern uint32_t fqr_prof[8];
+uint32_t fqr_prof_us(void) {
+  struct timespec t;
+  clock_gettime(CLOCK_MONOTONIC, &t);
+  return (uint32_t)(t.tv_sec * 1000000 + t.tv_nsec / 1000);
+}
 void fqr_debug_point(const fqr_t *s, float x, float y, float *px, float *py);
 
 static unsigned char *read_pgm(const char *path, int *w, int *h) {
@@ -133,17 +137,7 @@ int main(int argc, char **argv) {
         }
         fclose(f);
       }
-      // the grid's grey modules, and where the grid puts each module centre
-      snprintf(path, sizeof(path), "%s/%s.gray", dump, base ? base + 1 : argv[a]);
-      f = fopen(path, "wb");
-      if (f == NULL) {
-        perror(path);
-        failures++;
-      } else {
-        fprintf(f, "P5 %d %d 255\n", dim, dim);
-        fwrite(fqr_debug_gray(s), 1, (size_t)dim * dim, f);
-        fclose(f);
-      }
+      // where the grid puts each module centre
       snprintf(path, sizeof(path), "%s/%s.pts", dump, base ? base + 1 : argv[a]);
       f = fopen(path, "w");
       if (f == NULL) {
@@ -167,7 +161,7 @@ int main(int argc, char **argv) {
     static const char *names[] = {"binarize", "finders", "grid", "sample", "soften", "equalise", "decode"};
     int runs = (argc - 1) * (getenv("FQR_REPS") ? atoi(getenv("FQR_REPS")) : 1);
     for (int i = 0; i < 7; i++) {
-      printf("  %s %.3f ms\n", names[i], fqr_prof[i] / runs);
+      printf("  %s %.3f ms\n", names[i], fqr_prof[i] / 1000.0 / runs);
     }
   }
   free(state);

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Pulls the near-miss and decoded frames the ESP32-CAM QR scanner kept in
 flash, saves them as PGM with their scan results, and decodes each again with
-the host build of the decoder (../qrdecode).
+the host build of the decoder (../qrdecode: fqrdecode).
 
     ~/.platformio/penv/bin/python pull_frames.py [--port /dev/cu.usbserial-1120] [--erase]
 
@@ -21,11 +21,12 @@ from pathlib import Path
 import serial
 
 HERE = Path(__file__).resolve().parent
-QRDECODE = HERE.parent / "qrdecode" / "build" / "qrdecode"
+QRDECODE = HERE.parent / "qrdecode" / "build" / "fqrdecode"
 BAUD = 460800
 HEADER = struct.Struct("<IIHHhBBBBBBHH8x")  # frame_header_t in src/main.c
-ERRORS = ["ok", "grid size", "version", "format ECC", "data ECC", "data type",
-          "data overflow", "data underflow"]
+STAGES = ["no finder patterns", "finder patterns but no grid", "a grid but no format",
+          "the data did not correct", "decoded"]
+MODES = ["cif", "half", "full", "zoom"]
 
 
 def open_board(port):
@@ -39,17 +40,22 @@ def open_board(port):
     if b"scanning:" not in boot:
         print("the scanner did not report 'scanning:' after the restart; trying anyway",
               file=sys.stderr)
-    s.timeout = 3
-    s.reset_input_buffer()
-    s.write(f"B {BAUD}\n".encode())
-    reply = s.readline().strip()
-    # A status line may come before the OK
-    for _ in range(5):
-        if reply == b"OK":
+    # Status lines may cross the request: ask until an "OK" line comes back
+    s.timeout = 0.3
+    acked = False
+    for _ in range(8):
+        s.reset_input_buffer()
+        s.write(f"B {BAUD}\n".encode())
+        t = time.monotonic()
+        while time.monotonic() - t < 1.0:
+            if s.readline().strip().endswith(b"OK"):
+                acked = True
+                break
+        if acked:
             break
-        reply = s.readline().strip()
-    if reply != b"OK":
-        sys.exit(f"baud change not acknowledged (got {reply!r})")
+        time.sleep(2.2)  # an unacknowledged rate falls back to 115200 after 2 s
+    if not acked:
+        sys.exit("baud change not acknowledged")
     s.baudrate = BAUD
     s.timeout = 10  # one value for the session: changing it drops bytes on macOS
     time.sleep(0.05)
@@ -104,16 +110,22 @@ def main():
         if got is None:
             continue
         raw_h, px = got
-        (magic, seq, w, h, px_x10, err, ver, decoded, thr, agc, grids, aec, dms) = HEADER.unpack(raw_h)
+        (magic, seq, w, h, px_x10, stage, ver, decoded, flags, agc, finders, aec, dms) = HEADER.unpack(raw_h)
         kind = "ok" if decoded else "miss"
         name = f"{seq:05d}_{kind}_{px_x10 // 10}.{px_x10 % 10}ppm"
         path = out / f"{name}.pgm"
         path.write_bytes(f"P5\n{w} {h}\n255\n".encode() + px)
+        mode = MODES[(flags >> 1) & 7] if (flags >> 1) & 7 < len(MODES) else "?"
         on_board = (f"decoded v{ver}" if decoded else
-                    f"not decoded: {ERRORS[err] if err < len(ERRORS) else err}, {grids} code(s)")
+                    f"not decoded: {STAGES[stage] if stage < len(STAGES) else stage}")
+        if flags & 1:
+            on_board += ", tracked"
+        if flags >> 4 > 1:
+            on_board += f", {flags >> 4} frames summed"
         host = subprocess.run([str(QRDECODE), str(path)], capture_output=True, text=True)
-        verdict = host.stdout.strip().split("  ", 1)[-1] if host.stdout else host.stderr.strip()
-        line = (f"{name}: board {on_board}, {px_x10 / 10:.1f} px/module, threshold {thr}, "
+        # fqrdecode prints the frame's line, then a summary line
+        verdict = host.stdout.split("\n")[0].split("  ", 1)[-1] if host.stdout else host.stderr.strip()
+        line = (f"{name}: board {on_board}, mode {mode}, {px_x10 / 10:.1f} px/module, {finders} finder candidates, "
                 f"exposure {aec} gain {agc}, {dms} ms | host: {verdict}")
         print(line)
         with (out / "frames.txt").open("a") as f:

@@ -27,25 +27,25 @@
 #define EQ_ROUNDS 6    // equaliser rounds
 #endif
 
+// Tuning switches for the host harness (FQR_HOST_TUNE), and time per stage
+// (FQR_PROF: the caller supplies the microsecond clock)
 #ifdef FQR_HOST_TUNE
 #include <stdio.h>
-#include <time.h>
 int fqr_opt[16];
-double fqr_prof[8];  // ms: binarize, finders, grid, sample, soften, equalise, decode
 #define OPT(i) fqr_opt[i]
-static double prof_now(void) {
-  struct timespec t;
-  clock_gettime(CLOCK_MONOTONIC, &t);
-  return (double)t.tv_sec * 1e3 + (double)t.tv_nsec / 1e6;
-}
-#define PROF(i, call)                 \
-  do {                                \
-    double prof_t = prof_now();       \
-    call;                             \
-    fqr_prof[i] += prof_now() - prof_t; \
-  } while (0)
 #else
 #define OPT(i) 0
+#endif
+#ifdef FQR_PROF
+extern uint32_t fqr_prof_us(void);
+uint32_t fqr_prof[8];  // us: binarize, finders, grid, sample, soften, equalise, decode
+#define PROF(i, call)                      \
+  do {                                     \
+    uint32_t prof_t = fqr_prof_us();       \
+    call;                                  \
+    fqr_prof[i] += fqr_prof_us() - prof_t; \
+  } while (0)
+#else
 #define PROF(i, call) call
 #endif
 
@@ -96,10 +96,13 @@ struct fqr {
   int func_version;
   uint8_t func[(MAXD * MAXD + 7) / 8];
   int8_t known[MAXD * MAXD];  // per module: 64 known light, -64 known dark, 0 data
-  uint8_t gray[MAXD * MAXD];
   int8_t soft[MAXD * MAXD];
   int8_t soft2[MAXD * MAXD];
-  int8_t eq[MAXD * MAXD];
+  // grey modules while sampling, then the equaliser's work memory
+  union {
+    uint8_t gray[MAXD * MAXD];
+    int8_t eq[MAXD * MAXD];
+  };
   int have_soft;
 
   uint8_t patch[PATCH_SIDE * PATCH_SIDE];
@@ -665,6 +668,9 @@ static bool decode_soft(fqr_t *s, const int8_t *z, int version, uint8_t *payload
             bv = s->brel[i];
             bi = i;
           }
+        }
+        if (bi < 0) {
+          break;
         }
         eras[k] = (uint8_t)bi;
         s->brel[bi] = 255;
@@ -1967,7 +1973,6 @@ bool fqr_code_area(const fqr_t *s, int32_t box[4]) {
 }
 
 #ifdef FQR_HOST_TUNE
-const uint8_t *fqr_debug_gray(const fqr_t *s) { return s->gray; }
 void fqr_debug_point(const fqr_t *s, float x, float y, float *px, float *py) {
   pt_t p = grid_point(s, x, y);
   *px = p.x;

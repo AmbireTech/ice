@@ -9,7 +9,7 @@ cc -O2 -std=c11 -w -I "$here/stub" -I "$cam/inc" -I "$cam/qr" -I "$here/../qrcom
   -o "$here/build/qrdecode" "$here/qrdecode.c" "$here/../qrcommon/qr_roi.c" "$cam/qr/qr_scan.c" "$cam/qr/quirc_decode.c" "$cam/qr/quirc_identify.c" \
   "$cam/qr/quirc_version_db.c" -lm
 # build/fqrdecode: the video decoder (fqr.c) alone, with its tuning switches
-cc -O2 -std=c11 -Wall -Wextra -DFQR_HOST_TUNE -I "$cam/qr" \
+cc -O2 -std=c11 -Wall -Wextra -DFQR_HOST_TUNE -DFQR_PROF -I "$cam/qr" \
   -o "$here/build/fqrdecode" "$here/fqrdecode.c" "$cam/qr/fqr.c" -lm
 echo "$here/build/qrdecode"
 echo "$here/build/fqrdecode"
