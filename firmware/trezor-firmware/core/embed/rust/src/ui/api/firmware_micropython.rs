@@ -1011,6 +1011,15 @@ extern "C" fn new_ambire_show_ur(_n_args: usize, _args: *const Obj, _kwargs: *mu
     unimplemented!()
 }
 
+// Ambire boards, [ambire_airgap]: the airgap switch's position, for flows
+// that must follow it (Bluetooth pairing); false on boards without it
+extern "C" fn ambire_airgap_engaged() -> Obj {
+    #[cfg(feature = "ambire_airgap")]
+    return crate::trezorhal::airgap::engaged().into();
+    #[cfg(not(feature = "ambire_airgap"))]
+    return false.into();
+}
+
 extern "C" fn new_ambire_camera_test(
     _n_args: usize,
     _args: *const Obj,
@@ -2027,6 +2036,11 @@ pub static mp_module_trezorui_api: Module = obj_module! {
     /// def ambire_camera_test() -> LayoutContext[UiResult]:
     ///     """Ambire boards: the QR camera bring-up test."""
     Qstr::MP_QSTR_ambire_camera_test => obj_fn_kw!(0, new_ambire_camera_test).as_obj(),
+
+    /// def ambire_airgap_engaged() -> bool:
+    ///     """Ambire boards: True while the airgap switch is on AIR (USB data
+    ///     and the radio cut off); False on boards without the switch."""
+    Qstr::MP_QSTR_ambire_airgap_engaged => obj_fn_0!(ambire_airgap_engaged).as_obj(),
 
     /// def wait_ble_host_confirmation() -> LayoutContext[UiResult]:
     ///     """Pairing device: third screen (waiting for host confirmation).

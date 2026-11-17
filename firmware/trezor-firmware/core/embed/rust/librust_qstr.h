@@ -136,6 +136,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_allow_cancel;
   MP_QSTR_allow_empty;
   MP_QSTR_allow_pairing;
+  MP_QSTR_ambire_airgap_engaged;
   MP_QSTR_ambire_camera_test;
   MP_QSTR_ambire_scan_ur;
   MP_QSTR_ambire_show_ur;

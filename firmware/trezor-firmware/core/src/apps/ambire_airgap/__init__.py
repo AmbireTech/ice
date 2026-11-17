@@ -130,7 +130,9 @@ async def _menu() -> None:
         ) as layout:
             choice = await interact(layout, None, raise_on_cancel=None)
         if not isinstance(choice, int):
-            if choice is not trezorui_api.CANCELLED:
+            # select_menu returns CONFIRMED for its close button (Trezor's
+            # convention, trezor/ui/layouts/menu.py); CANCELLED is accepted too
+            if choice is not trezorui_api.CONFIRMED and choice is not trezorui_api.CANCELLED:
                 raise RuntimeError("menu returned " + repr(choice))
             # Closed: back to the home screen
             return

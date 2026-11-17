@@ -724,6 +724,12 @@ def ambire_camera_test() -> LayoutContext[UiResult]:
 
 
 # rust/src/ui/api/firmware_micropython.rs
+def ambire_airgap_engaged() -> bool:
+    """Ambire boards: True while the airgap switch is on AIR (USB data
+    and the radio cut off); False on boards without the switch."""
+
+
+# rust/src/ui/api/firmware_micropython.rs
 def wait_ble_host_confirmation() -> LayoutContext[UiResult]:
     """Pairing device: third screen (waiting for host confirmation).
     Returns on BLEEvent::{PairingCanceled, Disconnected}."""

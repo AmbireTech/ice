@@ -4,6 +4,7 @@
 # devkit included). Delizia's Bluetooth texts are empty: English here.
 
 import trezorble as ble
+import trezorui_api
 from storage import device as storage_device
 from trezor import log, utils
 from trezor.ui.layouts import confirm_action, show_error_and_raise
@@ -16,6 +17,25 @@ from .pair_new_device import pair_new_device
 RADIO_WAIT_MS = 5000
 
 
+# How often the flow looks at the airgap switch and the radio
+_POLL_MS = 200
+
+
+def _airgapped() -> bool:
+    return trezorui_api.ambire_airgap_engaged()
+
+
+def _radio_ready() -> bool:
+    return not _airgapped() and ble.is_started()
+
+
+async def _until(condition) -> None:
+    from trezor import loop
+
+    while not condition():
+        await loop.sleep(_POLL_MS)
+
+
 async def _wait_for_radio() -> bool:
     """True once the radio answers; a progress bar while it starts"""
     import utime
@@ -25,6 +45,9 @@ async def _wait_for_radio() -> bool:
 
     if ble.is_started():
         return True
+    if _airgapped():
+        # On AIR the radio has no power: nothing to wait for
+        return False
     log.info(__name__, "radio not started yet, waiting")
     bar = progress("Starting Bluetooth")
     start = utime.ticks_ms()
@@ -43,6 +66,8 @@ async def _wait_for_radio() -> bool:
 
 
 async def pair_from_homescreen() -> None:
+    from trezor import loop
+
     try:
         if not ble.get_enabled():
             await confirm_action(
@@ -61,12 +86,17 @@ async def pair_from_homescreen() -> None:
                 hint = "Check that the airgap switch is not on AIR, then try again."
             else:
                 hint = "Bluetooth is not responding."
-            await show_error_and_raise(
-                "bluetooth_radio_off",
-                hint,
-                subheader="Bluetooth is off",
-                button="Close",
+            # Moving the switch off AIR while this shows goes on to pairing
+            await loop.race(
+                show_error_and_raise(
+                    "bluetooth_radio_off",
+                    hint,
+                    subheader="Bluetooth is off",
+                    button="Close",
+                ),
+                _until(_radio_ready),
             )
+            log.info(__name__, "radio up after the switch moved, pairing")
 
         if len(ble.get_bonds()) >= ble.MAX_BONDS:
             await show_error_and_raise(
@@ -76,7 +106,11 @@ async def pair_from_homescreen() -> None:
                 button="Close",
             )
 
-        await pair_new_device()
+        # Moving the switch to AIR cuts the radio: pairing ends there, back to
+        # the home screen (whose swipe up then opens the airgap menu)
+        await loop.race(pair_new_device(), _until(_airgapped))
+        if _airgapped():
+            log.info(__name__, "airgap switch moved to AIR, pairing ended")
     except ActionCancelled:
         # Cancelled or closed on the device: back to the home screen
         log.debug(__name__, "Bluetooth pairing cancelled")
