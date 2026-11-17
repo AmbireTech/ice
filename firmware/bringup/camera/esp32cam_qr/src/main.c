@@ -194,35 +194,51 @@ static bool start_mode(const cam_mode_t *mode, scan_mode_t *m) {
   return false;
 }
 
-// The driver runs the OV2640's internal clock at XCLK / 8 on the plain ESP32
-// (CLKRC 0x07, for the I2S camera input's sake): about 1.6 fps at SVGA. Faster
-// dividers are tried, fastest first, and the fastest that still streams whole
-// frames is kept. CLKRC is register 0x11 in the sensor bank (the driver's
-// set_reg: bit 8 of the address selects the bank).
+// The driver runs the OV2640's internal clock slowly on the plain ESP32
+// (CLKRC 0x03 in the CIF readout, 0x07 in the others: XCLK / 4 and / 8, for
+// the I2S camera input's sake). Faster settings are tried, fastest first,
+// and the fastest that still streams whole frames is kept. CLKRC is register
+// 0x11 in the sensor bank (the driver's set_reg: bit 8 of the address
+// selects the bank); its bit 7 doubles the clock before the divider.
 #define REG_CLKRC 0x111
 
 static void fastest_clock(sensor_t *s, scan_mode_t *m) {
-  static const int dividers[] = {0x01, 0x03};
+  // XCLK / 2 is what the CIF readout was measured to stream whole at (25
+  // fps). The other readouts send a frame scaled or cropped to a quarter or
+  // less of their pixels, so their pixel clock leaves room for the sensor's
+  // full rate, XCLK x 2 / 2: tried first there.
+  static const uint8_t cif_clocks[] = {0x01, 0};
+  static const uint8_t other_clocks[] = {0x81, 0x01, 0x03, 0};
+  const uint8_t *clocks = m->mode->readout < 0 ? cif_clocks : other_clocks;
   float base_fps = m->fps;
-  for (size_t i = 0; i < sizeof(dividers) / sizeof(dividers[0]); i++) {
-    if (s->set_reg(s, REG_CLKRC, 0xff, dividers[i]) != 0) {
+  int stock = s->get_reg(s, REG_CLKRC, 0xff);
+  if (stock < 0) {
+    printf("CLKRC read failed: the driver's sensor clock stays\n");
+    return;
+  }
+  for (size_t i = 0; clocks[i] != 0; i++) {
+    if (clocks[i] == stock) {
+      break;  // the driver's own is next: nothing faster streams
+    }
+    if (s->set_reg(s, REG_CLKRC, 0xff, clocks[i]) != 0) {
       printf("CLKRC write failed\n");
       continue;
     }
     vTaskDelay(pdMS_TO_TICKS(300));
     scan_mode_t trial = *m;
     if (camera_check(&trial) && trial.fps > base_fps * 1.3f) {
-      printf("sensor clock XCLK/%d: %.1f fps (driver's XCLK/8: %.1f)\n", (dividers[i] + 1),
-             trial.fps, base_fps);
+      printf("sensor clock CLKRC 0x%02x: %.1f fps (the driver's 0x%02x: %.1f)\n", clocks[i],
+             trial.fps, stock, base_fps);
       *m = trial;
       return;
     }
   }
-  if (s->set_reg(s, REG_CLKRC, 0xff, 0x07) != 0) {
+  if (s->set_reg(s, REG_CLKRC, 0xff, stock) != 0) {
     printf("CLKRC restore failed\n");
   }
   vTaskDelay(pdMS_TO_TICKS(300));
-  printf("sensor clock: the driver's XCLK/8 (faster ones did not stream)\n");
+  printf("sensor clock: the driver's CLKRC 0x%02x, %.1f fps (faster ones did not stream)\n", stock,
+         base_fps);
 }
 
 // ---------------------------------------------------------------------------

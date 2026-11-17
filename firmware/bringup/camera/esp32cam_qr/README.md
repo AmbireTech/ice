@@ -71,8 +71,8 @@ a second of each.
 
 ## How it sets the camera up
 
-- The sensor clock at XCLK/2 where frames still arrive whole (checked at
-  start; Espressif's driver runs it at XCLK/8 on the plain ESP32).
+- The sensor clock faster than Espressif's driver runs it on the plain
+  ESP32, where frames still arrive whole (checked at start, and printed).
 - Exposure set from the frames, as on the signer: the brightest part of the
   code's area (the view's centre until a code is seen) held below clipping,
   the exposure at most about 10 ms against hand blur, gain making up the rest.
