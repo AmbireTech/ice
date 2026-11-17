@@ -1,0 +1,12 @@
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+CONFIG_PARTITION_TABLE_SINGLE_APP_LARGE=y
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
+CONFIG_FREERTOS_HZ=1000
+# The ESP32-CAM's PSRAM holds the frames and the decoder
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_USE_MALLOC=y
+# The decoder task's stack holds quirc's work structures' pointers only
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=16384
+# Errors only: results are printed with printf; the camera driver's overflow
+# warnings would interleave with them
+CONFIG_LOG_DEFAULT_LEVEL_ERROR=y

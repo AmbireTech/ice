@@ -1,0 +1,7 @@
+dependencies:
+  idf: ">=5.1"
+  # The commit our device's register tables were generated from
+  # (core/embed/io/camera/stm32u5/camera_sensors.h): the same driver code.
+  espressif/esp32-camera:
+    git: https://github.com/espressif/esp32-camera.git
+    version: b3f7fe802f41f17fd7a104d517c53f1f62c8414d
