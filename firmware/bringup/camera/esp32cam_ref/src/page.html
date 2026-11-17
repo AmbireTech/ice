@@ -1,0 +1,196 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OV2640 reference</title>
+<style>
+body{font:14px system-ui,sans-serif;margin:0;background:#111;color:#ddd}
+main{display:flex;flex-wrap:wrap;gap:12px;padding:12px}
+#view{flex:1 1 480px;min-width:0}
+#ctl{flex:0 1 340px}
+canvas,img{display:block;max-width:100%;image-rendering:pixelated;background:#000}
+fieldset{border:1px solid #333;margin:0 0 8px;padding:6px 8px}
+legend{color:#9cf}
+label{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:3px 0}
+input[type=range]{flex:1}
+output{min-width:3em;text-align:right;font-variant-numeric:tabular-nums}
+select,button{font:inherit}
+#info,#err{font:12px ui-monospace,monospace;white-space:pre-wrap;margin:6px 0}
+#err{color:#f77}
+a{color:#9cf}
+</style></head><body><main>
+<section id="view">
+  <div><button id="pause">Pause</button>
+    Zoom <select id="zoom"><option value="0">fit</option><option value="1">1x</option><option value="2">2x</option><option value="3">3x</option></select>
+    <a id="dl" href="/raw" download>Download frame</a> · <a href="/regs" target="_blank">Registers</a> · <a href="/status" target="_blank">Status</a></div>
+  <div id="err"></div>
+  <canvas id="cv"></canvas><img id="im" hidden>
+  <div id="info"></div>
+</section>
+<section id="ctl">
+  <fieldset><legend>Mode (restarts the camera)</legend>
+    <label>Frame size <select id="framesize"></select></label>
+    <label>Field <select id="field">
+      <option value="0">full (driver's framing)</option>
+      <option value="1">wide (device zoom 0)</option>
+      <option value="2">half: SVGA pixels (device zoom 1)</option>
+      <option value="3">native: UXGA pixels (device zoom 2)</option></select></label>
+    <label>Format <select id="format"><option value="1">grayscale (Y)</option><option value="0">JPEG</option></select></label>
+    <label>XCLK <select id="xclk"><option value="20">20 MHz</option><option value="10">10 MHz</option></select></label>
+  </fieldset>
+  <div id="settings"></div>
+  <button id="defaults">Driver defaults</button>
+</section>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+// [var, label, kind, min, max] (kind: c checkbox, r range, s select with names)
+const GROUPS = [
+  ['Exposure', [['aec','Auto exposure','c'],['aec_value','Exposure value','r',0,1200],
+    ['ae_level','AE level','r',-2,2],['aec2','AEC DSP (night)','c']]],
+  ['Gain', [['agc','Auto gain','c'],['agc_gain','Gain (manual)','r',0,30],
+    ['gainceiling','Gain ceiling','s',['2x','4x','8x','16x','32x','64x','128x']]]],
+  ['Image', [['brightness','Brightness','r',-2,2],['contrast','Contrast','r',-2,2],
+    ['saturation','Saturation','r',-2,2],
+    ['special_effect','Special effect','s',['off','negative','grayscale','red','green','blue','sepia']]]],
+  ['White balance', [['awb','AWB','c'],['awb_gain','AWB gain','c'],
+    ['wb_mode','WB mode','s',['auto','sunny','cloudy','office','home']]]],
+  ['Sensor/DSP', [['lenc','Lens correction','c'],['bpc','Black pixel corr.','c'],
+    ['wpc','White pixel corr.','c'],['raw_gma','Raw gamma','c'],['dcw','Downsize (DCW)','c'],
+    ['hmirror','Mirror','c'],['vflip','Flip','c'],['colorbar','Colour bar','c'],
+    ['quality','JPEG quality (0 best)','r',0,63]]],
+];
+const MODE_VARS = ['framesize','field','format','xclk'];
+let st = null, paused = false, busy = false, frames = 0, t0 = performance.now(), fps = 0;
+
+function buildControls() {
+  const root = $('settings');
+  for (const [title, items] of GROUPS) {
+    const fs = document.createElement('fieldset');
+    fs.innerHTML = `<legend>${title}</legend>`;
+    for (const [v, label, kind, a, b] of items) {
+      const l = document.createElement('label');
+      let input;
+      if (kind === 'c') { input = document.createElement('input'); input.type = 'checkbox'; }
+      else if (kind === 'r') { input = document.createElement('input'); input.type = 'range'; input.min = a; input.max = b; }
+      else { input = document.createElement('select'); a.forEach((n, i) => input.add(new Option(n, i))); }
+      input.id = v;
+      l.append(label, input);
+      if (kind === 'r') { const o = document.createElement('output'); o.id = v + '_o'; l.append(o);
+        input.oninput = () => o.value = input.value; }
+      input.onchange = () => setVar(v, kind === 'c' ? (input.checked ? 1 : 0) : input.value);
+      fs.append(l);
+    }
+    root.append(fs);
+  }
+  for (const v of MODE_VARS) $(v).onchange = () => setVar(v, $(v).value);
+}
+
+function showStatus(s) {
+  st = s;
+  const fsel = $('framesize');
+  if (!fsel.options.length) for (const [id, n, w, h] of s.framesizes) fsel.add(new Option(`${n} ${w}x${h}`, id));
+  $('framesize').value = s.mode.framesize; $('field').value = s.mode.field;
+  $('format').value = s.mode.format; $('xclk').value = s.mode.xclk;
+  for (const [k, v] of Object.entries(s.settings)) {
+    const el = $(k); if (!el || el === document.activeElement) continue;
+    if (el.type === 'checkbox') el.checked = !!v; else el.value = v;
+    const o = $(k + '_o'); if (o) o.value = v;
+  }
+  $('err').textContent = s.error ? 'Error: ' + s.error : (s.running ? '' : 'Camera not running');
+  const w = s.window, live = s.live;
+  $('info').textContent =
+    `${s.mode.width}x${s.mode.height} ${s.mode.format ? 'Y8' : 'JPEG'}, field ${s.mode.field_name}` +
+    (w.sensor_mode === 'driver' ? ' (driver framing)' : ` = ${w.sensor_mode} mode window ${w.mx}x${w.my} at ${w.ox},${w.oy}`) +
+    `, XCLK ${s.mode.xclk} MHz, PID 0x${s.pid.toString(16)}\n` +
+    (live ? `exposure ${live.exposure_rows} rows, gain ${(live.gain_x100 / 100).toFixed(2)}x (reg 0x${live.gain_reg.toString(16)})` : 'no live registers') +
+    `, sensor frame interval ${s.frame_interval_ms} ms, preview ${fps.toFixed(1)} fps\n` +
+    `set here: ${s.user_set.length ? s.user_set.join(', ') : 'nothing (driver defaults)'}`;
+  $('dl').href = '/raw?fmt=' + (s.mode.format ? 'y8' : 'jpeg');
+}
+
+async function setVar(v, val) {
+  busy = true;
+  try {
+    const r = await fetch(`/set?var=${v}&val=${val}`);
+    const body = await r.text();
+    if (!r.ok) { $('err').textContent = `${v}=${val}: ${r.status} ${body}`; await refresh(); return; }
+    showStatus(JSON.parse(body));
+  } catch (e) {
+    console.error('set failed', v, val, e);
+    $('err').textContent = `${v}=${val}: ${e}`;
+  } finally { busy = false; }
+}
+
+async function refresh() {
+  const r = await fetch('/status');
+  if (!r.ok) throw new Error('/status ' + r.status + ' ' + await r.text());
+  showStatus(await r.json());
+}
+
+function drawPgm(buf) {
+  const u8 = new Uint8Array(buf);
+  // header: "P5\n<w> <h>\n255\n"
+  let p = 0, fields = [];
+  while (fields.length < 4) {
+    let s = '';
+    while (u8[p] > 32) s += String.fromCharCode(u8[p++]);
+    p++;
+    if (s) fields.push(s);
+  }
+  if (fields[0] !== 'P5') throw new Error('not a PGM: ' + fields[0]);
+  const w = +fields[1], h = +fields[2], cv = $('cv');
+  if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+  const ctx = cv.getContext('2d'), img = ctx.createImageData(w, h), d = img.data;
+  for (let i = 0, j = 0; i < w * h; i++, j += 4) { const y = u8[p + i]; d[j] = d[j + 1] = d[j + 2] = y; d[j + 3] = 255; }
+  ctx.putImageData(img, 0, 0);
+  cv.hidden = false; $('im').hidden = true;
+  applyZoom(cv, w);
+}
+
+function applyZoom(el, w) {
+  const z = +$('zoom').value;
+  el.style.width = z ? (w * z) + 'px' : '';
+  el.style.maxWidth = z ? 'none' : '100%';
+}
+
+async function frameLoop() {
+  while (true) {
+    if (paused || busy || !st || !st.running) { await new Promise(r => setTimeout(r, 200)); continue; }
+    try {
+      const gray = st.mode.format === 1;
+      const r = await fetch('/raw?fmt=' + (gray ? 'y8' : 'jpeg'));
+      if (!r.ok) { $('err').textContent = '/raw: ' + r.status + ' ' + await r.text(); await new Promise(r => setTimeout(r, 1000)); continue; }
+      const buf = await r.arrayBuffer();
+      if (gray) drawPgm(buf);
+      else {
+        const im = $('im'), url = URL.createObjectURL(new Blob([buf], {type: 'image/jpeg'}));
+        im.onload = () => { URL.revokeObjectURL(url); applyZoom(im, im.naturalWidth); };
+        im.src = url; im.hidden = false; $('cv').hidden = true;
+      }
+      frames++;
+      const now = performance.now();
+      if (now - t0 > 2000) { fps = frames * 1000 / (now - t0); frames = 0; t0 = now; }
+    } catch (e) {
+      console.error('frame fetch failed', e);
+      $('err').textContent = 'frame: ' + e;
+      await new Promise(r => setTimeout(r, 1000));
+    }
+  }
+}
+
+async function statusLoop() {
+  while (true) {
+    if (!busy) {
+      try { await refresh(); }
+      catch (e) { console.error('status failed', e); $('err').textContent = 'status: ' + e; }
+    }
+    await new Promise(r => setTimeout(r, 1500));
+  }
+}
+
+$('pause').onclick = () => { paused = !paused; $('pause').textContent = paused ? 'Resume' : 'Pause'; };
+$('defaults').onclick = () => setVar('defaults', 0);
+$('zoom').onchange = () => { const cv = $('cv'), im = $('im'); applyZoom(cv, cv.width); if (!im.hidden) applyZoom(im, im.naturalWidth); };
+buildControls();
+statusLoop();
+frameLoop();
+</script></body></html>

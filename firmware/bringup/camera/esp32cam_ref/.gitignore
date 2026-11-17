@@ -1,0 +1,6 @@
+.pio/
+managed_components/
+sdkconfig.esp32cam
+sdkconfig.old
+frames/
+__pycache__/
