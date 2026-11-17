@@ -1,3 +1,8 @@
+No longer in the firmware: the device decodes with its own decoder
+(trezor-firmware/core/embed/io/camera/qr/fqr.c). This is the quirc build the
+firmware carried until then, kept for ../../build.sh's qrdecode, the reference
+the new decoder is compared against. What follows describes it as it was.
+
 quirc (https://github.com/dlbeer/quirc), ISC license (LICENSE), commit
 f2e4271: lib/decode.c, identify.c, version_db.c, quirc.h,
 quirc_internal.h.

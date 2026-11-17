@@ -1,7 +1,11 @@
 /*
  * Ambire boards, [ambire_camera]: QR code decoding of grayscale camera frames
- * (quirc), app side. No heap: the decoder's image and its state live in
- * buffers the caller owns. The camera captures straight into the image.
+ * (the video decoder, io/camera/qr/fqr.h), app side. No heap: the frame and
+ * the decoder's state live in buffers the caller owns. The camera captures
+ * straight into the frame, which the decoder reads and does not modify.
+ * Frames are taken as a video of one scene: the decoder looks for the code
+ * where the last frame had it, and adds up frames of one code that do not
+ * read alone. Mirrored codes are not read.
  */
 
 #pragma once
@@ -9,17 +13,16 @@
 #include <trezor_types.h>
 
 typedef struct {
-  int32_t grids;         // QR codes found in the image (decoded or not)
-  int32_t capstones;     // finder patterns found (a code needs three)
-  int32_t decoded;       // 1: `payload` holds the first one that decoded
-  int32_t error;         // quirc_decode_error_t of the last failed decode
+  int32_t grids;         // 1: a code's grid was found (decoded or not)
+  int32_t capstones;     // finder pattern candidates in the frame
+  int32_t decoded;       // 1: `payload` holds the code
+  int32_t error;         // why a grid did not decode: 3 format, 4 data
   int32_t version;       // QR version of the decoded code
-  int32_t mirrored;      // 1: it decoded only mirrored
+  int32_t mirrored;      // always 0
   int32_t payload_len;   // its whole payload length (may exceed what fits)
-  // The code reported (the one decoded, else the last one tried): its grid
-  // side in modules (17 + 4 x version, as quirc measured it; 0: none), its
-  // four corners (x, y, clockwise from top left) and its pixels per module x10
-  // (the mean side over the grid side)
+  // The code reported: its grid side in modules (17 + 4 x version; 0: none),
+  // its four corners (x, y, clockwise from top left) and its pixels per
+  // module x10
   int32_t grid_size;
   int32_t corners[8];
   int32_t px_per_module_x10;
@@ -31,11 +34,12 @@ typedef struct {
   int32_t clipped_pm;
   int32_t black_pm;
   int32_t edge_x10;
-  // The threshold used: 0 quirc's Otsu, 1 Otsu x 1.1, 2 the local mean. The
-  // next frame tries the next one when this one did not decode.
-  int32_t threshold;
-  uint32_t identify_ms;  // time spent finding codes
-  uint32_t decode_ms;    // time spent decoding them
+  // 1: the grid was picked up where the last frame had it (no search)
+  int32_t tracked;
+  // Frames whose soft bits gave this result (1: this frame alone)
+  int32_t fused;
+  uint32_t identify_ms;  // always 0 (the time is all in decode_ms)
+  uint32_t decode_ms;    // time the decoder took
 } qr_scan_result_t;
 
 // Bytes of decoder state qr_scan_init() needs for w x h images (the image
@@ -47,22 +51,10 @@ size_t qr_scan_state_size(int w, int h);
 // False if a buffer is misaligned or too small.
 bool qr_scan_init(uint8_t *image, int w, int h, uint8_t *state, size_t size);
 
-// Looks for QR codes in the image and decodes them; the first that decodes
-// (as is, or mirrored) is copied to `payload` (at most `payload_max` bytes).
-// The image is used up: it is thresholded in place.
+// Looks for a QR code in the frame and decodes it to `payload` (at most
+// `payload_max` bytes). The frame is left as it is.
 void qr_scan(uint8_t *payload, size_t payload_max, qr_scan_result_t *result);
 
-// After qr_scan(): the area a code is in, from what the last scan found (x0,
-// y0, x1, y1, frame pixels): the code reported, else the finder patterns
-// grown by their spacing (with two of three, the third lies within that).
-// False if it found fewer than two finder patterns.
+// After qr_scan(): the area the code is in (x0, y0, x1, y1, frame pixels, a
+// module of margin around). False if the last frame had no grid.
 bool qr_scan_code_area(int32_t box[4]);
-
-// The threshold the next qr_scan() uses (0 Otsu, 1 Otsu x 1.1, 2 the local
-// mean); it then cycles as usual
-void qr_scan_set_threshold(int threshold);
-
-// The frame before thresholding (the same size as the decoder's image), which
-// a failed grid is read again from, sub-pixel; NULL (the default) when the
-// caller keeps none
-void qr_scan_set_gray(const uint8_t *gray);

@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# Builds the host decoder harness from the firmware's vendored quirc:
+# Builds the host decoder harness from the quirc the firmware used to carry
+# (../qrdecode/quirc):
 # build/harness as the firmware decodes, and build/harness-<variant> with the
 # fixes of ext_identify.c (the firmware tree is not touched).
 set -euo pipefail
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
-qr="$here/../../../trezor-firmware/core/embed/io/camera/qr"
+qr="$here/../qrdecode/quirc"
 mkdir -p "$here/build"
 cc -O2 -std=c11 -w -I "$qr" -o "$here/build/harness" "$here/harness.c" \
   "$qr/quirc_decode.c" "$qr/quirc_identify.c" "$qr/quirc_version_db.c" -lm

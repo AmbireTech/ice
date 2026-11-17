@@ -203,11 +203,11 @@ Against the upstream base:
 | `rust/.../layout_delizia/ui_firmware.rs`, `component/homescreen.rs`, `component_msg_obj.rs` | Delizia's Bluetooth pairing screens (device name, pairing code, waiting), and a swipe up on the home screen |
 | `src/apps/homescreen/__init__.py`, `src/apps/management/ble/pair_from_homescreen.py` (new), `src/ble.py` | the swipe up starts pairing; the boot waits 0.5 s, not 5 s, for a radio that the airgap switch may have off |
 | `src/apps/homescreen/__init__.py` | firmware signed with a "DO NOT USE" vendor header (Trezor's dev keys) says so on the home screen: "Backup needed; dev", or "Dev firmware" when there is no other notice |
-| `io/camera/` (new: `stm32u5/camera.c`, `qr/`, `inc/io/camera.h`, `inc/io/qr_scan.h`), `io/build.rs`, `io/Cargo.toml`, `sys/syscall/` (numbers, dispatch, verifiers, stubs), `rust/build.rs`, `rust/trezorhal.h`, `rust/src/trezorhal/camera.rs` (new) | `[ambire_camera]`: the QR camera. The kernel drives it (power, XCLK, SCCB, DCMI snapshots by GPDMA into a buffer the app owns); the app decodes with quirc (vendored in `io/camera/qr/quirc`, see its `README.ambire`). See [QR camera test](#qr-camera-test) |
+| `io/camera/` (new: `stm32u5/camera.c`, `qr/`, `inc/io/camera.h`, `inc/io/qr_scan.h`), `io/build.rs`, `io/Cargo.toml`, `sys/syscall/` (numbers, dispatch, verifiers, stubs), `rust/build.rs`, `rust/trezorhal.h`, `rust/src/trezorhal/camera.rs` (new) | `[ambire_camera]`: the QR camera. The kernel drives it (power, XCLK, SCCB, DCMI snapshots by GPDMA into a buffer the app owns); the app decodes with our own video QR decoder (`io/camera/qr/fqr.c`, behind `inc/io/qr_scan.h`; the quirc build it replaced is kept as a reference in `bringup/camera/qrdecode/quirc`). See [QR camera test](#qr-camera-test) |
 | `rust/.../component/ambire_camera.rs` (new), `shape/utils/imagebuf.rs` | `[ambire_camera]`: the camera test screen, in the airgap menu |
 | `io/airgap/` (new), `sys/syscall/`, `rust/src/trezorhal/airgap.rs` (new), `homescreen.rs` | `[ambire_airgap]`: the airgap switch's position (AIRGAP_SENSE) for the UI: the swipe up opens the airgap menu on AIR, Bluetooth pairing off AIR |
 | `rust/.../component/ambire_ur.rs` (new) | `[ambire_camera]`: BC-UR without a heap: minimal bytewords and CRC32, one-part and animated (fountain-coded) URs, as the Ambire app's @ngraveio/bc-ur writes them; strict, every fault an error |
-| `rust/.../component/ambire_airgap.rs` (new), `component/mod.rs`, `homescreen.rs`, `component_msg_obj.rs`, `ui/api/firmware_micropython.rs`, `librust_qstr.h`, `mocks/generated/trezorui_api.pyi` | `[ambire_camera]`: the QR scan screen (camera, quirc, UR assembly in the image buffer), the screen showing a UR as a QR code, the camera test as a screen of its own; `trezorui_api.ambire_scan_ur`, `ambire_show_ur`, `ambire_camera_test`; the home screen's swipe up on AIR returns `"ambire_airgap"` |
+| `rust/.../component/ambire_airgap.rs` (new), `component/mod.rs`, `homescreen.rs`, `component_msg_obj.rs`, `ui/api/firmware_micropython.rs`, `librust_qstr.h`, `mocks/generated/trezorui_api.pyi` | `[ambire_camera]`: the QR scan screen (camera, QR decoder, UR assembly in the image buffer), the screen showing a UR as a QR code, the camera test as a screen of its own; `trezorui_api.ambire_scan_ur`, `ambire_show_ur`, `ambire_camera_test`; the home screen's swipe up on AIR returns `"ambire_airgap"` |
 | `src/apps/ambire_airgap/` (new), `src/apps/homescreen/__init__.py`, `upymod/{build.rs,Cargo.toml,qstrdefsport.h}`, `projects/firmware/Cargo.toml` | `[ambire_camera]`: airgapped signing with the Ambire app (see [Airgapped signing](#airgapped-signing)): the menu, connecting, the strict parsing of requests, and Trezor's own Ethereum signing run on them |
 
 **Trezor's name, where it stays** (none of it is shown on the device's
@@ -404,7 +404,11 @@ Security review (2026-11-09, an independent audit of the camera, UR, request
 and signing code, compared with Keystone, Keycard Shell, SeedSigner, Jade and
 Passport, and checked against published quirc, BC-UR and wallet advisories):
 no memory corruption, display/sign mismatch, wrong-key signing or sandbox
-escape found; the vendored quirc carries every published fix. Fixed after it:
+escape found; the vendored quirc carried every published fix. Since then
+(2026-11-17) quirc has been replaced by our own QR decoder, which that audit
+did not see: it is tested on the host under address and undefined-behaviour
+sanitizers (saved and synthetic frames, random data through its Reed-Solomon
+decoder and payload parser), and has not been audited. Fixed after the audit:
 
 - Typed data: a domain value that `EIP712Domain` does not declare is refused
   (nobody hashes it, so it could pose as a chain binding), the chain is read
@@ -469,28 +473,30 @@ The three lines under the picture:
 | Line | Example | Meaning |
 |---|---|---|
 | 1 | `OV2640 384 native 1.0x 7.5fps` | sensor, frame size, zoom, sensor pixels per frame pixel, frames per second |
-| 2 | `v11 3.6px/m OK 12/16 t0` | the code found: its QR version and pixels per module; `OK`, or why it did not decode; how many of the last 16 frames decoded; the threshold used (0, 1, 2: see below) |
+| 2 | `v11 3.6px/m OK 12/16 f1` | the code found: its QR version and pixels per module; `OK`, or why it did not decode; how many of the last 16 frames decoded; how many frames the result took (see below) |
 | 3 | `Y143 clip 2% edge 1.4 90+40ms` | the frame's mean brightness (0-255), the share of clipped white, the edge width in pixels (1.0 is a sharp step; larger is blur), the capture and decode times |
 
 Reading them:
 
-- **Pixels per module** is what decides a dense code: below 3 it rarely
-  decodes, about 4 is needed for most frames to decode, 5 with soft focus.
-  Move closer (or to a narrower zoom) to raise it, as long as the whole code
-  stays in the picture. The app's request codes are version 11 (61 modules
+- **Pixels per module** is what decides a dense code. On frames saved from
+  an OV2640 the decoder read codes from about 2.5 pixels a module; how low
+  it goes on this board has not been measured yet. Move closer (or to a
+  narrower zoom) to raise it, as long as the whole code stays in the
+  picture. The app's request codes are version 7 to 11 (45 to 61 modules
   across).
 - **Edge width** is the focus: when it comes near half the pixels per
   module, blur is what stops the code, not the size. A fixed-focus module
   focused far away blurs a code held close.
 - **Clipped white** above a few per cent: the screen is too bright for the
   exposure. With `auto exp` this should settle within a few frames.
-- A code found but not decoded says why: `GRID SIZE` or `VERSION` (the grid
-  was misread), `FORMAT ECC` or `DATA ECC` (too many modules read wrong:
-  blur, too few pixels per module, or a code partly out of the picture).
-- **The threshold** (where gray turns black or white) changes from frame to
-  frame while codes do not decode: 0 one level for the whole frame, 1 the
-  same 10 % higher, 2 a local level (better with uneven light or glare). It
-  stays where a frame decoded.
+- A code found but not decoded says why: `FORMAT ECC` (its grid was found
+  but not its format marks) or `DATA ECC` (too many modules read wrong:
+  blur, too few pixels per module, glare, or a code partly out of the
+  picture).
+- **Frames summed** (`f1`, `f2`, ...): `f1` means the frame decoded on its
+  own. When frames of the same code do not decode alone, the decoder adds
+  them up, and `f3` means the code was read from three frames together. The
+  count starts again when the code changes.
 - Before the first frame, line 3 shows what the camera's sync lines did after
   it started (VSYNC and HREF: share of time high per mille / changes seen;
   PCLK: changes seen). All zero means the sensor is not streaming.

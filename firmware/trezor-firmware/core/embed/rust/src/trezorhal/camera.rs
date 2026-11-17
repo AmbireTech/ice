@@ -96,8 +96,9 @@ pub unsafe fn qr_init(image: *mut u8, side: usize, state: *mut u8, state_len: us
     unsafe { ffi::qr_scan_init(image, side as _, side as _, state, state_len) }
 }
 
-/// Looks for QR codes in the decoder's image, which it uses up (thresholds
-/// in place); the first code that decodes goes to `payload`.
+/// Looks for a QR code in the decoder's image (read, not modified); a code
+/// that decodes goes to `payload`. Frames are taken as a video: the decoder
+/// keeps the last frame's grid and the sum of frames that did not decode.
 ///
 /// # Safety
 ///

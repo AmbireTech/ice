@@ -254,7 +254,7 @@ impl AirgapScan {
             }
             Phase::Running => {
                 if !self.capturing {
-                    // The last frame has been painted: decode it (in place),
+                    // The last frame has been painted: decode it where it is,
                     // then capture the next into the same image
                     if self.scan_pending {
                         self.scan_pending = false;

@@ -16,12 +16,11 @@ pub fn def_module(lib: &mut CLibrary) -> Result<()> {
     }
 
     if cfg!(not(feature = "kernel_mode")) {
-        lib.add_sources([
-            "camera/qr/qr_scan.c",
-            "camera/qr/quirc_decode.c",
-            "camera/qr/quirc_identify.c",
-            "camera/qr/quirc_version_db.c",
-        ]);
+        // The signer's requests are version 7 to 11; up to 13 the grid has
+        // the same alignment patterns and the decoder's state stays the size
+        // quirc's was
+        lib.add_define("FQR_MAX_VERSION", Some("13"));
+        lib.add_sources(["camera/qr/qr_scan.c", "camera/qr/fqr.c"]);
     }
 
     Ok(())

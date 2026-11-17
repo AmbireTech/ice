@@ -330,10 +330,11 @@ static void print_payload(const uint8_t *p, int n) {
 
 // ---------------------------------------------------------------------------
 // Near-miss frames, kept in flash (opening the serial port resets the board,
-// which would lose them in RAM). Slot 0..SLOTS_MISS-1: frames that showed a
-// code (a grid, or at least finder patterns) that did not decode, one every
-// 2 s at most; the rest: decoded frames, one every 10 s. A serial "D" dumps
-// them.
+// which would lose them in RAM). Slot 0..SLOTS_MISS-1: frames of a code that
+// has been in view for 1.5 s without decoding (finder patterns at least),
+// one every 4 s at most; the rest: decoded frames, one every 30 s. Saving
+// one stops the scan for about a second (the flash erase), which is why
+// they are spaced out; a serial "S off" stops saving. "D" dumps them.
 
 // Slots hold a 400x296 frame (118 400 bytes and the header)
 #define SLOT_SIZE 0x20000
@@ -382,11 +383,14 @@ static void frames_init(void) {
   printf("%d saved frames in flash (D dumps them, E erases)\n", kept);
 }
 
+static volatile bool g_save = true;
+
+// `in_view_ms`: how long finder patterns have been in view without a decode
 static void frames_save(const uint8_t *px, const scan_mode_t *m, const fqr_result_t *r,
-                        const ae_t *ae, int decode_ms) {
+                        const ae_t *ae, int decode_ms, int in_view_ms) {
   static int64_t last_miss_us = -10000000, last_ok_us = -100000000;
   static uint32_t n_miss, n_ok;
-  if (g_frames == NULL) {
+  if (g_frames == NULL || !g_save) {
     return;
   }
   int64_t now = esp_timer_get_time();
@@ -395,13 +399,13 @@ static void frames_save(const uint8_t *px, const scan_mode_t *m, const fqr_resul
     return;
   }
   if (r->decoded) {
-    if (now - last_ok_us < 10000000) {
+    if (now - last_ok_us < 30000000) {
       return;
     }
     last_ok_us = now;
     slot = SLOTS_MISS + (int)(n_ok++ % (SLOTS - SLOTS_MISS));
   } else {
-    if (r->stage < FQR_STAGE_FINDERS || now - last_miss_us < 2000000) {
+    if (r->stage < FQR_STAGE_FINDERS || in_view_ms < 1500 || now - last_miss_us < 4000000) {
       return;
     }
     last_miss_us = now;
@@ -434,6 +438,9 @@ static void frames_save(const uint8_t *px, const scan_mode_t *m, const fqr_resul
   }
   if (err != ESP_OK) {
     printf("saving a frame failed: %s\n", esp_err_to_name(err));
+  } else if (!g_quiet) {
+    printf("saved frame %u (%s) for pull_frames.py\n", (unsigned)h.seq,
+           r->decoded ? "decoded" : "not decoded");
   }
 }
 
@@ -445,6 +452,9 @@ static void frames_save(const uint8_t *px, const scan_mode_t *m, const fqr_resul
 //             pixels, "END1", CRC-32 (zlib's) of header and pixels; then
 //             "DONE <n>"
 //   E         erase the saved frames
+//   S on|off  keep near-miss and decoded frames in flash, or not
+//   T         time the decoder on the saved frames
+//   R <mode>  camera mode (MODES)
 
 static void uart_out(const void *p, size_t n) { uart_write_bytes(UART_NUM_0, p, n); }
 
@@ -556,6 +566,9 @@ static void serial_task(void *arg) {
       } else {
         g_mode_req = found;
       }
+    } else if (line[0] == 'S') {
+      g_save = strstr(line, "off") == NULL;
+      printf("saving frames %s\n", g_save ? "on" : "off");
     } else if (line[0] == 'E') {
       g_pause = true;
       vTaskDelay(pdMS_TO_TICKS(600));
@@ -695,7 +708,14 @@ static bool scan_main(int want) {
     int decode_ms = (int)((esp_timer_get_time() - t0) / 1000);
     decode_ms_sum += (uint32_t)decode_ms;
     have_box = fqr_code_area(qr, box);
-    frames_save(fb->buf, &m, &r, &ae, decode_ms);
+    // How long a code has been in view undecoded (a decode starts it again)
+    if (r.stage < FQR_STAGE_FINDERS) {
+      first_seen_us = 0;
+    } else if (first_seen_us == 0) {
+      first_seen_us = t0;
+    }
+    int in_view_ms = first_seen_us ? (int)((esp_timer_get_time() - first_seen_us) / 1000) : 0;
+    frames_save(fb->buf, &m, &r, &ae, decode_ms, in_view_ms);
     esp_camera_fb_return(fb);
 
     // Lets the idle task run (the task watchdog watches it)
@@ -703,13 +723,6 @@ static bool scan_main(int want) {
     int64_t now = esp_timer_get_time();
     if (r.stage >= seen.stage) {
       seen = r;
-    }
-    if (r.stage >= FQR_STAGE_FINDERS) {
-      if (first_seen_us == 0) {
-        first_seen_us = t0;
-      }
-    } else {
-      first_seen_us = 0;
     }
     win_tracked += r.tracked != 0;
     if (ok) {
@@ -725,12 +738,13 @@ static bool scan_main(int want) {
           printf(", %d frames summed", (int)r.fused);
         }
         printf(" (frame %u, decode %d ms, %d ms after it came into view)\n", (unsigned)frames,
-               decode_ms, (int)((now - first_seen_us) / 1000));
+               decode_ms, in_view_ms);
         print_payload(payload, n);
         memcpy(last_payload, payload, (size_t)n);
         last_len = n;
         last_print_us = now;
       }
+      first_seen_us = 0;  // the next code's time starts at its first frame
     }
 
     if (now - status_us > 4000000 && !g_quiet) {

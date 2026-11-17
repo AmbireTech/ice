@@ -1,7 +1,8 @@
-// The device's QR decoder (io/camera/qr/qr_scan.c, as the firmware builds it:
-// sharpening, threshold choice, quirc with our identify fixes) on the host.
-// Reads binary PGM (P5) files, runs the decoder with each of its thresholds
-// (the device cycles them frame to frame) and prints one line per file:
+// The quirc-based decoder the device used before its own (quirc/: qr_scan.c
+// with sharpening, a threshold choice, quirc with our identify fixes, and the
+// upscaled second looks of ../qrcommon), kept as the reference to compare
+// fqrdecode against. Reads binary PGM (P5) files, runs the decoder with each
+// of its thresholds and prints one line per file:
 //   FILE  OK|NO  v<version> <px/module> t<threshold> grids <n> err <e> mean <y> clip <pm> edge <x10> <payload head>
 #include <stdio.h>
 #include <stdlib.h>

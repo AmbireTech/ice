@@ -24,7 +24,7 @@
 #define WARP_N (MAXD / WARP_STEP + 3)
 #define ENV_N (MAXD / 4 + 3)
 #ifndef EQ_ROUNDS
-#define EQ_ROUNDS 6    // equaliser rounds
+#define EQ_ROUNDS 6  // equaliser rounds (4 lost 2 of 40 synthetic frames at blur sigma 1.8 px, 8 read no more)
 #endif
 
 // Tuning switches for the host harness (FQR_HOST_TUNE), and time per stage
@@ -1102,8 +1102,9 @@ static inline float sample(const fqr_t *s, float x, float y) {
   x -= 0.5f;
   y -= 0.5f;
   float xm = (float)(s->w - 1), ym = (float)(s->h - 1);
-  x = x < 0 ? 0 : x > xm ? xm : x;
-  y = y < 0 ? 0 : y > ym ? ym : y;
+  // (written so that a NaN, from a degenerate grid, lands in the frame too)
+  x = !(x > 0) ? 0 : !(x < xm) ? xm : x;
+  y = !(y > 0) ? 0 : !(y < ym) ? ym : y;
   int ix = (int)x, iy = (int)y;
   ix = ix > s->w - 2 ? s->w - 2 : ix;
   iy = iy > s->h - 2 ? s->h - 2 : iy;
@@ -1771,8 +1772,9 @@ static void report_grid(const fqr_t *s, fqr_result_t *res) {
   static const float cx[4] = {0, 1, 1, 0}, cy[4] = {0, 0, 1, 1};
   for (int i = 0; i < 4; i++) {
     pt_t p = grid_point(s, cx[i] * D, cy[i] * D);
-    res->corners[2 * i] = p.x;
-    res->corners[2 * i + 1] = p.y;
+    // (kept within what an int32 holds: the callers convert)
+    res->corners[2 * i] = !(p.x > -1e6f) ? -1e6f : !(p.x < 1e6f) ? 1e6f : p.x;
+    res->corners[2 * i + 1] = !(p.y > -1e6f) ? -1e6f : !(p.y < 1e6f) ? 1e6f : p.y;
   }
   float dx = s->fin[1].x - s->fin[0].x, dy = s->fin[1].y - s->fin[0].y;
   float ex = s->fin[2].x - s->fin[0].x, ey = s->fin[2].y - s->fin[0].y;
@@ -2072,10 +2074,14 @@ bool fqr_code_area(const fqr_t *s, int32_t box[4]) {
     x1 = p.x > x1 ? p.x : x1;
     y1 = p.y > y1 ? p.y : y1;
   }
+  float xm = (float)(s->w - 1), ym = (float)(s->h - 1);
+  if (!(x0 <= xm) || !(y0 <= ym) || !(x1 >= 0) || !(y1 >= 0)) {
+    return false;  // off the frame, or not a number
+  }
   box[0] = x0 < 0 ? 0 : (int32_t)x0;
   box[1] = y0 < 0 ? 0 : (int32_t)y0;
-  box[2] = x1 > (float)(s->w - 1) ? s->w - 1 : (int32_t)x1;
-  box[3] = y1 > (float)(s->h - 1) ? s->h - 1 : (int32_t)y1;
+  box[2] = x1 > xm ? s->w - 1 : (int32_t)x1;
+  box[3] = y1 > ym ? s->h - 1 : (int32_t)y1;
   return true;
 }
 

@@ -22,9 +22,10 @@ the code: it reads from about 2.5 camera pixels a module, so a version 7 code
 
 ## Saved frames
 
-Frames that showed a code (its finder patterns at least) but did not decode
-(one every 2 s, the last 12) and a few decoded ones are kept in the board's
-flash, so they survive the restart that opening the port causes. Pull them, with the
+Frames of a code that has been in view for 1.5 s without decoding (one every
+4 s, the last 12) and a few decoded ones are kept in the board's flash, so
+they survive the restart that opening the port causes. Saving one stops the
+scan for about a second; a serial `S off` turns saving off. Pull them, with the
 board's verdict and the host decoder's on each:
 
     ~/.platformio/penv/bin/python firmware/bringup/camera/esp32cam_qr/pull_frames.py [--erase]

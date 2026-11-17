@@ -16,7 +16,7 @@
 //! text and UR work buffer) a loan from the MicroPython heap while the screen
 //! lives. Without the loan, everything shares the image buffer and the frame
 //! is smaller. The DMA writes each frame straight into the decoder's image;
-//! the frame is painted first, then decoded (which thresholds it in place),
+//! the frame is painted first, then decoded (the decoder only reads it),
 //! then the next one captured. Bring-up only: nothing leaves the device.
 
 use heapless::String;
@@ -380,7 +380,7 @@ fn sensor_name(id: u32) -> &'static str {
     }
 }
 
-/// quirc_decode_error_t, short
+/// Why a grid did not decode (io/qr_scan.h numbers them as quirc did), short
 fn qr_error_name(err: i32) -> &'static str {
     match err {
         1 => "GRID SIZE",
@@ -666,7 +666,7 @@ impl CameraTest {
             }
             Phase::Running => {
                 if !self.capturing {
-                    // The last frame has been painted: decode it (in place),
+                    // The last frame has been painted: decode it where it is,
                     // then capture the next into the same image
                     if self.scan_pending {
                         self.scan_pending = false;
@@ -792,9 +792,9 @@ impl CameraTest {
         push_u32(l1, rate);
         push_trunc(l1, "/");
         push_u32(l1, self.history_len);
-        // The threshold the frame was cut with (0 Otsu, 1 Otsu x1.1, 2 local)
-        push_trunc(l1, " t");
-        push_u32(l1, qr.threshold.max(0) as u32);
+        // Frames the decoder summed for this result (1: this frame alone)
+        push_trunc(l1, " f");
+        push_u32(l1, qr.fused.max(0) as u32);
 
         if st.state == camera::STATE_FAILED {
             push_trunc(l2, "FAIL ");
