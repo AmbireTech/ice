@@ -206,6 +206,38 @@ impl ScanMemory {
 
 // --- Preview ----------------------------------------------------------------------
 
+/// The camera module sits turned on the board: the preview turns the frame
+/// back by this many quarter turns clockwise (then mirrors it if
+/// PREVIEW_MIRROR), so that what is up in front of the device is up on the
+/// screen. Only the preview and its markers turn: the decoder reads codes at
+/// any angle.
+const PREVIEW_QUARTERS: u8 = 1;
+const PREVIEW_MIRROR: bool = false;
+
+/// The frame pixel shown at preview position (x, y), both in frame pixels
+fn preview_to_frame(x: usize, y: usize, side: usize) -> (usize, usize) {
+    let m = side - 1;
+    let x = if PREVIEW_MIRROR { m - x } else { x };
+    match PREVIEW_QUARTERS & 3 {
+        0 => (x, y),
+        1 => (y, m - x),
+        2 => (m - x, m - y),
+        _ => (m - y, x),
+    }
+}
+
+/// Where frame pixel (x, y) shows in the preview, in frame pixels
+pub(super) fn frame_to_preview(x: usize, y: usize, side: usize) -> (usize, usize) {
+    let m = side - 1;
+    let (px, py) = match PREVIEW_QUARTERS & 3 {
+        0 => (x, y),
+        1 => (m - y, x),
+        2 => (m - x, m - y),
+        _ => (y, m - x),
+    };
+    (if PREVIEW_MIRROR { m - px } else { px }, py)
+}
+
 /// Draws a side x side grayscale frame scaled to `area` (VIEW x VIEW), as
 /// white over what is beneath (black): the RGB565 screen can blend MONO8,
 /// not copy it. Each preview pixel averages the 2x2 frame pixels at its
@@ -250,22 +282,20 @@ impl<'a> Shape<'a> for GrayPreview {
                 Offset::new(out as i16, rows as i16),
             );
             if viewport.contains(band) {
+                // SAFETY: the side x side frame, which the screen keeps
+                // unchanged while it is painted
+                let frame = unsafe { core::slice::from_raw_parts(self.src, side * side) };
                 for j in 0..rows {
-                    let sy = (y0 + j) * side / rows_out;
-                    let sy1 = (sy + 1).min(side - 1);
-                    // SAFETY: rows sy and sy1 lie in the side x side frame,
-                    // which the screen keeps unchanged while it is painted
-                    let (r0, r1) = unsafe {
-                        (
-                            core::slice::from_raw_parts(self.src.add(sy * side), side),
-                            core::slice::from_raw_parts(self.src.add(sy1 * side), side),
-                        )
-                    };
+                    let py = (y0 + j) * side / rows_out;
                     let dst = &mut buf[j * out..(j + 1) * out];
                     for (x, d) in dst.iter_mut().enumerate() {
-                        let sx = x * side / out;
+                        let (sx, sy) = preview_to_frame(x * side / out, py, side);
                         let sx1 = (sx + 1).min(side - 1);
-                        let sum = r0[sx] as u32 + r0[sx1] as u32 + r1[sx] as u32 + r1[sx1] as u32;
+                        let sy1 = (sy + 1).min(side - 1);
+                        let sum = frame[sy * side + sx] as u32
+                            + frame[sy * side + sx1] as u32
+                            + frame[sy1 * side + sx] as u32
+                            + frame[sy1 * side + sx1] as u32;
                         *d = (sum / 4) as u8;
                     }
                 }
@@ -917,8 +947,10 @@ impl CameraTest {
             let color = if self.qr.decoded != 0 { GREEN } else { PURPLE };
             let c = &self.qr.corners;
             for i in 0..4 {
-                let x = (c[2 * i] as i32 * VIEW as i32 / self.side as i32) as i16;
-                let y = (c[2 * i + 1] as i32 * VIEW as i32 / self.side as i32) as i16;
+                let clamp = |v: i32| v.clamp(0, self.side as i32 - 1) as usize;
+                let (fx, fy) = frame_to_preview(clamp(c[2 * i]), clamp(c[2 * i + 1]), self.side);
+                let x = (fx * VIEW as usize / self.side) as i16;
+                let y = (fy * VIEW as usize / self.side) as i16;
                 let p = Point::new(x, y);
                 shape::Bar::new(Rect::new(p - Offset::new(3, 3), p + Offset::new(4, 4)))
                     .with_bg(color)

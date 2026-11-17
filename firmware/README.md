@@ -457,6 +457,13 @@ why one does not read.
   last set here, until the device restarts.
 - **The top-left corner** closes the test and switches the camera off.
 
+Field result (v4, OV2640, 2026-11-17): exposure set from the frames, the
+2:1 zoom from the sensor's half-resolution mode and the fast clock made the
+picture radically better than the sensor's own automatic exposure (which
+read 12-73 % clipped white at 1.5 fps). The picture is still soft; that is
+the next step. The preview is turned a quarter turn to undo the module's
+mounting, so up in front of the device is up on the screen.
+
 The three lines under the picture:
 
 | Line | Example | Meaning |
