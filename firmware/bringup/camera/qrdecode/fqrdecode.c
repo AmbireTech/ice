@@ -109,7 +109,8 @@ int main(int argc, char **argv) {
            (int)(r.px_per_module_x10 % 10), (int)r.finders, (int)r.aligns, (int)r.timing_x100,
            r.tracked ? " tracked" : "", (int)r.fused, (int)r.rs_errors, (int)r.rs_erasures, ms);
     if (ok) {
-      printf("  %.40s", (const char *)payload);
+      // FQR_FULL: the whole payload, else its head
+      printf(getenv("FQR_FULL") ? "\t%s" : "  %.40s", (const char *)payload);
     }
     printf("\n");
     int dim = 0;

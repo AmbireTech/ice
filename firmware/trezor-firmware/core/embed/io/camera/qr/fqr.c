@@ -829,6 +829,17 @@ static void add_candidate(fqr_t *s, float x, float y, float hs, float vs) {
       return;
     }
   }
+  if (s->ncand == MAX_CAND) {
+    // Full: drop the ones the scan has passed that few rows hit
+    int k = 0;
+    for (int i = 0; i < s->ncand; i++) {
+      const cand_t *c = &s->cand[i];
+      if (c->n >= 3 || c->y + c->vs * 0.5f >= y) {
+        s->cand[k++] = *c;
+      }
+    }
+    s->ncand = k;
+  }
   if (s->ncand < MAX_CAND) {
     cand_t *c = &s->cand[s->ncand++];
     c->x = x;
@@ -841,6 +852,9 @@ static void add_candidate(fqr_t *s, float x, float y, float hs, float vs) {
 
 static void row_hit(fqr_t *s, int y, int xend, const int c[5]) {
   int total = c[0] + c[1] + c[2] + c[3] + c[4];
+  if (total < 12) {
+    return;  // under 2 px a module: nothing to read, and noise looks like it
+  }
   int cx = xend - c[4] - c[3] - c[2] / 2;
   if (cx < 0 || cx >= s->w || !BIT(s, cx, y)) {
     return;
@@ -1783,6 +1797,85 @@ bool fqr_scan(fqr_t *s, const uint8_t *gray, int stride, uint8_t *payload, size_
     ok = read_grid(s, payload, payload_max, res);
     if (res->stage >= FQR_STAGE_FORMAT) {
       break;  // this is the code, readable or not
+    }
+  }
+  // Two finders and no third: the run scan missed one (glare, a dim
+  // corner). It can only be in six places about the pair (the pair is a side
+  // of the code, or its diagonal); look for it there against the template.
+  for (int a = 0; a < nc && !any && res->stage < FQR_STAGE_FORMAT; a++) {
+    for (int b = a + 1; b < nc && !any; b++) {
+      const cand_t *P = &s->cand[a], *Q = &s->cand[b];
+      if (P->q < 0.6f || Q->q < 0.6f) {
+        continue;
+      }
+      float dx = Q->x - P->x, dy = Q->y - P->y, d = sqrtf(dx * dx + dy * dy);
+      float cu = fabsf(dx) > fabsf(dy) ? fabsf(dx) / d : fabsf(dy) / d;
+      float mod = (P->hs + P->vs + Q->hs + Q->vs) / 28.0f * cu;
+      if (d < 12 * mod) {
+        continue;
+      }
+      float best = 0.3f;
+      pt_t bf[3] = {{0, 0}, {0, 0}, {0, 0}};
+      for (int hyp = 0; hyp < 6; hyp++) {
+        // perpendicular of the pair, either side
+        float sgn = (hyp & 1) ? 1.0f : -1.0f, px = -dy * sgn, py = dx * sgn;
+        pt_t c, f[3];
+        if (hyp < 2) {  // third at P's end: P is the corner
+          c.x = P->x + px; c.y = P->y + py;
+          f[0].x = P->x; f[0].y = P->y; f[1].x = Q->x; f[1].y = Q->y;
+        } else if (hyp < 4) {  // third at Q's end: Q is the corner
+          c.x = Q->x + px; c.y = Q->y + py;
+          f[0].x = Q->x; f[0].y = Q->y; f[1].x = P->x; f[1].y = P->y;
+        } else {  // the pair is the diagonal: the corner is the third
+          c.x = (P->x + Q->x + px) * 0.5f; c.y = (P->y + Q->y + py) * 0.5f;
+          f[1].x = P->x; f[1].y = P->y; f[2].x = Q->x; f[2].y = Q->y;
+        }
+        float ex = hyp < 4 ? dx : (dx + px), ey = hyp < 4 ? dy : (dy + py);
+        float el = sqrtf(ex * ex + ey * ey);
+        pt_t ux = {ex / el * mod, ey / el * mod}, uy = {-ey / el * mod, ex / el * mod};
+        float sc = locate(s, &c, ux, uy, 9, 6.0f, 2);
+#ifdef FQR_HOST_TUNE
+        if (OPT(15)) {
+          printf("pair %d %d hyp %d: %.1f %.1f score %.2f mod %.2f\n", a, b, hyp, (double)c.x, (double)c.y, (double)sc, (double)mod);
+        }
+#endif
+        if (sc > best) {
+          best = sc;
+          if (hyp < 4) {
+            f[2] = c;
+          } else {
+            f[0] = c;
+          }
+          // B clockwise of C about A
+          float ax = f[1].x - f[0].x, ay = f[1].y - f[0].y, bx = f[2].x - f[0].x, by = f[2].y - f[0].y;
+          if (ax * by - ay * bx < 0) {
+            pt_t t = f[1];
+            f[1] = f[2];
+            f[2] = t;
+          }
+          memcpy(bf, f, sizeof(bf));
+        }
+      }
+      if (best <= 0.3f) {
+        continue;
+      }
+      memcpy(s->fin, bf, sizeof(bf));
+      if (res->stage < FQR_STAGE_FINDERS) {
+        res->stage = FQR_STAGE_FINDERS;
+      }
+      float lu = sqrtf((bf[1].x - bf[0].x) * (bf[1].x - bf[0].x) + (bf[1].y - bf[0].y) * (bf[1].y - bf[0].y));
+      float lv = sqrtf((bf[2].x - bf[0].x) * (bf[2].x - bf[0].x) + (bf[2].y - bf[0].y) * (bf[2].y - bf[0].y));
+      float gs = build_grid(s, 0, (lu + lv) * 0.5f / mod + 7.0f, 1.5f, 4);
+#ifdef FQR_HOST_TUNE
+      if (OPT(15)) {
+        printf("pair grid %.2f dim %d est %.1f\n", (double)gs, s->dim, (double)((lu + lv) * 0.5f / mod + 7.0f));
+      }
+#endif
+      if (gs < 0.35f) {
+        continue;
+      }
+      any = true;
+      ok = read_grid(s, payload, payload_max, res);
     }
   }
   track_update(s, any);
