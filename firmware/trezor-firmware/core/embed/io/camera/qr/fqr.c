@@ -38,7 +38,8 @@ int fqr_opt[16];
 #endif
 #ifdef FQR_PROF
 extern uint32_t fqr_prof_us(void);
-uint32_t fqr_prof[8];  // us: binarize, finders, grid, sample, soften, equalise, decode
+uint32_t fqr_prof[8];
+uint32_t fqr_hits;  // us: binarize, finders, grid, sample, soften, equalise, decode
 #define PROF(i, call)                      \
   do {                                     \
     uint32_t prof_t = fqr_prof_us();       \
@@ -61,14 +62,14 @@ typedef struct {
 } cand_t;
 
 struct fqr {
-  int w, h, bpr, bw, bh;
+  int w, h, bw, bh;
   const uint8_t *img;
   int stride;
   // Frame-sized work memory (after the struct)
-  uint8_t *bits;   // 1: dark, bpr bytes a row
-  uint16_t *col;   // column sums of the fine window
-  uint16_t *bsum;  // per block: sum, then reused
-  uint8_t *bmin, *bmax, *bmean, *btol;
+  uint16_t *col;  // column sums of the fine window
+  uint16_t *run;  // a row's runs
+  uint8_t *bmean, *btol;      // the thresholds' block maps
+  uint8_t *bwork1, *bwork2;   // work memory for building them
 
   uint8_t gf_exp[512], gf_log[256];
 
@@ -91,11 +92,13 @@ struct fqr {
 
   // Fusion
   int acc_n, acc_dim;
-  int16_t acc[MAXD * MAXD];
+  int8_t acc[MAXD * MAXD];  // soft bits of the frames of one code, summed
 
   int func_version;
   uint8_t func[(MAXD * MAXD + 7) / 8];
-  int8_t known[MAXD * MAXD];  // per module: 64 known light, -64 known dark, 0 data
+  // modules the standard fixes (finder, timing, alignment patterns), and
+  // which of them are dark
+  uint8_t known[(MAXD * MAXD + 7) / 8], kdark[(MAXD * MAXD + 7) / 8];
   int8_t soft[MAXD * MAXD];
   int8_t soft2[MAXD * MAXD];
   // grey modules while sampling, then the equaliser's work memory
@@ -394,10 +397,17 @@ static void build_func(fqr_t *s, int version) {
       }
     }
   }
+  memset(s->known, 0, sizeof(s->known));
+  memset(s->kdark, 0, sizeof(s->kdark));
   for (int y = 0; y < D; y++) {
     for (int x = 0; x < D; x++) {
-      int k = known_module(version, x, y);
-      s->known[y * D + x] = (int8_t)(k < 0 ? 0 : k ? -64 : 64);
+      int k = known_module(version, x, y), i = y * D + x;
+      if (k >= 0) {
+        s->known[i >> 3] |= (uint8_t)(1 << (i & 7));
+        if (k) {
+          s->kdark[i >> 3] |= (uint8_t)(1 << (i & 7));
+        }
+      }
     }
   }
   s->func_version = version;
@@ -592,7 +602,7 @@ static bool decode_soft(fqr_t *s, const int8_t *z, int version, uint8_t *payload
       best = d;
     }
   }
-  if (best < 0 || best_m * 2 < total) {
+  if (best < 0 || best_m * 3 < total * 2) {
     return false;
   }
   static const uint8_t level_of[4] = {1, 0, 3, 2};  // format bits to L M Q H order
@@ -705,21 +715,28 @@ static bool decode_soft(fqr_t *s, const int8_t *z, int version, uint8_t *payload
 
 // ----------------------------------------------------------- finder scan
 
-#define BIT(s, x, y) (((s)->bits[(y) * (s)->bpr + ((x) >> 3)] >> ((x) & 7)) & 1)
+// Whether a pixel is dark. It is when it is below the mean of its 9 x 9
+// surroundings by more than a tolerance (fine detail the blur has flattened
+// still shows against its own neighbourhood); where it is within the
+// tolerance (a flat area), when it is below the mean of the blocks around
+// it. `sum` and `cnt`: the 9 x 9 window's sum and pixel count.
+static inline int dark_px(const fqr_t *s, int x, int y, int v, int sum, int cnt) {
+  int i = (y / BLOCK) * s->bw + x / BLOCK;
+  int d = v * cnt - sum, tol = s->btol[i] * cnt;
+  return d < -tol || (d <= tol && v < s->bmean[i]);
+}
 
-// The frame to a bitmap. A pixel is dark when it is below the mean of its
-// 9 x 9 surroundings by more than a tolerance (fine detail the blur has
-// flattened still shows against its own neighbourhood); where it is within
-// the tolerance (a flat area), when it is below the mean of the 5 x 5 blocks
-// around it.
-static void binarize(fqr_t *s) {
+// The thresholds' block maps: per block the mean of the 5 x 5 blocks around
+// it, and the tolerance, a twelfth of the grey range of the 3 x 3 around it
+static void block_stats(fqr_t *s) {
   int w = s->w, h = s->h, bw = s->bw, bh = s->bh;
   const uint8_t *img = s->img;
+  // per block: mean, min, max, from every other pixel of every other row
+  uint8_t *bavg = s->bmean, *bmin = s->btol, *bmax = s->bwork1;
   for (int by = 0; by < bh; by++) {
     for (int bx = 0; bx < bw; bx++) {
       int x1 = bx * BLOCK + BLOCK > w ? w : bx * BLOCK + BLOCK;
       int y1 = by * BLOCK + BLOCK > h ? h : by * BLOCK + BLOCK;
-      // every other pixel of every other row: a quarter of the block
       unsigned sum = 0, mn = 255, mx = 0, cnt = 0;
       for (int y = by * BLOCK; y < y1; y += 2) {
         const uint8_t *row = img + (size_t)y * (size_t)s->stride;
@@ -732,101 +749,52 @@ static void binarize(fqr_t *s) {
         }
       }
       int i = by * bw + bx;
-      s->bsum[i] = (uint16_t)(sum / cnt);
-      s->bmin[i] = (uint8_t)mn;
-      s->bmax[i] = (uint8_t)mx;
+      bavg[i] = (uint8_t)(sum / cnt);
+      bmin[i] = (uint8_t)mn;
+      bmax[i] = (uint8_t)mx;
     }
   }
+  // In place, a row of blocks at a time: the two rows of originals above
+  // the one being written are kept in bwork2
+  uint8_t *keep = s->bwork2;  // 3 maps x 3 rows of blocks
   for (int by = 0; by < bh; by++) {
+    // rows by-2 and by-1 of the originals are in keep[0], keep[1]; row by
+    // goes to keep[2] before it is overwritten
+    for (int m = 0; m < 3; m++) {
+      const uint8_t *src = m == 0 ? bavg : m == 1 ? bmin : bmax;
+      memcpy(keep + (m * 3 + 2) * bw, src + by * bw, (size_t)bw);
+    }
     for (int bx = 0; bx < bw; bx++) {
       unsigned sum = 0, cnt = 0, mn = 255, mx = 0;
       for (int dy = -2; dy <= 2; dy++) {
+        int yy = by + dy;
+        if (yy < 0 || yy >= bh) {
+          continue;
+        }
+        // rows up to by come from the kept originals, later ones from the maps
+        const uint8_t *ra = dy <= 0 ? keep + (0 * 3 + 2 + dy) * bw : bavg + yy * bw;
+        const uint8_t *rn = dy <= 0 ? keep + (1 * 3 + 2 + dy) * bw : bmin + yy * bw;
+        const uint8_t *rx = dy <= 0 ? keep + (2 * 3 + 2 + dy) * bw : bmax + yy * bw;
         for (int dx = -2; dx <= 2; dx++) {
-          int xx = bx + dx, yy = by + dy;
-          if (xx < 0 || yy < 0 || xx >= bw || yy >= bh) {
+          int xx = bx + dx;
+          if (xx < 0 || xx >= bw) {
             continue;
           }
-          int i = yy * bw + xx;
-          sum += s->bsum[i];
+          sum += ra[xx];
           cnt++;
           if (dx >= -1 && dx <= 1 && dy >= -1 && dy <= 1) {
-            mn = s->bmin[i] < mn ? s->bmin[i] : mn;
-            mx = s->bmax[i] > mx ? s->bmax[i] : mx;
+            mn = rn[xx] < mn ? rn[xx] : mn;
+            mx = rx[xx] > mx ? rx[xx] : mx;
           }
         }
       }
-      int i = by * bw + bx;
-      s->bmean[i] = (uint8_t)(sum / cnt);
       unsigned tol = (mx - mn) / 12;
-      s->btol[i] = (uint8_t)(tol < 3 ? 3 : tol);
+      s->bmean[by * bw + bx] = (uint8_t)(sum / cnt);
+      s->btol[by * bw + bx] = (uint8_t)(tol < 3 ? 3 : tol);
     }
-  }
-
-  memset(s->col, 0, (size_t)w * sizeof(uint16_t));
-  int rows = 0;
-  for (int y = 0; y <= SMALL_R && y < h; y++) {
-    const uint8_t *row = img + (size_t)y * (size_t)s->stride;
-    for (int x = 0; x < w; x++) {
-      s->col[x] = (uint16_t)(s->col[x] + row[x]);
-    }
-    rows++;
-  }
-  for (int y = 0; y < h; y++) {
-    const uint8_t *row = img + (size_t)y * (size_t)s->stride;
-    uint8_t *out = s->bits + (size_t)y * (size_t)s->bpr;
-    const uint8_t *bm = s->bmean + (y / BLOCK) * bw, *bt = s->btol + (y / BLOCK) * bw;
-    int sum = 0, cols = 0;
-    for (int x = 0; x <= SMALL_R && x < w; x++) {
-      sum += s->col[x];
-      cols++;
-    }
-    for (int x = 0; x < w;) {
-      // a block of 8 pixels: one threshold pair, one byte of the bitmap
-      int mean = bm[x / BLOCK], tolv = bt[x / BLOCK];
-      int end = x + BLOCK > w ? w : x + BLOCK;
-      unsigned byte = 0;
-      if (x - SMALL_R >= 0 && end + SMALL_R < w) {
-        int cnt = rows * (2 * SMALL_R + 1), tol = tolv * cnt;
-        const uint16_t *cp = s->col + x;
-        for (int i = 0; i < BLOCK; i++) {
-          int v = row[x + i], d = v * cnt - sum;
-          byte |= (unsigned)(d < -tol || (d <= tol && v < mean)) << i;
-          sum += cp[i + SMALL_R + 1] - cp[i - SMALL_R];
-        }
-        x = end;
-      } else {
-        for (int i = 0; x < end; x++, i++) {
-          int cnt = rows * cols, tol = tolv * cnt;
-          int v = row[x], d = v * cnt - sum;
-          byte |= (unsigned)(d < -tol || (d <= tol && v < mean)) << i;
-          if (x + SMALL_R + 1 < w) {
-            sum += s->col[x + SMALL_R + 1];
-            cols++;
-          }
-          if (x - SMALL_R >= 0) {
-            sum -= s->col[x - SMALL_R];
-            cols--;
-          }
-        }
-      }
-      *out++ = (uint8_t)byte;
-    }
-    const uint8_t *add = y + SMALL_R + 1 < h ? img + (size_t)(y + SMALL_R + 1) * (size_t)s->stride : NULL;
-    const uint8_t *sub = y - SMALL_R >= 0 ? img + (size_t)(y - SMALL_R) * (size_t)s->stride : NULL;
-    if (add != NULL && sub != NULL) {
-      for (int x = 0; x < w; x++) {
-        s->col[x] = (uint16_t)(s->col[x] + add[x] - sub[x]);
-      }
-    } else if (add != NULL) {
-      for (int x = 0; x < w; x++) {
-        s->col[x] = (uint16_t)(s->col[x] + add[x]);
-      }
-      rows++;
-    } else if (sub != NULL) {
-      for (int x = 0; x < w; x++) {
-        s->col[x] = (uint16_t)(s->col[x] - sub[x]);
-      }
-      rows--;
+    // the kept rows move up one
+    for (int m = 0; m < 3; m++) {
+      memmove(keep + (m * 3) * bw, keep + (m * 3 + 1) * bw, (size_t)(2 * bw));
     }
   }
 }
@@ -850,75 +818,73 @@ static bool ratio_ok(const int c[5]) {
   return true;
 }
 
-// The five runs through (x, y) along (dx, dy), which is dark; false when
-// they run off the frame or past `maxrun`. `centre` gets the middle of the
-// centre run along the axis.
-static bool cross_runs(const fqr_t *s, int x, int y, int dx, int maxrun, int c[5],
-                       float *centre) {
-  int lim = dx ? s->w : s->h;
+// Walks from (x, y) one way along a row (dx = 1) or a column (dx = 0),
+// `dir` +1 or -1, counting runs: `c[0]` more of the starting colour (dark),
+// then c[1] light, then c[2] dark; each at most `maxrun`. Returns false if
+// it leaves the frame or a run is too long. Pixels are thresholded as the
+// row scan does, against the 9 pixels around them along the walk (a finder
+// pattern looks the same a few pixels to either side of the line).
+static bool walk(const fqr_t *s, int x, int y, int dx, int dir, int maxrun, int c[3]) {
+  int lim = dx ? s->w : s->h, p0 = dx ? x : y;
+  ptrdiff_t step = dx ? 1 : s->stride;
+  const uint8_t *line = dx ? s->img + (size_t)y * (size_t)s->stride : s->img + x;
+  int sum = 0, cnt = 0;
+  for (int k = p0 - SMALL_R; k <= p0 + SMALL_R; k++) {
+    if (k >= 0 && k < lim) {
+      sum += line[k * step];
+      cnt++;
+    }
+  }
+  int run = 0;  // 0 dark, 1 light, 2 dark
+  c[0] = c[1] = c[2] = 0;
+  for (int p = p0 + dir; p >= 0 && p < lim; p += dir) {
+    int lead = p + dir * SMALL_R, trail = p - dir * (SMALL_R + 1);
+    if (lead >= 0 && lead < lim) {
+      sum += line[lead * step];
+      cnt++;
+    }
+    if (trail >= 0 && trail < lim) {
+      sum -= line[trail * step];
+      cnt--;
+    }
+    int v = line[p * step];
+    int dark = dx ? dark_px(s, p, y, v, sum, cnt) : dark_px(s, x, p, v, sum, cnt);
+    if (dark != (run != 1)) {
+      if (++run > 2) {
+        return true;
+      }
+    }
+    if (++c[run] > (run == 0 ? 3 * maxrun : maxrun)) {
+      return false;
+    }
+  }
+  return false;
+}
+
+// The five runs through (x, y), which is dark, along a row (dx = 1) or a
+// column; `centre` gets the middle of the centre run along that axis
+static bool cross_runs(const fqr_t *s, int x, int y, int dx, int maxrun, int c[5], float *centre) {
+  int back[3], fwd[3];
+  if (!walk(s, x, y, dx, -1, maxrun, back) || !walk(s, x, y, dx, 1, maxrun, fwd)) {
+    return false;
+  }
+  c[0] = back[2];
+  c[1] = back[1];
+  c[2] = back[0] + 1 + fwd[0];
+  c[3] = fwd[1];
+  c[4] = fwd[2];
   int p0 = dx ? x : y;
-  int p;
-  memset(c, 0, 5 * sizeof(int));
-#define AT(p) (dx ? BIT(s, (p), y) : BIT(s, x, (p)))
-  p = p0;
-  while (p >= 0 && AT(p)) {
-    c[2]++;
-    p--;
-  }
-  int lo = p + 1;
-  while (p >= 0 && !AT(p) && c[1] <= maxrun) {
-    c[1]++;
-    p--;
-  }
-  while (p >= 0 && AT(p) && c[0] <= maxrun) {
-    c[0]++;
-    p--;
-  }
-  if (c[1] == 0 || c[0] == 0 || c[1] > maxrun || c[0] > maxrun) {
-    return false;
-  }
-  p = p0 + 1;
-  while (p < lim && AT(p)) {
-    c[2]++;
-    p++;
-  }
-  int hi = p;
-  while (p < lim && !AT(p) && c[3] <= maxrun) {
-    c[3]++;
-    p++;
-  }
-  while (p < lim && AT(p) && c[4] <= maxrun) {
-    c[4]++;
-    p++;
-  }
-#undef AT
-  if (c[3] == 0 || c[4] == 0 || c[3] > maxrun || c[4] > maxrun || c[2] > 3 * maxrun) {
-    return false;
-  }
-  *centre = (float)(lo + hi) * 0.5f;
+  *centre = (float)(p0 - back[0] + p0 + fwd[0] + 1) * 0.5f;
   return true;
 }
 
-static void add_candidate(fqr_t *s, float x, float y, float hs, float vs) {
-  for (int i = 0; i < s->ncand; i++) {
-    cand_t *c = &s->cand[i];
-    float dx = c->x - x, dy = c->y - y, r = (c->hs + c->vs) * 0.2f;
-    if (dx * dx + dy * dy < r * r) {
-      float n = (float)c->n;
-      c->x = (c->x * n + x) / (n + 1);
-      c->y = (c->y * n + y) / (n + 1);
-      c->hs = (c->hs * n + hs) / (n + 1);
-      c->vs = (c->vs * n + vs) / (n + 1);
-      c->n++;
-      return;
-    }
-  }
+static void add_candidate(fqr_t *s, int y, float cx, float cy, float hs, float vs) {
   if (s->ncand == MAX_CAND) {
     // Full: drop the ones the scan has passed that few rows hit
     int k = 0;
     for (int i = 0; i < s->ncand; i++) {
       const cand_t *c = &s->cand[i];
-      if (c->n >= 3 || c->y + c->vs * 0.5f >= y) {
+      if (c->n >= 3 || c->y + c->vs * 0.5f >= (float)y) {
         s->cand[k++] = *c;
       }
     }
@@ -926,23 +892,38 @@ static void add_candidate(fqr_t *s, float x, float y, float hs, float vs) {
   }
   if (s->ncand < MAX_CAND) {
     cand_t *c = &s->cand[s->ncand++];
-    c->x = x;
-    c->y = y;
+    c->x = cx;
+    c->y = cy;
     c->hs = hs;
     c->vs = vs;
     c->n = 1;
   }
 }
 
+// A row's five runs fit a finder pattern, ending before pixel `xend`
 static void row_hit(fqr_t *s, int y, int xend, const int c[5]) {
   int total = c[0] + c[1] + c[2] + c[3] + c[4];
   if (total < 12) {
     return;  // under 2 px a module: nothing to read, and noise looks like it
   }
   int cx = xend - c[4] - c[3] - c[2] / 2;
-  if (cx < 0 || cx >= s->w || !BIT(s, cx, y)) {
+  // One already found, from the rows above? Then this row is one more
+  // through it (the first three rows each measure it; later ones count)
+  cand_t *have = NULL;
+  for (int i = 0; i < s->ncand && have == NULL; i++) {
+    cand_t *k = &s->cand[i];
+    float dx = k->x - (float)cx, dy = k->y - (float)y, r = (k->hs + k->vs) * 0.2f;
+    if (dx * dx + dy * dy < r * r) {
+      have = k;
+    }
+  }
+  if (have != NULL && have->n >= 3) {
+    have->n++;
     return;
   }
+#ifdef FQR_PROF
+  fqr_hits++;
+#endif
   int v[5], h2[5];
   float cy, cx2;
   if (!cross_runs(s, cx, y, 0, total, v, &cy) || !ratio_ok(v)) {
@@ -953,37 +934,113 @@ static void row_hit(fqr_t *s, int y, int xend, const int c[5]) {
     return;
   }
   int iy = (int)cy;
-  if (iy < 0 || iy >= s->h || !BIT(s, cx, iy)) {
+  if (iy < 0 || iy >= s->h) {
     return;
   }
+  // (the centre of the column's centre run is dark: it is inside that run)
   if (!cross_runs(s, cx, iy, 1, total, h2, &cx2) || !ratio_ok(h2)) {
     return;
   }
-  add_candidate(s, cx2, cy, (float)(h2[0] + h2[1] + h2[2] + h2[3] + h2[4]), (float)vt);
+  float hs = (float)(h2[0] + h2[1] + h2[2] + h2[3] + h2[4]);
+  if (have != NULL) {
+    float n = (float)have->n;
+    have->x = (have->x * n + cx2) / (n + 1);
+    have->y = (have->y * n + cy) / (n + 1);
+    have->hs = (have->hs * n + hs) / (n + 1);
+    have->vs = (have->vs * n + (float)vt) / (n + 1);
+    have->n++;
+    return;
+  }
+  // The measured centre may be one already found (this row hit its edge)
+  for (int i = 0; i < s->ncand; i++) {
+    cand_t *k = &s->cand[i];
+    float dx = k->x - cx2, dy = k->y - cy, r = (k->hs + k->vs) * 0.2f;
+    if (dx * dx + dy * dy < r * r) {
+      k->n++;
+      return;
+    }
+  }
+  add_candidate(s, y, cx2, cy, hs, (float)vt);
 }
 
+// Finder pattern candidates: every row thresholded as it is read, cut into
+// runs, and each 1:1:3:1:1 run of five checked down its centre column and
+// across again
 static void find_finders(fqr_t *s) {
+  int w = s->w, h = s->h;
+  const uint8_t *img = s->img;
   s->ncand = 0;
-  uint16_t *run = s->col;  // the row's runs (the column sums are done with)
-  for (int y = 0; y < s->h; y++) {
-    // The row as runs, whole bytes of one colour at a time
-    const uint8_t *row = s->bits + (size_t)y * (size_t)s->bpr;
-    int n = 0, len = 0, colour = row[0] & 1, first = colour;
-    for (int x = 0; x < s->w;) {
-      unsigned byte = row[x >> 3];
-      if (s->w - x >= 8 && byte == (colour ? 0xFFu : 0u)) {
-        len += 8;
-        x += 8;
+  PROF(0, block_stats(s));
+  uint16_t *run = s->run;
+  memset(s->col, 0, (size_t)w * sizeof(uint16_t));
+  int rows = 0;
+  for (int y = 0; y <= SMALL_R && y < h; y++) {
+    const uint8_t *row = img + (size_t)y * (size_t)s->stride;
+    for (int x = 0; x < w; x++) {
+      s->col[x] = (uint16_t)(s->col[x] + row[x]);
+    }
+    rows++;
+  }
+  for (int y = 0; y < h; y++) {
+    const uint8_t *row = img + (size_t)y * (size_t)s->stride;
+    const uint8_t *bm = s->bmean + (y / BLOCK) * s->bw, *bt = s->btol + (y / BLOCK) * s->bw;
+    int sum = 0, cols = 0;
+    for (int x = 0; x <= SMALL_R && x < w; x++) {
+      sum += s->col[x];
+      cols++;
+    }
+    // The row's runs, a block (one threshold pair) at a time
+    int n = 0, len = 0, colour = -1, first = 0;
+    for (int x = 0; x < w;) {
+      int mean = bm[x / BLOCK], tolv = bt[x / BLOCK];
+      int end = (x / BLOCK + 1) * BLOCK > w ? w : (x / BLOCK + 1) * BLOCK;
+      if (x - SMALL_R >= 0 && end + SMALL_R < w) {
+        // away from the frame's sides: a full window, nothing to clip
+        int cnt = rows * (2 * SMALL_R + 1), tol = tolv * cnt;
+        const uint16_t *cp = s->col + x;
+        const uint8_t *rp = row + x;
+        int m = end - x;
+        for (int i = 0; i < m; i++) {
+          int v = rp[i], d = v * cnt - sum;
+          int dark = d < -tol || (d <= tol && v < mean);
+          sum += cp[i + SMALL_R + 1] - cp[i - SMALL_R];
+          if (dark == colour) {
+            len++;
+            continue;
+          }
+          if (colour < 0) {
+            first = dark;
+          } else {
+            run[n++] = (uint16_t)len;
+          }
+          colour = dark;
+          len = 1;
+        }
+        x = end;
         continue;
       }
-      int end = x + 8 > s->w ? s->w : x + 8;
-      for (; x < end; x++, byte >>= 1) {
-        if ((int)(byte & 1) == colour) {
+      for (; x < end; x++) {
+        int cnt = rows * cols, tol = tolv * cnt;
+        int v = row[x], d = v * cnt - sum;
+        int dark = d < -tol || (d <= tol && v < mean);
+        if (dark == colour) {
           len++;
         } else {
-          run[n++] = (uint16_t)len;
+          if (colour < 0) {
+            first = dark;
+          } else {
+            run[n++] = (uint16_t)len;
+          }
+          colour = dark;
           len = 1;
-          colour = !colour;
+        }
+        if (x + SMALL_R + 1 < w) {
+          sum += s->col[x + SMALL_R + 1];
+          cols++;
+        }
+        if (x - SMALL_R >= 0) {
+          sum -= s->col[x - SMALL_R];
+          cols--;
         }
       }
     }
@@ -995,6 +1052,23 @@ static void find_finders(fqr_t *s) {
       if (c[2] >= c[0] && c[2] >= c[4] && ratio_ok(c)) {
         row_hit(s, y, x + c[0] + c[1] + c[2] + c[3] + c[4], c);
       }
+    }
+    const uint8_t *add = y + SMALL_R + 1 < h ? img + (size_t)(y + SMALL_R + 1) * (size_t)s->stride : NULL;
+    const uint8_t *sub = y - SMALL_R >= 0 ? img + (size_t)(y - SMALL_R) * (size_t)s->stride : NULL;
+    if (add != NULL && sub != NULL) {
+      for (int i = 0; i < w; i++) {
+        s->col[i] = (uint16_t)(s->col[i] + add[i] - sub[i]);
+      }
+    } else if (add != NULL) {
+      for (int i = 0; i < w; i++) {
+        s->col[i] = (uint16_t)(s->col[i] + add[i]);
+      }
+      rows++;
+    } else if (sub != NULL) {
+      for (int i = 0; i < w; i++) {
+        s->col[i] = (uint16_t)(s->col[i] - sub[i]);
+      }
+      rows--;
     }
   }
   // Best first: a finder is hit by the rows through its centre, 3 modules
@@ -1363,13 +1437,35 @@ static float build_grid(fqr_t *s, int D, float est_dim, float R, int K) {
   float pl = 0, ql = 0, best = -2;
   s->warp_n = 0;
   if (D == 0) {
+    // The run scan's centres are good to about a module (less on a turned
+    // code); the timing lines need better: each finder against the
+    // template first, with module vectors from the estimated size
+    float L = est_dim - 7.0f;
+    pt_t ux = {(s->fin[1].x - s->fin[0].x) / L, (s->fin[1].y - s->fin[0].y) / L};
+    pt_t uy = {(s->fin[2].x - s->fin[0].x) / L, (s->fin[2].y - s->fin[0].y) / L};
+    for (int i = 0; i < 3; i++) {
+      pt_t c = s->fin[i];
+      float sc = locate(s, &c, ux, uy, 9, R, K);
+      float mx = c.x - s->fin[i].x, my = c.y - s->fin[i].y;
+      float m2 = ux.x * ux.x + ux.y * ux.y + uy.x * uy.x + uy.y * uy.y;
+      // (a poor fit, or one far from the scan's centre, is not taken: on a
+      // clipped frame the template also fits a module or two away)
+      if (sc > 0.3f && mx * mx + my * my < 0.75f * m2) {
+        s->fin[i] = c;
+      }
+    }
     int v0 = (int)((est_dim - 17.0f) / 4.0f + 0.5f);
-    for (int v = v0 - 2; v <= v0 + 2; v++) {
+    for (int v = v0 - 3; v <= v0 + 3; v++) {
       if (v < 1 || v > FQR_MAX_VERSION) {
         continue;
       }
       float a, b;
       float sc = fit_timing(s, 17 + 4 * v, false, &a, &b);
+#ifdef FQR_HOST_TUNE
+      if (OPT(15)) {
+        printf("  dim %d: timing %.2f (p %.2f q %.2f) est %.1f\n", 17 + 4 * v, (double)sc, (double)a, (double)b, (double)est_dim);
+      }
+#endif
       if (sc > best) {
         best = sc;
         D = 17 + 4 * v;
@@ -1401,6 +1497,13 @@ static float build_grid(fqr_t *s, int D, float est_dim, float R, int K) {
       break;
     }
   }
+#ifdef FQR_HOST_TUNE
+  if (OPT(15)) {
+    printf("grid: dim %d timing %.2f finder fit %.2f at %.1f %.1f / %.1f %.1f / %.1f %.1f\n", D, (double)best, (double)fs,
+           (double)s->fin[0].x, (double)s->fin[0].y, (double)s->fin[1].x, (double)s->fin[1].y, (double)s->fin[2].x,
+           (double)s->fin[2].y);
+  }
+#endif
   if (fs < 0.3f) {
     return -1;
   }
@@ -1566,10 +1669,11 @@ static void soften(fqr_t *s) {
 static void equalise(fqr_t *s, int version) {
   int D = 17 + 4 * version, cells = D * D;
   int8_t *z = s->soft, *b = s->soft2, *nz = s->eq;
-  const int8_t *known = s->known;
+#define KNOWN(i) ((s->known[(i) >> 3] >> ((i) & 7)) & 1)
+#define KVAL(i) ((int8_t)(((s->kdark[(i) >> 3] >> ((i) & 7)) & 1) ? -64 : 64))
   build_func(s, version);
   for (int i = 0; i < cells; i++) {
-    b[i] = known[i] ? known[i] : (int8_t)(z[i] >= 0 ? 64 : -64);
+    b[i] = KNOWN(i) ? KVAL(i) : (int8_t)(z[i] >= 0 ? 64 : -64);
   }
 #define B(xx, yy) ((xx) < 0 || (yy) < 0 || (xx) >= D || (yy) >= D ? 64 : b[(yy) * D + (xx)])
   for (int it = 0; it < EQ_ROUNDS; it++) {
@@ -1652,10 +1756,12 @@ static void equalise(fqr_t *s, int version) {
       return;
     }
     for (int i = 0; i < cells; i++) {
-      b[i] = known[i] ? known[i] : nz[i];
+      b[i] = KNOWN(i) ? KVAL(i) : nz[i];
     }
   }
 #undef B
+#undef KNOWN
+#undef KVAL
 }
 
 // ---------------------------------------------------------------- frames
@@ -1696,12 +1802,13 @@ static bool read_grid(fqr_t *s, uint8_t *payload, size_t max, fqr_result_t *res)
   PROF(6, ok = decode_soft(s, s->soft, version, payload, max, res));
 
   // Same code as the frames summed so far? Their signs agree on most
-  // modules; another code's agree on half
+  // modules; another code's agree on half. The sum is kept as soft bits: each
+  // frame adds half its own, up to the soft bits' range.
   if (s->acc_n > 0 && s->acc_dim == D) {
     int agree = 0, n = 0;
     for (int i = 0; i < cells; i++) {
       int a = s->acc[i], b = s->soft[i];
-      if ((a > 8 * s->acc_n || a < -8 * s->acc_n) && (b > 8 || b < -8)) {
+      if ((a > 12 || a < -12) && (b > 12 || b < -12)) {
         n++;
         agree += (a > 0) == (b > 0);
       }
@@ -1713,25 +1820,21 @@ static bool read_grid(fqr_t *s, uint8_t *payload, size_t max, fqr_result_t *res)
     s->acc_n = 0;
   }
   if (s->acc_n == 0) {
-    for (int i = 0; i < cells; i++) {
-      s->acc[i] = s->soft[i];
-    }
+    memset(s->acc, 0, (size_t)cells);
     s->acc_dim = D;
-    s->acc_n = 1;
-  } else if (s->acc_n < 64) {
-    for (int i = 0; i < cells; i++) {
-      s->acc[i] = (int16_t)(s->acc[i] + s->soft[i]);
-    }
+  }
+  for (int i = 0; i < cells; i++) {
+    int v = s->acc[i] + s->soft[i] / 2;
+    s->acc[i] = (int8_t)(v < -127 ? -127 : v > 127 ? 127 : v);
+  }
+  if (s->acc_n < 255) {
     s->acc_n++;
   }
   if (!ok && s->acc_n > 1 && !OPT(2)) {
-    for (int i = 0; i < cells; i++) {
-      int v = s->acc[i] / s->acc_n;
-      // a module the frames disagree on is no more certain for being summed
-      s->soft2[i] = (int8_t)(v < -127 ? -127 : v > 127 ? 127 : v);
-    }
     fqr_result_t r2 = *res;
-    if (decode_soft(s, s->soft2, version, payload, max, &r2)) {
+    bool ok2;
+    PROF(6, ok2 = decode_soft(s, s->acc, version, payload, max, &r2));
+    if (ok2) {
       *res = r2;
       res->fused = s->acc_n;
       ok = true;
@@ -1784,7 +1887,6 @@ bool fqr_scan(fqr_t *s, const uint8_t *gray, int stride, uint8_t *payload, size_
     }
   }
 
-  PROF(0, binarize(s));
   PROF(1, find_finders(s));
   res->finders = s->ncand;
   int nc = s->ncand > 8 ? 8 : s->ncand;
@@ -1854,16 +1956,16 @@ bool fqr_scan(fqr_t *s, const uint8_t *gray, int stride, uint8_t *payload, size_
     if (sc < 0.35f) {
       continue;
     }
-    any = true;
     ok = read_grid(s, payload, payload_max, res);
     if (res->stage >= FQR_STAGE_FORMAT) {
+      any = true;
       break;  // this is the code, readable or not
     }
   }
   // Two finders and no third: the run scan missed one (glare, a dim
   // corner). It can only be in six places about the pair (the pair is a side
   // of the code, or its diagonal); look for it there against the template.
-  for (int a = 0; a < nc && !any && res->stage < FQR_STAGE_FORMAT; a++) {
+  for (int a = 0; a < nc && !any; a++) {
     for (int b = a + 1; b < nc && !any; b++) {
       const cand_t *P = &s->cand[a], *Q = &s->cand[b];
       if (P->q < 0.6f || Q->q < 0.6f) {
@@ -1875,68 +1977,73 @@ bool fqr_scan(fqr_t *s, const uint8_t *gray, int stride, uint8_t *payload, size_
       if (d < 12 * mod) {
         continue;
       }
-      float best = 0.3f;
-      pt_t bf[3] = {{0, 0}, {0, 0}, {0, 0}};
+      // Each place's best template fit; then the places in order of fit,
+      // until one gives a grid
+      pt_t hf[6][3];
+      float hs[6];
       for (int hyp = 0; hyp < 6; hyp++) {
         // perpendicular of the pair, either side
         float sgn = (hyp & 1) ? 1.0f : -1.0f, px = -dy * sgn, py = dx * sgn;
-        pt_t c, f[3];
+        pt_t c, *f = hf[hyp];
         if (hyp < 2) {  // third at P's end: P is the corner
-          c.x = P->x + px; c.y = P->y + py;
-          f[0].x = P->x; f[0].y = P->y; f[1].x = Q->x; f[1].y = Q->y;
+          c.x = P->x + px;
+          c.y = P->y + py;
+          f[0].x = P->x;
+          f[0].y = P->y;
+          f[1].x = Q->x;
+          f[1].y = Q->y;
         } else if (hyp < 4) {  // third at Q's end: Q is the corner
-          c.x = Q->x + px; c.y = Q->y + py;
-          f[0].x = Q->x; f[0].y = Q->y; f[1].x = P->x; f[1].y = P->y;
+          c.x = Q->x + px;
+          c.y = Q->y + py;
+          f[0].x = Q->x;
+          f[0].y = Q->y;
+          f[1].x = P->x;
+          f[1].y = P->y;
         } else {  // the pair is the diagonal: the corner is the third
-          c.x = (P->x + Q->x + px) * 0.5f; c.y = (P->y + Q->y + py) * 0.5f;
-          f[1].x = P->x; f[1].y = P->y; f[2].x = Q->x; f[2].y = Q->y;
+          c.x = (P->x + Q->x + px) * 0.5f;
+          c.y = (P->y + Q->y + py) * 0.5f;
+          f[1].x = P->x;
+          f[1].y = P->y;
+          f[2].x = Q->x;
+          f[2].y = Q->y;
         }
         float ex = hyp < 4 ? dx : (dx + px), ey = hyp < 4 ? dy : (dy + py);
         float el = sqrtf(ex * ex + ey * ey);
         pt_t ux = {ex / el * mod, ey / el * mod}, uy = {-ey / el * mod, ex / el * mod};
-        float sc = locate(s, &c, ux, uy, 9, 6.0f, 2);
-#ifdef FQR_HOST_TUNE
-        if (OPT(15)) {
-          printf("pair %d %d hyp %d: %.1f %.1f score %.2f mod %.2f\n", a, b, hyp, (double)c.x, (double)c.y, (double)sc, (double)mod);
-        }
-#endif
-        if (sc > best) {
-          best = sc;
-          if (hyp < 4) {
-            f[2] = c;
-          } else {
-            f[0] = c;
-          }
-          // B clockwise of C about A
-          float ax = f[1].x - f[0].x, ay = f[1].y - f[0].y, bx = f[2].x - f[0].x, by = f[2].y - f[0].y;
-          if (ax * by - ay * bx < 0) {
-            pt_t t = f[1];
-            f[1] = f[2];
-            f[2] = t;
-          }
-          memcpy(bf, f, sizeof(bf));
+        hs[hyp] = locate(s, &c, ux, uy, 9, 6.0f, 2);
+        f[hyp < 4 ? 2 : 0] = c;
+        // B clockwise of C about A
+        float ax = f[1].x - f[0].x, ay = f[1].y - f[0].y, bx = f[2].x - f[0].x, by = f[2].y - f[0].y;
+        if (ax * by - ay * bx < 0) {
+          pt_t t = f[1];
+          f[1] = f[2];
+          f[2] = t;
         }
       }
-      if (best <= 0.3f) {
-        continue;
+      for (int tries = 0; tries < 6 && !any; tries++) {
+        int hyp = 0;
+        for (int k = 1; k < 6; k++) {
+          if (hs[k] > hs[hyp]) {
+            hyp = k;
+          }
+        }
+        if (hs[hyp] < 0.2f) {
+          break;
+        }
+        hs[hyp] = -1;
+        memcpy(s->fin, hf[hyp], sizeof(s->fin));
+        if (res->stage < FQR_STAGE_FINDERS) {
+          res->stage = FQR_STAGE_FINDERS;
+        }
+        const pt_t *bf = hf[hyp];
+        float lu = sqrtf((bf[1].x - bf[0].x) * (bf[1].x - bf[0].x) + (bf[1].y - bf[0].y) * (bf[1].y - bf[0].y));
+        float lv = sqrtf((bf[2].x - bf[0].x) * (bf[2].x - bf[0].x) + (bf[2].y - bf[0].y) * (bf[2].y - bf[0].y));
+        if (build_grid(s, 0, (lu + lv) * 0.5f / mod + 7.0f, 1.5f, 4) < 0.35f) {
+          continue;
+        }
+        ok = read_grid(s, payload, payload_max, res);
+        any = res->stage >= FQR_STAGE_FORMAT;
       }
-      memcpy(s->fin, bf, sizeof(bf));
-      if (res->stage < FQR_STAGE_FINDERS) {
-        res->stage = FQR_STAGE_FINDERS;
-      }
-      float lu = sqrtf((bf[1].x - bf[0].x) * (bf[1].x - bf[0].x) + (bf[1].y - bf[0].y) * (bf[1].y - bf[0].y));
-      float lv = sqrtf((bf[2].x - bf[0].x) * (bf[2].x - bf[0].x) + (bf[2].y - bf[0].y) * (bf[2].y - bf[0].y));
-      float gs = build_grid(s, 0, (lu + lv) * 0.5f / mod + 7.0f, 1.5f, 4);
-#ifdef FQR_HOST_TUNE
-      if (OPT(15)) {
-        printf("pair grid %.2f dim %d est %.1f\n", (double)gs, s->dim, (double)((lu + lv) * 0.5f / mod + 7.0f));
-      }
-#endif
-      if (gs < 0.35f) {
-        continue;
-      }
-      any = true;
-      ok = read_grid(s, payload, payload_max, res);
     }
   }
   track_update(s, any);
@@ -1984,9 +2091,8 @@ static size_t align8(size_t n) { return (n + 7) & ~(size_t)7; }
 
 size_t fqr_state_size(int w, int h) {
   size_t bw = (size_t)(w + BLOCK - 1) / BLOCK, bh = (size_t)(h + BLOCK - 1) / BLOCK;
-  return align8(sizeof(fqr_t)) + align8((size_t)((w + 7) / 8) * (size_t)h) +
-         align8((size_t)w * sizeof(uint16_t)) + align8(bw * bh * sizeof(uint16_t)) +
-         4 * align8(bw * bh);
+  return align8(sizeof(fqr_t)) + align8((size_t)w * sizeof(uint16_t)) +
+         align8((size_t)(w + 2) * sizeof(uint16_t)) + 3 * align8(bw * bh) + align8(9 * bw);
 }
 
 fqr_t *fqr_init(void *state, size_t size, int w, int h) {
@@ -1998,23 +2104,20 @@ fqr_t *fqr_init(void *state, size_t size, int w, int h) {
   uint8_t *next = (uint8_t *)state + align8(sizeof(fqr_t));
   s->w = w;
   s->h = h;
-  s->bpr = (w + 7) / 8;
   s->bw = (w + BLOCK - 1) / BLOCK;
   s->bh = (h + BLOCK - 1) / BLOCK;
   size_t nb = (size_t)s->bw * (size_t)s->bh;
-  s->bits = next;
-  next += align8((size_t)s->bpr * (size_t)h);
   s->col = (uint16_t *)next;
   next += align8((size_t)w * sizeof(uint16_t));
-  s->bsum = (uint16_t *)next;
-  next += align8(nb * sizeof(uint16_t));
-  s->bmin = next;
-  next += align8(nb);
-  s->bmax = next;
-  next += align8(nb);
+  s->run = (uint16_t *)next;
+  next += align8((size_t)(w + 2) * sizeof(uint16_t));
   s->bmean = next;
   next += align8(nb);
   s->btol = next;
+  next += align8(nb);
+  s->bwork1 = next;
+  next += align8(nb);
+  s->bwork2 = next;
   gf_init(s);
   return s;
 }

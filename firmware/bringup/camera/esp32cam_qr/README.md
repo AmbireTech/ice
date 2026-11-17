@@ -76,7 +76,7 @@ a second of each.
   code's area (the view's centre until a code is seen) held below clipping,
   the exposure at most about 10 ms against hand blur, gain making up the rest.
 - Frames are decoded where the camera driver put them; the decoder never
-  changes a frame and keeps its own state (about 105 kB, printed at start) in internal RAM.
+  changes a frame and keeps its own state (about 70 kB, printed at start) in internal RAM.
 - The decoder runs on the second core, so the first core's idle task (which
   the watchdog watches) always gets to run.
 - The sensor is powered down before each start: the board sometimes reads

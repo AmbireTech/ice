@@ -13,7 +13,7 @@
 #include "fqr.h"
 
 extern int fqr_opt[16];
-extern uint32_t fqr_prof[8];
+extern uint32_t fqr_prof[8], fqr_hits;
 uint32_t fqr_prof_us(void) {
   struct timespec t;
   clock_gettime(CLOCK_MONOTONIC, &t);
@@ -160,6 +160,7 @@ int main(int argc, char **argv) {
   if (getenv("FQR_PROF")) {
     static const char *names[] = {"binarize", "finders", "grid", "sample", "soften", "equalise", "decode"};
     int runs = (argc - 1) * (getenv("FQR_REPS") ? atoi(getenv("FQR_REPS")) : 1);
+    printf("  column checks %.0f a frame\n", (double)fqr_hits / runs);
     for (int i = 0; i < 7; i++) {
       printf("  %s %.3f ms\n", names[i], fqr_prof[i] / 1000.0 / runs);
     }
