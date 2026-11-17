@@ -513,6 +513,12 @@ pub struct Homescreen {
     status: super::ambire_status::StatusLine,
     #[cfg(any(feature = "ble", feature = "ambire_camera"))]
     swipe_start: Option<Point>,
+    /// Ambire boards: the last point the finger moved to. The swipe is judged
+    /// from the movement reported while the finger is down, never from the
+    /// lift-up point: the touch controller's lift-up coordinates are not to be
+    /// trusted (a tap read as a swipe up opened Bluetooth pairing).
+    #[cfg(any(feature = "ble", feature = "ambire_camera"))]
+    swipe_last: Option<Point>,
 }
 
 pub enum HomescreenMsg {
@@ -581,6 +587,8 @@ impl Homescreen {
             status: super::ambire_status::StatusLine::new(),
             #[cfg(any(feature = "ble", feature = "ambire_camera"))]
             swipe_start: None,
+            #[cfg(any(feature = "ble", feature = "ambire_camera"))]
+            swipe_last: None,
         })
     }
 
@@ -601,11 +609,17 @@ impl Homescreen {
         match event {
             Event::Touch(TouchEvent::TouchStart(pos)) => {
                 self.swipe_start = Some(pos);
+                self.swipe_last = Some(pos);
             }
-            Event::Touch(TouchEvent::TouchEnd(pos)) => {
-                if let Some(start) = self.swipe_start.take() {
-                    let up = start.y - pos.y;
-                    return up >= SWIPE_UP_MIN && up > (pos.x - start.x).abs();
+            Event::Touch(TouchEvent::TouchMove(pos)) => {
+                if self.swipe_start.is_some() {
+                    self.swipe_last = Some(pos);
+                }
+            }
+            Event::Touch(TouchEvent::TouchEnd(_)) => {
+                if let (Some(start), Some(last)) = (self.swipe_start.take(), self.swipe_last.take()) {
+                    let up = start.y - last.y;
+                    return up >= SWIPE_UP_MIN && up > (last.x - start.x).abs();
                 }
             }
             _ => {}
