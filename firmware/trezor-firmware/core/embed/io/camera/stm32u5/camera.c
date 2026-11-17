@@ -72,6 +72,7 @@ LOG_DECLARE(camera);
 #define CAMERA_FLAG_DMA_FULL (1U << 8)   // buffer full, the frame went on
 #define CAMERA_FLAG_DMA_ERROR (1U << 9)  // GPDMA transfer/setting error
 #define CAMERA_FLAG_TIMEOUT (1U << 10)   // no frame end in time
+#define CAMERA_FLAG_DEBUG_HOLD (1U << 11)  // held for the SWD debugger
 
 typedef struct {
   GPIO_TypeDef *port;
@@ -97,6 +98,47 @@ typedef struct {
 } camera_driver_t;
 
 static camera_driver_t g_camera;
+
+// ---------------------------------------------------------------------------
+// SWD debug mailbox (bring-up): firmware/bringup/camera/camdbg.py writes it
+// over SWD while the camera runs; nothing else does. Register ops are applied
+// at the next camera call (each one is about a frame apart). A hold keeps the
+// next whole frame raw in the app's buffer: the capture reports FAILED with
+// CAMERA_FLAG_DEBUG_HOLD, which the screens paint and do not decode, and no
+// capture starts until the hold is released.
+
+#define CAMERA_DEBUG_MAGIC 0xCA3DB600U
+#define CAMERA_DEBUG_OPS 48
+#define CAMERA_DEBUG_OP_WRITE 1
+#define CAMERA_DEBUG_OP_READ 2
+#define CAMERA_DEBUG_OP_DELAY 3  // val ms
+#define CAMERA_DEBUG_NO_BANK 0xFFFF
+
+typedef struct {
+  uint16_t op;
+  uint16_t bank;  // OV2640: written to 0xFF first; CAMERA_DEBUG_NO_BANK: none
+  uint16_t reg;
+  uint8_t val;
+  uint8_t result;  // read value
+  uint32_t ok;     // 1: acknowledged
+} camera_debug_op_t;
+
+typedef struct {
+  uint32_t magic;
+  uint32_t req_seq;  // the debugger bumps it after filling ops / n_ops
+  uint32_t ack_seq;  // set to req_seq once the ops ran
+  uint32_t n_ops;
+  uint32_t hold_req;    // debugger: 1 hold the next whole frame, 0 release
+  uint32_t held;        // 1: frame_addr holds a raw frame, no capture runs
+  uint32_t frame_addr;  // the buffer of the last capture
+  uint32_t frame_side;
+  uint32_t frame_seq;   // bumped each time a frame is held
+  camera_status_t st;   // copied at each camera call
+  camera_debug_op_t ops[CAMERA_DEBUG_OPS];
+} camera_debug_t;
+
+volatile camera_debug_t g_camera_debug __attribute__((used)) = {
+    .magic = CAMERA_DEBUG_MAGIC};
 
 // The capture's linked list after its first block: each item reloads the
 // block size (CBR1), the destination (CDAR) and the link (CLLR). The list
@@ -730,6 +772,43 @@ static uint32_t sensor_detect(void) {
   return CAMERA_SENSOR_NONE;
 }
 
+// Runs the debugger's register ops, if it posted new ones
+static void camera_debug_poll(void) {
+  volatile camera_debug_t *d = &g_camera_debug;
+  memcpy((void *)&d->st, &g_camera.st, sizeof(d->st));
+  if (d->req_seq == d->ack_seq) {
+    return;
+  }
+  uint32_t n = d->n_ops < CAMERA_DEBUG_OPS ? d->n_ops : CAMERA_DEBUG_OPS;
+  bool ov5640 = g_camera.st.sensor_id == CAMERA_SENSOR_OV5640;
+  for (uint32_t i = 0; i < n; i++) {
+    volatile camera_debug_op_t *op = &d->ops[i];
+    bool ok = g_camera.powered;
+    if (op->op == CAMERA_DEBUG_OP_DELAY) {
+      systick_delay_ms(op->val);
+    } else if (ok) {
+      if (op->bank != CAMERA_DEBUG_NO_BANK && !ov5640) {
+        ok = sccb_write8(0xff, (uint8_t)op->bank);
+      }
+      if (ok && op->op == CAMERA_DEBUG_OP_WRITE) {
+        ok = ov5640 ? sccb_write16(op->reg, op->val)
+                    : sccb_write8((uint8_t)op->reg, op->val);
+      } else if (ok && op->op == CAMERA_DEBUG_OP_READ) {
+        uint8_t v = 0;
+        ok = ov5640 ? sccb_read16(op->reg, &v) : sccb_read8((uint8_t)op->reg, &v);
+        op->result = v;
+      }
+    }
+    op->ok = ok ? 1 : 0;
+    if (!ok) {
+      LOG_WARN("debug op %u reg 0x%04x failed", (unsigned)op->op,
+               (unsigned)op->reg);
+    }
+  }
+  __DSB();
+  d->ack_seq = d->req_seq;
+}
+
 // ---------------------------------------------------------------------------
 // API
 
@@ -746,6 +825,7 @@ void camera_close(void) {
   HAL_GPIO_WritePin(CAMERA_EN_PORT, CAMERA_EN_PIN, GPIO_PIN_RESET);
   g_camera.powered = false;
   g_camera.st.state = CAMERA_STATE_OFF;
+  g_camera_debug.held = 0;
 }
 
 bool camera_open(uint32_t mode) {
@@ -838,6 +918,13 @@ bool camera_set_mode(uint32_t mode) {
 }
 
 bool camera_capture(uint8_t *buf, size_t size) {
+  camera_debug_poll();
+  if (g_camera_debug.held) {
+    if (g_camera_debug.hold_req) {
+      return false;
+    }
+    g_camera_debug.held = 0;
+  }
   uint32_t bytes = g_camera.frame_bytes;
   if (!g_camera.powered || g_camera.st.sensor_id == CAMERA_SENSOR_NONE ||
       g_camera.st.state == CAMERA_STATE_BUSY || bytes == 0 || size < bytes ||
@@ -904,7 +991,17 @@ static void capture_finish(bool ok, uint32_t flags) {
   dma_stop();
   DCMI->ICR = 0x1F;
 
-  if (ok) {
+  if (ok && g_camera_debug.hold_req) {
+    // Kept raw for the debugger: FAILED with the frame in, so the screen
+    // paints it and does not decode (threshold) it
+    st->frames++;
+    st->last_flags |= CAMERA_FLAG_DEBUG_HOLD;
+    st->state = CAMERA_STATE_FAILED;
+    g_camera_debug.frame_addr = g_camera.capture_buf;
+    g_camera_debug.frame_side = st->side;
+    g_camera_debug.frame_seq++;
+    g_camera_debug.held = 1;
+  } else if (ok) {
     st->frames++;
     st->state = CAMERA_STATE_DONE;
   } else {
@@ -953,6 +1050,7 @@ void camera_get_status(camera_status_t *status) {
   if (g_camera.st.state == CAMERA_STATE_BUSY) {
     capture_poll();
   }
+  camera_debug_poll();
   *status = g_camera.st;
 }
 
