@@ -39,6 +39,7 @@ FACE_CLR = 0.1       # the flange's outer face to the pocket's back (it rides on
 GRIP_PROUD = 0.6     # the grip (and the guard ridges) out of the wall
 RIB_W, RIB_D = 0.4, 0.25   # grooves across the grip's face, for a thumb
 GUARD_H = 0.2        # each guard ridge's flat face, as proud as the grip (a 45 deg underside under it)
+GUARD_ROOT = 0.6     # how far each guard ridge reaches into the wall from its drafted face
 MIN_SKIN = 0.8       # the wall left round the pocket, and the block behind the slot under a groove
 
 
@@ -131,7 +132,10 @@ def guards(p: dict):
         zb, zt = (z_edge, z_edge + run + GUARD_H) if upward else (z_edge - GUARD_H - run, z_edge)
         if zt > -0.1:
             raise SystemExit("airgap slider: the upper guard ridge reaches the parting line")
-        x_w = max(p["x_out"](zb), p["x_out"](zt)) + 0.05     # rooted in the wall over its whole height
+        # rooted in the wall over its whole height: GUARD_ROOT in from the drafted face, since the
+        # back's fillet rounds the wall's foot in from it (rooted 0.05 in, the lower ridge's foot
+        # hung under the fillet as a 0.05 mm flake)
+        x_w = max(p["x_out"](zb), p["x_out"](zt)) + GUARD_ROOT
         pts = [(x_w, zb), (p["x_out"](zb), zb), (x_f, zb + run), (x_f, zt), (x_w, zt)]
         face = make_face(Plane.XZ * Polyline(*pts, close=True))
         ridge = extrude(face, amount=y1 - y0)               # Plane.XZ extrudes toward -Y

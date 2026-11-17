@@ -1,8 +1,8 @@
 {
  "generated_from": "board/wallet.kicad_pcb",
  "size_mm": [
-  52.2,
-  91.2,
+  53.2,
+  92.2,
   10.2
  ],
  "board": {
@@ -63,9 +63,9 @@
  ],
  "pack": {
   "outline": [
-   -1.6,
+   -2.1,
    18.58,
-   49.6,
+   50.1,
    47.78
   ],
   "r": 4.0,
@@ -360,7 +360,7 @@
     {
      "label": "Gerbers",
      "filename": "ambire-ice-v4_gerbers.zip",
-     "bytes": 411807,
+     "bytes": 411858,
      "part": "enclosure/files/ambire-ice-v4_gerbers.zip.b64.txt",
      "b64": true
     },
@@ -383,7 +383,7 @@
     {
      "label": "Gerbers",
      "filename": "ambire-ice-v4_gerbers.zip",
-     "bytes": 411807,
+     "bytes": 411858,
      "part": "enclosure/files/ambire-ice-v4_gerbers.zip.b64.txt",
      "b64": true
     },
@@ -430,14 +430,14 @@
    {
     "label": "Case: 3MF and STL (zip)",
     "filename": "ambire-ice-case.zip",
-    "bytes": 449992,
+    "bytes": 470985,
     "part": "enclosure/files/ambire-ice-case.zip.b64.txt",
     "b64": true
    },
    {
     "label": "Battery pack tray and frame: 3MF and STL (zip)",
     "filename": "ambire-ice-battery-tray.zip",
-    "bytes": 164153,
+    "bytes": 156506,
     "part": "enclosure/files/ambire-ice-battery-tray.zip.b64.txt",
     "b64": true
    }

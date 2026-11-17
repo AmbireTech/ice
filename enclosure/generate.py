@@ -83,6 +83,7 @@ import numpy as np
 from build123d import (
     Axis,
     Box,
+    Kind,
     Rectangle,
     Cone,
     Cylinder,
@@ -98,6 +99,7 @@ from build123d import (
     Polygon,
     Vector,
     fillet,
+    offset,
 )
 
 HERE = Path(__file__).resolve().parent.parent
@@ -156,7 +158,13 @@ PROTRUDE = ("J1",)
 PROTRUDE_CLR, MIN_SKIN = 0.3, 0.6
 
 # ── Case ────────────────────────────────────────────────────────────────────
-WALL = 1.8
+# Resin (SLA) printers want walls of 0.8 mm at least (1.5 ideal; the fab's review of the first
+# order, 2026-11-17, flagged the north hook's groove and the vents' webs at 0.4): every thin
+# wall the joint makes is checked against PRINT_MIN_WALL below. The joint splits WALL into
+# the tongue, its clearance and the skirt: 1.2 + 0.1 + 1.0, the skirt 0.82 at its top under
+# the draft, the tongue 0.8 behind the hook's groove.
+PRINT_MIN_WALL = 0.8
+WALL = 2.3
 FLOOR = 1.2
 LIP = 0.8             # bezel over the glass
 GAP = 0.3             # board edge to wall
@@ -165,8 +173,8 @@ GAP = 0.3             # board edge to wall
 # and inside its fill, the north hook in its groove. An FDM print needs 0.2 (the first
 # print, 2026-10-26, 0.4 mm nozzle, would not go together at 0-0.1).
 FIT = 0.1
-TONGUE_T, TONGUE_H, TONGUE_CLR = 0.8, 1.8, FIT
-# The bezel's skirt (its outer wall round the tongue) is 0.7-0.9 mm thick, and it holds the
+TONGUE_T, TONGUE_H, TONGUE_CLR = 1.2, 1.8, FIT
+# The bezel's skirt (its outer wall round the tongue) is 0.8-1.0 mm thick, and it holds the
 # pocket the bezel prints sealed against the film: the first resin print (2026-11-14) tore
 # it off at its root. A 45 deg fillet that deep where the skirt meets the slot's ceiling,
 # and the tongue's outer top edge chamfered to clear it by TONGUE_CLR (not along the north
@@ -176,10 +184,12 @@ SKIRT_ROOT = 0.5
 # from just after its face on as it prints (its inside is one hollow; each vent relieves
 # all of it, and their number sets how fast resin gets in). The chin pocket's ceiling meets
 # the walls in a chamfer too, cut back clear of the parts under it.
-VENT_W, VENT_OVER_SLOT, VENT_MIN_H, VENT_R = 3.0, 0.4, 0.8, 0.4   # width; wall kept over the tongue's slot; least height; corners
+VENT_W, VENT_OVER_SLOT, VENT_MIN_H, VENT_R = 3.0, PRINT_MIN_WALL, 1.0, 0.4   # width; wall kept over the tongue's slot; least height; corners
 VENTS_PER_WALL, VENT_UNDER_LIP = 2, 0.0               # ...; the side vents' top under the screen's seat (0: flush)
 POCKET_CHAMFER = 0.5
-BACK_FILLET, FRONT_FILLET = 1.5, 1.2
+# The front fillet no deeper than the face over the screen: the side vents' tops are flush with
+# the screen's seat, and a deeper fillet thins the face over each vent's mouth to a knife edge.
+BACK_FILLET, FRONT_FILLET = 1.5, LIP
 # Outer walls lean in toward the back and toward the front, widest at the parting
 # line, so the two halves meet flush: the back and front faces are DRAFT_MM narrower
 # (in total, both sides together) than the parting line. That softens the box and
@@ -197,13 +207,14 @@ BOSS_R, PILOT_R = 2.2, 0.8   # bezel boss, 1.6 mm pilot for M2 self-tapping
 PILOT_TOP_CLR = 0.8  # pilot stops this far under the bezel's front face
 PIN_R = 1.0          # locating pin in a 2.2 mm board hole
 HOOK = (30.0, 0.3, 0.8, FIT)   # north hook: length, ridge depth, ridge height, clearance
+# (its groove runs up from the parting line, PRINT_MIN_WALL of tongue left over it)
 SOUND_R = 1.0        # hole in the back over the buzzer's top port (MLT-5020: 0.8 mm port)
 SCREW_LENGTHS = (6, 8, 10, 12)
 MIN_ENGAGE = 2.5     # mm of thread in the boss
 BOSS_PART_CLR = 0.2
 M2_SHANK_R = 1.0
 MIN_SHANK_CLR = 0.3  # screw shank to the nearest part; a standoff notched for a part may open on that side
-SCREEN_CLR = 0.15    # bezel fills to the screen's glass edge
+SCREEN_CLR = 0.25    # bezel fills to the screen's glass edge (0.15 was hard to snap the screen into, 2026-11-17)
 RIBBON_CLR = 0.3     # around the display ribbons' slots
 USB_PLUG = (12.6, 6.8, 2.2)  # opening for a USB-C plug overmold (w, h, corner r); common overmolds are <= 12.35 x 6.5
 LEVER_TRAVEL = 1.5   # MSK12C02 slide travel; its lever stops inside the wall, a printed slider (airslider.py) brings it out
@@ -715,6 +726,24 @@ def box(x0, y0, x1, y1, z0, z1):
     return Pos((x0 + x1) / 2, -(y0 + y1) / 2, (z0 + z1) / 2) * Box(x1 - x0, y1 - y0, z1 - z0)
 
 
+def slivers(outer, holes, least):
+    """The parts of a rounded rectangle less some boxes (board coordinates) narrower than
+    `least`, as a 2D face in model XY: what an opening (shrink by least/2, grow back) drops."""
+    k = least / 2
+    rr2 = lambda x0, y0, x1, y1, r: Pos((x0 + x1) / 2, -(y0 + y1) / 2) * (
+        RectangleRounded(x1 - x0, y1 - y0, r) if r > 0 else Rectangle(x1 - x0, y1 - y0))
+    region = rr2(*outer)
+    shrunk = rr2(outer[0] + k, outer[1] + k, outer[2] - k, outer[3] - k, outer[4] - k)
+    for h in holes:
+        region -= rr2(*h, 0)
+        shrunk -= rr2(h[0] - k, h[1] - k, h[2] + k, h[3] + k, k)
+    kept = None
+    for f in shrunk.faces():
+        grown = offset(f, k, kind=Kind.ARC)
+        kept = grown if kept is None else kept + grown
+    return region - kept if kept is not None else region
+
+
 def outline(b, grow):
     return (-grow, -grow, b["w"] + grow, b["h"] + grow, b["r"] + grow)
 
@@ -794,6 +823,16 @@ def main():
         raise SystemExit("draft: the walls would need supports when printed")
     if WALL - DRAFT_MM / 2 < MIN_WALL:
         raise SystemExit(f"draft: the wall thins to {WALL - DRAFT_MM / 2:.2f} mm at the back/front, under {MIN_WALL}")
+    # the joint's thin walls, for a resin print: the tongue behind the north hook's groove, the
+    # bezel's skirt at its top (the drafted outer face leans in), the web over each vent
+    behind_groove = TONGUE_T - HOOK[1] - HOOK[3]
+    over_groove = TONGUE_H - (HOOK[2] + 2 * HOOK[3])     # the groove runs up from the parting line
+    skirt_top = WALL - TONGUE_T - TONGUE_CLR - DRAFT_MM / 2 * (TONGUE_H + TONGUE_CLR) / (z_top - z_split)
+    for what, t_ in (("the tongue behind the hook's groove", behind_groove), ("the tongue over the hook's groove", over_groove),
+                     ("the skirt at its top", skirt_top),
+                     ("the wall over a vent", VENT_OVER_SLOT)):
+        if t_ < PRINT_MIN_WALL - 1e-9:
+            raise SystemExit(f"{what} is {t_:.2f} mm, under the {PRINT_MIN_WALL} mm a resin print needs")
 
     px0, py0, pw, ph = panel_outline()
     panel = (px0, py0, px0 + pw, py0 + ph)
@@ -882,7 +921,16 @@ def main():
             # a pin through the board's hole, its top just under the board's front face
             shell += Pos(hx, -hy, (z_back + z_split - 0.1) / 2) * Cylinder(PIN_R, z_split - 0.1 - z_back + 0.02)
         else:
-            # clearance hole, and the head's counterbore in the back face with a 45 deg roof (prints without support)
+            # clearance hole, and the head's counterbore in the back face with a 45 deg roof (prints without support);
+            # where the counterbore rises past the floor into the standoff, a collar keeps PRINT_MIN_WALL round it
+            cb_top = z_floor_out + CB_DEPTH + (CB_R - CLEAR_R)
+            if cb_top > z_floor_in:
+                collar_r = CB_R + PRINT_MIN_WALL
+                hit = [ref for ref, (ex0, ey0, ex1, ey1) in envs
+                       if math.hypot(max(ex0 - hx, 0, hx - ex1), max(ey0 - hy, 0, hy - ey1)) < collar_r + BOSS_PART_CLR]
+                if hit:
+                    raise SystemExit(f"standoff at {hx}, {hy}: the counterbore's collar (r {collar_r:.2f}) runs into {hit}")
+                shell += Pos(hx, -hy, (z_floor_in - 0.01 + cb_top) / 2) * Cylinder(collar_r, cb_top - z_floor_in + 0.01)
             shell -= Pos(hx, -hy, (z_floor_out + z_back) / 2) * Cylinder(CLEAR_R, z_back - z_floor_out + 2)
             shell -= Pos(hx, -hy, z_floor_out - 0.5 + (CB_DEPTH + 0.5) / 2) * Cylinder(CB_R, CB_DEPTH + 0.5)
             shell -= Pos(hx, -hy, z_floor_out + CB_DEPTH + (CB_R - CLEAR_R) / 2) * Cone(CB_R, CLEAR_R, CB_R - CLEAR_R)
@@ -903,7 +951,7 @@ def main():
         report.append(f"buzzer port: a {2 * SOUND_R:.1f} mm hole in the back at {lx:.1f}, {ly:.1f}")
     # North hook: a groove along the shell tongue's north face takes the bezel's ridge.
     hl, hd, hh, hc = HOOK
-    hz = z_split + TONGUE_H / 2
+    hz = z_split + hh / 2 + hc       # the groove from the parting line up: the tongue's whole top over it
     t_out = GAP + TONGUE_T
     shell -= box(W / 2 - hl / 2 - hc, -t_out - 0.5, W / 2 + hl / 2 + hc, -t_out + hd + hc,
                  hz - hh / 2 - hc, hz + hh / 2 + hc)
@@ -1103,6 +1151,14 @@ def main():
     bezel += rr_prism(*in_o[:4], in_o[4], z_split, z_lip + 0.01) - open_
     bezel -= (rr_prism(*in_o[:4], in_o[4], z_split - 1, z_split + TONGUE_H + FIT)
               - rr_prism(*outline(b, GAP - FIT)[:4], outline(b, GAP - FIT)[4], z_split - 2, z_split + TONGUE_H + 2))
+    # Beside the tongue's slot the fill is a strip between the slot and the screen: where the
+    # screen's square corners meet the slot's rounded ones it thins under PRINT_MIN_WALL, and
+    # those slivers go (the strips either side still locate the screen).
+    holes = [glass] + [(sx0 - RIBBON_CLR, glass[3] - 0.01, sx1 + RIBBON_CLR, sy1 + RIBBON_CLR) for sx0, sy0, sx1, sy1 in b["slots"]]
+    thin_fill = slivers(outline(b, GAP - FIT), holes, PRINT_MIN_WALL)
+    if thin_fill.area > 1e-6:
+        bezel -= Pos(0, 0, z_split - 1) * extrude(thin_fill, amount=TONGUE_H + FIT + 1)
+        report.append(f"the screen's fill: {thin_fill.area:.2f} mm2 of slivers under {PRINT_MIN_WALL} mm dropped beside the tongue's slot")
     joy = b["fps"].get(JOY_REF)
     joy_box = None
     if joy is not None:
@@ -1141,9 +1197,10 @@ def main():
         chin_h = max(chin_h, h)
     if front:
         # One pocket over the whole chin (owner, 2026-10-26: not one per part), from the
-        # northmost part to the south wall, as deep as the tallest part plus FRONT_CLR;
+        # northmost part to the south wall, as deep as the tallest part plus FRONT_CLR, and at
+        # least as deep as the south vents need (they open into it over the skirt's web);
         # the screw boss stays solid through it.
-        depth = chin_h + FRONT_CLR
+        depth = max(chin_h + FRONT_CLR, z_ceil + VENT_OVER_SLOT + VENT_MIN_H)
         if depth > z_top - FRONT_SKIN:
             raise SystemExit(f"the chin's tallest front part ({chin_h:.2f} mm) leaves under {FRONT_SKIN} mm of bezel over it")
         north = min(k[1] for k in keepouts + ([joy_box] if joy_box else []))
@@ -1168,7 +1225,7 @@ def main():
             if hit:
                 raise SystemExit(f"screw boss at {hx}, {hy} (r {BOSS_R}) runs into {', '.join(hit)}")
             bezel += Pos(hx, -hy, (z_split + depth) / 2) * Cylinder(BOSS_R, depth - z_split)
-        report.append(f"one pocket under the bezel's chin, {depth:.2f} deep ({FRONT_CLR} over the tallest part), "
+        report.append(f"one pocket under the bezel's chin, {depth:.2f} deep ({depth - chin_h:.2f} over the tallest part), "
                       f"{z_top - depth:.2f} mm of bezel over it, from y {north:.1f} to the south wall, "
                       f"a boss round the screw; it covers {', '.join(front)}")
 
@@ -1244,7 +1301,7 @@ def main():
         if not any(v[0] == side for v in vents):
             raise SystemExit(f"vent: no {VENT_W} mm of free {side} wall")
     for side, at, z1, inner in vents:
-        if z1 - vz0 < VENT_MIN_H:
+        if z1 - vz0 < VENT_MIN_H - 1e-9:
             raise SystemExit(f"vent ({side}): {z1 - vz0:.2f} mm between the tongue's slot and the pocket's ceiling")
         sk = RectangleRounded(VENT_W, z1 - vz0, VENT_R)   # square-ish top: open full width from its first layer
         outer = {"S": H + GAP + WALL + 1, "N": -(GAP + WALL) - 1, "E": W + GAP + WALL + 1, "W": -(GAP + WALL) - 1}[side]
