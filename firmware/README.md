@@ -439,16 +439,21 @@ why one does not read.
   along the picture's bottom edge, and its corners are marked (green; purple
   when a code was found but did not decode).
 - **Tap the picture** to step through three zoom levels (the middle one
-  first): **wide** (about the sensor's full height, scaled down), **2:1** (a
-  window twice the frame's size, scaled 2:1) and **native** (one sensor pixel
+  first): **wide** (about the sensor's full height, scaled down), **2:1** (on
+  the OV2640, the sensor's half-resolution mode at its own pixels: the detail
+  of a 2:1 window at about four times the frame rate) and **native** (one sensor pixel
   per frame pixel: the most detail, the narrowest view). A dense code needs
   the native or 2:1 level.
 - **The buttons along the bottom** change, from left to right: the frame size
-  (384, 288 or 240 pixels a side), the sensor clock (`clk std`, as the
-  reference driver runs it, or `clk fast`) and the tuning (`tune std`;
-  `screen`: a lower exposure target and more contrast, for a phone screen;
-  `scr+exp`: as `screen` with a short fixed exposure, against smear when the
-  code moves). The QR scan of a request then uses the zoom, clock and tuning
+  (384, 288 or 240 pixels a side), the sensor clock (`clk fast`, the
+  default: more frames and shorter exposures; `clk std`, as the reference
+  driver runs it, which the camera also falls back to by itself after three
+  failed captures) and the exposure (`auto exp`, the default on the OV2640:
+  set from each frame so the brightest part of the picture's centre, the
+  screen with the code, does not clip, at most about 10 ms against smear;
+  `sens AE`: the sensor's own automatic exposure, which averages the whole
+  view and so overexposes a screen in a dim room; `scr AE`: the same, with a
+  lower target and more contrast). The QR scan of a request then uses the zoom, clock and tuning
   last set here, until the device restarts.
 - **The top-left corner** closes the test and switches the camera off.
 
@@ -471,7 +476,7 @@ Reading them:
   module, blur is what stops the code, not the size. A fixed-focus module
   focused far away blurs a code held close.
 - **Clipped white** above a few per cent: the screen is too bright for the
-  exposure; try the `screen` tuning.
+  exposure. With `auto exp` this should settle within a few frames.
 - A code found but not decoded says why: `GRID SIZE` or `VERSION` (the grid
   was misread), `FORMAT ECC` or `DATA ECC` (too many modules read wrong:
   blur, too few pixels per module, or a code partly out of the picture).
@@ -486,8 +491,8 @@ Reading them:
   on line 3: the bytes that arrived and flags (`0x100` more data than a
   frame, `0x400` no frame end in time, and the camera interface's own:
   `0x002` overrun). A sheared picture means lines of the wrong length; a
-  partial one, a frame cut short. If this starts with `clk fast`, go back to
-  `clk std`.
+  partial one, a frame cut short. Three in a row at `clk fast` switch the
+  camera to `clk std` by itself.
 - If the camera does not start, the screen says why: nothing answered at the
   sensor's address, an unknown chip id, or the register write that failed,
   and which bus addresses did answer. Below that: the camera bus lines'

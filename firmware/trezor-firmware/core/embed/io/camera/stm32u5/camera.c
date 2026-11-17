@@ -95,6 +95,14 @@ typedef struct {
   uint32_t frame_bytes;
   uint32_t capture_start_ms;
   uint32_t capture_buf;
+  // OV2640 exposure set from the frames (tune 0): exposure in lines, gain in
+  // 1/16 steps, the longest exposure allowed (against hand blur)
+  bool ae_soft;
+  uint32_t ae_lines;
+  uint32_t ae_gain16;
+  uint32_t ae_max_lines;
+  // Failed captures in a row (the fast clock falls back to the stock one)
+  uint32_t fail_run;
 } camera_driver_t;
 
 static camera_driver_t g_camera;
@@ -353,7 +361,7 @@ static bool gc2145_set_mode(uint32_t zoom, uint32_t side) {
 // GC2145's AEC has no exposure cap that esp32-camera documents, so 2 adds
 // nothing to 1.
 static bool gc2145_set_tuning(uint32_t clock, uint32_t tune) {
-  bool screen = tune != 0;
+  bool screen = tune == 2;
   return reg_write(0xfe, 0x00) && reg_write(0xf8, clock ? 0x83 : 0x82) &&
          reg_write(0xfa, clock ? 0x00 : 0x20) &&
          reg_write(0x80, screen ? 0xfb : 0xff) && reg_write(0xfe, 0x01) &&
@@ -432,12 +440,18 @@ static bool ov2640_set_mode(uint32_t zoom, uint32_t side, uint32_t clock) {
     g_camera.st.scale_x10 = 12000 / side;
     ok = ov2640_set_window(ov2640_to_svga_regs, 100, 0, 600, 600, side,
                            clock ? 0x81 : 0x87, 0x88);
+  } else if (zoom == CAMERA_ZOOM_HALF) {
+    // SVGA's own pixels (the array read at half resolution): the detail of a
+    // 2:1 window of UXGA from a quarter of the pixels, so ~4x the frame rate
+    g_camera.st.scale_x10 = 20;
+    ok = ov2640_set_window(ov2640_to_svga_regs, (uint16_t)((800 - side) / 2),
+                           (uint16_t)((600 - side) / 2), (uint16_t)side,
+                           (uint16_t)side, side, clock ? 0x81 : 0x87, 0x88);
   } else {
-    uint16_t win = (uint16_t)(zoom == CAMERA_ZOOM_HALF ? 2 * side : side);
-    g_camera.st.scale_x10 = zoom == CAMERA_ZOOM_HALF ? 20 : 10;
-    ok = ov2640_set_window(ov2640_to_uxga_regs, (uint16_t)((1600 - win) / 2),
-                           (uint16_t)((1200 - win) / 2), win, win, side,
-                           clock ? 0x81 : 0x87, 0x8C);
+    g_camera.st.scale_x10 = 10;
+    ok = ov2640_set_window(ov2640_to_uxga_regs, (uint16_t)((1600 - side) / 2),
+                           (uint16_t)((1200 - side) / 2), (uint16_t)side,
+                           (uint16_t)side, side, clock ? 0x81 : 0x87, 0x8C);
   }
 
   // YUYV (IMAGE_MODE 0: high byte first): the Y is every even byte
@@ -446,16 +460,111 @@ static bool ov2640_set_mode(uint32_t zoom, uint32_t side, uint32_t clock) {
   return ok;
 }
 
-// Tune (CAMERA_MODE_TUNE), from esp32-camera's own register tables:
-//  0: its defaults (AE level 0, gain ceiling 8x, SDE off, AEC on)
-//  1: for a phone screen: AE level -1 (AEW/AEB/VV 0x34/0x1c/0x00: a bright
-//     screen clips less), contrast +2 (the DSP's SDE), gain ceiling 16x
-//  2: as 1, the exposure fixed at about 8 ms (AEC off, AGC on): an animated
-//     code moved by hand smears less. In lines of the mode: UXGA lines are
-//     1922 internal clocks, SVGA's 1190 (assumed from the datasheet's
-//     timing), at 5 MHz (stock) or 20 MHz (fast clock).
+// Exposure from the frames (tune 0). The sensor's own AEC averages the whole
+// field, mostly a dim room around a bright phone screen: it exposes long,
+// which clips the screen (the code's dark modules bloom away) and smears
+// every hand movement. Here the AEC is off, and after each frame the
+// exposure is set from the brightest part of the frame's centre (where the
+// code is): its 98th percentile is held near AE_TARGET, the exposure at most
+// AE_MAX_MS, gain making up the rest.
+#define AE_TARGET 200
+#define AE_MAX_MS 10
+#define AE_GAIN16_MAX 128  // 8x
+
+// OV2640 GAIN (0x00): (bit7+1)(bit6+1)(bit5+1)(bit4+1)(1 + bits[3:0]/16)
+static uint8_t ov2640_gain_reg(uint32_t gain16) {
+  uint32_t doublings = 0;
+  while (gain16 >= 32 && doublings < 4) {
+    gain16 /= 2;
+    doublings++;
+  }
+  uint32_t frac = gain16 > 16 ? gain16 - 16 : 0;
+  return (uint8_t)((((1U << doublings) - 1U) << 4) | (frac & 0x0F));
+}
+
+static bool ov2640_write_exposure(void) {
+  uint32_t lines = g_camera.ae_lines;
+  uint8_t reg04 = 0, reg45 = 0;
+  return reg_write(0xff, 0x01) && sccb_read8(0x04, &reg04) &&
+         sccb_read8(0x45, &reg45) &&
+         reg_write(0x04, (uint8_t)((reg04 & ~3U) | (lines & 3U))) &&
+         reg_write(0x10, (uint8_t)(lines >> 2)) &&  // AEC[9:2]
+         reg_write(0x45, (uint8_t)((reg45 & ~0x3FU) | ((lines >> 10) & 0x3FU))) &&
+         reg_write(0x00, ov2640_gain_reg(g_camera.ae_gain16));
+}
+
+// After a whole frame: its centre's 98th percentile steers the exposure
+static void ov2640_soft_ae(const uint8_t *frame, uint32_t side) {
+  uint32_t hist[64] = {0};
+  uint32_t n = 0;
+  // The centre half of each side, every 4th pixel each way
+  for (uint32_t y = side / 4; y < side * 3 / 4; y += 4) {
+    const uint8_t *row = frame + y * side;
+    for (uint32_t x = side / 4; x < side * 3 / 4; x += 4) {
+      hist[row[x] >> 2]++;
+      n++;
+    }
+  }
+  if (n == 0) {
+    return;
+  }
+  uint32_t above = 0, bin = 63;
+  while (bin > 0 && (above + hist[bin]) * 50 < n) {  // top 2 %
+    above += hist[bin];
+    bin--;
+  }
+  uint32_t p98 = bin * 4 + 2;
+  g_camera.st.ae_p98 = p98;
+
+  // Halfway to the target each frame (the change shows a frame or two
+  // later); clipped: halved
+  uint32_t total = g_camera.ae_lines * g_camera.ae_gain16;
+  uint32_t next;
+  if (p98 >= 250) {
+    next = total / 2;
+  } else {
+    uint32_t want = total * AE_TARGET / (p98 > 8 ? p98 : 8);
+    if (want * 100 > total * 85 && want * 100 < total * 118) {
+      return;  // close enough
+    }
+    next = (total + want) / 2;
+  }
+  uint32_t lines = next / 16;
+  if (lines > g_camera.ae_max_lines) {
+    lines = g_camera.ae_max_lines;
+  }
+  if (lines < 1) {
+    lines = 1;
+  }
+  uint32_t gain16 = next / lines;
+  if (gain16 < 16) {
+    gain16 = 16;
+  }
+  if (gain16 > AE_GAIN16_MAX) {
+    gain16 = AE_GAIN16_MAX;
+  }
+  if (lines == g_camera.ae_lines && gain16 == g_camera.ae_gain16) {
+    return;
+  }
+  g_camera.ae_lines = lines;
+  g_camera.ae_gain16 = gain16;
+  g_camera.st.ae_lines = lines;
+  g_camera.st.ae_gain16 = gain16;
+  if (!ov2640_write_exposure()) {
+    LOG_WARN("exposure write failed (lines %u gain16 %u)", (unsigned)lines,
+             (unsigned)gain16);
+  }
+}
+
+// Tune (CAMERA_MODE_TUNE):
+//  0: exposure from the frames (above); SDE off
+//  1: the sensor's AEC as esp32-camera starts it (AE level 0, gain ceiling 8x)
+//  2: the sensor's AEC for a phone screen: AE level -1 (AEW/AEB/VV
+//     0x34/0x1c/0x00), contrast +2 (the DSP's SDE), gain ceiling 16x
+// Line lengths for AE_MAX_MS: UXGA lines 1922 internal clocks, SVGA's 1190
+// (assumed from the datasheet's timing), at 5 MHz (stock) or 20 MHz (fast).
 static bool ov2640_set_tuning(uint32_t zoom, uint32_t clock, uint32_t tune) {
-  bool screen = tune != 0;
+  bool screen = tune == 2;
   const uint8_t sde_off[][2] = {{0xff, 0x00}, {0x7c, 0x00}, {0x7d, 0x00},
                                 {0, 0}};
   // contrast_regs[+2]: SDE contrast on, then its gain and offset
@@ -472,19 +581,21 @@ static bool ov2640_set_tuning(uint32_t zoom, uint32_t clock, uint32_t tune) {
     return false;
   }
 
-  if (tune < 2) {
+  g_camera.ae_soft = tune == 0;
+  if (!g_camera.ae_soft) {
     // COM8: banding filter, AGC and AEC on (esp32-camera's start-up value)
     return reg_write(0x13, 0xe5);
   }
-  uint32_t line_clocks = zoom == CAMERA_ZOOM_WIDE ? 1190 : 1922;
+  uint32_t line_clocks = zoom == CAMERA_ZOOM_NATIVE ? 1922 : 1190;
   uint32_t clock_khz = clock ? 20000 : 5000;
-  uint32_t lines = 8 * clock_khz / line_clocks;  // 8 ms
-  uint8_t reg04 = 0, reg45 = 0;
-  return reg_write(0x13, 0xe4) &&  // COM8: AEC off
-         sccb_read8(0x04, &reg04) && sccb_read8(0x45, &reg45) &&
-         reg_write(0x04, (uint8_t)((reg04 & ~3U) | (lines & 3U))) &&
-         reg_write(0x10, (uint8_t)(lines >> 2)) &&  // AEC[9:2]
-         reg_write(0x45, (uint8_t)((reg45 & ~0x3FU) | ((lines >> 10) & 0x3FU)));
+  g_camera.ae_max_lines = AE_MAX_MS * clock_khz / line_clocks;
+  // Start at half the longest exposure, 2x gain; the frames take it from there
+  g_camera.ae_lines = g_camera.ae_max_lines / 2 > 0 ? g_camera.ae_max_lines / 2 : 1;
+  g_camera.ae_gain16 = 32;
+  g_camera.st.ae_lines = g_camera.ae_lines;
+  g_camera.st.ae_gain16 = g_camera.ae_gain16;
+  // COM8: AEC, AGC and the banding filter off
+  return reg_write(0x13, 0xc0) && ov2640_write_exposure();
 }
 
 static bool ov2640_init(void) {
@@ -1007,6 +1118,21 @@ static void capture_finish(bool ok, uint32_t flags) {
   } else {
     st->failures++;
     st->state = CAMERA_STATE_FAILED;
+  }
+
+  g_camera.fail_run = ok ? 0 : g_camera.fail_run + 1;
+  if (ok && g_camera.ae_soft && st->sensor_id == CAMERA_SENSOR_OV2640) {
+    // The kernel reads the app's buffer before the app gets the frame
+    ov2640_soft_ae((const uint8_t *)g_camera.capture_buf, st->side);
+  }
+  if (!ok && st->clock != 0 && g_camera.fail_run >= 3) {
+    // The fast clock does not capture here: back to the stock one (the
+    // status shows clock 0)
+    LOG_WARN("captures fail at the fast clock, falling back");
+    g_camera.fail_run = 0;
+    if (!sensor_set_mode(CAMERA_MODE(st->zoom, st->side, 0, st->tune))) {
+      LOG_ERR("fallback to the stock clock failed");
+    }
   }
 }
 

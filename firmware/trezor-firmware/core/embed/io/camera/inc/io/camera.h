@@ -34,10 +34,11 @@
 // 1 faster (OV2640: 4x the internal clock; GC2145: the PLL table's own
 // PCLK). The OV5640 ignores it.
 #define CAMERA_CLOCKS 2
-// Image tuning: 0 esp32-camera's defaults, 1 for phone screens (lower
-// exposure target, more contrast; GC2145: denoise off), 2 as 1 with a
-// short fixed exposure and automatic gain (OV2640; the GC2145 as 1). The
-// OV5640 ignores it.
+// Image tuning. OV2640: 0 exposure set from the frames (the bright centre
+// held below clipping, at most ~10 ms), 1 the sensor's own AEC, 2 its AEC
+// for phone screens (lower target, more contrast). GC2145: 0 and 1 its
+// defaults, 2 for phone screens (lower target, denoise off). The OV5640
+// ignores it.
 #define CAMERA_TUNES 3
 
 // What to capture, packed into one word for camera_open() and
@@ -103,6 +104,11 @@ typedef struct {
   uint32_t i2c_lines;
   uint32_t i2c_error;
   uint32_t xclk_edges;
+  // OV2640 exposure from the frames (tune 0): the last frame centre's 98th
+  // percentile, and the exposure (lines) and gain (1/16 steps) it set
+  uint32_t ae_p98;
+  uint32_t ae_lines;
+  uint32_t ae_gain16;
 } camera_status_t;
 
 // Powers the module up, finds the sensor and starts it streaming in `mode`

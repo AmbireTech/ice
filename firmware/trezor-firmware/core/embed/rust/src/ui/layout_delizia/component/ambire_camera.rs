@@ -77,7 +77,9 @@ pub(super) struct Settings {
 static mut SETTINGS: Settings = Settings {
     zoom: 1,
     side: 0,
-    clock: 0,
+    // The fast clock: more frames, shorter exposures (the driver falls back
+    // to the stock clock where captures fail)
+    clock: 1,
     tune: 0,
 };
 
@@ -396,9 +398,9 @@ pub(super) fn zoom_name(zoom: u32) -> &'static str {
 
 fn tune_name(tune: u32) -> &'static str {
     match tune {
-        0 => "tune std",
-        1 => "screen",
-        _ => "scr+exp",
+        0 => "auto exp",
+        1 => "sens AE",
+        _ => "scr AE",
     }
 }
 
