@@ -11,13 +11,14 @@
 //! top-left corner exits. When the camera does not start, the screen says why
 //! (what answered on its bus, which register write failed); a tap retries.
 //!
-//! Memory ([`ScanMemory`]): the frame is the UI's one full-screen image buffer
-//! (150 KB, which the screen holds); the decoder's state (and the QR scan's
-//! text and UR work buffer) a loan from the MicroPython heap while the screen
-//! lives. Without the loan, everything shares the image buffer and the frame
-//! is smaller. The DMA writes each frame straight into the decoder's image;
-//! the frame is painted first, then decoded (the decoder only reads it),
-//! then the next one captured. Bring-up only: nothing leaves the device.
+//! Memory ([`ScanMemory`]): the frames are in the UI's one full-screen image
+//! buffer (150 KB, which the screen holds) and a loan from the MicroPython
+//! heap while the screen lives, as is the decoder's state (and the QR scan's
+//! text and UR work buffer). Which goes where is a [`Plan`]: two 320 x 320
+//! frames when the heap lends the second, else one 384 x 384 or two
+//! 272 x 272, else (no loan) one 288 x 288 with everything in the image
+//! buffer. The DMA writes each frame straight into its buffer and the decoder
+//! reads it there ([`Scanner`]). Bring-up only: nothing leaves the device.
 
 use heapless::String;
 use without_alloc::alloc::LocalAllocLeakExt;
@@ -39,10 +40,6 @@ use crate::ui::shape::{
 
 /// The frame is drawn scaled to this square at the top of the screen
 pub(super) const VIEW: i16 = 240;
-/// The frame's side with the heap loan (the image buffer holds 384 x 384),
-/// and without it (frame, decoder and UR all in the image buffer)
-pub(super) const SIDE_LARGE: usize = 384;
-pub(super) const SIDE_SMALL: usize = 288;
 const EXIT_SIZE: i16 = 48;
 const LINE_H: i16 = 18;
 const MARGIN: i16 = 4;
@@ -67,19 +64,19 @@ type Line = String<64>;
 #[derive(Clone, Copy)]
 pub(super) struct Settings {
     pub zoom: u32,
-    /// 0: the largest the memory allows
-    pub side: usize,
+    /// None: the best the memory runs
+    pub plan: Option<Plan>,
     pub clock: u32,
     pub tune: u32,
 }
 
 /// The wide zoom first (see io/camera/stm32u5/camera.c): the whole field of
 /// view, so a code is held close and fills it, as other wallets with this
-/// module scan. A 61-module code filling the 384 px frame gets ~5 px a
-/// module; the 2:1 window made the user hold the code twice as far away.
+/// module scan. A 61-module code filling 70 % of a 320 px frame gets 3.4 px
+/// a module; the 2:1 window made the user hold the code twice as far away.
 static mut SETTINGS: Settings = Settings {
     zoom: 0,
-    side: 0,
+    plan: None,
     // The fast clock: more frames, shorter exposures (the driver falls back
     // to the stock clock where captures fail)
     clock: 1,
@@ -98,111 +95,356 @@ fn set_settings(s: Settings) {
 
 // --- Memory ---------------------------------------------------------------------
 
-/// Where a scanner's frame, decoder state and extra buffers (the QR scan's
-/// text and UR work) are, for one frame side
-pub(super) struct Regions {
-    pub image: *mut u8,
+/// A way to run the scanner: the frame's side, and how many frames are held
+/// (two: the camera captures the next frame while this one is decoded)
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) struct Plan {
     pub side: usize,
+    pub buffers: usize,
+}
+
+/// The plans, the one to scan with first; a scanner runs the first that its
+/// memory holds. Two frames before a larger one: on the host model of the
+/// scan loop (firmware/bringup/camera/qrdecode/scansim) a second buffer
+/// keeps every other sensor frame whatever the decoder takes, where one
+/// buffer falls to every third or fourth, and a code is lost to blur before
+/// it is lost to 3.4 instead of 4.1 pixels a module.
+///
+/// 320 x 2: a frame and the decoder's state in the image buffer, the second
+/// frame in the loan. 384 and 272 x 2 fill the image buffer with frames; the
+/// state is in the loan. 288 and 240 need no loan.
+const PLANS: [Plan; 5] = [
+    Plan { side: 320, buffers: 2 },
+    Plan { side: 384, buffers: 1 },
+    Plan { side: 272, buffers: 2 },
+    Plan { side: 288, buffers: 1 },
+    Plan { side: 240, buffers: 1 },
+];
+
+/// A loan is taken only if the heap still has a block of this size after it
+/// (the screens run MicroPython code while the scan does)
+const HEAP_HEADROOM: usize = 24 * 1024;
+
+/// Where a plan's frames, decoder state and extra buffers (the QR scan's
+/// text and UR work) are
+#[derive(Clone, Copy)]
+pub(super) struct Regions {
+    /// The second is null with one buffer
+    pub frames: [*mut u8; 2],
     pub state: *mut u8,
     pub state_len: usize,
     pub extra: *mut u8,
     pub extra_len: usize,
 }
 
-/// The memory a scanner runs in: the UI's image buffer (held locked) for the
-/// frame, and a loan from the MicroPython heap for the decoder's state and
-/// the extra buffers, if the heap had it.
+/// A stretch of memory handed out from its start in 16-byte steps
+#[derive(Clone, Copy)]
+struct Arena {
+    at: *mut u8,
+    left: usize,
+}
+
+impl Arena {
+    fn take(&mut self, len: usize) -> Option<*mut u8> {
+        let len = len.next_multiple_of(16);
+        if len > self.left {
+            return None;
+        }
+        let p = self.at;
+        // Within the arena (or one past its end); never dereferenced here
+        self.at = self.at.wrapping_add(len);
+        self.left -= len;
+        Some(p)
+    }
+}
+
+/// Lays a plan out in the image buffer and the loan: the frames and the
+/// state in the image buffer as far as they fit, the extra buffer the rest
+/// of whichever has more left. Returns the regions and the bytes of the loan
+/// used before the extra buffer; None if they do not fit.
+fn lay_out(mut image: Arena, mut loan: Arena, plan: Plan, extra_min: usize) -> Option<(Regions, usize)> {
+    let loan_len = loan.left;
+    let frame = plan.side * plan.side;
+    let state_len = camera::qr_state_size(plan.side).next_multiple_of(16);
+    let first = image.take(frame)?;
+    let second = if plan.buffers > 1 {
+        image.take(frame).or_else(|| loan.take(frame))?
+    } else {
+        core::ptr::null_mut()
+    };
+    let state = image.take(state_len).or_else(|| loan.take(state_len))?;
+    let loan_used = loan_len - loan.left;
+    let rest = if loan.left > image.left { loan } else { image };
+    if rest.left < extra_min {
+        return None;
+    }
+    Some((
+        Regions {
+            frames: [first, second],
+            state,
+            state_len,
+            extra: rest.at,
+            extra_len: rest.left,
+        },
+        loan_used,
+    ))
+}
+
+/// The memory a scanner runs in: the UI's image buffer (held locked), and a
+/// loan from the MicroPython heap, if the heap had it.
 pub(super) struct ScanMemory {
     _buffer: ImageBuffer<Rgb565Canvas<'static>>,
-    image: *mut u8,
-    image_len: usize,
+    image: Arena,
     /// Null without a loan. Not freed by hand: the screen (and the pointer in
     /// it) lives in the heap, and the next collection after the screen is
     /// gone frees the loan with it.
-    loan: *mut u8,
-    loan_len: usize,
+    loan: Arena,
+    extra_min: usize,
 }
 
 impl ScanMemory {
-    /// Locks the image buffer and asks the heap for the decoder's state at
-    /// SIDE_LARGE plus `extra_want` bytes
-    pub fn new(extra_want: usize) -> Result<Self, Error> {
+    /// Locks the image buffer and asks the heap for what the best plan needs
+    /// beside it (with `extra_want` extra bytes; a plan runs with
+    /// `extra_min`), then for what the next one does, until one fits
+    pub fn new(extra_min: usize, extra_want: usize) -> Result<Self, Error> {
         // The size is nominal: the scanner takes the whole buffer's bytes
         let mut buffer = ImageBuffer::<Rgb565Canvas<'static>>::new(Offset::new(1, 1))?;
         let bytes = buffer.raw_bytes();
-        let (image, image_len) = (bytes.as_mut_ptr(), bytes.len());
-        let want = camera::qr_state_size(SIDE_LARGE).next_multiple_of(16) + extra_want;
-        // SAFETY: gc_alloc() returns null when the heap has no such block (it
-        // collects once first) instead of raising
-        let mut loan = unsafe { upy::gc_alloc(want, 0) } as *mut u8;
-        if !loan.is_null() && (loan as usize) % 8 != 0 {
-            // The heap's blocks are 16-byte aligned; anything else is not
-            // used (left to the collector)
-            loan = core::ptr::null_mut();
+        let image = Arena {
+            at: bytes.as_mut_ptr(),
+            left: bytes.len(),
+        };
+        let none = Arena {
+            at: core::ptr::null_mut(),
+            left: 0,
+        };
+        let any = Arena {
+            at: core::ptr::null_mut(),
+            left: usize::MAX / 2,
+        };
+        let mut loan = none;
+        for plan in PLANS {
+            if lay_out(image, none, plan, extra_min).is_some() {
+                break;
+            }
+            let Some((_, used)) = lay_out(image, any, plan, 0) else {
+                continue;
+            };
+            let want = used + extra_want.next_multiple_of(16);
+            let at = Self::borrow(want);
+            if !at.is_null() {
+                loan = Arena { at, left: want };
+                break;
+            }
         }
         Ok(Self {
             _buffer: buffer,
             image,
-            image_len,
             loan,
-            loan_len: if loan.is_null() { 0 } else { want },
+            extra_min,
         })
     }
 
-    pub fn has_loan(&self) -> bool {
-        !self.loan.is_null()
-    }
-
-    /// The frame sides this memory runs, largest first
-    pub fn sides(&self) -> &'static [usize] {
-        if self.has_loan() {
-            &[SIDE_LARGE, SIDE_SMALL, 240]
-        } else {
-            &[SIDE_SMALL, 240]
+    /// `len` bytes of the MicroPython heap, 16-byte aligned, if that leaves
+    /// the heap HEAP_HEADROOM; else null
+    fn borrow(len: usize) -> *mut u8 {
+        // SAFETY: gc_alloc() returns null when the heap has no such block (it
+        // collects once first) instead of raising
+        let at = unsafe { upy::gc_alloc(len, 0) } as *mut u8;
+        if at.is_null() {
+            return at;
         }
-    }
-
-    /// The regions for a side x side frame with at least `extra_min` extra
-    /// bytes; None if they do not fit
-    pub fn regions(&self, side: usize, extra_min: usize) -> Option<Regions> {
-        let frame = side * side;
-        let state_len = camera::qr_state_size(side).next_multiple_of(16);
-        if frame > self.image_len {
-            return None;
-        }
-        // The frame first in the image buffer (16-byte aligned); the state
-        // and the extra after it, or in the loan
-        let (rest, rest_len) = if self.has_loan() {
-            (self.loan, self.loan_len)
-        } else {
-            let at = frame.next_multiple_of(16);
-            if at > self.image_len {
-                return None;
+        // SAFETY: as above
+        let spare = unsafe { upy::gc_alloc(HEAP_HEADROOM, 0) };
+        let ok = !spare.is_null() && (at as usize) % 16 == 0;
+        // SAFETY: blocks just taken from gc_alloc(), referenced nowhere else
+        unsafe {
+            if !spare.is_null() {
+                upy::gc_free(spare);
             }
-            // SAFETY: within the image buffer
-            (unsafe { self.image.add(at) }, self.image_len - at)
-        };
-        if rest_len < state_len + extra_min {
-            return None;
+            if !ok {
+                upy::gc_free(at.cast());
+            }
         }
-        Some(Regions {
-            image: self.image,
-            side,
-            state: rest,
-            state_len,
-            // SAFETY: within the loan or the image buffer (checked above)
-            extra: unsafe { rest.add(state_len) },
-            extra_len: rest_len - state_len,
+        if ok {
+            at
+        } else {
+            core::ptr::null_mut()
+        }
+    }
+
+    /// The regions of a plan; None if it does not fit this memory
+    pub fn regions(&self, plan: Plan) -> Option<Regions> {
+        lay_out(self.image, self.loan, plan, self.extra_min).map(|(r, _)| r)
+    }
+
+    /// The plans this memory runs, best first
+    pub fn plans(&self) -> impl Iterator<Item = Plan> + '_ {
+        PLANS.into_iter().filter(|&p| self.regions(p).is_some())
+    }
+
+    /// `wanted` if this memory runs it, else the best plan it runs
+    pub fn plan_for(&self, wanted: Option<Plan>) -> Option<Plan> {
+        wanted
+            .filter(|&p| self.regions(p).is_some())
+            .or_else(|| self.plans().next())
+    }
+}
+
+// --- The scan loop ----------------------------------------------------------------
+
+/// What a step of the scan loop brought
+pub(super) enum Scanned {
+    /// No new frame yet
+    Nothing,
+    /// A whole frame, decoded or not (the result says)
+    Frame(camera::QrResult),
+    /// The capture failed; what arrived of the frame can still be shown
+    Failed,
+}
+
+/// The camera's frames through the decoder, for the QR scan and the camera
+/// test: the memory, which buffer the camera writes and which holds the
+/// frame to show; after each frame the camera is told where the code is,
+/// for its exposure.
+///
+/// With two buffers the next capture starts the moment a frame is in, into
+/// the other buffer, and the frame is decoded and painted meanwhile. With
+/// one, the frame is decoded, then painted, and the next capture starts at
+/// the tick after (a paint must not show a frame the DMA is writing).
+pub(super) struct Scanner {
+    mem: ScanMemory,
+    plan: Plan,
+    regions: Option<Regions>,
+    capturing: Option<usize>,
+    shown: Option<usize>,
+    pub status: camera::Status,
+}
+
+impl Scanner {
+    pub fn new(extra_min: usize, extra_want: usize) -> Result<Self, Error> {
+        Ok(Self {
+            mem: ScanMemory::new(extra_min, extra_want)?,
+            plan: PLANS[PLANS.len() - 1],
+            regions: None,
+            capturing: None,
+            shown: None,
+            // SAFETY: a plain C struct of integers; all zero is valid
+            status: unsafe { core::mem::zeroed() },
         })
     }
 
-    /// The side to run: `wanted` if this memory runs it, else the largest
-    pub fn side_for(&self, wanted: usize) -> usize {
-        let sides = self.sides();
-        if sides.contains(&wanted) {
-            wanted
-        } else {
-            sides[0]
+    pub fn memory(&self) -> &ScanMemory {
+        &self.mem
+    }
+
+    pub fn plan(&self) -> Plan {
+        self.plan
+    }
+
+    pub fn side(&self) -> usize {
+        self.plan.side
+    }
+
+    /// The extra buffer of the plan built (null before)
+    pub fn extra(&self) -> (*mut u8, usize) {
+        self.regions
+            .map_or((core::ptr::null_mut(), 0), |r| (r.extra, r.extra_len))
+    }
+
+    /// Builds the decoder for `wanted` (or the best plan the memory runs).
+    /// Call with the camera closed. False if no plan fits or the decoder
+    /// refused its memory.
+    pub fn build(&mut self, wanted: Option<Plan>) -> bool {
+        self.regions = None;
+        self.restart();
+        let Some(plan) = self.mem.plan_for(wanted) else {
+            return false;
+        };
+        let Some(r) = self.mem.regions(plan) else {
+            return false;
+        };
+        // SAFETY: the state region is this scanner's (the image buffer it
+        // holds locked, or the loan it holds), apart from the frames and the
+        // extra buffer, reserved for the decoder while the scanner lives
+        if !unsafe { camera::qr_init(plan.side, r.state, r.state_len) } {
+            return false;
+        }
+        self.plan = plan;
+        self.regions = Some(r);
+        true
+    }
+
+    /// Forgets the frames in hand: after the camera was opened, closed or
+    /// changed its mode (which stops a running capture)
+    pub fn restart(&mut self) {
+        self.capturing = None;
+        self.shown = None;
+        camera::qr_reset();
+        camera::set_meter(None);
+    }
+
+    /// The frame to show: the last one that came in (whole or not)
+    pub fn image(&self) -> Option<*const u8> {
+        let r = self.regions.as_ref()?;
+        self.shown.map(|i| r.frames[i] as *const u8)
+    }
+
+    fn start_capture(&mut self, r: &Regions) {
+        // Two buffers: not the one being shown and decoded
+        let into = match self.shown {
+            Some(i) if self.plan.buffers > 1 => 1 - i,
+            _ => 0,
+        };
+        // SAFETY: a frame region of the plan built (16-byte aligned, side x
+        // side), which nothing reads until the capture is done or failed:
+        // image() and the decoder take the other buffer, or (one buffer) the
+        // capture starts only after the frame was decoded and painted
+        let started = unsafe { camera::capture(r.frames[into], self.plan.side * self.plan.side) };
+        self.capturing = started.then_some(into);
+    }
+
+    /// One tick of the scan loop: starts a capture if none runs, takes a
+    /// finished frame through the decoder (a decoded code's bytes go to
+    /// `payload`) and points the exposure at the code
+    pub fn step(&mut self, payload: &mut [u8]) -> Scanned {
+        let Some(r) = self.regions else {
+            return Scanned::Nothing;
+        };
+        let Some(at) = self.capturing else {
+            self.start_capture(&r);
+            return Scanned::Nothing;
+        };
+        self.status = camera::status();
+        match self.status.state {
+            camera::STATE_BUSY => Scanned::Nothing,
+            camera::STATE_DONE => {
+                self.shown = Some(at);
+                self.capturing = None;
+                if self.plan.buffers > 1 {
+                    self.start_capture(&r);
+                }
+                // SAFETY: a whole frame of the decoder's size; the capture
+                // into it is done, and the next one writes the other buffer
+                // (or has not started)
+                let qr = unsafe { camera::qr_scan(r.frames[at], payload) };
+                camera::set_meter(camera::qr_meter_area());
+                Scanned::Frame(qr)
+            }
+            camera::STATE_FAILED => {
+                // Shown anyway: a sheared or partial frame tells a line
+                // length or sync fault apart
+                if self.status.last_bytes > 0 {
+                    self.shown = Some(at);
+                }
+                self.capturing = None;
+                Scanned::Failed
+            }
+            _ => {
+                // Off or idle while capturing: the capture was lost
+                self.capturing = None;
+                Scanned::Nothing
+            }
         }
     }
 }
@@ -414,6 +656,15 @@ pub(super) fn push_code(line: &mut Line, qr: &camera::QrResult) {
     push_trunc(line, "px/m");
 }
 
+/// "320x2": the frame's side and, with two, the buffers
+pub(super) fn push_plan(line: &mut Line, plan: Plan) {
+    push_u32(line, plan.side as u32);
+    if plan.buffers > 1 {
+        push_trunc(line, "x");
+        push_u32(line, plan.buffers as u32);
+    }
+}
+
 pub(super) fn zoom_name(zoom: u32) -> &'static str {
     match zoom {
         0 => "wide",
@@ -422,10 +673,15 @@ pub(super) fn zoom_name(zoom: u32) -> &'static str {
     }
 }
 
-fn tune_name(tune: u32) -> &'static str {
-    match tune {
-        0 => "auto exp",
-        1 => "sens AE",
+/// The tuning button: what each setting is on the sensor running
+/// (io/camera.h)
+fn tune_name(sensor: u32, tune: u32) -> &'static str {
+    match (sensor, tune) {
+        (camera::SENSOR_GC2145, 0) => "skip",
+        (camera::SENSOR_GC2145, 1) => "scaler",
+        (camera::SENSOR_GC2145, _) => "screen",
+        (_, 0) => "auto exp",
+        (_, 1) => "sens AE",
         _ => "scr AE",
     }
 }
@@ -444,17 +700,8 @@ enum Phase {
 pub struct CameraTest {
     active: bool,
     phase: Phase,
-    mem: ScanMemory,
+    scanner: Scanner,
     settings: Settings,
-    /// The decoder's image, which the camera captures into (null before the
-    /// decoder is built), and its side
-    image: *mut u8,
-    side: usize,
-    /// A frame (whole or not) is in the image to show
-    have_frame: bool,
-    capturing: bool,
-    /// The frame in the image has been painted, not decoded yet
-    scan_pending: bool,
     status: camera::Status,
     qr: camera::QrResult,
     payload: [u8; PAYLOAD_MAX],
@@ -478,13 +725,8 @@ impl CameraTest {
         Ok(Self {
             active: false,
             phase: Phase::Starting,
-            mem: ScanMemory::new(0)?,
+            scanner: Scanner::new(0, 0)?,
             settings: settings(),
-            image: core::ptr::null_mut(),
-            side: 0,
-            have_frame: false,
-            capturing: false,
-            scan_pending: false,
             // SAFETY: plain C structs of integers; all zero is valid
             status: unsafe { core::mem::zeroed() },
             qr: unsafe { core::mem::zeroed() },
@@ -526,9 +768,6 @@ impl CameraTest {
     }
 
     fn reset_counters(&mut self) {
-        self.have_frame = false;
-        self.capturing = false;
-        self.scan_pending = false;
         self.decoded_at = None;
         self.history = 0;
         self.history_len = 0;
@@ -541,44 +780,23 @@ impl CameraTest {
 
     fn stop(&mut self, ctx: &mut EventCtx) {
         camera::close();
+        self.scanner.restart();
         self.active = false;
-        self.capturing = false;
-        self.image = core::ptr::null_mut();
         ctx.request_paint();
     }
 
     fn mode(&self) -> camera::Mode {
         camera::Mode {
             zoom: self.settings.zoom,
-            side: self.side,
+            side: self.scanner.side(),
             clock: self.settings.clock,
             tune: self.settings.tune,
         }
     }
 
-    /// Builds the decoder for the settings' side (or the largest the memory
-    /// runs); false with the failure lines set
-    fn build_decoder(&mut self) -> bool {
-        let side = self.mem.side_for(self.settings.side);
-        let ok = match self.mem.regions(side, 0) {
-            // SAFETY: the regions are this screen's (the image buffer it holds
-            // locked, the loan it holds), reserved for the decoder while it
-            // runs
-            Some(r) => unsafe { camera::qr_init(r.image, side, r.state, r.state_len) },
-            None => false,
-        };
-        if !ok {
-            self.image = core::ptr::null_mut();
-            self.set_failure(&["QR decoder setup failed", "", "", ""]);
-            return false;
-        }
-        self.image = self.mem.regions(side, 0).map_or(core::ptr::null_mut(), |r| r.image);
-        self.side = side;
-        true
-    }
-
     fn open(&mut self) {
-        if !self.build_decoder() {
+        if !self.scanner.build(self.settings.plan) {
+            self.set_failure(&["QR decoder setup failed", "", "", ""]);
             self.phase = Phase::Failed;
             return;
         }
@@ -591,13 +809,6 @@ impl CameraTest {
             self.phase = Phase::Failed;
             self.failure_lines();
         }
-    }
-
-    fn start_capture(&mut self) {
-        // SAFETY: the decoder's image (16-byte aligned, side x side), untouched
-        // until the capture is done or failed: step() paints and decodes it
-        // only then
-        self.capturing = unsafe { camera::capture(self.image, self.side * self.side) };
     }
 
     /// Returns true when the event belongs to the test (it always does while
@@ -620,9 +831,12 @@ impl CameraTest {
                     let mut s = self.settings;
                     match p.x / BUTTON_W {
                         0 => {
-                            let sides = self.mem.sides();
-                            let at = sides.iter().position(|&v| v == self.side).unwrap_or(0);
-                            s.side = sides[(at + 1) % sides.len()];
+                            // The plan after this one, of those the memory runs
+                            let plans: heapless::Vec<Plan, { PLANS.len() }> =
+                                self.scanner.memory().plans().collect();
+                            let plan = self.scanner.plan();
+                            let at = plans.iter().position(|&p| p == plan).unwrap_or(0);
+                            s.plan = plans.get((at + 1) % plans.len().max(1)).copied();
                         }
                         1 => s.clock = (s.clock + 1) % camera::CLOCKS,
                         _ => s.tune = (s.tune + 1) % camera::TUNES,
@@ -642,19 +856,13 @@ impl CameraTest {
     /// Switches to new settings (kept for the QR scan too); blocks while the
     /// sensor settles
     fn change(&mut self, ctx: &mut EventCtx, s: Settings) {
-        let new_side = self.mem.side_for(s.side);
-        self.settings = Settings { side: new_side, ..s };
-        set_settings(self.settings);
-        // Stops a running capture before the decoder's memory changes
+        self.settings = s;
+        set_settings(s);
+        // Closed, then reopened by the next tick rather than switched (which
+        // also rebuilds the decoder for the plan): a size change needs the
+        // DCMI and DMA set up again, and a reopen is the path known to work
         camera::close();
-        self.reset_counters();
-        if new_side != self.side && !self.build_decoder() {
-            self.phase = Phase::Failed;
-            ctx.request_paint();
-            return;
-        }
-        // Reopened rather than switched: a size change needs the DCMI and
-        // DMA set up again, and a reopen is the path known to work
+        self.scanner.restart();
         self.begin_open(ctx);
     }
 
@@ -665,36 +873,17 @@ impl CameraTest {
                 ctx.request_paint();
             }
             Phase::Running => {
-                if !self.capturing {
-                    // The last frame has been painted: decode it where it is,
-                    // then capture the next into the same image
-                    if self.scan_pending {
-                        self.scan_pending = false;
-                        self.scan();
-                    }
-                    self.start_capture();
-                    return;
-                }
-                self.status = camera::status();
-                match self.status.state {
-                    camera::STATE_BUSY => return,
-                    camera::STATE_DONE => {
-                        self.have_frame = true;
-                        self.scan_pending = true;
+                let mut payload = [0u8; PAYLOAD_MAX];
+                match self.scanner.step(&mut payload) {
+                    Scanned::Nothing => return,
+                    Scanned::Frame(qr) => {
                         self.count_frame();
                         self.expire_decoded();
+                        self.took(qr, &payload);
                     }
-                    camera::STATE_FAILED => {
-                        // Show what arrived anyway: a sheared or partial
-                        // frame tells a line length or sync fault apart
-                        self.have_frame = self.status.last_bytes > 0;
-                        self.expire_decoded();
-                    }
-                    _ => {
-                        // Off or idle while capturing: the capture was lost
-                    }
+                    Scanned::Failed => self.expire_decoded(),
                 }
-                self.capturing = false;
+                self.status = self.scanner.status;
                 self.update_lines();
                 ctx.request_paint();
             }
@@ -729,15 +918,13 @@ impl CameraTest {
         }
     }
 
-    fn scan(&mut self) {
-        let mut payload = [0u8; PAYLOAD_MAX];
-        // SAFETY: called between captures only (step())
-        let result = unsafe { camera::qr_scan(&mut payload) };
+    /// A frame's result, for the strip and the picture's markers
+    fn took(&mut self, result: camera::QrResult, payload: &[u8; PAYLOAD_MAX]) {
         self.qr = result;
         self.history = (self.history << 1) | (result.decoded != 0) as u16;
         self.history_len = (self.history_len + 1).min(16);
         if result.decoded != 0 {
-            self.payload = payload;
+            self.payload = *payload;
             self.payload_shown = (result.payload_len.max(0) as usize).min(PAYLOAD_MAX);
             self.decoded_at = Some(Instant::now());
             self.decodes += 1;
@@ -764,7 +951,7 @@ impl CameraTest {
         // Sensor and mode
         push_trunc(l0, sensor_name(st.sensor_id));
         push_trunc(l0, " ");
-        push_u32(l0, st.side);
+        push_plan(l0, self.scanner.plan());
         push_trunc(l0, " ");
         push_trunc(l0, zoom_name(st.zoom));
         push_trunc(l0, " ");
@@ -795,6 +982,10 @@ impl CameraTest {
         // Frames the decoder summed for this result (1: this frame alone)
         push_trunc(l1, " f");
         push_u32(l1, qr.fused.max(0) as u32);
+        if qr.cut != 0 {
+            // The search for a code ran into its time budget
+            push_trunc(l1, " cut");
+        }
 
         if st.state == camera::STATE_FAILED {
             push_trunc(l2, "FAIL ");
@@ -817,12 +1008,22 @@ impl CameraTest {
             push_trunc(l2, " PC ");
             push_u32(l2, st.pclk_edges);
         } else {
-            // Exposure and focus of the frame, and the times
-            push_trunc(l2, "Y");
-            push_u32(l2, qr.mean_y.max(0) as u32);
-            push_trunc(l2, " clip ");
+            // Exposure and focus of the frame, and the times. With the
+            // exposure set from the frames: its length, the gain, and "*"
+            // when the light was metered on the code; else the mean
+            // brightness.
+            if st.ae_exposure_us > 0 {
+                push_tenths(l2, st.ae_exposure_us / 100);
+                push_trunc(l2, "ms x");
+                push_tenths(l2, st.ae_gain16 * 10 / 16);
+                push_trunc(l2, if st.ae_on_code != 0 { "*" } else { "" });
+            } else {
+                push_trunc(l2, "Y");
+                push_u32(l2, qr.mean_y.max(0) as u32);
+            }
+            push_trunc(l2, " clip");
             push_u32(l2, (qr.clipped_pm.max(0) as u32).div_ceil(10));
-            push_trunc(l2, "% edge ");
+            push_trunc(l2, "% edge");
             push_tenths(l2, qr.edge_x10.max(0) as u32);
             push_trunc(l2, " ");
             push_u32(l2, st.last_capture_ms);
@@ -915,16 +1116,13 @@ impl CameraTest {
             .with_bg(Color::black())
             .render(target);
 
-        // Repaints come right after a capture ends (step()), before the next
-        // one starts; one forced while the DMA writes would show it half done
+        // The last frame that came in: the camera is writing the other
+        // buffer, or (one buffer) starts the next capture only at the tick
+        // after this paint
         let view = Rect::new(Point::zero(), Point::new(VIEW, VIEW));
-        if self.have_frame && !self.image.is_null() {
-            GrayPreview {
-                area: view,
-                src: self.image,
-                side: self.side,
-            }
-            .render(target);
+        let side = self.scanner.side();
+        if let Some(src) = self.scanner.image() {
+            GrayPreview { area: view, src, side }.render(target);
         }
 
         if self.decoded_at.is_some() {
@@ -939,14 +1137,14 @@ impl CameraTest {
                 .render(target);
         }
         // The code's corners, scaled to the view: green decoded, purple not
-        if self.qr.grids > 0 && self.side > 0 && self.phase == Phase::Running {
+        if self.qr.grids > 0 && side > 0 && self.phase == Phase::Running {
             let color = if self.qr.decoded != 0 { GREEN } else { PURPLE };
             let c = &self.qr.corners;
             for i in 0..4 {
-                let clamp = |v: i32| v.clamp(0, self.side as i32 - 1) as usize;
-                let (fx, fy) = frame_to_preview(clamp(c[2 * i]), clamp(c[2 * i + 1]), self.side);
-                let x = (fx * VIEW as usize / self.side) as i16;
-                let y = (fy * VIEW as usize / self.side) as i16;
+                let clamp = |v: i32| v.clamp(0, side as i32 - 1) as usize;
+                let (fx, fy) = frame_to_preview(clamp(c[2 * i]), clamp(c[2 * i + 1]), side);
+                let x = (fx * VIEW as usize / side) as i16;
+                let y = (fy * VIEW as usize / side) as i16;
                 let p = Point::new(x, y);
                 shape::Bar::new(Rect::new(p - Offset::new(3, 3), p + Offset::new(4, 4)))
                     .with_bg(color)
@@ -1003,15 +1201,18 @@ impl CameraTest {
 
         if self.phase == Phase::Running {
             let mut size = Line::new();
-            push_u32(&mut size, self.side as u32);
-            push_trunc(&mut size, "px");
+            push_plan(&mut size, self.scanner.plan());
             Self::render_button(target, 0, size.as_str());
             Self::render_button(
                 target,
                 1,
                 if self.settings.clock == 0 { "clk std" } else { "clk fast" },
             );
-            Self::render_button(target, 2, tune_name(self.settings.tune));
+            Self::render_button(
+                target,
+                2,
+                tune_name(self.status.sensor_id, self.settings.tune),
+            );
         }
     }
 }

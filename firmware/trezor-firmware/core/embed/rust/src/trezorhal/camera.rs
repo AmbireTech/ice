@@ -79,33 +79,55 @@ pub fn status() -> Status {
     status
 }
 
+/// Tells the camera where the code is in its frames (x0, y0, x1, y1), for
+/// the exposure; None: no code in view
+pub fn set_meter(area: Option<[i32; 4]>) {
+    let pack = |x: i32, y: i32| (x.clamp(0, 0xFFFF) as u32) | ((y.clamp(0, 0xFFFF) as u32) << 16);
+    let (a, b) = match area {
+        Some(b) => (pack(b[0], b[1]), pack(b[2], b[3])),
+        None => (0, 0),
+    };
+    unsafe { ffi::camera_set_meter(a, b) }
+}
+
 /// Bytes of decoder state the QR decoder needs for side x side frames
 pub fn qr_state_size(side: usize) -> usize {
     unsafe { ffi::qr_scan_state_size(side as _, side as _) }
 }
 
-/// Builds the QR decoder for the side x side image at `image`, its state in
-/// `state`.
+/// Builds the QR decoder for side x side frames, its state in `state`.
 ///
 /// # Safety
 ///
-/// `image` must point to side x side bytes and `state` to `state_len`
-/// writable bytes, 8-byte aligned, both reserved for the decoder for as long
-/// as it is used.
-pub unsafe fn qr_init(image: *mut u8, side: usize, state: *mut u8, state_len: usize) -> bool {
-    unsafe { ffi::qr_scan_init(image, side as _, side as _, state, state_len) }
+/// `state` must point to `state_len` writable bytes, 8-byte aligned, reserved
+/// for the decoder for as long as it is used.
+pub unsafe fn qr_init(side: usize, state: *mut u8, state_len: usize) -> bool {
+    unsafe { ffi::qr_scan_init(side as _, side as _, state, state_len) }
 }
 
-/// Looks for a QR code in the decoder's image (read, not modified); a code
+/// Looks for a QR code in the frame at `image` (read, not modified); a code
 /// that decodes goes to `payload`. Frames are taken as a video: the decoder
 /// keeps the last frame's grid and the sum of frames that did not decode.
 ///
 /// # Safety
 ///
-/// No capture may be writing the image.
-pub unsafe fn qr_scan(payload: &mut [u8]) -> QrResult {
+/// `image` must point to a whole frame of the decoder's size that no
+/// capture is writing.
+pub unsafe fn qr_scan(image: *const u8, payload: &mut [u8]) -> QrResult {
     // SAFETY: as in status()
     let mut result: QrResult = unsafe { core::mem::zeroed() };
-    unsafe { ffi::qr_scan(payload.as_mut_ptr(), payload.len(), &mut result) };
+    unsafe { ffi::qr_scan(image, payload.as_mut_ptr(), payload.len(), &mut result) };
     result
+}
+
+/// The next frame is unrelated to the last one (the mode changed)
+pub fn qr_reset() {
+    unsafe { ffi::qr_scan_reset() }
+}
+
+/// The area to meter the light on after a frame (x0, y0, x1, y1): where the
+/// decoder made out a code in the last few frames; None: the frame's centre
+pub fn qr_meter_area() -> Option<[i32; 4]> {
+    let mut area = [0i32; 4];
+    unsafe { ffi::qr_scan_meter_area(area.as_mut_ptr()) }.then_some(area)
 }

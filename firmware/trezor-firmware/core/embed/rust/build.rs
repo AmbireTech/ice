@@ -298,10 +298,13 @@ fn generate_trezorhal_bindings(lib: &mut CLibrary) -> Result<()> {
             .allowlist_function("camera_set_mode")
             .allowlist_function("camera_capture")
             .allowlist_function("camera_get_status")
+            .allowlist_function("camera_set_meter")
             .allowlist_type("qr_scan_result_t")
             .allowlist_function("qr_scan_state_size")
             .allowlist_function("qr_scan_init")
             .allowlist_function("qr_scan")
+            .allowlist_function("qr_scan_reset")
+            .allowlist_function("qr_scan_meter_area")
             // touch
             .allowlist_function("touch_get_event")
             // button

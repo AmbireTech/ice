@@ -371,7 +371,7 @@ top closes it.
   animated code come in; the picture's frame flashes green for each one taken.
   Tap the picture to change the zoom (the line under it names the zoom and,
   once a code is seen, its version and pixels per module); the scan uses the
-  clock and tuning last set in the camera test. The top-left corner cancels. The device
+  frame size, clock and tuning last set in the camera test. The top-left corner cancels. The device
   then shows what is to be signed, with the same screens and warnings as when
   signing over USB, and after you confirm it shows the signature as a QR code:
   scan it with the app, then tap Done.
@@ -438,7 +438,7 @@ code, so it is the place to try the Ambire app's own request codes and see
 why one does not read.
 
 - The top of the screen shows the camera's live picture in gray, scaled down
-  to 240 x 240 from the frame the decoder sees (384 x 384 normally). While a
+  to 240 x 240 from the frame the decoder sees (320 x 320 normally). While a
   code decodes, the picture gets a green frame, the start of its text shows
   along the picture's bottom edge, and its corners are marked (green; purple
   when a code was found but did not decode).
@@ -446,19 +446,29 @@ why one does not read.
   first: hold the code close so it fills the picture): **wide** (about the sensor's full height, scaled down), **2:1** (on
   the OV2640, the sensor's half-resolution mode at its own pixels: the detail
   of a 2:1 window at about four times the frame rate) and **native** (one sensor pixel
-  per frame pixel: the most detail, the narrowest view). A dense code needs
-  the native or 2:1 level.
+  per frame pixel: the most detail, the narrowest view, and on the OV2640 a
+  third of the frame rate). What decides a code is how much of the frame it
+  fills, at any level; the level sets how far away that is.
 - **The buttons along the bottom** change, from left to right: the frame size
-  (384, 288 or 240 pixels a side), the sensor clock (`clk fast`, the
+  and buffers (`320x2`, the default: two 320-pixel frames, the camera
+  capturing the next while the decoder reads this one; `384`: one larger
+  frame, captured and decoded in turn; `272x2`, `288`, `240`), the sensor clock (`clk fast`, the
   default: more frames and shorter exposures; `clk std`, as the reference
   driver runs it, which the camera also falls back to by itself after three
   failed captures) and the exposure (`auto exp`, the default on the OV2640:
-  set from each frame so the brightest part of the picture's centre, the
-  screen with the code, does not clip, at most about 6 ms against smear;
+  set from each frame so the white of the code, or of the picture's centre
+  while no code is made out, stays just below clipping. Light is bought with
+  exposure time before gain, which adds noise: up to 6 ms with no code in
+  view, and with one from 3 ms while it moves fast to 12 ms while it is
+  held still;
   `sens AE`: the sensor's own automatic exposure, which averages the whole
   view and so overexposes a screen in a dim room; `scr AE`: the same, with a
-  lower target and more contrast). The QR scan of a request then uses the zoom, clock and tuning
-  last set here, until the device restarts.
+  lower target and more contrast). On a GC2145 the button reads `skip`
+  (the default: the two wider zooms skip pixels), `scaler` (they go through
+  the sensor's scaler instead; that path has not run on a module yet) and
+  `screen` (a lower exposure target, no denoising). The QR scan of a
+  request then uses the zoom, frame size, clock and tuning last set here,
+  until the device restarts.
 - **The top-left corner** closes the test and switches the camera off.
 
 Field result (v4, OV2640, 2026-11-17): exposure set from the frames, the
@@ -472,9 +482,9 @@ The three lines under the picture:
 
 | Line | Example | Meaning |
 |---|---|---|
-| 1 | `OV2640 384 native 1.0x 7.5fps` | sensor, frame size, zoom, sensor pixels per frame pixel, frames per second |
+| 1 | `OV2640 320x2 wide 3.7x 12.5fps` | sensor, frame size (`x2`: two buffers), zoom, sensor pixels per frame pixel, frames per second |
 | 2 | `v11 3.6px/m OK 12/16 f1` | the code found: its QR version and pixels per module; `OK`, or why it did not decode; how many of the last 16 frames decoded; how many frames the result took (see below) |
-| 3 | `Y143 clip 2% edge 1.4 90+40ms` | the frame's mean brightness (0-255), the share of clipped white, the edge width in pixels (1.0 is a sharp step; larger is blur), the capture and decode times |
+| 3 | `4.2ms x1.0* clip2% edge1.4 80+30ms` | the exposure time and the gain (`*`: the light was metered on the code, not the picture's centre; with the sensor's own exposure, `Y143`: the mean brightness instead), the share of clipped white, the edge width in pixels (1.0 is a sharp step; larger is blur), the capture and decode times |
 
 Reading them:
 
@@ -488,7 +498,18 @@ Reading them:
   module, blur is what stops the code, not the size. A fixed-focus module
   focused far away blurs a code held close.
 - **Clipped white** above a few per cent: the screen is too bright for the
-  exposure. With `auto exp` this should settle within a few frames.
+  exposure. With `auto exp` this should settle within about five frames.
+- **Exposure and gain**: a gain above `x1.0` means the screen is dim for the
+  exposure allowed; the picture is noisier, and the decoder, which undoes
+  blur, reads less of it. Raise the screen's brightness. A code held still
+  gets up to 12 ms before the gain rises.
+- **Frames per second** with two buffers is every other frame of the sensor
+  (12.5 on the OV2640's wide and 2:1 levels) as long as decoding and
+  painting a frame take less than two sensor frames; with one buffer the
+  camera waits for the decoder. The decode time on line 3 is at most about
+  150 ms: a picture with no code but much fine pattern is given up on, and
+  line 2 then ends in `cut`. `cut` with a code in plain view means the limit
+  (`QR_SCAN_BUDGET_MS`) is too short for this board.
 - A code found but not decoded says why: `FORMAT ECC` (its grid was found
   but not its format marks) or `DATA ECC` (too many modules read wrong:
   blur, too few pixels per module, glare, or a code partly out of the
@@ -515,10 +536,16 @@ Reading them:
   seen; 0: none). A camera that does not answer is switched off at once: a
   module that never answered ran a camera supply regulator hot on proto 0.
   Tap to retry.
-- The 384 frame needs about 50 kB (the test) or 75 kB (a request scan) of
-  the firmware's working memory while the camera runs. When that is not
-  available, the camera runs at 288 and the size button offers 288 and 240
-  only.
+- `320x2` needs about 105 kB (the test) or 130 kB (a request scan) of the
+  firmware's working memory while the camera runs, `384` and `272x2` about
+  50 or 75 kB, `288` and `240` none. The size button offers what the memory
+  holds, and a scan starts with the first of them.
+
+`bringup/camera/qrdecode/scansim` runs this scan loop on the host: the
+firmware's decoder and exposure control on a simulated screen showing an
+animated code to a simulated sensor (what it models is listed at the top of
+`scansim.c`). Its timing figures are assumptions until the readings above
+replace them.
 
 Supported sensors: the OmniVision OV2640 (the module proto 0 was drawn for)
 and OV5640 and the GalaxyCore GC2145 modules in the ESP32-CAM pinout, told
@@ -528,11 +555,12 @@ edge. The zoom levels:
 
 | Sensor | wide | 2:1 | native |
 |---|---|---|---|
-| OV2640 | the centre square of its 800 x 600 mode (the full height), scaled | a window twice the frame of its full-resolution mode, scaled 2:1 | the frame's size from its full-resolution mode |
-| GC2145 | a window three times the frame, every third pixel | twice the frame, every other pixel | the frame's size |
+| OV2640 | the centre square of its 800 x 600 mode (the full height), scaled | the frame's size from its 800 x 600 mode (every other sensor pixel) | the frame's size from its full-resolution mode |
+| GC2145 | a window three times the frame, every third pixel (`scaler`: 2.5 times the frame, through the scaler) | twice the frame, every other pixel (`scaler`: through the scaler) | the frame's size |
 | OV5640 | the full-height square, scaled | 640 x 480 mode, centre cut | 1024 x 768 mode, centre cut |
 
-The GC2145 cannot average when it scales down: its wider levels skip pixels.
+The GC2145's wider levels skip pixels by default; its scaler (`scaler`) is
+the alternative to try on a module.
 The OV5640's levels are not native pixels (its full resolution is 5 MP); its
 clock and tuning buttons do nothing. The start-up register tables come from
 Espressif's esp32-camera driver (`io/camera/stm32u5/camera_sensors.h`,

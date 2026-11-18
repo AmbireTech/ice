@@ -8,18 +8,18 @@
 //! - [`AirgapQr`] shows a one-part UR as a QR code (the device's answers).
 //! - [`CameraTestScreen`] is the camera bring-up test as a screen of its own.
 //!
-//! Memory ([`ScanMemory`], ambire_camera.rs): the frame is the UI's image
-//! buffer (a whole screen, 150 KB); the QR decoder's state, the QR text and
-//! the UR assembler's work buffer (the message and its pool of mixed parts)
-//! are a loan from the MicroPython heap while the scan runs, or share the
-//! image buffer with a smaller frame when the heap has no such block.
+//! Memory and the scan loop ([`Scanner`], ambire_camera.rs): the frames are in
+//! the UI's image buffer (a whole screen, 150 KB) and a loan from the
+//! MicroPython heap, as are the QR decoder's state, the QR text and the UR
+//! assembler's work buffer (the message and its pool of mixed parts); with
+//! no loan, a smaller frame and all of these share the image buffer.
 
 use sys::time::Instant;
 
 use super::super::fonts;
 use super::ambire_camera::{
-    push_code, push_trunc, push_u32, settings, zoom_name, CameraTest, GrayPreview, ScanMemory,
-    VIEW,
+    push_code, push_plan, push_trunc, settings, zoom_name, CameraTest, GrayPreview, Scanned,
+    Scanner, VIEW,
 };
 use super::ambire_ur::{self, Assembler, Status};
 use crate::micropython::{Error, Obj};
@@ -97,20 +97,11 @@ pub enum ScanMsg {
 }
 
 pub struct AirgapScan {
-    /// The frame, the decoder's state and the work buffers
-    mem: ScanMemory,
-    /// The QR text buffer, then the UR work buffer
-    extra: *mut u8,
-    extra_len: usize,
-    /// The decoder's image, which the camera captures into, and its side
-    image: *mut u8,
-    side: usize,
+    /// The camera's frames through the decoder; its extra buffer is the QR
+    /// text buffer, then the UR work buffer
+    scanner: Scanner,
     phase: Phase,
     camera_on: bool,
-    capturing: bool,
-    have_frame: bool,
-    /// The frame in the image has been painted, not decoded yet
-    scan_pending: bool,
     zoom: u32,
     asm: Assembler,
     accepted_at: Option<Instant>,
@@ -120,22 +111,19 @@ pub struct AirgapScan {
 
 impl AirgapScan {
     pub fn new() -> Result<Self, Error> {
-        let mem = ScanMemory::new(TEXT_MAX + ambire_ur::MESSAGE_AREA + POOL_WANT)?;
-        let side = mem.sides()[0];
-        let regions = mem
-            .regions(side, TEXT_MAX + ambire_ur::MESSAGE_AREA + ambire_ur::MIN_POOL)
-            .ok_or(Error::RuntimeError(c"Image buffer too small for the QR scan"))?;
+        let mut scanner = Scanner::new(
+            TEXT_MAX + ambire_ur::MESSAGE_AREA + ambire_ur::MIN_POOL,
+            TEXT_MAX + ambire_ur::MESSAGE_AREA + POOL_WANT,
+        )?;
+        // Built here (and again when the camera opens): the UR work buffer's
+        // place depends on the plan
+        if !scanner.build(settings().plan) {
+            return Err(Error::RuntimeError(c"No memory for the QR scan"));
+        }
         Ok(Self {
-            extra: regions.extra,
-            extra_len: regions.extra_len,
-            image: core::ptr::null_mut(),
-            side,
-            mem,
+            scanner,
             phase: Phase::Starting,
             camera_on: false,
-            capturing: false,
-            have_frame: false,
-            scan_pending: false,
             zoom: settings().zoom,
             asm: Assembler::new(),
             accepted_at: None,
@@ -151,44 +139,36 @@ impl AirgapScan {
     ///
     /// The slices must not outlive the screen, nor be taken twice at a time.
     unsafe fn text_and_work<'a>(&self) -> (&'a mut [u8], &'a mut [u8]) {
-        // SAFETY: the extra region (the loan or the image buffer after the
-        // decoder's state), which this screen holds; nothing else uses it,
-        // and the camera's DMA writes only the decoder's image
-        let rest = unsafe { core::slice::from_raw_parts_mut(self.extra, self.extra_len) };
+        let (extra, extra_len) = self.scanner.extra();
+        // SAFETY: the scanner's extra region (in the loan or the image
+        // buffer), at least TEXT_MAX + MESSAGE_AREA + MIN_POOL bytes, which
+        // this screen holds; nothing else uses it, and the camera's DMA
+        // writes only the frames
+        let rest = unsafe { core::slice::from_raw_parts_mut(extra, extra_len) };
         rest.split_at_mut(TEXT_MAX)
     }
 
     fn work(&self) -> &[u8] {
+        let (extra, extra_len) = self.scanner.extra();
         // SAFETY: as in text_and_work()
-        unsafe {
-            core::slice::from_raw_parts(self.extra.add(TEXT_MAX), self.extra_len - TEXT_MAX)
-        }
+        unsafe { core::slice::from_raw_parts(extra.add(TEXT_MAX), extra_len - TEXT_MAX) }
     }
 
     fn mode(&self) -> camera::Mode {
         let s = settings();
         camera::Mode {
             zoom: self.zoom,
-            side: self.side,
+            side: self.scanner.side(),
             clock: s.clock,
             tune: s.tune,
         }
     }
 
     fn open(&mut self) -> Result<(), &'static str> {
-        let regions = self
-            .mem
-            .regions(self.side, TEXT_MAX + ambire_ur::MESSAGE_AREA + ambire_ur::MIN_POOL)
-            .ok_or("The QR decoder did not start.")?;
-        // SAFETY: the regions are this screen's, reserved for the decoder
-        // while it lives (the extra region after the state is the work
-        // buffers', apart)
-        let ok =
-            unsafe { camera::qr_init(regions.image, self.side, regions.state, regions.state_len) };
-        if !ok {
+        // The same plan as in new(): the work buffers stay where they are
+        if !self.scanner.build(Some(self.scanner.plan())) {
             return Err("The QR decoder did not start.");
         }
-        self.image = regions.image;
         self.camera_on = true;
         if !camera::open(self.mode()) {
             return Err("The camera did not start. Run the camera test for details.");
@@ -201,7 +181,6 @@ impl AirgapScan {
             camera::close();
             self.camera_on = false;
         }
-        self.capturing = false;
         self.phase = Phase::Finished;
     }
 
@@ -211,19 +190,24 @@ impl AirgapScan {
         Some(msg)
     }
 
-    fn start_capture(&mut self) {
-        // SAFETY: the decoder's image (16-byte aligned, side x side),
-        // untouched until the capture is done or failed: step() paints and
-        // decodes it only then
-        self.capturing = unsafe { camera::capture(self.image, self.side * self.side) };
-    }
-
-    /// Decodes the painted frame and hands a code's text to the assembler
-    fn scan(&mut self) -> Option<ScanMsg> {
+    /// Takes the next frame, if one is in, through the decoder and hands a
+    /// code's text to the assembler. The decoder reads the frames as a video
+    /// (the code followed from frame to frame, frames of one part summed),
+    /// so the same part can come many times: the assembler takes a repeat as
+    /// such.
+    fn scan(&mut self, ctx: &mut EventCtx) -> Option<ScanMsg> {
         // SAFETY: used within this call only
         let (text, work) = unsafe { self.text_and_work() };
-        // SAFETY: called between captures only (step())
-        let qr = unsafe { camera::qr_scan(text) };
+        let qr = match self.scanner.step(text) {
+            Scanned::Nothing => return None,
+            Scanned::Failed => {
+                // A failed capture: the next one retries
+                ctx.request_paint();
+                return None;
+            }
+            Scanned::Frame(qr) => qr,
+        };
+        ctx.request_paint();
         self.qr = qr;
         if qr.decoded == 0 {
             return None;
@@ -252,32 +236,10 @@ impl AirgapScan {
                 }
                 None
             }
-            Phase::Running => {
-                if !self.capturing {
-                    // The last frame has been painted: decode it where it is,
-                    // then capture the next into the same image
-                    if self.scan_pending {
-                        self.scan_pending = false;
-                        if let Some(msg) = self.scan() {
-                            return self.finish(ctx, msg);
-                        }
-                    }
-                    self.start_capture();
-                    return None;
-                }
-                match camera::status().state {
-                    camera::STATE_BUSY => return None,
-                    camera::STATE_DONE => {
-                        self.have_frame = true;
-                        self.scan_pending = true;
-                    }
-                    // A failed or lost capture: the next one retries
-                    _ => {}
-                }
-                self.capturing = false;
-                ctx.request_paint();
-                None
-            }
+            Phase::Running => match self.scan(ctx) {
+                Some(msg) => self.finish(ctx, msg),
+                None => None,
+            },
             Phase::Finished => None,
         }
     }
@@ -286,11 +248,9 @@ impl AirgapScan {
         self.zoom = (self.zoom + 1) % camera::ZOOM_LEVELS;
         // Stops a running capture; blocks while the sensor settles
         let ok = camera::set_mode(self.mode());
-        self.capturing = false;
-        // The image may be decoded already (thresholded): black until the
-        // next frame
-        self.have_frame = false;
-        self.scan_pending = false;
+        // The frames in hand are the old zoom's: black until the next one,
+        // and the decoder starts afresh
+        self.scanner.restart();
         ctx.request_paint();
         if !ok {
             return self.finish(ctx, ScanMsg::Failed("The camera did not take the zoom change."));
@@ -354,14 +314,14 @@ impl Component for AirgapScan {
             .with_bg(Color::black())
             .render(target);
 
-        // Repaints come right after a capture ends (step()), before the next
-        // one starts
+        // The last frame that came in (the camera is not writing it:
+        // Scanner)
         let view = Rect::new(Point::zero(), Point::new(VIEW, VIEW));
-        if self.have_frame && !self.image.is_null() {
+        if let Some(src) = self.scanner.image() {
             GrayPreview {
                 area: view,
-                src: self.image,
-                side: self.side,
+                src,
+                side: self.scanner.side(),
             }
             .render(target);
         }
@@ -400,7 +360,7 @@ impl Component for AirgapScan {
         // Diagnostics: the frame and zoom, and the decoder's last view of a
         // code (version, pixels per module)
         let mut diag: heapless::String<64> = heapless::String::new();
-        push_u32(&mut diag, self.side as u32);
+        push_plan(&mut diag, self.scanner.plan());
         push_trunc(&mut diag, "px ");
         push_trunc(&mut diag, zoom_name(self.zoom));
         if self.qr.grids > 0 {
