@@ -27,7 +27,7 @@ Parts (Z = 0 is the board's front face, +Z toward the screen; X east, Y north):
   shell   back + walls up to the board's front face; a standoff under each board
           hole: a locating pin where the hole sits under the screen, a clearance hole
           and a counterbore (the screw head sits flush) where the front half is solid;
-          USB-C opening, the airgap slider's window, an open window the camera head stands
+          USB-C opening, the airgap switch's opening, an open window the camera head stands
           through, a hole over the buzzer, a groove along the north tongue; a window in
           the back the pack's connector drops through onto the pads, a shallow bay over
           the pack's board
@@ -40,23 +40,22 @@ Parts (Z = 0 is the board's front face, +Z toward the screen; X east, Y north):
   tray    the pack's frame: the pack's board sits on its north and south walls, its
           connector standing out toward the device; the cells show underneath
   joycap  the joystick's printed cap (enclosure/joycap.py)
-  airslider  the airgap switch's printed slider in the west wall (enclosure/airslider.py)
 
-Assembly: the airgap slider into its window from inside the shell, screen onto the
+Assembly: screen onto the
 board's front face on foam tape (ribbons through the slots into their connectors), board onto the shell's pins and standoffs, bezel hooked in at
 the north and swung down, the M2 screws from the back through shell and board into the
 bezel's bosses. The pack: its board glued onto the tray's walls, the cells pressed into
 their clips from underneath.
 
 Outputs:
-  enclosure/out/{shell,bezel,tray,frame,joycap,airslider}.{step,stl}   for CAD / quote
-  enclosure/out/{case,battery-tray}.{3mf,stl}        laid out for printing: the device's four parts,
+  enclosure/out/{shell,bezel,tray,frame,joycap}.{step,stl}   for CAD / quote
+  enclosure/out/{case,battery-tray}.{3mf,stl}        laid out for printing: the device's three parts,
                                                       and the pack's tray and frame
   docs/v4/enclosure/                                  the /v4/ concept page's 3D preview and configurator:
     enclosure.json    the numbers the preview draws from, the flame, the print schemes, the pack
     board.json        the populated board, from KiCad's own 3D export (without the clips)
     pack.json         the pack's board, its connector, clips and cells, packed the same way
-    {shell,bezel,tray,joycap,airslider}.json  the case parts (GLB as base64: the artifact host serves no .glb)
+    {shell,bezel,tray,joycap}.json  the case parts (GLB as base64: the artifact host serves no .glb)
     files/            the DIY set: the device board's order files (JLCPCB, PCBWay), the pack
                       board's (JLCPCB), the case and the pack
 
@@ -81,6 +80,7 @@ from pathlib import Path
 
 import numpy as np
 from build123d import (
+    Align,
     Axis,
     Box,
     Kind,
@@ -111,7 +111,6 @@ WEB = HERE / "docs/v4/enclosure"   # v4 (the battery pack): the /v4/ page; docs/
 sys.path.insert(0, str(HERE / "art"))
 import flame as flame_art  # noqa: E402  (art/flame.py, shared with scripts/silkFlame.py)
 import joycap  # noqa: E402  (enclosure/joycap.py: the joystick's printed cap)
-import airslider  # noqa: E402  (enclosure/airslider.py: the airgap switch's printed slider)
 KICAD_3D = os.environ.get("KICAD_3DMODEL_DIR", "/Applications/KiCad/KiCad.app/Contents/SharedSupport/3dmodels")
 
 # ── Stack in front of the board ─────────────────────────────────────────────
@@ -217,7 +216,14 @@ MIN_SHANK_CLR = 0.3  # screw shank to the nearest part; a standoff notched for a
 SCREEN_CLR = 0.25    # bezel fills to the screen's glass edge (0.15 was hard to snap the screen into, 2026-11-17)
 RIBBON_CLR = 0.3     # around the display ribbons' slots
 USB_PLUG = (12.6, 6.8, 2.2)  # opening for a USB-C plug overmold (w, h, corner r); common overmolds are <= 12.35 x 6.5
-LEVER_TRAVEL = 1.5   # MSK12C02 slide travel; its lever stops inside the wall, a printed slider (airslider.py) brings it out
+LEVER_TRAVEL = 1.5   # MSK12C02 slide travel; its lever stops ~1.3 mm inside the wall's outer face
+# The airgap switch is worked through an opening in the west wall, with a fingernail or a pen
+# tip: the lever's whole travel plus AIR_NAIL each way along the wall, AIR_H tall round the
+# lever (cut off by the floor and by PRINT_MIN_WALL under the parting line).
+AIR_NAIL, AIR_H, AIR_R = 1.5, 2.8, 1.0
+# Openings' rims (camera window, USB-C, the airgap switch's) rounded on the outside, and the
+# camera window's corners rounded: CAM_R leaves the head's square corners CAM_CORNER_MIN clear.
+RIM_R, CAM_R, CAM_CORNER_MIN = 0.5, 0.8, 0.2
 
 
 # ── The battery pack (docs/pack.md) ─────────────────────────────────────────
@@ -329,9 +335,9 @@ printer needs 0.2 mm. These files have not been printed yet.
 
 CASE_README = """Ambire Ice v4 case
 
-case.3mf     the four parts laid out for printing (PrusaSlicer, Lychee, CHITUBOX):
-             the shell on its back, the bezel face down, the joystick's cap on its pad,
-             the airgap slider on its flange. The shell and the bezel need no supports.
+case.3mf     the three parts laid out for printing (PrusaSlicer, Lychee, CHITUBOX):
+             the shell on its back, the bezel face down, the joystick's cap on its pad.
+             The shell and the bezel need no supports.
 case.stl     the same layout for any other slicer (split it into parts to place them yourself)
 halves.stl   the shell and the bezel alone, laid out the same way (halves.pwsz: sliced for the
              Anycubic Photon Mono M7 Pro)
@@ -342,11 +348,11 @@ The parts:
   bezel      front bezel (the screen sits in it; the screw threads into its chin)
   joycap     the joystick's cap: print it upside down, its flat pad on the plate; press it straight
              onto the stem (a drop of glue if it comes loose)
-  airslider  the airgap switch's slider: print it on its flange, grip up; it goes into its
-             window in the shell's west wall from inside, grip out, before the board
 
-Assembly: push the airgap slider into its window in the shell's west wall from inside,
-grip out. Stick the screen to the board's front face with 0.3 mm foam tape, its
+The airgap switch is worked through the opening in the left wall, with a fingernail or a
+pen tip.
+
+Assembly: stick the screen to the board's front face with 0.3 mm foam tape, its
 ribbons through the board's slots into their connectors. Lay the board in the shell (its
 two top holes onto the pins). Hook the bezel's top edge under the shell's top lip, swing
 it down over the screen, then the M2 pan-head screw from the back.
@@ -744,6 +750,31 @@ def slivers(outer, holes, least):
     return region - kept if kept is not None else region
 
 
+def round_rim(part, cuts, skin, r, what):
+    """`part` with the rims its `cuts` left in the outer `skin` (faces of the part's outside
+    before any cut) rounded to r, in one fillet. A rim edge lies on a cut's face and on the
+    skin; seams along a cut's own rounded corners lie inside the wall, so they are not taken.
+    Returns the part and the number of edges rounded."""
+    near = lambda faces, p: min(f.distance_to(p) for f in faces) < 1e-3
+    rim = []
+    for cut in cuts:
+        bb, faces = cut.bounding_box(), cut.faces()
+        for e in part.edges():
+            eb = e.bounding_box()
+            if not (bb.min.X - 0.01 <= eb.min.X and eb.max.X <= bb.max.X + 0.01 and bb.min.Y - 0.01 <= eb.min.Y
+                    and eb.max.Y <= bb.max.Y + 0.01 and bb.min.Z - 0.01 <= eb.min.Z and eb.max.Z <= bb.max.Z + 0.01):
+                continue
+            p = e.position_at(0.5)
+            if near(faces, p) and near(skin, p) and not any(e.is_same(k) for k in rim):
+                rim.append(e)
+    if not rim:
+        raise SystemExit(f"{what}: no rim edge found to round")
+    try:
+        return fillet(rim, r), len(rim)
+    except Exception as error:   # OCC's fillet raises bare StdFail/ValueError: say which rim
+        raise SystemExit(f"{what}: rounding {len(rim)} rim edges at r {r} failed: {error!r}") from error
+
+
 def outline(b, grow):
     return (-grow, -grow, b["w"] + grow, b["h"] + grow, b["r"] + grow)
 
@@ -848,7 +879,7 @@ def main():
 
     # ── openings from whatever crosses the board edge ──
     openings = []
-    air = None
+    air_found = False
     for ref, v in parts.items():
         beyond = {
             "W": v[v[:, 0] < -0.05], "E": v[v[:, 0] > W + 0.05],
@@ -866,12 +897,26 @@ def main():
                 report.append(f"USB-C opening {USB_PLUG[0]} x {USB_PLUG[1]} at x {cx:.2f}, Z {cz:.2f}")
             elif ref.startswith("SW_AIR"):
                 if side != "W":
-                    raise SystemExit(f"{ref}: the airgap slider is drawn for the west wall, the lever leaves {side}")
-                x_out = lambda z: -(GAP + WALL) + DRAFT_MM / 2 * (z_split - z) / (z_split - z_floor_out)
-                lever = {"tip": pts[:, 0].min(), "y": (pts[:, 1].min(), pts[:, 1].max()), "z": (zlo, zhi)}
-                air = airslider.plan(lever, b["fps"][ref]["y"], LEVER_TRAVEL, GAP, x_out, z_floor_in, z_back)
-                openings.append((ref, side, airslider.wall_cuts(air)))
-                report += airslider.report(air)
+                    raise SystemExit(f"{ref}: the airgap opening is drawn for the west wall, the lever leaves {side}")
+                # the model shows the lever at one end of its travel: the opening spans both ends
+                ly0, ly1 = pts[:, 1].min(), pts[:, 1].max()
+                toward = 1.0 if b["fps"][ref]["y"] > (ly0 + ly1) / 2 else -1.0
+                if abs(abs(b["fps"][ref]["y"] - (ly0 + ly1) / 2) - LEVER_TRAVEL / 2) > 0.3:
+                    raise SystemExit(f"{ref}: the modelled lever is not at an end of its {LEVER_TRAVEL} mm travel")
+                sy0 = min(ly0, ly0 + toward * LEVER_TRAVEL) - AIR_NAIL
+                sy1 = max(ly1, ly1 + toward * LEVER_TRAVEL) + AIR_NAIL
+                oz0 = max((zlo + zhi) / 2 - AIR_H / 2, z_floor_in + 0.2)
+                oz1 = min((zlo + zhi) / 2 + AIR_H / 2, z_split - PRINT_MIN_WALL)
+                if not (oz0 < zlo and zhi < oz1):
+                    raise SystemExit(f"{ref}: the opening (Z {oz0:.2f}-{oz1:.2f}) does not clear the lever ({zlo:.2f}-{zhi:.2f})")
+                cut = wall_cut(side, b, (sy0 + sy1) / 2, (oz0 + oz1) / 2, sy1 - sy0, oz1 - oz0, AIR_R)
+                cut &= box(-GAP - WALL - 2, sy0 - 1, -GAP + 0.2, sy1 + 1, oz0 - 1, oz1 + 1)   # through the wall only
+                openings.append((ref, side, cut))
+                x_face = -(GAP + WALL) + DRAFT_MM / 2 * (z_split - (zlo + zhi) / 2) / (z_split - z_floor_out)
+                report.append(f"airgap switch: a {sy1 - sy0:.1f} x {oz1 - oz0:.1f} mm opening in the west wall "
+                              f"(the lever's {LEVER_TRAVEL} mm travel + {AIR_NAIL} mm each way), its lever "
+                              f"{pts[:, 0].min() - x_face:.2f} mm inside the wall's outer face")
+                air_found = True
             else:
                 raise SystemExit(f"{ref} crosses the {side} board edge and has no opening rule")
 
@@ -881,6 +926,9 @@ def main():
     # ── shell ──
     shell = rr_prism_drafted(*out_o[:4], out_o[4], z_split, z_floor_out, draft_back)
     shell = fillet(shell.edges().group_by(Axis.Z)[0], BACK_FILLET)
+    # the outside, for rounding the openings' rims: all but the parting face (the bezel covers it)
+    shell_skin = [f for f in shell.faces() if f.bounding_box().min.Z < z_split - 1e-6]
+    rim_cuts = []
     shell -= rr_prism(*in_o[:4], in_o[4], z_floor_in, z_split + 1)
     shell += rr_prism(*tongue_o[:4], tongue_o[4], z_split, z_split + TONGUE_H) - rr_prism(*in_o[:4], in_o[4], z_split - 1, z_split + TONGUE_H + 1)
 
@@ -940,7 +988,12 @@ def main():
 
     # The camera head stands through an open window: tinted plastic blurs QR, and the
     # head is taller than the back cavity.
-    shell -= box(cam[0] - CAM_CLR, cam[1] - CAM_CLR, cam[2] + CAM_CLR, cam[3] + CAM_CLR, z_floor_out - 1, z_floor_in + 1)
+    corner = CAM_R - math.sqrt(2) * (CAM_R - CAM_CLR)     # a square head's corner to the rounded one
+    if corner < CAM_CORNER_MIN:
+        raise SystemExit(f"camera window: its {CAM_R} mm corners pass {corner:.2f} mm from the head's corners")
+    cam_cut = rr_prism(cam[0] - CAM_CLR, cam[1] - CAM_CLR, cam[2] + CAM_CLR, cam[3] + CAM_CLR, CAM_R, z_floor_out - 1, z_floor_in + 1)
+    shell -= cam_cut
+    rim_cuts.append(cam_cut)
     cam_out = z_floor_out - (z_back - CAM_HEAD_H)
     report.append(f"camera head ({CAM_HEAD_H} mm) stands {cam_out:.1f} mm out of the back through a "
                   f"{cam[2] - cam[0] + 2 * CAM_CLR:.1f} x {cam[3] - cam[1] + 2 * CAM_CLR:.1f} mm window")
@@ -974,7 +1027,10 @@ def main():
             continue
         skin = z_lo - z_floor_out
         through = skin < MIN_SKIN
-        shell -= box(x0, y0, x1, min(y1, H + GAP + 0.01), z_floor_out - 1 if through else z_lo, z_floor_in + 0.01)
+        pocket = box(x0, y0, x1, min(y1, H + GAP + 0.01), z_floor_out - 1 if through else z_lo, z_floor_in + 0.01)
+        shell -= pocket
+        if through:
+            rim_cuts.append(pocket)     # it opens into USB-C's: one rim
         report.append(f"{ref} ({-v[:, 2].min():.2f} mm) stands into the floor: "
                       + ("opened through" if through else f"a pocket, {skin:.2f} mm of floor left under it"))
 
@@ -1102,8 +1158,8 @@ def main():
         frame -= Pos(mx, -cy, (z_pcb_top + z_body) / 2) * Cylinder(FRAME["pocket_d"] / 2, z_body - z_pcb_top + 2)
         for a in (90, 210, 330):
             rx, ry = mx + rib_at * math.cos(math.radians(a)), -cy + rib_at * math.sin(math.radians(a))
-            rib = Pos(rx, ry, z_pcb_top) * Cylinder(rib_r, z_body - lead - z_pcb_top, align=(1, 1, 0))
-            rib += Pos(rx, ry, z_body - lead) * Cone(rib_r, 0.01, lead, align=(1, 1, 0))
+            rib = Pos(rx, ry, z_pcb_top) * Cylinder(rib_r, z_body - lead - z_pcb_top, align=(Align.CENTER, Align.CENTER, Align.MIN))
+            rib += Pos(rx, ry, z_body - lead) * Cone(rib_r, 0.01, lead, align=(Align.CENTER, Align.CENTER, Align.MIN))
             frame += rib & bore
     for dx, dy in FRAME["pegs"]:
         frame += Pos(cx + dx, -(cy + dy), z_pcb_top - FRAME["peg_h"] / 2) * Cylinder(FRAME["peg_d"] / 2, FRAME["peg_h"])
@@ -1124,14 +1180,17 @@ def main():
 
     for _, _, cut in openings:
         shell -= cut
-    if air is None:
-        raise SystemExit("no airgap switch lever crosses the board edge: nothing for the slider to move")
-    shell += airslider.guards(air)
-    air_slider = airslider.slider(air)
+        rim_cuts.append(cut)
+    shell, n_rim = round_rim(shell, rim_cuts, shell_skin, RIM_R, "shell")
+    report.append(f"openings' rims rounded {RIM_R} mm on the outside ({n_rim} edges: the camera window, "
+                  f"USB-C, the airgap switch); the camera window's corners {CAM_R} mm")
+    if not air_found:
+        raise SystemExit("no airgap switch lever crosses the board edge: no opening to work it through")
 
     # ── bezel ──
     bezel = rr_prism_drafted(*out_o[:4], out_o[4], z_split, z_top, draft_front)
     bezel = fillet(bezel.edges().group_by(Axis.Z)[-1], FRONT_FILLET)
+    bezel_skin = [f for f in bezel.faces() if f.bounding_box().max.Z > z_split + 1e-6]
     bezel -= rr_prism(*in_o[:4], in_o[4], z_split - 1, z_lip)
     bezel -= rr_prism(*skirt_o[:4], skirt_o[4], z_split - 1, z_split + TONGUE_H + TONGUE_CLR)
     z_ceil = z_split + TONGUE_H + TONGUE_CLR    # the skirt's root: the fillet up into its corner
@@ -1251,8 +1310,11 @@ def main():
         raise SystemExit(f"M2x{screw}: only {thread:.2f} mm of thread in the bezel's bosses")
     report.append(f"screws: {len(screw_holes)}x M2x{screw} pan head from the back, {thread:.1f} mm of thread "
                   f"in the bezel; locating pins at {len(pin_holes)} holes under the screen; north hook {hl:.0f} mm")
-    for _, _, cut_ in openings:
+    bezel_cuts = [cut_ for _, _, cut_ in openings if cut_.bounding_box().max.Z > z_split]
+    for cut_ in bezel_cuts:
         bezel -= cut_
+    if bezel_cuts:
+        bezel, _ = round_rim(bezel, bezel_cuts, bezel_skin, RIM_R, "bezel")
 
     # The vents (SKIRT_ROOT's note): VENTS_PER_WALL slots through each wall, clear of the
     # other openings and of anything solid a slot would reach into. The bezel's inside is
@@ -1319,17 +1381,16 @@ def main():
     # ── checks that the geometry, not prose, has to satisfy ──
     if win[0] < panel[0] or win[2] > panel[2] or win[1] < panel[1] or win[3] > panel[3]:
         raise SystemExit("display window is larger than the glass")
-    assert all(p_.is_valid for p_ in (shell, bezel, tray, frame, joy_cap, air_slider)), "invalid solid"
+    assert all(p_.is_valid for p_ in (shell, bezel, tray, frame, joy_cap)), "invalid solid"
     clash = (shell & bezel).volume
     if clash > 0.01:
         raise SystemExit(f"the shell and the bezel overlap by {clash:.3f} mm3 assembled")
 
     size = (out_o[2] - out_o[0], out_o[3] - out_o[1], z_top - z_floor_out)   # the device; the pack adds to it
     print_layout((("shell", shell), ("bezel", Rot(180, 0, 0) * bezel)), OUT / "halves")   # the case alone (resin plate)
-    print_layout((("shell", shell), ("bezel", Rot(180, 0, 0) * bezel), ("joycap", Rot(180, 0, 0) * joy_cap),
-                  ("airslider", airslider.print_pose(air_slider))), OUT / "case")
+    print_layout((("shell", shell), ("bezel", Rot(180, 0, 0) * bezel), ("joycap", Rot(180, 0, 0) * joy_cap)), OUT / "case")
     print_layout((("tray", Rot(180, 0, 0) * tray), ("frame", Rot(180, 0, 0) * frame)), OUT / "battery-tray")
-    for name, part in (("shell", shell), ("bezel", bezel), ("tray", tray), ("frame", frame), ("joycap", joy_cap), ("airslider", air_slider)):
+    for name, part in (("shell", shell), ("bezel", bezel), ("tray", tray), ("frame", frame), ("joycap", joy_cap)):
         export_step(part, str(OUT / f"{name}.step"))
         export_stl(part, str(OUT / f"{name}.stl"), tolerance=MESH_TOL, angular_tolerance=0.2)
         if name == "frame":
@@ -1383,7 +1444,7 @@ def main():
         "camera": cam,
         "depthDriver": driver,
         "parts": {"shell": "enclosure/shell.json", "bezel": "enclosure/bezel.json", "tray": "enclosure/tray.json",
-                  "joycap": "enclosure/joycap.json", "airslider": "enclosure/airslider.json"},
+                  "joycap": "enclosure/joycap.json"},
         "board3d": "enclosure/board.json",
         "pack3d": "enclosure/pack.json",
         "screws": {"length": screw, "d": 2.0, "head": [3.8, 1.6], "seat": seat,

@@ -273,8 +273,7 @@
   "shell": "enclosure/shell.json",
   "bezel": "enclosure/bezel.json",
   "tray": "enclosure/tray.json",
-  "joycap": "enclosure/joycap.json",
-  "airslider": "enclosure/airslider.json"
+  "joycap": "enclosure/joycap.json"
  },
  "board3d": "enclosure/board.json",
  "pack3d": "enclosure/pack.json",
@@ -430,14 +429,14 @@
    {
     "label": "Case: 3MF and STL (zip)",
     "filename": "ambire-ice-case.zip",
-    "bytes": 470985,
+    "bytes": 653858,
     "part": "enclosure/files/ambire-ice-case.zip.b64.txt",
     "b64": true
    },
    {
     "label": "Battery pack tray and frame: 3MF and STL (zip)",
     "filename": "ambire-ice-battery-tray.zip",
-    "bytes": 156506,
+    "bytes": 150725,
     "part": "enclosure/files/ambire-ice-battery-tray.zip.b64.txt",
     "b64": true
    }

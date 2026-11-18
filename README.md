@@ -24,7 +24,7 @@ in silkscreen. The front (screen side) carries no brand at all.*
 - An airgap switch cuts USB data and radio power in hardware; offline, it signs
   over animated QR codes.
 - Or build your own: the Gerber, BOM and pick-and-place files for JLCPCB or PCBWay
-  are in this repo, and the case, battery-pack tray, joystick cap and airgap slider
+  are in this repo, and the case, battery-pack tray and joystick cap
   print on a home 3D printer.
 
 Pictures on the site are illustrative; the shipped device may differ in shape and
