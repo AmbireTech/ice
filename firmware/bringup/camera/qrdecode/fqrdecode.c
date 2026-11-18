@@ -5,6 +5,8 @@
 // consecutive frames (tracking, soft bits summed). FQR_DUMP=<dir> writes each
 // frame's soft bits as <dir>/<name>.soft (text, one row of modules a line).
 // FQR_OPT="i=v,..." sets tuning switches (FQR_HOST_TUNE builds).
+// FQR_BUDGET=<ms> bounds each frame's search (fqr_set_budget, host
+// milliseconds); a frame cut short prints "cut".
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -51,6 +53,9 @@ static double now_ms(void) {
   return (double)t.tv_sec * 1e3 + (double)t.tv_nsec / 1e6;
 }
 
+// The budget's clock, in tenths of a millisecond (the host is fast)
+static uint32_t budget_clock(void) { return fqr_prof_us() / 100; }
+
 int main(int argc, char **argv) {
   if (argc < 2) {
     fprintf(stderr, "usage: fqrdecode FILE.pgm...\n");
@@ -95,6 +100,9 @@ int main(int argc, char **argv) {
     if (!video) {
       fqr_reset(s);
     }
+    if (getenv("FQR_BUDGET") != NULL) {
+      fqr_set_budget(s, budget_clock, (uint32_t)(atof(getenv("FQR_BUDGET")) * 10));
+    }
     fqr_result_t r;
     unsigned char payload[4096] = {0};
     double t0 = now_ms();
@@ -113,6 +121,9 @@ int main(int argc, char **argv) {
            ok ? "OK" : "NO", (int)r.stage, (int)r.version, (int)(r.px_per_module_x10 / 10),
            (int)(r.px_per_module_x10 % 10), (int)r.finders, (int)r.aligns, (int)r.timing_x100,
            r.tracked ? " tracked" : "", (int)r.fused, (int)r.rs_errors, (int)r.rs_erasures, ms);
+    if (r.cut) {
+      printf(" cut");
+    }
     if (ok) {
       // FQR_FULL: the whole payload, else its head
       printf(getenv("FQR_FULL") ? "\t%s" : "  %.40s", (const char *)payload);

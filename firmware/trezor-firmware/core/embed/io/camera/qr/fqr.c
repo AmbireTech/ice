@@ -118,6 +118,11 @@ struct fqr {
 
   uint8_t cw[MAX_CW], rel[MAX_CW], data[MAX_CW];
   uint8_t blk[256], brel[256], bwork[256];
+
+  // The search's time budget (fqr_set_budget)
+  uint32_t (*now_ms)(void);
+  uint32_t budget_ms, start_ms;
+  int cut;  // this frame's search ran out of time
 };
 
 // ---------------------------------------------------------------- GF(256)
@@ -963,6 +968,14 @@ static void row_hit(fqr_t *s, int y, int xend, const int c[5]) {
   add_candidate(s, y, cx2, cy, hs, (float)vt);
 }
 
+// The frame has used its time: no further place is tried
+static bool out_of_time(fqr_t *s) {
+  if (s->now_ms != NULL && s->now_ms() - s->start_ms >= s->budget_ms) {
+    s->cut = 1;
+  }
+  return s->cut != 0;
+}
+
 // Finder pattern candidates: every row thresholded as it is read, cut into
 // runs, and each 1:1:3:1:1 run of five checked down its centre column and
 // across again
@@ -982,6 +995,9 @@ static void find_finders(fqr_t *s) {
     rows++;
   }
   for (int y = 0; y < h; y++) {
+    if ((y & 15) == 15 && out_of_time(s)) {
+      break;  // the rows so far give what candidates there are
+    }
     const uint8_t *row = img + (size_t)y * (size_t)s->stride;
     const uint8_t *bm = s->bmean + (y / BLOCK) * s->bw, *bt = s->btol + (y / BLOCK) * s->bw;
     int sum = 0, cols = 0;
@@ -1870,6 +1886,8 @@ bool fqr_scan(fqr_t *s, const uint8_t *gray, int stride, uint8_t *payload, size_
   s->img = gray;
   s->stride = stride;
   s->have_soft = 0;
+  s->cut = 0;
+  s->start_ms = s->now_ms != NULL ? s->now_ms() : 0;
 
   // The previous frame's grid, moved on: the finders are looked for around
   // where they were
@@ -1938,7 +1956,7 @@ bool fqr_scan(fqr_t *s, const uint8_t *gray, int stride, uint8_t *payload, size_
     }
   }
   bool ok = false, any = false;
-  for (int t = 0; t < nt && !ok; t++) {
+  for (int t = 0; t < nt && !ok && !(t > 0 && out_of_time(s)); t++) {
     const cand_t *A = &s->cand[tri[t].a], *B = &s->cand[tri[t].b], *C = &s->cand[tri[t].c];
     s->fin[0].x = A->x; s->fin[0].y = A->y;
     s->fin[1].x = B->x; s->fin[1].y = B->y;
@@ -1972,6 +1990,10 @@ bool fqr_scan(fqr_t *s, const uint8_t *gray, int stride, uint8_t *payload, size_
       const cand_t *P = &s->cand[a], *Q = &s->cand[b];
       if (P->q < 0.6f || Q->q < 0.6f) {
         continue;
+      }
+      if (out_of_time(s)) {
+        a = nc;
+        break;
       }
       float dx = Q->x - P->x, dy = Q->y - P->y, d = sqrtf(dx * dx + dy * dy);
       float cu = fabsf(dx) > fabsf(dy) ? fabsf(dx) / d : fabsf(dy) / d;
@@ -2022,7 +2044,7 @@ bool fqr_scan(fqr_t *s, const uint8_t *gray, int stride, uint8_t *payload, size_
           f[2] = t;
         }
       }
-      for (int tries = 0; tries < 6 && !any; tries++) {
+      for (int tries = 0; tries < 6 && !any && !(tries > 0 && out_of_time(s)); tries++) {
         int hyp = 0;
         for (int k = 1; k < 6; k++) {
           if (hs[k] > hs[hyp]) {
@@ -2049,12 +2071,18 @@ bool fqr_scan(fqr_t *s, const uint8_t *gray, int stride, uint8_t *payload, size_
     }
   }
   track_update(s, any);
+  res->cut = s->cut;
   return ok;
 }
 
 void fqr_reset(fqr_t *s) {
   s->track = 0;
   s->acc_n = 0;
+}
+
+void fqr_set_budget(fqr_t *s, uint32_t (*now_ms)(void), uint32_t budget_ms) {
+  s->now_ms = now_ms;
+  s->budget_ms = budget_ms;
 }
 
 const int8_t *fqr_modules(const fqr_t *s, int *dim) {

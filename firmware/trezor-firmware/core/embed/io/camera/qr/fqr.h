@@ -56,6 +56,7 @@ typedef struct {
   int32_t aligns;        // alignment patterns located
   int32_t timing_x100;   // timing pattern match, 0-100
   int32_t px_per_module_x10;
+  int32_t cut;           // 1: the search stopped at its time budget
   float corners[8];      // the grid's corners (x, y), clockwise from top left
 } fqr_result_t;
 
@@ -74,6 +75,13 @@ bool fqr_scan(fqr_t *s, const uint8_t *gray, int stride, uint8_t *payload,
 
 // Forgets the previous frames (tracking and combined soft bits)
 void fqr_reset(fqr_t *s);
+
+// Bounds the search of a frame that shows no code where the last one was:
+// `now_ms` is a millisecond clock, and once a frame has taken `budget_ms`
+// no further place is tried for its finder patterns (a grid already found
+// is still read to the end). A frame of clutter (a checked cloth, a page of
+// print) can otherwise cost twenty times a frame with a code. NULL: no bound.
+void fqr_set_budget(fqr_t *s, uint32_t (*now_ms)(void), uint32_t budget_ms);
 
 // After fqr_scan(): the last grid's soft bits, row by row (-127 black ..
 // 127 white), and its side in modules (0: none). For evaluation.
