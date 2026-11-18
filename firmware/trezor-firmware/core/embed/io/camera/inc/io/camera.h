@@ -24,7 +24,7 @@
 
 // Zoom levels, by sensor pixels per frame pixel (the field of view grows with
 // the side): 0 the widest (about the sensor's full height, scaled down),
-// 1 a 2x window averaged 2:1 (subsampled on the GC2145), 2 native pixels
+// 1 a window of twice the side at half resolution, 2 native pixels
 #define CAMERA_ZOOM_LEVELS 3
 #define CAMERA_ZOOM_WIDE 0
 #define CAMERA_ZOOM_HALF 1
@@ -34,11 +34,12 @@
 // 1 faster (OV2640: 4x the internal clock; GC2145: the PLL table's own
 // PCLK). The OV5640 ignores it.
 #define CAMERA_CLOCKS 2
-// Image tuning. OV2640: 0 exposure set from the frames (the bright centre
-// held below clipping, at most ~6 ms), 1 the sensor's own AEC, 2 its AEC
-// for phone screens (lower target, more contrast). GC2145: 0 and 1 its
-// defaults, 2 for phone screens (lower target, denoise off). The OV5640
-// ignores it.
+// Image tuning. OV2640: 0 exposure set from the frames (the code's area, or
+// the centre, held below clipping; exposure before gain), 1 the sensor's own
+// AEC, 2 its AEC for phone screens (lower target, more contrast). GC2145:
+// 0 its defaults, 1 the wider zooms through its 1/2 scaler instead of by
+// skipping pixels, 2 for phone screens (lower target, denoise off). The
+// OV5640 ignores it.
 #define CAMERA_TUNES 3
 
 // What to capture, packed into one word for camera_open() and
@@ -104,11 +105,17 @@ typedef struct {
   uint32_t i2c_lines;
   uint32_t i2c_error;
   uint32_t xclk_edges;
-  // OV2640 exposure from the frames (tune 0): the last frame centre's 98th
+  // OV2640 exposure from the frames (tune 0): the last metered frame's 98th
   // percentile, and the exposure (lines) and gain (1/16 steps) it set
   uint32_t ae_p98;
   uint32_t ae_lines;
   uint32_t ae_gain16;
+  // ... the exposure in microseconds, the longest allowed now (it follows
+  // how fast the code moves), and 1 if the light was metered on the code's
+  // area (0: the frame's centre)
+  uint32_t ae_exposure_us;
+  uint32_t ae_cap_us;
+  uint32_t ae_on_code;
 } camera_status_t;
 
 // Powers the module up, finds the sensor and starts it streaming in `mode`
@@ -131,3 +138,8 @@ bool camera_capture(uint8_t *buf, size_t size);
 
 // Reports the state and the counters; also finishes a capture that is done.
 void camera_get_status(camera_status_t *status);
+
+// Tells the camera where the code is in its frames, for the exposure: the
+// area's corners packed as x | y << 16 (frame pixels). Both 0: no code in
+// view (the frame's centre is metered). Kept until the next call or mode.
+void camera_set_meter(uint32_t top_left, uint32_t bottom_right);

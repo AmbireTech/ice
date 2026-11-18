@@ -887,6 +887,10 @@ void camera_get_status(camera_status_t *status) {
   syscall_invoke1((uint32_t)status, SYSCALL_AMBIRE_CAMERA_GET_STATUS);
 }
 
+void camera_set_meter(uint32_t top_left, uint32_t bottom_right) {
+  syscall_invoke2(top_left, bottom_right, SYSCALL_AMBIRE_CAMERA_SET_METER);
+}
+
 #endif  // USE_AMBIRE_CAMERA
 
 // =============================================================================

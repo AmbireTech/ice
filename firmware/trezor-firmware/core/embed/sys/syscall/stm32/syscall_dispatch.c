@@ -1189,6 +1189,10 @@ __attribute((no_stack_protector)) void syscall_handler(uint32_t *args,
       camera_status_t *status = (camera_status_t *)args[0];
       camera_get_status__verified(status);
     } break;
+
+    case SYSCALL_AMBIRE_CAMERA_SET_METER: {
+      camera_set_meter(args[0], args[1]);
+    } break;
 #endif  // USE_AMBIRE_CAMERA
 
 #ifdef USE_AMBIRE_AIRGAP

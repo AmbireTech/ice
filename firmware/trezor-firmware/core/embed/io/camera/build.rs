@@ -10,7 +10,7 @@ pub fn def_module(lib: &mut CLibrary) -> Result<()> {
     if cfg!(feature = "emulator") {
         lib.add_source("camera/unix/camera.c");
     } else if cfg!(feature = "mcu_stm32u5") {
-        lib.add_source("camera/stm32u5/camera.c");
+        lib.add_sources(["camera/stm32u5/camera.c", "camera/stm32u5/camera_ae.c"]);
     } else {
         bail_unsupported!();
     }

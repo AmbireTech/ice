@@ -22,3 +22,5 @@ bool camera_set_mode(uint32_t mode) { return false; }
 bool camera_capture(uint8_t *buf, size_t size) { return false; }
 
 void camera_get_status(camera_status_t *status) { *status = g_status; }
+
+void camera_set_meter(uint32_t top_left, uint32_t bottom_right) {}

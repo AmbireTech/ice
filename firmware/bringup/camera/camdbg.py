@@ -44,6 +44,8 @@ STATUS_FIELDS = [
     "last_flags", "last_capture_ms", "vsync_high_pm", "vsync_edges",
     "href_high_pm", "href_edges", "pclk_edges", "vsync_blank_high",
 ]
+# The exposure set from the frames (OV2640, tune 0), further on in the status
+AE_FIELDS = ["ae_p98", "ae_lines", "ae_gain16", "ae_exposure_us", "ae_cap_us", "ae_on_code"]
 
 
 def die(msg):
@@ -75,14 +77,18 @@ class Layout:
                   "(char *)&g_camera_debug.ops[0].val - (char *)&g_camera_debug.ops[0]",
                   "(char *)&g_camera_debug.ops[0].result - (char *)&g_camera_debug.ops[0]",
                   "(char *)&g_camera_debug.ops[0].ok - (char *)&g_camera_debug.ops[0]",
-                  "(char *)&g_camera_debug.st.last_capture_ms - (char *)&g_camera_debug.st"]
+                  "(char *)&g_camera_debug.st.last_capture_ms - (char *)&g_camera_debug.st",
+                  "(char *)&g_camera_debug.st.ae_p98 - (char *)&g_camera_debug.st",
+                  "(char *)&g_camera_debug.st.ae_on_code - (char *)&g_camera_debug.st"]
         v = gdb_eval(elf, exprs)
         self.base = v[0]
         self.off = dict(zip(names, v[1:12]))
         (self.op_size, self.n_max, self.op_bank, self.op_reg, self.op_val,
-         self.op_result, self.op_ok, lcm) = v[12:20]
+         self.op_result, self.op_ok, lcm, self.ae_off, ae_end) = v[12:22]
         if lcm != STATUS_FIELDS.index("last_capture_ms") * 4:
             die("camera_status_t layout changed: update STATUS_FIELDS")
+        if ae_end - self.ae_off != (len(AE_FIELDS) - 1) * 4:
+            die("camera_status_t layout changed: update AE_FIELDS")
 
     def addr(self, name):
         return self.base + self.off[name]
@@ -185,7 +191,8 @@ class Dbg:
 
     def status(self):
         words = self.o.rd(self.l.addr("st"), len(STATUS_FIELDS))
-        return dict(zip(STATUS_FIELDS, words))
+        ae = self.o.rd(self.l.addr("st") + self.l.ae_off, len(AE_FIELDS))
+        return dict(zip(STATUS_FIELDS + AE_FIELDS, list(words) + list(ae)))
 
     def ops(self, ops, timeout=5):
         """ops: [(op, bank, reg, val)]; returns [(ok, result)]"""
