@@ -104,6 +104,12 @@ Ambire internals into GridCore's.
 - Bring-up, flashing and crash analysis over SWD: `firmware/swd.py` (info, trustzone,
   flash, state, gdb). On a bootloader red screen the error is in bootargs RAM, and
   `state` decodes it: the display need not work.
+- **Before any test on the device, check which build it runs.** `trezorctl get-features`
+  → `revision` is the commit of this repo the firmware was built from. If it is older than
+  the last commit under `firmware/trezor-firmware/`, the device needs a flash first: say
+  so before anything else (2026-11-18: a wallet was set up and the QR scan tested on a
+  two-day-old build, without the new decoder). A build that was not flashed is reported
+  as "built, needs a flash" in every hand-off.
 
 ## The board file belongs to the owner
 

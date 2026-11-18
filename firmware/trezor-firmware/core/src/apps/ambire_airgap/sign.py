@@ -32,16 +32,17 @@ async def get_seed() -> bytes:
     """The wallet's seed; asks for the passphrase on the device when the
     passphrase is on (every time: the device keeps no session here)"""
     from apps.common import mnemonic, passphrase
-    from apps.common.seed import _get_seed_without_passphrase, raise_if_not_initialized
+    from apps.common.seed import raise_if_not_initialized
 
     raise_if_not_initialized()
+    phrase = ""
     if passphrase.is_enabled():
         from trezor.ui.layouts import request_passphrase_on_device
 
         phrase = await request_passphrase_on_device(passphrase.MAX_PASSPHRASE_LEN)
-        return mnemonic.get_seed(phrase)
-    # Cached across workflows, as for FIDO and SLIP-21 keys
-    return _get_seed_without_passphrase()
+    # Not cached: derived again for every request (BIP-39's 2048 rounds, a
+    # second or two), so with Trezor's "Loading wallet" bar, not a black screen
+    return mnemonic.get_seed(phrase, progress_bar=True)
 
 
 def master_fingerprint(root: bip32.HDNode) -> int:
