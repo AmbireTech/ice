@@ -17,10 +17,16 @@ writes one (checked against a file it sliced from the same STL, 2026-11-14):
     chosen resin preset active; each layer's exposure and lift are that preset's (the
     bottom layers at the bottom exposure, then the normal one: Photon Workshop lists no
     transition layers per layer, the preset's transition count is left to the printer);
-  - scene.slice and calc_layer_volumes.data carry the per-layer areas, bounds and volumes.
+  - scene.slice and calc_layer_volumes.data carry the per-layer areas, bounds and volumes;
+  - each section is scaled up in the printer's X and Y (never Z: a layer's shrink in Z is
+    made up by the next layer) by the resin's shrink, and its outlines moved in by the
+    light's bleed past their edges (--shrink, --bleed). The model stays at its nominal size:
+    the compensation is the resin's, and only the slicer knows the printer's axes. Measure
+    both with resin_calib.py (the method of J. Mrazek, blog.honzamrazek.cz, 2022-06).
 
   python3 enclosure/slice_resin.py [--stl enclosure/out/halves.stl] [--preset Anycubic@abs_like_resin_pro2@ACF@normal_print]
                                    [--bottom-time S] [--bottom-layers N] [--exposure S] [--lift-speed MM_S]
+                                   [--shrink PCT[,PCT_Y]] [--bleed MM]
 
 --bottom-time / --bottom-layers change the preset's bottom exposure, --exposure every other
 layer's, --lift-speed its lift
@@ -29,7 +35,12 @@ the film instead of sucking on it); the changed preset goes
 into the profile's user resins under the same name, as Photon Workshop stores a preset you
 edit, and the factory one stays as it was.
 
-Needs trimesh, numpy and opencv.
+--shrink is the resin's linear shrink in X (and Y, if it differs: the M7 Pro's pixels are
+16.8 x 24.8 um), in percent; --bleed how far each edge grows past its outline, in mm. The
+defaults are provisional until resin_calib.py has measured the resin: 0.5 % (resins measure
+0.2-0.9 %, most 0.3-0.6 %) and no bleed (an unmeasured erosion could eat a thin wall).
+
+Needs trimesh, numpy, opencv and shapely.
 """
 import argparse
 import io
@@ -40,6 +51,7 @@ from pathlib import Path
 
 import cv2
 import numpy as np
+import shapely.geometry as sg
 import trimesh
 
 HERE = Path(__file__).resolve().parent
@@ -54,9 +66,10 @@ def shoelace(r):
     return 0.5 * float(np.sum(x * np.roll(y, -1) - np.roll(x, -1) * y))
 
 
-def section_rings(mesh, z, centre):
-    """The cross-section's closed outlines at height z, in mm from the plate's centre, each
-    oriented for a non-zero fill: solid outlines clockwise, holes anticlockwise."""
+def section_rings(mesh, z, centre, scale, bleed):
+    """The cross-section's closed outlines at height z, in mm from the plate's centre, scaled
+    by (sx, sy) about it and moved in by bleed, each oriented for a non-zero fill: solid
+    outlines clockwise, holes anticlockwise."""
     sec = mesh.section(plane_origin=[0, 0, z], plane_normal=[0, 0, 1])
     if sec is None:
         return []
@@ -65,11 +78,13 @@ def section_rings(mesh, z, centre):
         d = np.asarray(d)
         if np.abs(d[:, 2] - z).max() > 1e-6:
             raise SystemExit(f"section at z {z:.3f} left its plane")
-        r = np.round(d[:, :2] - centre, 3)
+        r = np.round((d[:, :2] - centre) * scale, 3)
         if np.allclose(r[0], r[-1]):
             r = r[:-1]
         if len(r) >= 3:
             rings.append(r)
+    if bleed > 0 and rings:
+        rings = erode(rings, bleed, z)
     out = []
     lo = np.array([r.min(axis=0) for r in rings])
     hi = np.array([r.max(axis=0) for r in rings])
@@ -84,6 +99,26 @@ def section_rings(mesh, z, centre):
         if ccw == (depth % 2 == 0):      # solid must run clockwise, a hole anticlockwise
             r = r[::-1]
         out.append(r)
+    return out
+
+
+def erode(rings, d, z):
+    """The rings' even-odd fill moved in by d, as rings again (orientation is set by the caller)."""
+    fill = sg.Polygon()
+    for r in rings:
+        p = sg.Polygon(r)
+        if not p.is_valid:
+            raise SystemExit(f"section at z {z:.3f}: a self-intersecting outline, cannot erode it")
+        fill = fill.symmetric_difference(p)
+    eroded = fill.buffer(-d, join_style="mitre", mitre_limit=2.0)
+    out = []
+    for poly in getattr(eroded, "geoms", [eroded]):
+        if poly.is_empty:
+            continue
+        for ring in (poly.exterior, *poly.interiors):
+            r = np.round(np.asarray(ring.coords)[:-1], 3)
+            if len(r) >= 3:
+                out.append(r)
     return out
 
 
@@ -168,6 +203,8 @@ def main():
     ap.add_argument("--bottom-layers", type=int, default=None, help="how many bottom layers (default: the preset's)")
     ap.add_argument("--exposure", type=float, default=None, help="normal layers' exposure, s (default: the preset's)")
     ap.add_argument("--lift-speed", type=float, default=None, help="lift off the film, mm/s (default: the preset's)")
+    ap.add_argument("--shrink", default="0.5", help="the resin's linear shrink in X[,Y], %% (default 0.5, provisional)")
+    ap.add_argument("--bleed", type=float, default=0.0, help="each edge's growth past its outline, mm (default 0)")
     ap.add_argument("--out", type=Path, default=None, help="default: the STL's path with .pwsz")
     args = ap.parse_args()
     out = args.out or args.stl.with_suffix(".pwsz")
@@ -198,8 +235,12 @@ def main():
     lo, hi = mesh.bounds
     if abs(lo[2]) > 1e-3:
         raise SystemExit(f"{args.stl.name} starts at z {lo[2]:.3f}, not on the plate (z 0)")
+    shrink = [float(v) for v in args.shrink.split(",")]
+    if len(shrink) not in (1, 2) or not all(0 <= v < 5 for v in shrink) or not 0 <= args.bleed < 0.2:
+        raise SystemExit(f"--shrink {args.shrink} / --bleed {args.bleed}: expected 0-5 % (X or X,Y) and 0-0.2 mm")
+    scale = 1 / (1 - np.array(shrink * (3 - len(shrink)))[:2] / 100)
     centre = (lo[:2] + hi[:2]) / 2
-    half = (hi[:2] - lo[:2]) / 2
+    half = (hi[:2] - lo[:2]) / 2 * scale
     if half[0] > mt["print_xsize"] / 2 or half[1] > mt["print_ysize"] / 2:
         raise SystemExit(f"{2 * half[0]:.1f} x {2 * half[1]:.1f} mm does not fit the "
                          f"{mt['print_xsize']:.1f} x {mt['print_ysize']:.1f} mm plate")
@@ -207,7 +248,7 @@ def main():
 
     images, layers = [], []
     for i in range(n):
-        data, area, bbox, count = encode_layer(section_rings(mesh, (i + 0.5) * lh, centre))
+        data, area, bbox, count = encode_layer(section_rings(mesh, (i + 0.5) * lh, centre, scale, args.bleed))
         if area <= 0:
             raise SystemExit(f"layer {i} has no solid area: an outline's orientation went wrong")
         images.append(data)
@@ -253,7 +294,8 @@ def main():
     print(f"{out}: {n} layers of {lh} mm, {2 * half[0]:.1f} x {2 * half[1]:.1f} mm centred on the plate, "
           f"largest layer {max(areas):.0f} mm2, {sum(areas) * lh / 1000:.2f} ml of part ({ml:.2f} ml estimated), "
           f"~{seconds / 60:.0f} min; {args.preset}, bottom {sp['bott_layers']} x {sp['bott_time']:g} s, "
-          f"then {sp['exposure_time']:.1f} s; lift {sp['zup_height']:g} mm at {sp['zup_speed']:g} mm/s")
+          f"then {sp['exposure_time']:.1f} s; lift {sp['zup_height']:g} mm at {sp['zup_speed']:g} mm/s; "
+          f"X/Y scaled {scale[0]:.4f}/{scale[1]:.4f} (shrink {args.shrink} %), bleed {args.bleed:g} mm")
 
 
 if __name__ == "__main__":
