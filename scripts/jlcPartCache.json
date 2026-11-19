@@ -187,6 +187,47 @@
   "package": "0402",
   "stock": 1837810
  },
+ "C14461": {
+  "describe": "-40\u2103~+85\u2103 1 1.65V~5.5V 10uA 2 32mA 32mA 4.1ns@3.3V,50pF 74LVC Unidirectional SC-70-6 Buffers, Drivers, Receivers, Transceivers ROHS",
+  "land": {
+   "holes": [],
+   "pads": 6,
+   "pitch": 0.65,
+   "sizes": [
+    [
+     0.4,
+     0.9
+    ],
+    [
+     0.4,
+     0.9
+    ],
+    [
+     0.4,
+     0.9
+    ],
+    [
+     0.4,
+     0.9
+    ],
+    [
+     0.4,
+     0.9
+    ],
+    [
+     0.4,
+     0.9
+    ]
+   ],
+   "span": [
+    1.3,
+    1.8
+   ]
+  },
+  "model": "SN74LVC2G34DCKR",
+  "package": "SC-70-6",
+  "stock": 23118
+ },
  "C145179": {
   "describe": "-55\u2103~+125\u2103 1 Independent 1A 200mA 30V 30uA@10V 500mV@200mA SOD-523 Schottky Diodes ROHS",
   "land": {

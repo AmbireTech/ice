@@ -49,3 +49,8 @@
 #define CAMERA_DVDD_R_BOTTOM 20
 #define CAMERA_DVDD_R_SET 43
 #define CAMERA_DVDD_VDD_UV 3300000
+
+// The camera's I/O supply (DOVDD) is 2.8 V on boards from 2026-11-19, from the AVDD
+// LDO, switched by CAM_EN with the other rails (was the always-on 3.3 V); XCLK and
+// RESET reach the sensor through an SN74LVC2G34 on that rail, the SCCB pull-ups go
+// to it. No pin changes: camera_open() holds RESET and XCLK low while CAM_EN rises.

@@ -80,3 +80,20 @@
 #endif
 
 // Add more module-specific max log level definitions here...
+
+// Ambire modules (logging builds fail without an entry per LOG_DECLARE)
+#ifndef SYSLOG_ambire_power_MAX_LOG_LEVEL
+#define SYSLOG_ambire_power_MAX_LOG_LEVEL SYSLOG_DEFAULT_LOG_LEVEL
+#endif
+
+#ifndef SYSLOG_camera_MAX_LOG_LEVEL
+#define SYSLOG_camera_MAX_LOG_LEVEL SYSLOG_DEFAULT_LOG_LEVEL
+#endif
+
+#ifndef SYSLOG_nrf_uart_link_MAX_LOG_LEVEL
+#define SYSLOG_nrf_uart_link_MAX_LOG_LEVEL SYSLOG_DEFAULT_LOG_LEVEL
+#endif
+
+#ifndef SYSLOG_se050_MAX_LOG_LEVEL
+#define SYSLOG_se050_MAX_LOG_LEVEL SYSLOG_DEFAULT_LOG_LEVEL
+#endif

@@ -39,6 +39,8 @@ KEEP = {"U2.2", "U2.3", "U2.9", "C_IN_BOOST.2", "C_BOOST.2", "U3.2", "C_USB3V3.2
         "SW_AIR.SH",
         "Q_CHG.4", "R_ISET.2", "C_CHGIN.2", "R_VSET.2", "U9.2", "U5.14", "U5.17", "U5.19", "U5.21",
         "C_DOVDD.2", "C_U9A.2",
+        # 2026-11-19, the owner's routing round the 2.8 V camera I/O rail and its buffer
+        "C_AVIN.2", "C_CAMBUF.2", "U12.2", "C_AVOUT.2", "J_CAM.17", "U17.2",
         # v4 (2026-10-28): the pour reaches these only by fragmenting once the pack's
         # receptacle, the display connector and the radio switch moved
         "C_NOR.2", "J_TFT.10",

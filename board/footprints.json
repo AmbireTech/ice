@@ -305,5 +305,7 @@
   "R_DVB": "Resistor_SMD:R_0402_1005Metric",
   "R_DVSET": "Resistor_SMD:R_0402_1005Metric",
   "R_DVPWM": "Resistor_SMD:R_0402_1005Metric",
-  "C_DVSET": "Capacitor_SMD:C_0402_1005Metric"
+  "C_DVSET": "Capacitor_SMD:C_0402_1005Metric",
+  "U17": "Package_TO_SOT_SMD:SOT-363_SC-70-6",
+  "C_CAMBUF": "Capacitor_SMD:C_0402_1005Metric"
 }

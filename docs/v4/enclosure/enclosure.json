@@ -326,21 +326,21 @@
     {
      "label": "Gerbers",
      "filename": "ambire-ice-v4_gerbers.zip",
-     "bytes": 414515,
+     "bytes": 419104,
      "part": "enclosure/files/ambire-ice-v4_gerbers.zip.b64.txt",
      "b64": true
     },
     {
      "label": "Bill of materials",
      "filename": "ambire-ice-v4_bom-jlc.csv",
-     "bytes": 3108,
+     "bytes": 3161,
      "part": "enclosure/files/ambire-ice-v4_bom-jlc.csv",
      "b64": false
     },
     {
      "label": "Pick and place",
      "filename": "ambire-ice-v4_positions-jlc.csv",
-     "bytes": 5182,
+     "bytes": 5257,
      "part": "enclosure/files/ambire-ice-v4_positions-jlc.csv",
      "b64": false
     }
@@ -349,21 +349,21 @@
     {
      "label": "Gerbers",
      "filename": "ambire-ice-v4_gerbers.zip",
-     "bytes": 414515,
+     "bytes": 419104,
      "part": "enclosure/files/ambire-ice-v4_gerbers.zip.b64.txt",
      "b64": true
     },
     {
      "label": "Bill of materials",
      "filename": "ambire-ice-v4_bom-pcbway.csv",
-     "bytes": 14604,
+     "bytes": 14845,
      "part": "enclosure/files/ambire-ice-v4_bom-pcbway.csv",
      "b64": false
     },
     {
      "label": "Pick and place",
      "filename": "ambire-ice-v4_centroid-pcbway.csv",
-     "bytes": 5182,
+     "bytes": 5257,
      "part": "enclosure/files/ambire-ice-v4_centroid-pcbway.csv",
      "b64": false
     }
@@ -396,14 +396,14 @@
    {
     "label": "Case: 3MF and STL (zip)",
     "filename": "ambire-ice-case.zip",
-    "bytes": 653885,
+    "bytes": 653899,
     "part": "enclosure/files/ambire-ice-case.zip.b64.txt",
     "b64": true
    },
    {
     "label": "Battery pack tray: 3MF and STL (zip)",
     "filename": "ambire-ice-battery-tray.zip",
-    "bytes": 79186,
+    "bytes": 79273,
     "part": "enclosure/files/ambire-ice-battery-tray.zip.b64.txt",
     "b64": true
    }

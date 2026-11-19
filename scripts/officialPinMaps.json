@@ -1015,5 +1015,35 @@
     "I2C_SDA"
    ]
   }
+ },
+ "U17": {
+  "part": "SN74LVC2G34DCKR",
+  "source": "TI SCES359J Pin Functions (DCK)",
+  "pins": {
+   "1": [
+    "1A",
+    "CAM_XCLK"
+   ],
+   "2": [
+    "GND",
+    "GND"
+   ],
+   "3": [
+    "2A",
+    "CAM_RST"
+   ],
+   "4": [
+    "2Y",
+    "CAM_RST_S"
+   ],
+   "5": [
+    "VCC",
+    "CAM_AVDD"
+   ],
+   "6": [
+    "1Y",
+    "CAM_XCLK_S"
+   ]
+  }
  }
 }

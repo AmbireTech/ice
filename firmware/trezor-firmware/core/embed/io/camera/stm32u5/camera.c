@@ -1022,9 +1022,13 @@ bool camera_open(uint32_t mode) {
 
   clocks_enable();
 
-  // Reset held, then the module's AVDD and DVDD on (DOVDD is always on)
+  // Reset held and XCLK low, then the module's rails on (AVDD and DVDD; on v4
+  // DOVDD too, with the XCLK/RESET buffer on it: its inputs must not float)
   HAL_GPIO_WritePin(CAMERA_RST_PORT, CAMERA_RST_PIN, GPIO_PIN_RESET);
   pin_init(CAMERA_RST_PORT, CAMERA_RST_PIN, GPIO_MODE_OUTPUT_PP, GPIO_NOPULL,
+           0);
+  HAL_GPIO_WritePin(CAMERA_XCLK_PORT, CAMERA_XCLK_PIN, GPIO_PIN_RESET);
+  pin_init(CAMERA_XCLK_PORT, CAMERA_XCLK_PIN, GPIO_MODE_OUTPUT_PP, GPIO_NOPULL,
            0);
 #ifdef CAMERA_DVDD_PWM_PIN
   // Detection at 1.5 V: in or near every sensor's range (OV2640 runs there on

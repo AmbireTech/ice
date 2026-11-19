@@ -8,9 +8,7 @@ const S = "Camera"
  * successor to the end-of-life OV2640. Its ~1.4 mm, 115 deg lens needs no refocus;
  * firmware reads the sensor's centre crop window (P0:0x90-0x98, 640x480, ~48 deg
  * across), which decoded phone QR as well as a refocused OV2640 in simulation.
- * Camemake's open CM_ESP_P4_C5 board feeds this module AVDD 2.8 V, DVDD 1.2 V and
- * DOVDD 3.3 V on the same pins as here. An OV2640 module still fits the same
- * connector and rails. Lens out through the clear back; not a JLC part, it plugs
+ * An OV2640 or OV5640 module fits the same connector and rails. Lens out through the clear back; not a JLC part, it plugs
  * into J_CAM after assembly. Flex length and head height: measure on samples.
  *
  * Connector pin order is the Ai-Thinker ESP32-CAM V1.6 schematic's (Espressif's
@@ -21,15 +19,21 @@ const S = "Camera"
  * end is pad 1 on the board is fixed in board/footprints.json and is an
  * explicit bring-up check with the chosen module in hand (docs/design.md).
  *
- * Supplies: AVDD 2.8 V, DOVDD 3.3 V (the MCU's I/O level, no shifting). DVDD,
+ * Supplies: AVDD and DOVDD 2.8 V from one LDO (as Espressif's ESP32-S3-EYE and
+ * Waveshare's ESP32-S3-CAM feed them), DVDD per sensor. DOVDD was 3.3 V (the MCU's I/O
+ * level) since proto 0, in the OV2640's range (1.71-3.3 V) but not the GC2145's
+ * (IOVDD 1.7-3.0 V; its module maker asks 1.8 or 2.8 V, 2026-11-19); 2.8 V is inside
+ * all three (OV5640 DOVDD 1.8/2.8 V nominal). The sensor's outputs at 2.8 V read high
+ * on the MCU's 3.3 V inputs; the MCU's two push-pull outputs into it (XCLK, RESET) go
+ * through a dual buffer on the 2.8 V rail, and the SCCB pull-ups go to 2.8 V. DVDD,
  * the sensor's core, differs per sensor and per module (a module may or may not
  * regulate its own core): OV2640 1.14-1.26 V (data sheet v1.6; v2.2 1.24-1.36 V),
  * OV5640 1.5 V +-5%, GC2145 1.7-1.9 V. So DVDD is set by firmware: an adjustable
  * LDO whose feedback node takes a current from a filtered PWM (CAM_DVDD_PWM, TIM4),
  * stepless from below 1.2 V up to 1.88 V. The ceiling is by construction: PWM at
  * 0 % (or the pin stuck low) gives 1.88 V, inside every sensor's range or far under
- * its absolute maximum (OV2640 3 V); PWM stuck high pulls the output to 0 V. AVDD
- * and DVDD are switched by CAM_EN.
+ * its absolute maximum (OV2640 3 V); PWM stuck high pulls the output to 0 V. All three
+ * rails are switched by CAM_EN: the sensor is wholly unpowered while the camera is off.
  */
 const CAM_PINS = {
   pin1: "Y0", pin2: "Y1", pin3: "Y4", pin4: "Y3", pin5: "Y5", pin6: "Y2", pin7: "Y6", pin8: "PCLK",
@@ -50,12 +54,12 @@ export const CameraBlock = () => (
       <trace key={y} from={`.J_CAM > .${y}`} to={`net.CAM_D${i}`} />
     ))}
     <trace from=".J_CAM > .PCLK" to="net.CAM_PCLK" />
-    <trace from=".J_CAM > .XCLK" to="net.CAM_XCLK" />
+    <trace from=".J_CAM > .XCLK" to="net.CAM_XCLK_S" />
     <trace from=".J_CAM > .HREF" to="net.CAM_HREF" />
     <trace from=".J_CAM > .VSYNC" to="net.CAM_VSYNC" />
     {/* PWDN tied low: the sensor is only ever powered up and down whole, by CAM_EN. */}
     <trace from=".J_CAM > .PWDN" to="net.GND" />
-    <trace from=".J_CAM > .RESET" to="net.CAM_RST" />
+    <trace from=".J_CAM > .RESET" to="net.CAM_RST_S" />
     <trace from=".J_CAM > .SIOC" to="net.CAM_SCL" />
     <trace from=".J_CAM > .SIOD" to="net.CAM_SDA" />
     <trace from=".J_CAM > .DGND" to="net.GND" />
@@ -63,11 +67,12 @@ export const CameraBlock = () => (
     <trace from=".J_CAM > .MP1" to="net.GND" />
     <trace from=".J_CAM > .MP2" to="net.GND" />
     <trace from=".J_CAM > .NC" to="net.NC_CAM24" />
-    <trace from=".J_CAM > .DOVDD" to="net.V3V3" width={W_PWR_LITE} />
+    <trace from=".J_CAM > .DOVDD" to="net.CAM_AVDD" width={W_PWR_LITE} />
     <trace from=".J_CAM > .AVDD" to="net.CAM_AVDD" width={W_PWR_LITE} />
     <trace from=".J_CAM > .DVDD" to="net.CAM_DVDD" width={W_PWR_LITE} />
 
-    {/* AVDD 2.8 V: ME6211C28M5G-N (SOT-23-5: 1 VIN, 2 VSS, 3 CE, 4 NC, 5 VOUT), CE active high. */}
+    {/* AVDD and DOVDD, 2.8 V (net CAM_AVDD): ME6211C28M5G-N (SOT-23-5: 1 VIN, 2 VSS, 3 CE,
+        4 NC, 5 VOUT), CE active high, 500 mA: the sensor's analog and I/O draw tens of mA. */}
     <chip name="U12" footprint="pinrow5"
       manufacturerPartNumber="ME6211C28M5G-N" supplierPartNumbers={{ jlcpcb: ["C53099"] }}
       pinLabels={{ pin1: "VIN", pin2: "VSS", pin3: "CE", pin4: "NC", pin5: "VOUT" }}
@@ -111,11 +116,11 @@ export const CameraBlock = () => (
     <trace from=".C_DVSET > .pin1" to="net.CAM_DVDD_SET" />
     <trace from=".C_DVSET > .pin2" to="net.GND" />
     {/* 1 uF in (shared by the two LDOs, which sit side by side), 1 uF on each output
-        (ME6211 typical circuit; TLV758P COUT >= 1 uF), plus 100 nF on the
-        sensor's I/O rail. */}
+        (ME6211 typical circuit; TLV758P COUT >= 1 uF), plus 100 nF at the sensor's
+        DOVDD pin (J_CAM pad 14), apart from AVDD's 1 uF at the LDO. */}
     {[["C_AVIN", "V3V3", "1uF", "C52923"], ["C_AVOUT", "CAM_AVDD", "1uF", "C52923"],
       ["C_DVOUT", "CAM_DVDD", "1uF", "C52923"],
-      ["C_DOVDD", "V3V3", "100nF", "C1525"]].map(([c, net, v, jlc], i) => (
+      ["C_DOVDD", "CAM_AVDD", "100nF", "C1525"]].map(([c, net, v, jlc], i) => (
       <group key={c}>
         <capacitor name={c} capacitance={v} footprint="0402" supplierPartNumbers={{ jlcpcb: [jlc] }}
           schX={12 + i} schY={-36} schRotation="90deg" schSectionName={S} />
@@ -123,10 +128,9 @@ export const CameraBlock = () => (
         <trace from={`.${c} > .pin2`} to="net.GND" />
       </group>
     ))}
-    {/* CAM_EN low (AVDD and DVDD off) until firmware drives it; DOVDD is the always-on
-        3.3 V. RESETB needs no pull-up: the sensor's own keeps it released, and while
-        the MCU is in reset CAM_EN's pull-down holds the core unpowered. SCCB pull-ups
-        on its own bus. */}
+    {/* CAM_EN low (every camera rail off) until firmware drives it: while the MCU is in
+        reset CAM_EN's pull-down holds the sensor and the buffer unpowered. SCCB pull-ups
+        on its own bus, to the sensor's 2.8 V I/O rail. */}
     {[["R_CAMEN", "CAM_EN", "GND"]].map(([r, net, to]) => (
       <group key={r}>
         <resistor name={r} resistance="100k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C25741"] }}
@@ -140,8 +144,28 @@ export const CameraBlock = () => (
         <resistor name={r} resistance="4.7k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C25900"] }}
           schX={-6} schY={-36} schRotation="90deg" schSectionName={S} />
         <trace from={`.${r} > .pin1`} to={`net.${net}`} />
-        <trace from={`.${r} > .pin2`} to="net.V3V3" />
+        <trace from={`.${r} > .pin2`} to="net.CAM_AVDD" />
       </group>
     ))}
+    {/* XCLK and RESET to 2.8 V: SN74LVC2G34 dual buffer (TI SCES359J Pin Functions, DCK:
+        1 1A, 2 GND, 3 2A, 4 2Y, 5 VCC, 6 1Y) on the 2.8 V rail. Its inputs take 5.5 V at any
+        VCC and Ioff keeps them high-impedance while it is unpowered, so the MCU's 3.3 V
+        outputs go straight in; VIH 0.7 x VCC = 1.96 V. 20 MHz XCLK: well inside its speed.
+        The firmware holds RESET low and XCLK stopped while CAM_EN rises. Place it at J_CAM,
+        100 nF at its VCC. */}
+    <chip name="U17" footprint="pinrow6"
+      manufacturerPartNumber="SN74LVC2G34DCKR" supplierPartNumbers={{ jlcpcb: ["C14461"] }}
+      pinLabels={{ pin1: "A1", pin2: "GND", pin3: "A2", pin4: "Y2", pin5: "VCC", pin6: "Y1" }}
+      schX={-8} schY={-36} schSectionName={S} />
+    <trace from=".U17 > .A1" to="net.CAM_XCLK" />
+    <trace from=".U17 > .Y1" to="net.CAM_XCLK_S" />
+    <trace from=".U17 > .A2" to="net.CAM_RST" />
+    <trace from=".U17 > .Y2" to="net.CAM_RST_S" />
+    <trace from=".U17 > .VCC" to="net.CAM_AVDD" />
+    <trace from=".U17 > .GND" to="net.GND" />
+    <capacitor name="C_CAMBUF" capacitance="100nF" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C1525"] }}
+      schX={-10} schY={-36} schRotation="90deg" schSectionName={S} />
+    <trace from=".C_CAMBUF > .pin1" to="net.CAM_AVDD" />
+    <trace from=".C_CAMBUF > .pin2" to="net.GND" />
   </group>
 )
