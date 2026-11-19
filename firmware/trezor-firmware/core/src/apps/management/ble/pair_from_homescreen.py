@@ -36,6 +36,37 @@ async def _until(condition) -> None:
         await loop.sleep(_POLL_MS)
 
 
+# Never show a layout through interact() (show_error_and_raise, confirm_*,
+# pair_new_device ...) inside a loop.race child. interact() starts with
+# workflow.close_others(), which closes the home screen's task unless that task
+# is the one running, and a race child is a task of its own: the flow closes
+# its own parent, the close fails ("generator already executing"), and nothing
+# restarts the home screen. The backlight is already off by then: a black
+# screen that takes no input (2026-11-17 to 2026-11-19).
+
+
+async def _show_until(layout_ctx, condition):
+    """Shows a layout from this task and returns its result, or None once
+    condition() holds. Only the layout's result is raced, never its start."""
+    from trezor import loop, ui, workflow
+
+    workflow.close_others()
+    with layout_ctx as layout_obj:
+        layout = ui.Layout(layout_obj)
+        layout.start()
+        return await loop.race(layout.get_result(), _until(condition))
+
+
+async def _end_flow_when(condition) -> None:
+    """Closes the flow on the home screen's task once condition() holds: the
+    flow's finally blocks run and the home screen starts again."""
+    from trezor import workflow
+
+    await _until(condition)
+    log.info(__name__, "airgap switch moved to AIR, pairing ended")
+    workflow.kill_default()
+
+
 async def _wait_for_radio() -> bool:
     """True once the radio answers; a progress bar while it starts"""
     import utime
@@ -87,15 +118,17 @@ async def pair_from_homescreen() -> None:
             else:
                 hint = "Bluetooth is not responding."
             # Moving the switch off AIR while this shows goes on to pairing
-            await loop.race(
-                show_error_and_raise(
-                    "bluetooth_radio_off",
-                    hint,
-                    subheader="Bluetooth is off",
+            closed = await _show_until(
+                trezorui_api.show_error(
+                    title="Bluetooth is off",
+                    description=hint,
                     button="Close",
+                    allow_cancel=False,
                 ),
-                _until(_radio_ready),
+                _radio_ready,
             )
+            if closed is not None:
+                raise ActionCancelled
             log.info(__name__, "radio up after the switch moved, pairing")
 
         if len(ble.get_bonds()) >= ble.MAX_BONDS:
@@ -107,10 +140,15 @@ async def pair_from_homescreen() -> None:
             )
 
         # Moving the switch to AIR cuts the radio: pairing ends there, back to
-        # the home screen (whose swipe up then opens the airgap menu)
-        await loop.race(pair_new_device(), _until(_airgapped))
-        if _airgapped():
-            log.info(__name__, "airgap switch moved to AIR, pairing ended")
+        # the home screen (whose swipe up then opens the airgap menu). The
+        # pairing screens run on this task; a watcher task ends it.
+        watcher = loop.spawn(_end_flow_when(_airgapped))
+        try:
+            await pair_new_device()
+        finally:
+            # The watcher itself may be what is closing this flow
+            if not watcher.is_running():
+                watcher.close()
     except ActionCancelled:
         # Cancelled or closed on the device: back to the home screen
         log.debug(__name__, "Bluetooth pairing cancelled")
