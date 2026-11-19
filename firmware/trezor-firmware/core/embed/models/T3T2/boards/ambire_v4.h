@@ -36,8 +36,8 @@
 #define VBUS_SENSE_CLK_EN __HAL_RCC_GPIOA_CLK_ENABLE
 
 // The camera's core supply (DVDD) set per sensor (io/camera/stm32u5/camera.c):
-// a TLV75801P (VFB 0.55 V) with RT 33k from OUT to FB, RB 20k from FB to GND,
-// and RS = 33k + 10k from FB to TIM4_CH1's PWM through its 10k/1uF RC node
+// a TLV75801P (VFB 0.55 V) with RT 33k from OUT to FB, RB 21k from FB to GND,
+// and R_INJ 33k from FB to the RC node (1 uF), fed through R_PWM 10k by TIM4_CH1
 // (src/blocks/Camera.tsx). PB6 is unconnected on boards built before it.
 #define CAMERA_DVDD_PWM_PORT GPIOB
 #define CAMERA_DVDD_PWM_PIN GPIO_PIN_6
@@ -46,8 +46,9 @@
 #define CAMERA_DVDD_PWM_CLK_EN __HAL_RCC_TIM4_CLK_ENABLE
 #define CAMERA_DVDD_VFB_UV 550000
 #define CAMERA_DVDD_R_TOP 33
-#define CAMERA_DVDD_R_BOTTOM 20
-#define CAMERA_DVDD_R_SET 43
+#define CAMERA_DVDD_R_BOTTOM 21
+#define CAMERA_DVDD_R_INJ 33
+#define CAMERA_DVDD_R_PWM 10
 #define CAMERA_DVDD_VDD_UV 3300000
 
 // The camera's I/O supply (DOVDD) is 2.8 V on boards from 2026-11-19, from the AVDD

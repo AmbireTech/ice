@@ -638,8 +638,11 @@ static void xclk_start(void) {
            CAMERA_XCLK_AF);
 }
 
+// XCLK stopped and driven low, never floating: on v4 it feeds a buffer whose
+// supply decays slowly after CAM_EN falls
 static void xclk_stop(void) {
-  pin_init(CAMERA_XCLK_PORT, CAMERA_XCLK_PIN, GPIO_MODE_ANALOG, GPIO_NOPULL,
+  HAL_GPIO_WritePin(CAMERA_XCLK_PORT, CAMERA_XCLK_PIN, GPIO_PIN_RESET);
+  pin_init(CAMERA_XCLK_PORT, CAMERA_XCLK_PIN, GPIO_MODE_OUTPUT_PP, GPIO_NOPULL,
            0);
   TIM3->CR1 = 0;
   TIM3->CCER = 0;
@@ -647,35 +650,39 @@ static void xclk_stop(void) {
 
 #ifdef CAMERA_DVDD_PWM_PIN
 // DVDD: the LDO's feedback node takes a current from an RC-filtered PWM
-// (board header: CAMERA_DVDD_*). With the node at Vn,
-//   VOUT = VFB (1 + RT/RB) + (VFB - Vn) RT/RS
-// so Vn = VFB - (VOUT - VFB (1 + RT/RB)) RS/RT, and the duty is Vn / VDD. The
-// rail is taken as its nominal 3.3 V: its 3.21-3.45 V spread moves VOUT by
-// under 30 mV at 1.25 V and under 5 mV at 1.8 V. Out of range clamps to 0 %
-// (the circuit's ceiling, ~1.88 V) or 100 % (0 V).
+// (board header: CAMERA_DVDD_*): the PWM through R_PWM to the RC node's cap,
+// then R_INJ to FB. With the PWM's average at Vp,
+//   VOUT = VFB (1 + RT/RB) + (VFB - Vp) RT/(R_INJ + R_PWM)
+// and the duty is Vp / VDD. The rail is taken as its nominal 3.3 V: its
+// 3.21-3.45 V spread moves VOUT by under 30 mV at 1.22 V and under 5 mV at
+// 1.8 V. Out of range clamps to 0 % (the circuit's ceiling, 1.84 V nominal,
+// 1.88 V worst case) or 100 % (0 V).
 #define DVDD_PWM_STEPS 4096U  // TIM4 at 160 MHz: ~39 kHz
 // The RC node settles with tau ~8 ms: five of them
 #define DVDD_SETTLE_MS 40
+#define DVDD_R_SET (CAMERA_DVDD_R_INJ + CAMERA_DVDD_R_PWM)
 
-static uint32_t dvdd_duty(uint32_t mv) {
+// The PWM average (uV, 0..VDD) that holds VOUT at mv
+static int64_t dvdd_vp_uv(uint32_t mv) {
   int64_t base_uv = (int64_t)CAMERA_DVDD_VFB_UV *
                     (CAMERA_DVDD_R_BOTTOM + CAMERA_DVDD_R_TOP) /
                     CAMERA_DVDD_R_BOTTOM;
-  int64_t node_uv = CAMERA_DVDD_VFB_UV - ((int64_t)mv * 1000 - base_uv) *
-                                             CAMERA_DVDD_R_SET /
-                                             CAMERA_DVDD_R_TOP;
-  if (node_uv <= 0) {
+  int64_t vp_uv = CAMERA_DVDD_VFB_UV -
+                  ((int64_t)mv * 1000 - base_uv) * DVDD_R_SET / CAMERA_DVDD_R_TOP;
+  if (vp_uv < 0) {
     return 0;
   }
-  if (node_uv >= CAMERA_DVDD_VDD_UV) {
-    return DVDD_PWM_STEPS;
-  }
-  return (uint32_t)(node_uv * DVDD_PWM_STEPS / CAMERA_DVDD_VDD_UV);
+  return vp_uv > CAMERA_DVDD_VDD_UV ? CAMERA_DVDD_VDD_UV : vp_uv;
 }
 
-// Sets DVDD to mv and waits for the RC node to settle
-static void camera_dvdd_set(uint32_t mv) {
-  uint32_t duty = dvdd_duty(mv);
+static uint32_t dvdd_duty_of(int64_t vp_uv) {
+  return (uint32_t)(vp_uv * DVDD_PWM_STEPS / CAMERA_DVDD_VDD_UV);
+}
+
+static uint32_t dvdd_duty(uint32_t mv) { return dvdd_duty_of(dvdd_vp_uv(mv)); }
+
+// The PWM at duty, then the RC node's settling time
+static void dvdd_pwm(uint32_t duty) {
   if (!(CAMERA_DVDD_PWM_TIM->CR1 & TIM_CR1_CEN)) {
     CAMERA_DVDD_PWM_CLK_EN();
     CAMERA_DVDD_PWM_TIM->CR1 = 0;
@@ -698,9 +705,38 @@ static void camera_dvdd_set(uint32_t mv) {
   } else {
     CAMERA_DVDD_PWM_TIM->CCR1 = duty;
   }
+  systick_delay_ms(DVDD_SETTLE_MS);
+}
+
+// Sets DVDD to mv (the LDO on) and waits for the RC node to settle
+static void camera_dvdd_set(uint32_t mv) {
+  uint32_t duty = dvdd_duty(mv);
   LOG_INF("DVDD %u mV (PWM %u/%u)", (unsigned)mv, (unsigned)duty,
           (unsigned)DVDD_PWM_STEPS);
-  systick_delay_ms(DVDD_SETTLE_MS);
+  dvdd_pwm(duty);
+}
+
+// Before CAM_EN rises: with the LDO off its output is pulled to 0 V, so FB sits
+// on RT || RB and the RC node settles lower than it will with FB at VFB. Left
+// so, DVDD would start ~0.1 V high and fall with the node's tau. So the node is
+// charged first to the level it holds once the LDO runs at mv:
+//   Vc_on  = (Vp R_INJ + VFB R_PWM) / (R_INJ + R_PWM)
+//   Vp_pre = Vc_on (R_PWM + R_INJ + Rg) / (R_INJ + Rg),  Rg = RT || RB
+// camera_dvdd_set(mv) then moves the PWM to its own duty with no step at DVDD.
+static void camera_dvdd_preset(uint32_t mv) {
+  int64_t vp = dvdd_vp_uv(mv);
+  int64_t vc_on = (vp * CAMERA_DVDD_R_INJ +
+                   (int64_t)CAMERA_DVDD_VFB_UV * CAMERA_DVDD_R_PWM) /
+                  DVDD_R_SET;
+  // Rg in tenths of a kilohm keeps integer arithmetic exact enough
+  int64_t rg10 = 10 * CAMERA_DVDD_R_TOP * CAMERA_DVDD_R_BOTTOM /
+                 (CAMERA_DVDD_R_TOP + CAMERA_DVDD_R_BOTTOM);
+  int64_t pre = vc_on * (10 * DVDD_R_SET + rg10) /
+                (10 * CAMERA_DVDD_R_INJ + rg10);
+  if (pre > CAMERA_DVDD_VDD_UV) {
+    pre = CAMERA_DVDD_VDD_UV;
+  }
+  dvdd_pwm(dvdd_duty_of(pre));
 }
 
 // PWM off, the pin floating: nothing feeds the feedback node while the LDO is
@@ -712,19 +748,47 @@ static void camera_dvdd_off(void) {
   CAMERA_DVDD_PWM_TIM->CCER = 0;
 }
 
-// Each sensor's core voltage: OV2640 1.14-1.26 V (data sheet v1.6) and
-// 1.24-1.36 V (v2.2), so the overlap; OV5640 1.5 V +-5 %; GC2145 1.7-1.9 V
+// Each sensor's core voltage, set under the low end of the tolerances the
+// circuit allows (1 % parts, the 3.3 V rail's spread): OV2640 1.14-1.26 V
+// (data sheet v1.6; v2.2 1.24-1.36 V), so 1.22; OV5640 1.5 V +-5 %; GC2145
+// 1.7-1.9 V, so 1.78, under the circuit's worst-case ceiling. Detection steps
+// up through them, so a sensor never sees more than its own until it is known.
+static const uint32_t g_dvdd_ladder[] = {1220, 1500, 1780};
+
 static uint32_t sensor_dvdd_mv(uint32_t sensor_id) {
   switch (sensor_id) {
     case CAMERA_SENSOR_OV2640:
-      return 1250;
+      return g_dvdd_ladder[0];
     case CAMERA_SENSOR_GC2145:
-      return 1800;
+      return g_dvdd_ladder[2];
     default:
-      return 1500;
+      return g_dvdd_ladder[1];
   }
 }
 #endif
+
+// When the camera last went off: its 2.8 V rail has no discharge of its own
+// (a bleed resistor), so a reopen waits for it, for a clean power-on reset
+#define CAMERA_OFF_MS 250
+static uint32_t g_camera_off_at;
+static bool g_camera_was_on;
+
+static uint32_t sensor_detect(void);
+
+// Up to `attempts` ID reads, 50 ms apart; the sensor found, or NONE
+static uint32_t detect_tries(int attempts) {
+  uint32_t id = CAMERA_SENSOR_NONE;
+  for (int attempt = 0; attempt < attempts; attempt++) {
+    if (attempt > 0) {
+      systick_delay_ms(50);
+    }
+    id = sensor_detect();
+    if (id != CAMERA_SENSOR_NONE) {
+      break;
+    }
+  }
+  return id;
+}
 
 // The SCCB lines as inputs, before the I2C takes them: both high means the
 // pull-ups are there and nothing holds the bus down
@@ -1007,6 +1071,8 @@ void camera_close(void) {
 #ifdef CAMERA_DVDD_PWM_PIN
   camera_dvdd_off();
 #endif
+  g_camera_off_at = systick_ms();
+  g_camera_was_on = true;
   g_camera.powered = false;
   g_camera.st.state = CAMERA_STATE_OFF;
   g_camera_debug.held = 0;
@@ -1021,6 +1087,12 @@ bool camera_open(uint32_t mode) {
   }
 
   clocks_enable();
+  if (g_camera_was_on) {
+    uint32_t off_for = systick_ms() - g_camera_off_at;
+    if (off_for < CAMERA_OFF_MS) {
+      systick_delay_ms(CAMERA_OFF_MS - off_for);
+    }
+  }
 
   // Reset held and XCLK low, then the module's rails on (AVDD and DVDD; on v4
   // DOVDD too, with the XCLK/RESET buffer on it: its inputs must not float)
@@ -1031,15 +1103,19 @@ bool camera_open(uint32_t mode) {
   pin_init(CAMERA_XCLK_PORT, CAMERA_XCLK_PIN, GPIO_MODE_OUTPUT_PP, GPIO_NOPULL,
            0);
 #ifdef CAMERA_DVDD_PWM_PIN
-  // Detection at 1.5 V: in or near every sensor's range (OV2640 runs there on
-  // Espressif's ESP32-S3-EYE), so whichever is fitted answers its ID
-  camera_dvdd_set(1500);
+  // Detection starts at the ladder's lowest voltage, the node charged so DVDD
+  // comes up at it rather than above it
+  camera_dvdd_preset(g_dvdd_ladder[0]);
 #endif
   HAL_GPIO_WritePin(CAMERA_EN_PORT, CAMERA_EN_PIN, GPIO_PIN_SET);
   pin_init(CAMERA_EN_PORT, CAMERA_EN_PIN, GPIO_MODE_OUTPUT_PP, GPIO_NOPULL, 0);
   g_camera.powered = true;
   g_camera.st.state = CAMERA_STATE_IDLE;
+#ifdef CAMERA_DVDD_PWM_PIN
+  camera_dvdd_set(g_dvdd_ladder[0]);
+#else
   systick_delay_ms(10);
+#endif
 
   xclk_start();
   xclk_probe();
@@ -1055,34 +1131,23 @@ bool camera_open(uint32_t mode) {
     camera_close();
     return false;
   }
-  // A slow start-up gets a few chances (~250 ms) before the verdict
-  for (int attempt = 0; attempt < 5; attempt++) {
-    if (attempt > 0) {
-      systick_delay_ms(50);
-    }
-    g_camera.st.sensor_id = sensor_detect();
-    if (g_camera.st.sensor_id != CAMERA_SENSOR_NONE) {
-      break;
-    }
-  }
 #ifdef CAMERA_DVDD_PWM_PIN
-  // A GC2145 module that feeds DVDD straight to the sensor needs 1.7-1.9 V,
-  // and may not answer at 1.5 V
-  if (g_camera.st.sensor_id == CAMERA_SENSOR_NONE) {
+  // Up the ladder, a step under reset each time a module stays silent: a
+  // module that feeds DVDD straight to its sensor answers only at its own
+  // voltage (a GC2145 needs 1.7-1.9 V), and none sees more than it needs
+  g_camera.st.sensor_id = detect_tries(3);
+  for (size_t i = 1; i < sizeof(g_dvdd_ladder) / sizeof(g_dvdd_ladder[0]) &&
+                     g_camera.st.sensor_id == CAMERA_SENSOR_NONE;
+       i++) {
     HAL_GPIO_WritePin(CAMERA_RST_PORT, CAMERA_RST_PIN, GPIO_PIN_RESET);
-    camera_dvdd_set(1800);
+    camera_dvdd_set(g_dvdd_ladder[i]);
     HAL_GPIO_WritePin(CAMERA_RST_PORT, CAMERA_RST_PIN, GPIO_PIN_SET);
     systick_delay_ms(30);
-    for (int attempt = 0; attempt < 3; attempt++) {
-      if (attempt > 0) {
-        systick_delay_ms(50);
-      }
-      g_camera.st.sensor_id = sensor_detect();
-      if (g_camera.st.sensor_id != CAMERA_SENSOR_NONE) {
-        break;
-      }
-    }
+    g_camera.st.sensor_id = detect_tries(3);
   }
+#else
+  // A slow start-up gets a few chances (~250 ms) before the verdict
+  g_camera.st.sensor_id = detect_tries(5);
 #endif
   sccb_scan();
 
