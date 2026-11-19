@@ -968,6 +968,13 @@
   "package": "0402",
   "stock": 1912070
  },
+ "C25765": {
+  "describe": "-55\u2103~+155\u2103 20k\u03a9 50V 62.5mW Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+  "land": null,
+  "model": "0402WGF2002TCE",
+  "package": "0402",
+  "stock": 2678033
+ },
  "C25768": {
   "describe": "-55\u2103~+155\u2103 22k\u03a9 50V 62.5mW Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
   "land": null,
@@ -1729,6 +1736,7 @@
  "C2877852": {
   "describe": "-40\u2103~+125\u2103@(Tj) 1 130mV@(500mA) 25uA 30uVrms 500mA 50dB@(1kHz) 550mV~5.5V 6V Adjustable Positive Under Voltage Lockout\u3001Over Current Protection\u3001Thermal Shutdown SOT-23-5 Voltage Regulators - Linear, Low Drop Out (LDO) Regulators ROHS",
   "land": {
+   "holes": [],
    "pads": 5,
    "pitch": 0.95,
    "sizes": [
@@ -1760,7 +1768,7 @@
   },
   "model": "TLV75801PDBVR",
   "package": "SOT-23-5",
-  "stock": 160407
+  "stock": 57104
  },
  "C2913201": {
   "describe": "-104.5dBm -40\u2103~+65\u2103 2.4GHz 20.5dBm 330mA 3V~3.6V 97mA Bluetooth5.0 ESP32-S3R8 On-board PCB Antenna UART\u3001SPI\u3001I2C\u3001GPIO\u3001I2S\u3001USB SMD,25.5x18mm WiFi Modules ROHS",
@@ -3423,6 +3431,9 @@
  "C5360192": {
   "describe": "- Patch round nut ROHS",
   "land": {
+   "holes": [
+    2.9
+   ],
    "pads": 2,
    "pitch": null,
    "sizes": [
@@ -3442,7 +3453,7 @@
   },
   "model": "9774010243R",
   "package": "-",
-  "stock": 883
+  "stock": 823
  },
  "C5383002": {
   "describe": "-40\u2103~+150\u2103@(TJ) 1 1.1MHz 2A 4.5V~36V 600mV~34.2V 65uA Adjustable Buck Buck Built-in Yes SOT-23-6 DC-DC Converters ROHS",

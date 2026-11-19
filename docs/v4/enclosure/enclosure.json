@@ -41,7 +41,7 @@
   "floorIn": -3.6949999383091936,
   "boardBack": -1.0,
   "split": 0.0,
-  "pack": -17.225,
+  "pack": -16.35,
   "panel": [
    0.3,
    4.43
@@ -64,16 +64,16 @@
  "pack": {
   "outline": [
    -2.1,
-   18.58,
+   17.967,
    50.1,
-   47.78
+   47.167
   ],
   "r": 4.0,
   "board": [
    0.0,
-   19.98,
+   19.367,
    48.0,
-   46.38
+   45.767
   ],
   "boardT": 0.8,
   "cells": {
@@ -82,15 +82,15 @@
     46.25
    ],
    "y": [
-    26.78,
-    39.58
+    26.167,
+    38.967
    ],
-   "z": -11.975,
+   "z": -11.1,
    "d": 10.5
   },
   "contacts": {
-   "part": "4x ENIG pad + 2x Wurth 9774015243R",
-   "lcsc": "- / C22431324",
+   "part": "4x ENIG pad + 2x Wurth 9774010243R",
+   "lcsc": "- / C5360192",
    "strip": [
     12.12,
     38.755,
@@ -122,7 +122,7 @@
     }
    ],
    "steelD": 4.35,
-   "steelH": 1.5,
+   "steelH": 1.0,
    "steel": [
     {
      "x": 14.295,
@@ -134,7 +134,9 @@
     }
    ]
   },
-  "frame": {
+  "male": {
+   "part": "YZP0048-20048-04025-03",
+   "lcsc": "C5126845",
    "outline": [
     11.4,
     37.5,
@@ -142,34 +144,15 @@
     44.36
    ],
    "tab": [
-    32.6,
-    38.415,
-    34.91,
-    43.445
+    19.485,
+    35.19,
+    24.515,
+    37.5
    ],
-   "t": 2.975,
-   "slot": [
-    10.3,
-    2.5
-   ],
-   "pegs": [
-    [
-     16.6,
-     38.53
-    ],
-    [
-     27.4,
-     38.53
-    ]
-   ],
-   "pegHole": 1.1
-  },
-  "pins": {
-   "part": "4x Xinyangze YZP0118-20063-02",
-   "lcsc": "C5157302",
-   "free": 5.5,
-   "mated": 4.675,
-   "xy": [
+   "free": 4.1,
+   "mated": 3.8,
+   "pitch": 2.5,
+   "pins": [
     [
      25.75,
      40.93
@@ -188,78 +171,62 @@
     ]
    ]
   },
-  "magnets": {
-   "part": "2x Radial Magnets 8063 (NdFeB N40, 3.18 x 3.18 mm)",
-   "digikey": "469-8063-ND",
-   "d": 3.175,
-   "h": 3.175,
-   "xy": [
-    [
-     14.295,
-     40.93
-    ],
-    [
-     29.705,
-     40.93
-    ]
-   ]
-  },
   "clipSteel": [
    [
     0.5,
-    24.28,
+    23.667,
     10.48,
-    29.28
+    28.667
    ],
    [
     5.48,
-    23.28,
+    22.667,
     9.48,
-    30.28
+    29.667
    ],
    [
     37.52,
-    24.28,
+    23.667,
     47.506,
-    29.28
+    28.667
    ],
    [
     38.52,
-    23.28,
+    22.667,
     42.52,
-    30.28
+    29.667
    ],
    [
     0.494,
-    37.08,
+    36.467,
     10.48,
-    42.08
+    41.467
    ],
    [
     5.48,
-    36.08,
+    35.467,
     9.48,
-    43.08
+    42.467
    ],
    [
     37.52,
-    37.08,
+    36.467,
     47.5,
-    42.08
+    41.467
    ],
    [
     38.52,
-    36.08,
+    35.467,
     42.52,
-    43.08
+    42.467
    ]
   ],
   "toMove": [],
   "z": {
    "face": -4.894999938309193,
-   "boardTop": -5.675,
-   "bottom": -17.225,
-   "bay": 0.0
+   "boardTop": -4.8,
+   "bottom": -16.35,
+   "bay": 0.295
   }
  },
  "camera": [
@@ -359,21 +326,21 @@
     {
      "label": "Gerbers",
      "filename": "ambire-ice-v4_gerbers.zip",
-     "bytes": 411858,
+     "bytes": 414515,
      "part": "enclosure/files/ambire-ice-v4_gerbers.zip.b64.txt",
      "b64": true
     },
     {
      "label": "Bill of materials",
      "filename": "ambire-ice-v4_bom-jlc.csv",
-     "bytes": 3051,
+     "bytes": 3108,
      "part": "enclosure/files/ambire-ice-v4_bom-jlc.csv",
      "b64": false
     },
     {
      "label": "Pick and place",
      "filename": "ambire-ice-v4_positions-jlc.csv",
-     "bytes": 4999,
+     "bytes": 5182,
      "part": "enclosure/files/ambire-ice-v4_positions-jlc.csv",
      "b64": false
     }
@@ -382,21 +349,21 @@
     {
      "label": "Gerbers",
      "filename": "ambire-ice-v4_gerbers.zip",
-     "bytes": 411858,
+     "bytes": 414515,
      "part": "enclosure/files/ambire-ice-v4_gerbers.zip.b64.txt",
      "b64": true
     },
     {
      "label": "Bill of materials",
      "filename": "ambire-ice-v4_bom-pcbway.csv",
-     "bytes": 14324,
+     "bytes": 14604,
      "part": "enclosure/files/ambire-ice-v4_bom-pcbway.csv",
      "b64": false
     },
     {
      "label": "Pick and place",
      "filename": "ambire-ice-v4_centroid-pcbway.csv",
-     "bytes": 4999,
+     "bytes": 5182,
      "part": "enclosure/files/ambire-ice-v4_centroid-pcbway.csv",
      "b64": false
     }
@@ -406,21 +373,21 @@
    {
     "label": "Gerbers",
     "filename": "ambire-ice-v4-pack_gerbers.zip",
-    "bytes": 12000,
+    "bytes": 11162,
     "part": "enclosure/files/ambire-ice-v4-pack_gerbers.zip.b64.txt",
     "b64": true
    },
    {
     "label": "Bill of materials",
     "filename": "ambire-ice-v4-pack_bom-jlc.csv",
-    "bytes": 404,
+    "bytes": 389,
     "part": "enclosure/files/ambire-ice-v4-pack_bom-jlc.csv",
     "b64": false
    },
    {
     "label": "Pick and place",
     "filename": "ambire-ice-v4-pack_positions-jlc.csv",
-    "bytes": 410,
+    "bytes": 315,
     "part": "enclosure/files/ambire-ice-v4-pack_positions-jlc.csv",
     "b64": false
    }
@@ -429,14 +396,14 @@
    {
     "label": "Case: 3MF and STL (zip)",
     "filename": "ambire-ice-case.zip",
-    "bytes": 652829,
+    "bytes": 653885,
     "part": "enclosure/files/ambire-ice-case.zip.b64.txt",
     "b64": true
    },
    {
-    "label": "Battery pack tray and frame: 3MF and STL (zip)",
+    "label": "Battery pack tray: 3MF and STL (zip)",
     "filename": "ambire-ice-battery-tray.zip",
-    "bytes": 150688,
+    "bytes": 79186,
     "part": "enclosure/files/ambire-ice-battery-tray.zip.b64.txt",
     "b64": true
    }

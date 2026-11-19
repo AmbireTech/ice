@@ -34,14 +34,15 @@ Ambire internals into GridCore's.
 - v4 (2026-10-28; `docs/pack.md`): the cells leave the board for a pack high on the back,
   just below the camera (outside its view cone), open underneath (owner: as slim as
   possible). Contacts (owner: the next batch tests the production parts, every one stocked
-  by a distributor): on the pack board four Xinyangze YZP0058-20048-02 SMD spring pins
-  (C5157341) and two Radial Magnets 8063 3.18 mm magnets (DigiKey), glued in a printed
-  frame (the old magnetic male's outline: its tab keys the pack in the back's window). They
-  land on commodity parts on the device board's back, east-west between the MCU and
-  the TFT connector (which moved 5.5 mm south for them): four Mill-Max 1578 gold target
-  discs J_PK1-4 (Global Sourcing) under the pins, two Würth WA-SMSI 1.0 mm steel spacers
-  MH_PK1/2 under the magnets, which hold the pack on them. The magnetic male
-  (YZP0048-20048-04025-03) is gone: 20 in stock anywhere. The touch connector J_CTP is the
+  by a distributor; 2026-11-19: the pack side is Xinyangze's magnetic male
+  YZP0048-20048-04025-03 again, C5126845, from the owner's own stock in the JLC parts
+  library via Global Sourcing; its tab, a 0.9 mm flange at the pack board, keys the pack in
+  the back's window). It lands on commodity parts on the device board's back, east-west
+  between the MCU and the TFT connector: four plain 2.235 mm ENIG pads J_PK1-4 (no part)
+  under its pins, two Würth WA-SMSI 9774010243R 1.0 mm steel spacers MH_PK1/2 (C5360192)
+  under its magnets, which hold the pack on them; the pins press 0.30 of their 1.2 mm
+  stroke (owner accepted). Its matching receptacle (C6276862) needs the TFT connector
+  2.7 mm south and that area re-routed: declined for now. The touch connector J_CTP is the
   2.0 mm HC-FPC-1.0-6P-FH20 (the CXH25 ran out).
   `board/wallet.kicad_pcb` is v4 since 2026-10-28 (v3 is in git history before it):
   routed, DRC clean. Never place anything but low parts on the back's touch-tail lane
@@ -52,7 +53,7 @@ Ambire internals into GridCore's.
   tail is centred on the panel, J_TFT at x 24.0) and the touch flex folds outside the TFT
   flex (J_CTP 5.5 mm south): `docs/design.md` "Display tails". The chin hangs on two
   4 mm bridges; the west one carries a hand-drawn bundle (USB, AIRGAP, radio). `enclosure/generate.py`
-  puts the pins, magnets and frame over the board's J_PK1-4 and MH_PK1/2 and takes the pack clips' models from
+  puts the male over the board's J_PK1-4 and MH_PK1/2 and takes the pack clips' models from
   `enclosure/pack_clips.kicad_pcb` (`PACK_*`/`CONN_*`).
   Everything lands on `main` (owner: no review branches). The pack board is `pack/`
   (`pack/makePack.py` builds it). Page `docs/v4/`, published at /v4/, linked from nowhere;
@@ -128,7 +129,7 @@ Ambire internals into GridCore's.
 - Power fanouts thick (up to 0.4 mm, capped at the pad's narrow side), never a thin neck
   on a plane via (`widenFanouts.py`).
 - Via in pad is OK on the pack's pogo target pads J_PK1-4 (owner, 2026-11-02): they get no
-  solder (bare ENIG discs the spring pins land on), so a via there wicks nothing. Not on the
+  solder (bare ENIG pads the male's pins land on), so a via there wicks nothing. Not on the
   steel spacers MH_PK1/2 next to them: those are reflowed. `routeDefects.py`/`placementScan.py`
   still list vias in pads; on J_PK1-4 that is not a defect.
 - In1 = V3V3 plane, In2 = solid GND (parts are on B.Cu and reference In2). One via per

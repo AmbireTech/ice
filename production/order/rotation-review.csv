@@ -15,6 +15,7 @@ C_CNS,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,180.0,,0.0,0.0,0.000,n/
 C_CS,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 C_DOVDD,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 C_DVOUT,1uF,Capacitor_SMD:C_0402_1005Metric,C52923,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
+C_DVSET,1uF,Capacitor_SMD:C_0402_1005Metric,C52923,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 C_EN,1uF,Capacitor_SMD:C_0402_1005Metric,C52923,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 C_FFB,33pF,Capacitor_SMD:C_0402_1005Metric,C1562,top,0.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 C_IMU1,100nF,Capacitor_SMD:C_0402_1005Metric,C1525,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
@@ -64,8 +65,8 @@ J_TFT,54132-4062,wallet:Molex_54132-4062,C505102,bottom,180.0,,0.0,0.0,0.325,NO 
 LS1,MLT-5020,wallet:Buzzer_Huaneng_MLT-5020_5x5.5mm,C94598,bottom,-90.0,,0.0,270.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
 L_BOOST,WPN4020H2R2MT,wallet:L_Sunlord_WPN4020,C98361,top,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 L_BUCK,CKCSA201610-2.2uH/M,Inductor_SMD:L_Cenker_CKCS201610,C5291913,top,0.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
-MH_PK1,9774015243R,wallet:Wurth_WA-SMSI_M2_L1.5,C22431324,bottom,180.0,,0.0,0.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
-MH_PK2,9774015243R,wallet:Wurth_WA-SMSI_M2_L1.5,C22431324,bottom,180.0,,0.0,0.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
+MH_PK1,9774010243R,wallet:Wurth_WA-SMSI_M2_L1.0,C5360192,bottom,180.0,,0.0,0.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
+MH_PK2,9774010243R,wallet:Wurth_WA-SMSI_M2_L1.0,C5360192,bottom,180.0,,0.0,0.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
 Q_BTN,MMBT3904,Package_TO_SOT_SMD:SOT-23,C20526,bottom,-90.0,^SOT-23,180.0,90.0,0.000,db-rule
 Q_BUZ,AO3416,Package_TO_SOT_SMD:SOT-23,C43307,bottom,90.0,^SOT-23,180.0,270.0,0.000,db-rule
 Q_CHG,2N7002DW-7-F,Package_TO_SOT_SMD:SOT-363_SC-70-6,C83571,bottom,-90.0,^SOT-363,180.0,90.0,0.000,db-rule
@@ -91,6 +92,10 @@ R_CS1,1M,Resistor_SMD:R_0402_1005Metric,C26083,bottom,180.0,,0.0,0.0,0.000,n/a (
 R_CS2,1M,Resistor_SMD:R_0402_1005Metric,C26083,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 R_CSCL,4.7k,Resistor_SMD:R_0402_1005Metric,C25900,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 R_CSDA,4.7k,Resistor_SMD:R_0402_1005Metric,C25900,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
+R_DVB,20k,Resistor_SMD:R_0402_1005Metric,C25765,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
+R_DVPWM,10k,Resistor_SMD:R_0402_1005Metric,C25744,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
+R_DVSET,33k,Resistor_SMD:R_0402_1005Metric,C25779,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
+R_DVT,33k,Resistor_SMD:R_0402_1005Metric,C25779,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 R_EN,1M,Resistor_SMD:R_0402_1005Metric,C26083,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 R_FB1,1M,Resistor_SMD:R_0402_1005Metric,C26083,top,0.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 R_FB2,562k,Resistor_SMD:R_0402_1005Metric,C48838,top,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
@@ -131,7 +136,7 @@ U10,TPS2116DRLR,Package_TO_SOT_SMD:SOT-583-8,C3235557,top,0.0,,0.0,0.0,0.000,NO 
 U11,E73-2G4M08S1C,wallet:Ebyte_E73-2G4M08S1C,C356849,top,0.0,,0.0,0.0,0.025,NO KNOWN CORRECTION -> eye check in JLC preview
 U12,ME6211C28M5G-N,Package_TO_SOT_SMD:SOT-23-5,C53099,bottom,180.0,^SOT-23,180.0,180.0,0.000,db-rule
 U13,TPS60230RGTR,Package_DFN_QFN:VQFN-16-1EP_3x3mm_P0.5mm_EP1.45x1.45mm,C1848364,bottom,180.0,,0.0,0.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
-U14,TLV70312DBVR,Package_TO_SOT_SMD:SOT-23-5,C2861352,bottom,180.0,^SOT-23,180.0,180.0,0.000,db-rule
+U14,TLV75801PDBVR,Package_TO_SOT_SMD:SOT-23-5,C2877852,bottom,180.0,^SOT-23,180.0,180.0,0.000,db-rule
 U15,BMI270,Package_LGA:Bosch_LGA-14_3x2.5mm_P0.5mm,C2836813,bottom,90.0,^Bosch_LGA-,90.0,180.0,0.000,db-rule (eye check: never seen on a GridCore BOTTOM part with a 90/270 offset)
 U16,SLS32AIA010MK,Package_DFN_QFN:DFN-10-1EP_3x3mm_P0.5mm_EP1.7x2.5mm,C1518668,bottom,-90.0,^DFN-,270.0,180.0,0.000,db-rule (eye check: never seen on a GridCore BOTTOM part with a 90/270 offset)
 U2,LTC3539EDCB-2#TRPBF,wallet:LT_DCB8_DFN-8-1EP_2x3mm_P0.45mm,C462652,top,90.0,,0.0,90.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview

@@ -153,12 +153,13 @@ export const PowerBlock = () => (
 
     {/* ---------------- The pack: two AAA in series, on the back ---------------- */}
     {/* The pack's contacts on the back, east of the MCU's south side (docs/pack.md). The
-        pack's four Xinyangze YZP0118-20063-02 spring pins (2.50 mm pitch) land on four plain
-        2.235 mm ENIG pads (J_PK1-4: pads only, no part; the Mill-Max 1578 target disc they
-        replaced since 2026-11-01 still fits them), and its two 3.18 mm magnets (15.41 mm
-        apart) seat on two Wurth WA-SMSI steel spacers (M2 x 1.5 mm, MH_PK1/2), which set the
-        4.675 mm gap the pins work in (0.825 of their 1.2 mm stroke, 25 g each). Contacts east
-        to west: the pack's plus, its mid-point, its thermistor, its minus. Each cell may be NiMH (1.0-1.45 V) or an
+        pack's Xinyangze magnetic male YZP0048-20048-04025-03 (C5126845) lands its four spring
+        pins (2.50 mm pitch) on four plain 2.235 mm ENIG pads (J_PK1-4: pads only, no part),
+        and its two magnets (15.41 mm apart, flush with its face) seat on two Wurth WA-SMSI
+        steel spacers (M2 x 1.0 mm, MH_PK1/2): its face rests on the steel, its pins pressed
+        0.30 of their 1.2 mm stroke (owner, 2026-11-19: accepted over re-routing this area for
+        the matching receptacle). Contacts east to west: the pack's plus, its mid-point, its
+        thermistor, its minus. Each cell may be NiMH (1.0-1.45 V) or an
         alkaline or lithium (Li-FeS2) primary (0.9-1.8 V): the pack is 1.8-3.6 V; the boost
         runs from all of them, the charger only ever charges a pack whose two cells the MCU
         has qualified as NiMH. */}
@@ -172,7 +173,7 @@ export const PowerBlock = () => (
     {(["MH_PK1", "MH_PK2"] as const).map((m, i) => (
       <group key={m}>
         <chip name={m} footprint="pinrow1"
-          manufacturerPartNumber="9774015243R" supplierPartNumbers={{ jlcpcb: ["C22431324"] }}
+          manufacturerPartNumber="9774010243R" supplierPartNumbers={{ jlcpcb: ["C5360192"] }}
           pinLabels={{ pin1: "S" }}
           schX={-24} schY={4 - i} schSectionName={S} />
         <trace from={`.${m} > .S`} to="net.GND" />
