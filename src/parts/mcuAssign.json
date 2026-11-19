@@ -164,6 +164,10 @@
     "CAM_XCLK",
     "TIM3_CH2"
   ],
+  "PB6": [
+    "CAM_DVDD_PWM",
+    "TIM4_CH1"
+  ],
   "PE0": [
     "CAM_RST",
     "GPIO"

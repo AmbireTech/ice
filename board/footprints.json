@@ -300,5 +300,10 @@
   "C_MS": "Capacitor_SMD:C_0402_1005Metric",
   "U15": "Package_LGA:Bosch_LGA-14_3x2.5mm_P0.5mm",
   "C_IMU1": "Capacitor_SMD:C_0402_1005Metric",
-  "C_IMU2": "Capacitor_SMD:C_0402_1005Metric"
+  "C_IMU2": "Capacitor_SMD:C_0402_1005Metric",
+  "R_DVT": "Resistor_SMD:R_0402_1005Metric",
+  "R_DVB": "Resistor_SMD:R_0402_1005Metric",
+  "R_DVSET": "Resistor_SMD:R_0402_1005Metric",
+  "R_DVPWM": "Resistor_SMD:R_0402_1005Metric",
+  "C_DVSET": "Capacitor_SMD:C_0402_1005Metric"
 }

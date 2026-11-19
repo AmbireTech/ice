@@ -33,7 +33,7 @@ import math
 
 import numpy as np
 from build123d import (
-    Box, Cone, Cylinder, Plane, Polyline, Pos, Rot, RectangleRounded, Vector,
+    Box, Cone, Cylinder, Matrix, Plane, Polyline, Pos, Rot, RectangleRounded,
                        Axis, extrude, make_face, revolve)
 
 # ── the stem (sources above) ────────────────────────────────────────────────
@@ -111,8 +111,9 @@ def joystick_cap(x: float, y: float, z_top: float):
     if not cap.is_valid:
         raise SystemExit("joystick cap: invalid solid")
     # baked into the geometry, not kept as a location: export_gltf writes a location as a
-    # node translation it does not turn to glTF's Y-up, and the part lands elsewhere
-    return cap.translate(Vector(x, -y, 0))
+    # node translation it does not turn to glTF's Y-up, and the part lands elsewhere.
+    # translate() keeps a location since build123d 0.13; transform_geometry() bakes it.
+    return cap.transform_geometry(Matrix(Pos(x, -y, 0).wrapped.Transformation()))
 
 
 def _tilt_contact(z_top: float) -> float:

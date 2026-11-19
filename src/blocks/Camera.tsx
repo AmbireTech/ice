@@ -21,10 +21,15 @@ const S = "Camera"
  * end is pad 1 on the board is fixed in board/footprints.json and is an
  * explicit bring-up check with the chosen module in hand (docs/design.md).
  *
- * Supplies: AVDD 2.8 V, DOVDD 3.3 V (the MCU's I/O level, no shifting), DVDD
- * 1.2 V, as Camemake's reference host and the Ai-Thinker ESP32-CAM supply it (an
- * OV2640 runs there too, though its data sheet v2.2 asks 1.24-1.36 V). AVDD and
- * DVDD are switched by CAM_EN; DVDD is a fixed 1.2 V LDO.
+ * Supplies: AVDD 2.8 V, DOVDD 3.3 V (the MCU's I/O level, no shifting). DVDD,
+ * the sensor's core, differs per sensor and per module (a module may or may not
+ * regulate its own core): OV2640 1.14-1.26 V (data sheet v1.6; v2.2 1.24-1.36 V),
+ * OV5640 1.5 V +-5%, GC2145 1.7-1.9 V. So DVDD is set by firmware: an adjustable
+ * LDO whose feedback node takes a current from a filtered PWM (CAM_DVDD_PWM, TIM4),
+ * stepless from below 1.2 V up to 1.88 V. The ceiling is by construction: PWM at
+ * 0 % (or the pin stuck low) gives 1.88 V, inside every sensor's range or far under
+ * its absolute maximum (OV2640 3 V); PWM stuck high pulls the output to 0 V. AVDD
+ * and DVDD are switched by CAM_EN.
  */
 const CAM_PINS = {
   pin1: "Y0", pin2: "Y1", pin3: "Y4", pin4: "Y3", pin5: "Y5", pin6: "Y2", pin7: "Y6", pin8: "PCLK",
@@ -71,20 +76,42 @@ export const CameraBlock = () => (
     <trace from=".U12 > .VSS" to="net.GND" />
     <trace from=".U12 > .CE" to="net.CAM_EN" />
     <trace from=".U12 > .VOUT" to="net.CAM_AVDD" />
-    {/* DVDD 1.2 V: TLV70312 DBV (SBVS305 Pin Functions: 1 IN, 2 GND, 3 EN, 4 NC, 5 OUT),
-        fixed output, 1 uF in and out. Another sensor's core voltage is another TLV703xx
-        on the same land. */}
+    {/* DVDD: TLV75801P DBV, adjustable (SBVS351D Pin Functions, DBV: 1 IN, 2 GND, 3 EN,
+        4 FB, 5 OUT; VFB 0.55 V, IFB <= 0.1 uA, COUT >= 1 uF). The TLV70312's land, with
+        pin 4 now FB instead of NC. Divider R_DVT 33k / R_DVB 20k: 0.55 x (1 + 33/20)
+        = 1.46 V with no current through R_DVSET. R_DVSET (33k) + R_DVPWM (10k) from the
+        PWM's RC node: VOUT = 1.4575 + (0.55 - Vnode) x 33/43. Node 0 V -> 1.88 V (the
+        ceiling); 0.10 V -> 1.80 V (GC2145); 0.49 V -> 1.50 V (OV5640); 0.82 V -> 1.25 V
+        (OV2640). PWM ~39 kHz, 10k x 1 uF: ~1 mV ripple at the node, tau ~8 ms.
+        Placement: R_DVPWM at the MCU pin (the long run then carries the filtered
+        level, not PWM edges); C_DVSET, R_DVSET and the divider at U14's FB pin, the
+        FB node as short as possible. */}
     <chip name="U14" footprint="pinrow5"
-      manufacturerPartNumber="TLV70312DBVR" supplierPartNumbers={{ jlcpcb: ["C2861352"] }}
-      pinLabels={{ pin1: "IN", pin2: "GND", pin3: "EN", pin4: "NC", pin5: "OUT" }}
+      manufacturerPartNumber="TLV75801PDBVR" supplierPartNumbers={{ jlcpcb: ["C2877852"] }}
+      pinLabels={{ pin1: "IN", pin2: "GND", pin3: "EN", pin4: "FB", pin5: "OUT" }}
       schX={6} schY={-38} schSectionName={S} />
     <trace from=".U14 > .IN" to="net.V3V3" />
     <trace from=".U14 > .GND" to="net.GND" />
     <trace from=".U14 > .EN" to="net.CAM_EN" />
-    <trace from=".U14 > .NC" to="net.GND" />
+    <trace from=".U14 > .FB" to="net.CAM_DVDD_FB" />
     <trace from=".U14 > .OUT" to="net.CAM_DVDD" />
+    {[["R_DVT", "33k", "C25779", "CAM_DVDD", "CAM_DVDD_FB"],
+      ["R_DVB", "20k", "C25765", "CAM_DVDD_FB", "GND"],
+      ["R_DVSET", "33k", "C25779", "CAM_DVDD_FB", "CAM_DVDD_SET"],
+      ["R_DVPWM", "10k", "C25744", "CAM_DVDD_PWM", "CAM_DVDD_SET"]].map(([r, v, jlc, a, b], i) => (
+      <group key={r}>
+        <resistor name={r} resistance={v} footprint="0402" supplierPartNumbers={{ jlcpcb: [jlc] }}
+          schX={8 + i} schY={-40} schRotation="90deg" schSectionName={S} />
+        <trace from={`.${r} > .pin1`} to={`net.${a}`} />
+        <trace from={`.${r} > .pin2`} to={`net.${b}`} />
+      </group>
+    ))}
+    <capacitor name="C_DVSET" capacitance="1uF" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C52923"] }}
+      schX={12} schY={-40} schRotation="90deg" schSectionName={S} />
+    <trace from=".C_DVSET > .pin1" to="net.CAM_DVDD_SET" />
+    <trace from=".C_DVSET > .pin2" to="net.GND" />
     {/* 1 uF in (shared by the two LDOs, which sit side by side), 1 uF on each output
-        (ME6211 typical circuit; TLV703 COUT >= 0.1 uF effective), plus 100 nF on the
+        (ME6211 typical circuit; TLV758P COUT >= 1 uF), plus 100 nF on the
         sensor's I/O rail. */}
     {[["C_AVIN", "V3V3", "1uF", "C52923"], ["C_AVOUT", "CAM_AVDD", "1uF", "C52923"],
       ["C_DVOUT", "CAM_DVDD", "1uF", "C52923"],

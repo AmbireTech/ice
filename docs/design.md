@@ -34,7 +34,7 @@ the back ([pack.md](pack.md)).
 | Radio | Ebyte E73-2G4M08S1C (nRF52840 module, BLE only), behind the airgap gate | C356849 (1176) |
 | Airgap | MSK12C02 slide switch → TS3USB221A (USB data) + 74LVC1G02 / TPS22917 (radio power) + TXU0202 (radio UART isolation) | all JLC |
 | Display | NHD-2.4-240320AF-CSXP-CTP on Molex 54132-4062 + HC-FPC-1.0-6P-FH20 (6-pin 1.0 mm, bottom contact, 2.0 mm tall, C49166832) | connectors JLC, panel hand-fitted |
-| Camera | GC2145 24-pin DVP module in the ESP32-CAM pinout (Camemake CM_DVP_GC2145_UNIVERSAL; an OV2640 module fits too), 115° lens read through the sensor's centre crop, no refocus, on a Jushuo AFC07 FPC connector; AVDD 2.8 V / DVDD 1.2 V (fixed TLV70312) / DOVDD 3.3 V | connector JLC, module hand-fitted (DigiKey, JLC Global Sourcing) |
+| Camera | GC2145 24-pin DVP module in the ESP32-CAM pinout (Camemake CM_DVP_GC2145_UNIVERSAL; an OV2640 module fits too), 115° lens read through the sensor's centre crop, no refocus, on a Jushuo AFC07 FPC connector; AVDD 2.8 V / DOVDD 3.3 V / DVDD set by firmware per sensor (TLV75801P adjustable LDO trimmed by a filtered PWM, 1.2–1.88 V) | connector JLC, module hand-fitted (DigiKey, JLC Global Sourcing) |
 | Power | Two AAA cells in series (NiMH, lithium or alkaline) in a pack on the back; the pack's four spring pins and two magnets land on four plain ENIG pads and two Würth WA-SMSI steel spacers on the device board ([pack.md](pack.md)) → AO3416 reverse-cell blocker → LTC3539-2 boost to 3.3 V; USB-C → TLV62569P buck → TPS2116 picks USB first; BQ25172 NiMH charger set for two cells, fed from VBUS, MCU-gated; soft latch on the joystick's centre press | all JLC (LTC3539-2: 2,400) |
 | Sound | Huaneng MLT-5020 magnetic transducer (5 × 5.5 × 2 mm, 75 dB at 10 cm), AO3416 low-side, LPTIM3 PWM | JLC |
 | Joystick | ALPS SKRHAAE010: four directions + centre push, 7.5 mm, on the front, centred in the chin | JLC C202423 (521) |
@@ -497,7 +497,7 @@ purple (all transparent tints) and clear.
   fitted are left out.
 - **Thickness, front to back:** bezel lip 0.8 and 0.1 over the panel, panel 4.13
   (Newhaven drawing) on 0.3 foam, board 1.0, back cavity 2.7, back 1.2: **10.22 mm**
-  (case 52.2 × 91.2 mm; 22.05 mm with the pack on), against proto 0's 18.0. The display
+  (case 53.2 × 92.2 mm; 22.05 mm with the pack on), against proto 0's 18.0. The display
   and camera connectors (2.09 mm, plus 0.6 clearance) set the back cavity; USB-C
   (3.40 mm) stands into the back through a pocket. The **camera head** (5.9 mm) stands
   out on purpose, through an open window in the back, 2.0 mm proud.
@@ -575,14 +575,18 @@ purple (all transparent tints) and clear.
      Standby/Shutdown with PWR_PUCRA + APC (check in RM0456 at bring-up).
    - Camera XCLK is TIM3_CH2 PWM on PB5 at 160/8 = 20 MHz (the OV2640 wants a
      45–55 % duty cycle, so no odd divider). Hold CAM_RST (PE0) low while CAM_EN
-     rises, then release it; the TLV70312 has no output discharge.
+     rises, then release it. DVDD is TIM4_CH1 PWM on PB6 (~39 kHz) into the
+     core LDO's feedback node through a 10k/1 µF RC: set the duty before CAM_EN
+     rises; 0 % (pin stuck low) is the circuit's 1.88 V ceiling, 100 % gives 0 V.
    - VREF+ shares VDDA's caps: keep the internal VREFBUF off.
    - The touch controller's RST has no pull: pulse it low (≥ 100 µs, Newhaven's
      power-up sequence) after boot before talking to it.
-8. **Camera core supply 1.2 V** matches what Camemake's reference host and the
-   Ai-Thinker ESP32-CAM feed a 24-pin DVP module. An OV2640 module runs there too,
-   though its data sheet v2.2 asks 1.24–1.36 V (v1.6: 1.14–1.26 V); the TLV70313
-   (1.3 V) fits the same land if an OV2640 ever needs it.
+8. **Camera core supply** is set per sensor, because a module may pass DVDD
+   straight to the sensor: OV2640 1.14–1.26 V (data sheet v1.6; v2.2 1.24–1.36 V),
+   OV5640 1.5 V ±5 %, GC2145 1.7–1.9 V. Firmware detects at 1.5 V (retrying at
+   1.8 V under reset), then sets 1.25 / 1.5 / 1.8 V under reset. Measure DVDD at
+   each setting on the first board: the conversion assumes the 3.3 V rail is
+   nominal (its 3.21–3.45 V spread moves 1.25 V by under 30 mV).
 9. **Device-bound PIN KDF** (research.md): measure the SAES rate keyed by the
    DHUK, pick the chain length for about one second, and confirm in our
    TrustZone/RDP configuration that software cannot read the DHUK.

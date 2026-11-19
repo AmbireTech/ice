@@ -30,8 +30,8 @@ All numbers come from the generated model (`enclosure/generate.py`, 2026-11-01).
 | Back face | the cell stands out | flat; a window for the pack's contacts; the camera head stands 2.0 mm out |
 | Without the cells | — | runs from USB |
 
-The pack is 51.2 × 29.4 × 11.83 mm. It spans the back from 18.2 to 47.6 mm below the top
-edge (the device is 91.2 mm tall), just south of the camera. Its two cells lie side by
+The pack is 52.2 × 29.4 × 11.83 mm. It spans the back from 18.2 to 47.6 mm below the top
+edge (the device is 92.2 mm tall), just south of the camera. Its two cells lie side by
 side, 12.8 mm apart axis to axis, which leaves 1.8 mm between the arms of neighbouring
 clips. A cell goes in through its arms' tips (6.9 mm apart in the clip's model), so each
 arm swings out about 0.9 mm at its widest as it does; on the east side the neighbouring

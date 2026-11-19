@@ -34,6 +34,10 @@
  * (no interrupts): a frame over 64 KiB is cut into blocks of a linked list,
  * since one block counts at most 65535 bytes. camera_get_status() polls it
  * and closes it.
+ *
+ * Boards that define CAMERA_DVDD_PWM_PIN set the sensor's core supply (DVDD)
+ * per sensor: an adjustable LDO trimmed by a filtered PWM (camera_dvdd_set()).
+ * Detection runs at 1.5 V; the sensor found gets its own voltage, under reset.
  */
 
 #include <trezor_bsp.h>
@@ -641,6 +645,87 @@ static void xclk_stop(void) {
   TIM3->CCER = 0;
 }
 
+#ifdef CAMERA_DVDD_PWM_PIN
+// DVDD: the LDO's feedback node takes a current from an RC-filtered PWM
+// (board header: CAMERA_DVDD_*). With the node at Vn,
+//   VOUT = VFB (1 + RT/RB) + (VFB - Vn) RT/RS
+// so Vn = VFB - (VOUT - VFB (1 + RT/RB)) RS/RT, and the duty is Vn / VDD. The
+// rail is taken as its nominal 3.3 V: its 3.21-3.45 V spread moves VOUT by
+// under 30 mV at 1.25 V and under 5 mV at 1.8 V. Out of range clamps to 0 %
+// (the circuit's ceiling, ~1.88 V) or 100 % (0 V).
+#define DVDD_PWM_STEPS 4096U  // TIM4 at 160 MHz: ~39 kHz
+// The RC node settles with tau ~8 ms: five of them
+#define DVDD_SETTLE_MS 40
+
+static uint32_t dvdd_duty(uint32_t mv) {
+  int64_t base_uv = (int64_t)CAMERA_DVDD_VFB_UV *
+                    (CAMERA_DVDD_R_BOTTOM + CAMERA_DVDD_R_TOP) /
+                    CAMERA_DVDD_R_BOTTOM;
+  int64_t node_uv = CAMERA_DVDD_VFB_UV - ((int64_t)mv * 1000 - base_uv) *
+                                             CAMERA_DVDD_R_SET /
+                                             CAMERA_DVDD_R_TOP;
+  if (node_uv <= 0) {
+    return 0;
+  }
+  if (node_uv >= CAMERA_DVDD_VDD_UV) {
+    return DVDD_PWM_STEPS;
+  }
+  return (uint32_t)(node_uv * DVDD_PWM_STEPS / CAMERA_DVDD_VDD_UV);
+}
+
+// Sets DVDD to mv and waits for the RC node to settle
+static void camera_dvdd_set(uint32_t mv) {
+  uint32_t duty = dvdd_duty(mv);
+  if (!(CAMERA_DVDD_PWM_TIM->CR1 & TIM_CR1_CEN)) {
+    CAMERA_DVDD_PWM_CLK_EN();
+    CAMERA_DVDD_PWM_TIM->CR1 = 0;
+    CAMERA_DVDD_PWM_TIM->PSC = 0;
+    CAMERA_DVDD_PWM_TIM->ARR = DVDD_PWM_STEPS - 1;
+    CAMERA_DVDD_PWM_TIM->CCR1 = duty;
+    CAMERA_DVDD_PWM_TIM->CCMR1 =
+        (6U << TIM_CCMR1_OC1M_Pos) | TIM_CCMR1_OC1PE;  // PWM mode 1
+    CAMERA_DVDD_PWM_TIM->CCER = TIM_CCER_CC1E;
+    CAMERA_DVDD_PWM_TIM->EGR = TIM_EGR_UG;
+    CAMERA_DVDD_PWM_TIM->CR1 = TIM_CR1_ARPE | TIM_CR1_CEN;
+    // Slow edges: the pin sits between XCLK and VSYNC
+    GPIO_InitTypeDef gpio = {0};
+    gpio.Pin = CAMERA_DVDD_PWM_PIN;
+    gpio.Mode = GPIO_MODE_AF_PP;
+    gpio.Pull = GPIO_NOPULL;
+    gpio.Speed = GPIO_SPEED_FREQ_LOW;
+    gpio.Alternate = CAMERA_DVDD_PWM_AF;
+    HAL_GPIO_Init(CAMERA_DVDD_PWM_PORT, &gpio);
+  } else {
+    CAMERA_DVDD_PWM_TIM->CCR1 = duty;
+  }
+  LOG_INF("DVDD %u mV (PWM %u/%u)", (unsigned)mv, (unsigned)duty,
+          (unsigned)DVDD_PWM_STEPS);
+  systick_delay_ms(DVDD_SETTLE_MS);
+}
+
+// PWM off, the pin floating: nothing feeds the feedback node while the LDO is
+// off
+static void camera_dvdd_off(void) {
+  pin_init(CAMERA_DVDD_PWM_PORT, CAMERA_DVDD_PWM_PIN, GPIO_MODE_ANALOG,
+           GPIO_NOPULL, 0);
+  CAMERA_DVDD_PWM_TIM->CR1 = 0;
+  CAMERA_DVDD_PWM_TIM->CCER = 0;
+}
+
+// Each sensor's core voltage: OV2640 1.14-1.26 V (data sheet v1.6) and
+// 1.24-1.36 V (v2.2), so the overlap; OV5640 1.5 V +-5 %; GC2145 1.7-1.9 V
+static uint32_t sensor_dvdd_mv(uint32_t sensor_id) {
+  switch (sensor_id) {
+    case CAMERA_SENSOR_OV2640:
+      return 1250;
+    case CAMERA_SENSOR_GC2145:
+      return 1800;
+    default:
+      return 1500;
+  }
+}
+#endif
+
 // The SCCB lines as inputs, before the I2C takes them: both high means the
 // pull-ups are there and nothing holds the bus down
 static void sccb_lines_probe(void) {
@@ -919,6 +1004,9 @@ void camera_close(void) {
   xclk_stop();
   HAL_GPIO_WritePin(CAMERA_RST_PORT, CAMERA_RST_PIN, GPIO_PIN_RESET);
   HAL_GPIO_WritePin(CAMERA_EN_PORT, CAMERA_EN_PIN, GPIO_PIN_RESET);
+#ifdef CAMERA_DVDD_PWM_PIN
+  camera_dvdd_off();
+#endif
   g_camera.powered = false;
   g_camera.st.state = CAMERA_STATE_OFF;
   g_camera_debug.held = 0;
@@ -938,6 +1026,11 @@ bool camera_open(uint32_t mode) {
   HAL_GPIO_WritePin(CAMERA_RST_PORT, CAMERA_RST_PIN, GPIO_PIN_RESET);
   pin_init(CAMERA_RST_PORT, CAMERA_RST_PIN, GPIO_MODE_OUTPUT_PP, GPIO_NOPULL,
            0);
+#ifdef CAMERA_DVDD_PWM_PIN
+  // Detection at 1.5 V: in or near every sensor's range (OV2640 runs there on
+  // Espressif's ESP32-S3-EYE), so whichever is fitted answers its ID
+  camera_dvdd_set(1500);
+#endif
   HAL_GPIO_WritePin(CAMERA_EN_PORT, CAMERA_EN_PIN, GPIO_PIN_SET);
   pin_init(CAMERA_EN_PORT, CAMERA_EN_PIN, GPIO_MODE_OUTPUT_PP, GPIO_NOPULL, 0);
   g_camera.powered = true;
@@ -968,6 +1061,25 @@ bool camera_open(uint32_t mode) {
       break;
     }
   }
+#ifdef CAMERA_DVDD_PWM_PIN
+  // A GC2145 module that feeds DVDD straight to the sensor needs 1.7-1.9 V,
+  // and may not answer at 1.5 V
+  if (g_camera.st.sensor_id == CAMERA_SENSOR_NONE) {
+    HAL_GPIO_WritePin(CAMERA_RST_PORT, CAMERA_RST_PIN, GPIO_PIN_RESET);
+    camera_dvdd_set(1800);
+    HAL_GPIO_WritePin(CAMERA_RST_PORT, CAMERA_RST_PIN, GPIO_PIN_SET);
+    systick_delay_ms(30);
+    for (int attempt = 0; attempt < 3; attempt++) {
+      if (attempt > 0) {
+        systick_delay_ms(50);
+      }
+      g_camera.st.sensor_id = sensor_detect();
+      if (g_camera.st.sensor_id != CAMERA_SENSOR_NONE) {
+        break;
+      }
+    }
+  }
+#endif
   sccb_scan();
 
   if (g_camera.st.sensor_id == CAMERA_SENSOR_NONE) {
@@ -982,6 +1094,17 @@ bool camera_open(uint32_t mode) {
     return false;
   }
   LOG_INF("sensor 0x%04x", (unsigned)g_camera.st.sensor_id);
+#ifdef CAMERA_DVDD_PWM_PIN
+  // The sensor's own core voltage, changed under reset; the start-up tables
+  // then begin from a fresh reset
+  uint32_t dvdd_mv = sensor_dvdd_mv(g_camera.st.sensor_id);
+  if (dvdd_duty(dvdd_mv) != CAMERA_DVDD_PWM_TIM->CCR1) {
+    HAL_GPIO_WritePin(CAMERA_RST_PORT, CAMERA_RST_PIN, GPIO_PIN_RESET);
+    camera_dvdd_set(dvdd_mv);
+    HAL_GPIO_WritePin(CAMERA_RST_PORT, CAMERA_RST_PIN, GPIO_PIN_SET);
+    systick_delay_ms(30);
+  }
+#endif
 
   bool ok;
   switch (g_camera.st.sensor_id) {

@@ -493,8 +493,8 @@
   }
  },
  "U14": {
-  "part": "TLV70312DBVR",
-  "source": "TI SBVS305 Pin Functions (DBV)",
+  "part": "TLV75801PDBVR",
+  "source": "TI SBVS351D Pin Functions (DBV, adjustable)",
   "pins": {
    "1": [
     "IN",
@@ -509,8 +509,8 @@
     "CAM_EN"
    ],
    "4": [
-    "NC",
-    "GND"
+    "FB",
+    "CAM_DVDD_FB"
    ],
    "5": [
     "OUT",
