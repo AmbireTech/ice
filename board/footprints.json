@@ -102,7 +102,7 @@
     }
   },
   "J_CAM": {
-    "fp": "Connector_FFC-FPC:Jushuo_AFC07-S24FCA-00_1x24-1MP_P0.50_Horizontal",
+    "fp": "wallet:Jushuo_AFC01-S24FCA-00",
     "pads": {
       "1": [
         "1"
@@ -307,5 +307,6 @@
   "R_DVPWM": "Resistor_SMD:R_0402_1005Metric",
   "C_DVSET": "Capacitor_SMD:C_0402_1005Metric",
   "U17": "Package_TO_SOT_SMD:SOT-363_SC-70-6",
-  "C_CAMBUF": "Capacitor_SMD:C_0402_1005Metric"
+  "C_CAMBUF": "Capacitor_SMD:C_0402_1005Metric",
+  "R_AVBLEED": "Resistor_SMD:R_0402_1005Metric"
 }

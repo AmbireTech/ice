@@ -34,7 +34,7 @@ the back ([pack.md](pack.md)).
 | Radio | Ebyte E73-2G4M08S1C (nRF52840 module, BLE only), behind the airgap gate | C356849 (1176) |
 | Airgap | MSK12C02 slide switch → TS3USB221A (USB data) + 74LVC1G02 / TPS22917 (radio power) + TXU0202 (radio UART isolation) | all JLC |
 | Display | NHD-2.4-240320AF-CSXP-CTP on Molex 54132-4062 + HC-FPC-1.0-6P-FH20 (6-pin 1.0 mm, bottom contact, 2.0 mm tall, C49166832) | connectors JLC, panel hand-fitted |
-| Camera | GC2145 24-pin DVP module in the ESP32-CAM pinout (Camemake CM_DVP_GC2145_UNIVERSAL; an OV2640 module fits too), 115° lens read through the sensor's centre crop, no refocus, on a Jushuo AFC07 FPC connector; AVDD and DOVDD 2.8 V (one LDO; XCLK and RESET through an SN74LVC2G34 on that rail, SCCB pull-ups to it) / DVDD set by firmware per sensor (TLV75801P adjustable LDO trimmed by a filtered PWM, 1.2–1.88 V) | connector JLC, module hand-fitted (DigiKey, JLC Global Sourcing) |
+| Camera | GC2145 24-pin DVP module in the ESP32-CAM pinout (Camemake CM_DVP_GC2145_UNIVERSAL; an OV2640 module fits too), 115° lens read through the sensor's centre crop, no refocus, on a Jushuo AFC07 FPC connector; AVDD and DOVDD 2.8 V (one LDO; XCLK and RESET through an SN74LVC2G34 on that rail, SCCB pull-ups to it) / DVDD set by firmware per sensor (TLV75801P adjustable LDO trimmed by a filtered PWM, up to 1.84 V nominal, 1.88 V worst case) | connector JLC, module hand-fitted (DigiKey, JLC Global Sourcing) |
 | Power | Two AAA cells in series (NiMH, lithium or alkaline) in a pack on the back; the pack's Xinyangze magnetic male lands its four spring pins and two magnets on four plain ENIG pads and two Würth WA-SMSI 1.0 mm steel spacers on the device board ([pack.md](pack.md)) → AO3416 reverse-cell blocker → LTC3539-2 boost to 3.3 V; USB-C → TLV62569P buck → TPS2116 picks USB first; BQ25172 NiMH charger set for two cells, fed from VBUS, MCU-gated; soft latch on the joystick's centre press | all JLC (LTC3539-2: 2,400) |
 | Sound | Huaneng MLT-5020 magnetic transducer (5 × 5.5 × 2 mm, 75 dB at 10 cm), AO3416 low-side, LPTIM3 PWM | JLC |
 | Joystick | ALPS SKRHAAE010: four directions + centre push, 7.5 mm, on the front, centred in the chin | JLC C202423 (521) |
@@ -583,8 +583,8 @@ purple (all transparent tints) and clear.
      power-up sequence) after boot before talking to it.
 8. **Camera core supply** is set per sensor, because a module may pass DVDD
    straight to the sensor: OV2640 1.14–1.26 V (data sheet v1.6; v2.2 1.24–1.36 V),
-   OV5640 1.5 V ±5 %, GC2145 1.7–1.9 V. Firmware detects at 1.5 V (retrying at
-   1.8 V under reset), then sets 1.25 / 1.5 / 1.8 V under reset. Measure DVDD at
+   OV5640 1.5 V ±5 %, GC2145 1.7–1.9 V. Firmware detects stepping up 1.22, 1.5,
+   1.78 V under reset, then sets 1.22 / 1.5 / 1.78 V under reset. Measure DVDD at
    each setting on the first board: the conversion assumes the 3.3 V rail is
    nominal (its 3.21–3.45 V spread moves 1.25 V by under 30 mV).
    **Camera I/O supply (DOVDD) 2.8 V**, inside all three sensors' ranges (OV2640

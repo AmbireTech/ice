@@ -124,12 +124,16 @@ def main():
         w.writeheader()
         w.writerows(cpl)
 
+    # parts the owner has bought into the JLC parts library (the BOM's LCSC number matches
+    # the library entry): assembled from it, whatever JLC's public stock says
+    own_stock = {"C5126845": "the magnetic male", "C6937107": "the + AAA clip"}
     lines = []
     for (value, footprint, lcsc), refs in bom.items():
         stock, kind, model = jlc_stock(lcsc)
         need = len(refs)
         packs = None if stock is None else stock // need
-        flag = ("MISSING at JLC" if stock is None
+        flag = (f"own stock: {own_stock[lcsc]}, from the owner's JLC parts library" if lcsc in own_stock
+                else "MISSING at JLC" if stock is None
                 else f"SHORT: covers {packs} boards; source more (maker direct, consigned to JLC)" if packs < RUN
                 else f"ok: covers {packs} boards")
         lines.append(f"{lcsc:9} {model or '?':28} x{need}  JLC stock {stock}  {kind or ''}  {flag}  ({','.join(refs)})")

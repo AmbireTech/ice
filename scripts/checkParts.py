@@ -78,8 +78,7 @@ WAIVED_LAND = {
     "D_REVG": "IPC-nominal SOT-23 against the vendor's longer reflow land; same 3 pads, same pitch",
     "L_BUCK": "Cenker's own CKCS201610 land (KiCad L_Cenker_CKCS201610) for this Cenker CKCSA201610 part: "
               "2016 metric, JLC's 0806",
-    "J_CAM": "KiCad's Jushuo AFC07-S24FCA-00 land for this exact part: same 24 pads at 0.5 mm and the same "
-             "14.8 mm width; the depth differs by the mounting-tab position",
+    "J_CAM": "JLC/EasyEDA's own land for C262669, moved 0.27 mm in y onto the old AFC07 land's signal row",
 }
 
 # no vendor land on EasyEDA to compare against: the land comes from the maker's drawing

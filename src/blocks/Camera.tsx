@@ -30,9 +30,10 @@ const S = "Camera"
  * regulate its own core): OV2640 1.14-1.26 V (data sheet v1.6; v2.2 1.24-1.36 V),
  * OV5640 1.5 V +-5%, GC2145 1.7-1.9 V. So DVDD is set by firmware: an adjustable
  * LDO whose feedback node takes a current from a filtered PWM (CAM_DVDD_PWM, TIM4),
- * stepless from below 1.2 V up to 1.88 V. The ceiling is by construction: PWM at
- * 0 % (or the pin stuck low) gives 1.88 V, inside every sensor's range or far under
- * its absolute maximum (OV2640 3 V); PWM stuck high pulls the output to 0 V. All three
+ * stepless from below 1.2 V up to the ceiling. The ceiling is by construction: PWM at
+ * 0 % (or the pin stuck low) gives 1.84 V nominal, 1.79-1.88 V across 1 % parts and
+ * VFB, under the GC2145's 1.9 V and far under the OVs' 3 V absolute maximum; PWM
+ * stuck high pulls the output to 0 V. All three
  * rails are switched by CAM_EN: the sensor is wholly unpowered while the camera is off.
  */
 const CAM_PINS = {
@@ -45,7 +46,7 @@ const CAM_PINS = {
 export const CameraBlock = () => (
   <group>
     <chip name="J_CAM" footprint="pinrow26" pinLabels={CAM_PINS}
-      manufacturerPartNumber="AFC07-S24FCA-00" supplierPartNumbers={{ jlcpcb: ["C262567"] }}
+      manufacturerPartNumber="AFC01-S24FCA-00" supplierPartNumbers={{ jlcpcb: ["C262669"] }}
       schX={0} schY={-36} schSectionName={S} />
     {/* 8-bit DVP uses the sensor's top byte Y2..Y9; Y0/Y1 are the 10-bit LSBs. */}
     <trace from=".J_CAM > .Y0" to="net.NC_CAM_Y0" />
@@ -83,11 +84,14 @@ export const CameraBlock = () => (
     <trace from=".U12 > .VOUT" to="net.CAM_AVDD" />
     {/* DVDD: TLV75801P DBV, adjustable (SBVS351D Pin Functions, DBV: 1 IN, 2 GND, 3 EN,
         4 FB, 5 OUT; VFB 0.55 V, IFB <= 0.1 uA, COUT >= 1 uF). The TLV70312's land, with
-        pin 4 now FB instead of NC. Divider R_DVT 33k / R_DVB 20k: 0.55 x (1 + 33/20)
-        = 1.46 V with no current through R_DVSET. R_DVSET (33k) + R_DVPWM (10k) from the
-        PWM's RC node: VOUT = 1.4575 + (0.55 - Vnode) x 33/43. Node 0 V -> 1.88 V (the
-        ceiling); 0.10 V -> 1.80 V (GC2145); 0.49 V -> 1.50 V (OV5640); 0.82 V -> 1.25 V
-        (OV2640). PWM ~39 kHz, 10k x 1 uF: ~1 mV ripple at the node, tau ~8 ms.
+        pin 4 now FB instead of NC. Divider R_DVT 33k / R_DVB 21k: 0.55 x (1 + 33/21)
+        = 1.41 V with no current through R_DVSET. R_DVSET (33k) + R_DVPWM (10k) from the
+        PWM (average Vp): VOUT = 1.414 + (0.55 - Vp) x 33/43. Vp 0 V -> 1.84 V (the
+        ceiling; 1.88 V worst case, under the GC2145's 1.9: R_DVB was 20k, 1.93 V worst
+        case, audit 2026-11-19); 0.07 V -> 1.78 V (GC2145); 0.44 V -> 1.50 V (OV5640);
+        0.80 V -> 1.22 V (OV2640). PWM ~39 kHz, 10k x 1 uF: ~1 mV ripple at the node,
+        tau ~8 ms. Firmware charges the node before CAM_EN rises, so DVDD starts at its
+        setting, not ~0.1 V over it.
         Placement: R_DVPWM at the MCU pin (the long run then carries the filtered
         level, not PWM edges); C_DVSET, R_DVSET and the divider at U14's FB pin, the
         FB node as short as possible. */}
@@ -101,7 +105,7 @@ export const CameraBlock = () => (
     <trace from=".U14 > .FB" to="net.CAM_DVDD_FB" />
     <trace from=".U14 > .OUT" to="net.CAM_DVDD" />
     {[["R_DVT", "33k", "C25779", "CAM_DVDD", "CAM_DVDD_FB"],
-      ["R_DVB", "20k", "C25765", "CAM_DVDD_FB", "GND"],
+      ["R_DVB", "21k", "C25766", "CAM_DVDD_FB", "GND"],
       ["R_DVSET", "33k", "C25779", "CAM_DVDD_FB", "CAM_DVDD_SET"],
       ["R_DVPWM", "10k", "C25744", "CAM_DVDD_PWM", "CAM_DVDD_SET"]].map(([r, v, jlc, a, b], i) => (
       <group key={r}>
@@ -130,11 +134,13 @@ export const CameraBlock = () => (
     ))}
     {/* CAM_EN low (every camera rail off) until firmware drives it: while the MCU is in
         reset CAM_EN's pull-down holds the sensor and the buffer unpowered. SCCB pull-ups
-        on its own bus, to the sensor's 2.8 V I/O rail. */}
-    {[["R_CAMEN", "CAM_EN", "GND"]].map(([r, net, to]) => (
+        on its own bus, to the sensor's 2.8 V I/O rail. R_AVBLEED: the ME6211 has no
+        output discharge, so the 2.8 V rail bleeds through 4.7k (0.6 mA on), down in
+        well under the 250 ms firmware waits before a reopen: a clean power-on reset. */}
+    {[["R_CAMEN", "CAM_EN", "GND", "100k", "C25741"], ["R_AVBLEED", "CAM_AVDD", "GND", "4.7k", "C25900"]].map(([r, net, to, v, jlc], i) => (
       <group key={r}>
-        <resistor name={r} resistance="100k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C25741"] }}
-          schX={-4} schY={-36} schRotation="90deg" schSectionName={S} />
+        <resistor name={r} resistance={v} footprint="0402" supplierPartNumbers={{ jlcpcb: [jlc] }}
+          schX={-4} schY={-36 - 2 * i} schRotation="90deg" schSectionName={S} />
         <trace from={`.${r} > .pin1`} to={`net.${net}`} />
         <trace from={`.${r} > .pin2`} to={`net.${to}`} />
       </group>

@@ -86,10 +86,15 @@ def main():
            parity.group(0) if parity else "no parity line")
     stock = list(csv.DictReader(open(os.path.join(order, "jlc-plain/work/stock.csv"))))
     sourced = [f"{r['LCSC']} {r['MPN']} x{r['Need']} ({r['Refs']}): {r['Flag']}" for r in stock if r.get("Flag", "").startswith("global sourcing")]
+    # parts JLC lists short or out of stock that the owner has bought into the JLC parts
+    # library: assembled from it (the BOM's LCSC number matches the library entry), not DNP
+
+    own_stock = {"C1518668": "the OPTIGA: the owner's stock, bought 2026-11-01; in the JLC parts library once it arrives",
+                 "C5270986": "the MCU: the owner's stock in the JLC parts library",
+                 "C356849": "the radio module: the owner's stock in the JLC parts library"}
     short = [f"{r['LCSC']} {r['MPN']} ({r['Flag']})" for r in stock
-             if r.get("Flag") and "deprioritized" not in r["Flag"] and not r["Flag"].startswith("global sourcing")]
-    # parts JLC lists out of stock that the owner has bought into the JLC parts library: assembled, not DNP
-    own_stock = {"C1518668": "the OPTIGA: the owner's stock, bought 2026-11-01; in the JLC parts library once it arrives"}
+             if r.get("Flag") and "deprioritized" not in r["Flag"] and not r["Flag"].startswith("global sourcing")
+             and r["LCSC"] not in own_stock]
     dnp_at_order = [f"{r['LCSC']} {r['MPN']} ({r['Refs']})" for r in stock
                     if "deprioritized" in r.get("Flag", "") and r["LCSC"] not in own_stock]
     own = [f"{r['LCSC']} {r['MPN']} ({r['Refs']}): {own_stock[r['LCSC']]}" for r in stock if r["LCSC"] in own_stock]

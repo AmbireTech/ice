@@ -60,7 +60,7 @@ D_PKNTC,"PESD5V0S1BL,315",Diode_SMD:D_SOD-882,C84374,bottom,90.0,,0.0,90.0,0.000
 D_RADIO,KT-0603G,LED_SMD:LED_0603_1608Metric,C12624,bottom,90.0,,0.0,90.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
 D_REVG,"BAS116,215",Package_TO_SOT_SMD:SOT-23,C48502,bottom,0.0,^SOT-23,180.0,0.0,0.000,db-rule
 J1,TYPE-C-31-M-12,wallet:USB_C_Receptacle_HRO_TYPE-C-31-M-12_BoardEdge,C165948,bottom,180.0,,0.0,0.0,1.460,NO KNOWN CORRECTION -> eye check in JLC preview
-J_CAM,AFC07-S24FCA-00,Connector_FFC-FPC:Jushuo_AFC07-S24FCA-00_1x24-1MP_P0.50_Horizontal,C262567,bottom,90.0,,0.0,90.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
+J_CAM,AFC01-S24FCA-00,wallet:Jushuo_AFC01-S24FCA-00,C262669,bottom,90.0,,0.0,90.0,0.195,NO KNOWN CORRECTION -> eye check in JLC preview
 J_CTP,HC-FPC-1.0-6P-FH20,wallet:FPC_HC-FPC-1.0-6P-FH20,C49166832,bottom,180.0,,0.0,0.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
 J_TFT,54132-4062,wallet:Molex_54132-4062,C505102,bottom,180.0,,0.0,0.0,0.325,NO KNOWN CORRECTION -> eye check in JLC preview
 LS1,MLT-5020,wallet:Buzzer_Huaneng_MLT-5020_5x5.5mm,C94598,bottom,-90.0,,0.0,270.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
@@ -76,6 +76,7 @@ Q_REV,AO3416,Package_TO_SOT_SMD:SOT-23,C43307,bottom,90.0,^SOT-23,180.0,270.0,0.
 R_AIRPU,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 R_AIRS,1M,Resistor_SMD:R_0402_1005Metric,C26083,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 R_AIRSER,1k,Resistor_SMD:R_0402_1005Metric,C11702,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
+R_AVBLEED,4.7k,Resistor_SMD:R_0402_1005Metric,C25900,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 R_BLEN,1k,Resistor_SMD:R_0402_1005Metric,C11702,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 R_BLPD,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 R_BLSET,6.8k,Resistor_SMD:R_0402_1005Metric,C25917,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
@@ -93,7 +94,7 @@ R_CS1,1M,Resistor_SMD:R_0402_1005Metric,C26083,bottom,180.0,,0.0,0.0,0.000,n/a (
 R_CS2,1M,Resistor_SMD:R_0402_1005Metric,C26083,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 R_CSCL,4.7k,Resistor_SMD:R_0402_1005Metric,C25900,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 R_CSDA,4.7k,Resistor_SMD:R_0402_1005Metric,C25900,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
-R_DVB,20k,Resistor_SMD:R_0402_1005Metric,C25765,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
+R_DVB,21k,Resistor_SMD:R_0402_1005Metric,C25766,bottom,0.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
 R_DVPWM,10k,Resistor_SMD:R_0402_1005Metric,C25744,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 R_DVSET,33k,Resistor_SMD:R_0402_1005Metric,C25779,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 R_DVT,33k,Resistor_SMD:R_0402_1005Metric,C25779,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)

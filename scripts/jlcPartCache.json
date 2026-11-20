@@ -1016,6 +1016,13 @@
   "package": "0402",
   "stock": 2678033
  },
+ "C25766": {
+  "describe": "-55\u2103~+155\u2103 21k\u03a9 50V 62.5mW Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
+  "land": null,
+  "model": "0402WGF2102TCE",
+  "package": "0402",
+  "stock": 122355
+ },
  "C25768": {
   "describe": "-55\u2103~+155\u2103 22k\u03a9 50V 62.5mW Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
   "land": null,
@@ -1234,6 +1241,127 @@
   "model": "AFC07-S24FCA-00",
   "package": "SMD,P=0.5mm,Surface Mount\uff0cRight Angle",
   "stock": 46475
+ },
+ "C262669": {
+  "describe": "-45\u2103~+85\u2103 0.3mm 0.5mm 24P 2mm 500mA 50V Bottom Contact Copper alloy Hinged Lid Surface Mount, Right Angle Tin SMD,P=0.5mm,\u5367\u8d34 FFC, FPC (Flat Flexible) Connector Assemblies ROHS",
+  "land": {
+   "holes": [],
+   "pads": 26,
+   "pitch": 0.5,
+   "sizes": [
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     0.3,
+     1.3
+    ],
+    [
+     1.6,
+     2.0
+    ],
+    [
+     1.6,
+     2.0
+    ]
+   ],
+   "span": [
+    2.66,
+    14.9
+   ]
+  },
+  "model": "AFC01-S24FCA-00",
+  "package": "SMD,P=0.5mm,Surface Mount\uff0cRight Angle",
+  "stock": 70174
  },
  "C2650415": {
   "describe": "-25\u2103~+85\u2103 1.62V~3.6V 500uA ECC\u30013DES\u3001RSA\u3001SHA-256\u3001AES-128\u3001SHA-1\u3001AES-256\u3001SHA-384\u3001SHA-512 I2C WQFN-20-EP(3x3) Security Verification / Encryption ICs ROHS",

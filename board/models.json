@@ -151,5 +151,19 @@
    0
   ],
   "note": "the top-contact CSH25's body model: Hong Cheng's drawings give the CXH25 the same outside (6.70 vs 6.75 mm deep, 2.5 mm high); EasyEDA has no model for C49166842"
+ },
+ "wallet:Jushuo_AFC01-S24FCA-00": {
+  "path": "${KIPRJMOD}/../3d/Jushuo_AFC01-S24FCA-00.step",
+  "offset": [
+   0,
+   -1.175,
+   0
+  ],
+  "rotate": [
+   0,
+   0,
+   0
+  ],
+  "note": "EasyEDA/LCSC C262669. Its lead ends at the land's rear pad edge (model y 3.425 = land y -1.98 before the land's 0.27 mm shift)"
  }
 }
