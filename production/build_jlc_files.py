@@ -20,16 +20,44 @@ import time
 from collections import OrderedDict
 
 API = "https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList"
-DEPRIORITIZED = {"C1518668": "OPTIGA Trust M V3: sourcing deprioritized (known 0 at JLC)"}
+DEPRIORITIZED = {}
 # Not stocked by JLC: bought into the order through JLC Global Sourcing (distributor stock,
 # JLC mounts it, never shipped to us). Checked 2026-10-31; recheck the offer at order time.
 GLOBAL_SOURCING = {"C21905480": "global sourcing: DigiKey ED10763CT-ND cut tape, 117,259 in stock, MOQ 1, 8-14 business days"}
 
-# Hand-fitted, no footprint on the board (docs/design.md @ 49053dc, README "fitted by hand").
+# Fitted by JLC by hand after reflow, from the owner's JLC parts library: no footprint on the
+# board, so a BOM line and a CPL row of their own (the order's remark says how: ORDER-REMARK.txt).
+# CPL frame: the outline's bottom-left corner, y up, like every other row.
+#   LCD1: the panel's outline on the front face is x 2.6-45.4, y 1.0-60.91 in board
+#   coordinates (enclosure.json "panel"): centre (24.0, 30.955) -> CPL (24.0, 87 - 30.955).
+EXTRA_PLACED = [
+    {"Designator": "LCD1", "Value": "NHD-2.4-240320AF-CSXP-CTP", "FootprintFull": "hand-fit:LCD_NHD-2.4in-CTP_42.8x59.9",
+     "Footprint": "LCD_NHD-2.4in-CTP_42.8x59.9", "LCSC": "C25254888", "Layer": "top", "BoardAngle": "0.0",
+     "DbRule": "", "DbOffset": "0.0", "Rotation": "0.0", "Mid X": "24.0000", "Mid Y": "56.0450", "Origin": "Anchor",
+     "AnchorToPadCentreMm": "0.000", "Pads": "0", "SMD": "1", "THT": "0", "ExcludeBOM": "0", "ExcludePos": "0",
+     "BoardOnly": "0", "DNP": "0"},
+]
+
+# The order's remark (JLC's "special instructions" box), written beside the BOM and CPL
+ORDER_REMARK = """LCD1 (Newhaven NHD-2.4-240320AF-CSXP-CTP, C25254888, from my parts library) is fitted by hand
+AFTER all SMT on both sides is reflowed. It must never go through reflow. Please:
+1. Keep the panel's protective film on. Handle by the edges, ESD-safe.
+2. Place it on the TOP side, glass facing up, centred left-right (2.6 mm margin each side), its top
+   edge 1.0 mm below the board's top edge, its two flex tails at the bottom end. Fix it with 0.3 mm
+   double-sided foam tape over the panel's back (not over the tails).
+3. Both tails go down through the board's slot just below the panel and fold back under the board,
+   gently, without creasing. Contacts face the board on both.
+4. 40-pin TFT tail (0.5 mm) into J_TFT (Molex 54132-4062): open the actuator, insert fully and
+   straight, close it.
+5. 6-pin touch tail (1.0 mm) into J_CTP (HC-FPC-1.0-6P-FH20), folding outside the TFT tail: open
+   the lid, insert fully, close it.
+If anything is unclear, please ask before fitting LCD1.
+"""
+
+# Hand-fitted by us, no footprint on the board and not on the JLC order.
 HAND_FIT = [
-    ("PANEL", "NHD-2.4-240320AF-CSXP-CTP", "Newhaven 2.4in IPS 240x320 + CTP; tails into J_TFT (Molex 54132-4062) and J_CTP (6P 1.0 mm FPC)"),
-    ("CAMERA", "Camemake CM_DVP_GC2145_UNIVERSAL (GC2145 24-pin DVP module)", "no refocus; flex into J_CAM (Jushuo AFC07-S24FCA-00)"),
-    ("CELL", "one AAA cell (NiMH, alkaline or lithium primary)", "snapped into the front clips BT_N/BT_P (MYOUNG MY-AAA-19-J / -20-J); + end at BT_P"),
+    ("CAMERA", "GC2145 / OV5640 / OV2640 24-pin DVP module", "flex into J_CAM (Jushuo AFC01-S24FCA-00, flip lock, bottom contact)"),
+    ("PACK", "two AAA cells in the battery pack (pack/, its own order)", "the pack snaps onto the back"),
 ]
 
 # Polarity-free two-terminal chips: JLC and KiCad share the 0-degree reference, no correction exists or is needed.
@@ -69,7 +97,15 @@ def main():
     outdir = sys.argv[1]
     boards = int(sys.argv[2]) if len(sys.argv) > 2 else 10
     work = os.path.join(outdir, "work")
-    parts = list(csv.DictReader(open(os.path.join(work, "parts-raw.csv"))))
+    raw_path = os.path.join(work, "parts-raw.csv")
+    parts = list(csv.DictReader(open(raw_path)))
+    # the hand-fitted parts JLC fits go into parts-raw too, so every later set (PCBWay) sees them
+    have = {p["Designator"] for p in parts}
+    parts += [dict(x) for x in EXTRA_PLACED if x["Designator"] not in have]
+    with open(raw_path, "w", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(parts[0]))
+        w.writeheader()
+        w.writerows(parts)
 
     placed, excluded = [], []
     for p in parts:
@@ -111,6 +147,7 @@ def main():
         w.writeheader()
         for p in excluded:
             w.writerow({k: p[k] for k in ("Designator", "Value", "FootprintFull", "LCSC", "Why")})
+    open(os.path.join(outdir, "ORDER-REMARK.txt"), "w").write(ORDER_REMARK)
     with open(os.path.join(outdir, "hand-fit.csv"), "w", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(["Item", "Part", "Notes"])

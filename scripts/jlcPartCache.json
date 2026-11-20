@@ -932,6 +932,13 @@
   "package": "0603",
   "stock": 2899914
  },
+ "C23363348": {
+  "describe": "- Lack of specifications ROHS",
+  "land": null,
+  "model": "SLS32AIA010MKUSON10XTMA3",
+  "package": "-",
+  "stock": 0
+ },
  "C25076": {
   "describe": "-55\u2103~+155\u2103 100\u03a9 50V 62.5mW Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
   "land": null,

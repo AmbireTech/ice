@@ -89,9 +89,10 @@ def main():
     # parts JLC lists short or out of stock that the owner has bought into the JLC parts
     # library: assembled from it (the BOM's LCSC number matches the library entry), not DNP
 
-    own_stock = {"C1518668": "the OPTIGA: the owner's stock, bought 2026-11-01; in the JLC parts library once it arrives",
+    own_stock = {"C23363348": "the OPTIGA (SLS32AIA010MKUSON10XTMA3, the TMA2 in another reel): the owner's stock in the JLC parts library",
                  "C5270986": "the MCU: the owner's stock in the JLC parts library",
-                 "C356849": "the radio module: the owner's stock in the JLC parts library"}
+                 "C356849": "the radio module: the owner's stock in the JLC parts library",
+                 "C25254888": "the display LCD1: the owner's stock in the JLC parts library; fitted by hand after reflow (ORDER-REMARK.txt)"}
     short = [f"{r['LCSC']} {r['MPN']} ({r['Flag']})" for r in stock
              if r.get("Flag") and "deprioritized" not in r["Flag"] and not r["Flag"].startswith("global sourcing")
              and r["LCSC"] not in own_stock]

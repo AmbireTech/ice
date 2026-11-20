@@ -68,7 +68,7 @@ export const SecureBlock = () => (
     {/* Fitted in the BOM; JLC has had none in stock, so it may be DNP'd at order time
         (JLC's UI). Unfitted is electrically safe: the SE050 keeps the bus and its pull-ups. */}
     <chip name="U16" footprint="pinrow11"
-      manufacturerPartNumber="SLS32AIA010MK" supplierPartNumbers={{ jlcpcb: ["C1518668"] }}
+      manufacturerPartNumber="SLS32AIA010MK" supplierPartNumbers={{ jlcpcb: ["C23363348"] }}
       pinLabels={{ pin1: "GND", pin2: "NC2", pin3: "SDA", pin4: "NC4", pin5: "NC5", pin6: "NC6", pin7: "NC7",
         pin8: "SCL", pin9: "RST", pin10: "VCC", pin11: "EP" }}
       schX={0} schY={-16} schSectionName={S} />

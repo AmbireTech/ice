@@ -30,7 +30,7 @@ the back ([pack.md](pack.md)).
 |---|---|---|
 | MCU | STM32U585VIT6Q, LQFP100 (Cortex-M33, TrustZone, 2 MB / 786 KB, AES+SAES+PKA+HASH+TRNG, DCMI, USB FS) | C5270986 (43) |
 | Secure element | NXP SE050E2HQ1 (secp256k1 + P-256 + Ed25519 keys generated inside, PIN objects with retry counters), own I2C bus. Fallback on the same land: SE051C2 | C5190917 (585; DigiKey ~14k) |
-| Second secure element | Infineon OPTIGA Trust M V3 SLS32AIA010MK (CC EAL6+ hardware, P-256 key generated inside), on the same I2C bus. Fallback on the same land: Trust M V1 SLS32AIA010MH | C1518668 (0, and JLC/LCSC list it as no longer manufactured): not fitted on the first boards; V1 C539250 |
+| Second secure element | Infineon OPTIGA Trust M V3 SLS32AIA010MK (CC EAL6+ hardware, P-256 key generated inside), on the same I2C bus. Fallback on the same land: Trust M V1 SLS32AIA010MH | C23363348 (the TMA3 reel; the owner's stock in the JLC parts library; the TMA2, C1518668, is listed as no longer manufactured); V1 C539250 |
 | Radio | Ebyte E73-2G4M08S1C (nRF52840 module, BLE only), behind the airgap gate | C356849 (1176) |
 | Airgap | MSK12C02 slide switch → TS3USB221A (USB data) + 74LVC1G02 / TPS22917 (radio power) + TXU0202 (radio UART isolation) | all JLC |
 | Display | NHD-2.4-240320AF-CSXP-CTP on Molex 54132-4062 + HC-FPC-1.0-6P-FH20 (6-pin 1.0 mm, bottom contact, 2.0 mm tall, C49166832) | connectors JLC, panel hand-fitted |

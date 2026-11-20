@@ -36,7 +36,7 @@ echo "== plain set"
 "$KPY" production/export_fab.py board/wallet.kicad_pcb "$OUT/jlc-plain" production/jlc_rotation_db.csv | grep -E "files ->|origin"
 python3 -I production/build_jlc_files.py "$OUT/jlc-plain" 10 > "$OUT/jlc-plain/build.log"
 cp "$OUT/jlc-plain/wallet_bom-jlc.csv" "$OUT/jlc-plain/wallet_positions-jlc.csv" \
-   "$OUT/jlc-plain/work/rotation-review.csv" "$OUT/jlc-plain/work/stock.csv" "$OUT/"
+   "$OUT/jlc-plain/work/rotation-review.csv" "$OUT/jlc-plain/work/stock.csv" "$OUT/jlc-plain/ORDER-REMARK.txt" "$OUT/"
 
 echo "== PCBWay set (full-colour UV back print)"
 "$KPY" production/build_pcbway.py "$OUT" | grep -v -iE "swig|wxApp"

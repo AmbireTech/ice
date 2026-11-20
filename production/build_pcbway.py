@@ -87,6 +87,8 @@ def bom_and_centroid(order, src, out):
     lines = list(csv.DictReader(open(os.path.join(order, "jlc-plain/wallet_bom-jlc.csv"))))
     stock = {r["LCSC"]: r for r in csv.DictReader(open(os.path.join(order, "jlc-plain/work/stock.csv")))}
     parts = {r["Designator"]: r for r in csv.DictReader(open(os.path.join(src, "work/parts-raw.csv")))}
+    for x in jlc.EXTRA_PLACED:   # the hand-fitted parts the JLC set carries (the display)
+        parts.setdefault(x["Designator"], dict(x))
     cache_path = os.path.join(out, "brands.json")
     brands = json.load(open(cache_path)) if os.path.exists(cache_path) else {}
     rows, refs_all, notes = [], [], []

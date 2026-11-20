@@ -1,0 +1,13 @@
+LCD1 (Newhaven NHD-2.4-240320AF-CSXP-CTP, C25254888, from my parts library) is fitted by hand
+AFTER all SMT on both sides is reflowed. It must never go through reflow. Please:
+1. Keep the panel's protective film on. Handle by the edges, ESD-safe.
+2. Place it on the TOP side, glass facing up, centred left-right (2.6 mm margin each side), its top
+   edge 1.0 mm below the board's top edge, its two flex tails at the bottom end. Fix it with 0.3 mm
+   double-sided foam tape over the panel's back (not over the tails).
+3. Both tails go down through the board's slot just below the panel and fold back under the board,
+   gently, without creasing. Contacts face the board on both.
+4. 40-pin TFT tail (0.5 mm) into J_TFT (Molex 54132-4062): open the actuator, insert fully and
+   straight, close it.
+5. 6-pin touch tail (1.0 mm) into J_CTP (HC-FPC-1.0-6P-FH20), folding outside the TFT tail: open
+   the lid, insert fully, close it.
+If anything is unclear, please ask before fitting LCD1.

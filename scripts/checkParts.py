@@ -85,6 +85,9 @@ WAIVED_LAND = {
 _DISC = ("Mill-Max 1578-0-57 target disc: EasyEDA has no land for it; the land is Mill-Max's own "
          "recommended SMT pad, 0.088 in (2.235 mm) round, for the 1.981 mm disc")
 SKIP_GEOMETRY = {r: _DISC for r in ("J_PK1", "J_PK2", "J_PK3", "J_PK4")}
+SKIP_GEOMETRY["U16"] = ("C23363348 is the OPTIGA SLS32AIA010MKUSON10XTMA3, the TMA2 (C1518668) in another reel: "
+                        "same USON-10 package; EasyEDA draws no land for the new number, and the land passed "
+                        "this check against C1518668's")
 
 
 def curl_json(payload):
