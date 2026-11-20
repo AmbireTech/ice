@@ -158,7 +158,7 @@ PROTRUDE_CLR, MIN_SKIN = 0.3, 0.6
 
 # ── Case ────────────────────────────────────────────────────────────────────
 # Resin (SLA) printers want walls of 0.8 mm at least (1.5 ideal; the fab's review of the first
-# order, 2026-11-17, flagged the north hook's groove and the vents' webs at 0.4): every thin
+# order, 2026-11-17, flagged the north hook's groove at 0.4): every thin
 # wall the joint makes is checked against PRINT_MIN_WALL below. The joint splits WALL into
 # the tongue, its clearance and the skirt: 1.2 + 0.1 + 1.0, the skirt 0.82 at its top under
 # the draft, the tongue 0.8 behind the hook's groove.
@@ -179,15 +179,11 @@ TONGUE_T, TONGUE_H, TONGUE_CLR = 1.2, 1.8, FIT
 # and the tongue's outer top edge chamfered to clear it by TONGUE_CLR (not along the north
 # hook, whose groove needs the tongue's full top).
 SKIRT_ROOT = 0.5
-# ...and vents: slots through every wall into the bezel's inside, so it is open to the vat
-# from just after its face on as it prints (its inside is one hollow; each vent relieves
-# all of it, and their number sets how fast resin gets in). The chin pocket's ceiling meets
-# the walls in a chamfer too, cut back clear of the parts under it.
-VENT_W, VENT_OVER_SLOT, VENT_MIN_H, VENT_R = 3.0, PRINT_MIN_WALL, 1.0, 0.4   # width; wall kept over the tongue's slot; least height; corners
-VENTS_PER_WALL, VENT_UNDER_LIP = 2, 0.0               # ...; the side vents' top under the screen's seat (0: flush)
+# No vents (owner, 2026-11-20): they were for printing face down, where the bezel's inside
+# cupped against the film; it prints upright and tilted now, which cups nothing.
+# The chin pocket's ceiling meets the walls in a chamfer, cut back clear of the parts under it.
 POCKET_CHAMFER = 0.5
-# The front fillet no deeper than the face over the screen: the side vents' tops are flush with
-# the screen's seat, and a deeper fillet thins the face over each vent's mouth to a knife edge.
+# The front fillet no deeper than the face over the screen.
 BACK_FILLET, FRONT_FILLET = 1.5, LIP
 # Outer walls lean in toward the back and toward the front, widest at the parting
 # line, so the two halves meet flush: the back and front faces are DRAFT_MM narrower
@@ -836,13 +832,12 @@ def main():
     if WALL - DRAFT_MM / 2 < MIN_WALL:
         raise SystemExit(f"draft: the wall thins to {WALL - DRAFT_MM / 2:.2f} mm at the back/front, under {MIN_WALL}")
     # the joint's thin walls, for a resin print: the tongue behind the north hook's groove, the
-    # bezel's skirt at its top (the drafted outer face leans in), the web over each vent
+    # bezel's skirt at its top (the drafted outer face leans in)
     behind_groove = TONGUE_T - HOOK[1] - HOOK[3]
     over_groove = TONGUE_H - (HOOK[2] + 2 * HOOK[3])     # the groove runs up from the parting line
     skirt_top = WALL - TONGUE_T - TONGUE_CLR - DRAFT_MM / 2 * (TONGUE_H + TONGUE_CLR) / (z_top - z_split)
     for what, t_ in (("the tongue behind the hook's groove", behind_groove), ("the tongue over the hook's groove", over_groove),
-                     ("the skirt at its top", skirt_top),
-                     ("the wall over a vent", VENT_OVER_SLOT)):
+                     ("the skirt at its top", skirt_top)):
         if t_ < PRINT_MIN_WALL - 1e-9:
             raise SystemExit(f"{what} is {t_:.2f} mm, under the {PRINT_MIN_WALL} mm a resin print needs")
 
@@ -1230,10 +1225,9 @@ def main():
         chin_h = max(chin_h, h)
     if front:
         # One pocket over the whole chin (owner, 2026-10-26: not one per part), from the
-        # northmost part to the south wall, as deep as the tallest part plus FRONT_CLR, and at
-        # least as deep as the south vents need (they open into it over the skirt's web);
+        # northmost part to the south wall, as deep as the tallest part plus FRONT_CLR;
         # the screw boss stays solid through it.
-        depth = max(chin_h + FRONT_CLR, z_ceil + VENT_OVER_SLOT + VENT_MIN_H)
+        depth = chin_h + FRONT_CLR
         if depth > z_top - FRONT_SKIN:
             raise SystemExit(f"the chin's tallest front part ({chin_h:.2f} mm) leaves under {FRONT_SKIN} mm of bezel over it")
         north = min(k[1] for k in keepouts + ([joy_box] if joy_box else []))
@@ -1290,66 +1284,7 @@ def main():
     if bezel_cuts:
         bezel, _ = round_rim(bezel, bezel_cuts, bezel_skin, RIM_R, "bezel")
 
-    # The vents (SKIRT_ROOT's note): VENTS_PER_WALL slots through each wall, clear of the
-    # other openings and of anything solid a slot would reach into. The bezel's inside is
-    # one hollow, so every vent relieves all of it; their number sets how fast resin gets
-    # in. South: into the chin's pocket, flush with its ceiling. North, east, west: into the
-    # screen's pocket, flush with the screen's seat (the face's underside), so the inside is
-    # open to the vat from the first layer after the face (a vent only relieves the layers
-    # printed after it exists).
-    if not front:
-        raise SystemExit("no chin pocket for the south vents to open into")
-    vz0 = z_ceil + VENT_OVER_SLOT
-
-    def taken(side):          # each other opening on that wall, as an interval along it
-        spans = []
-        for _, s_, cut_ in openings:
-            if s_ == side:
-                bb = cut_.bounding_box()
-                spans.append((bb.min.X - 1, bb.max.X + 1) if side in "NS" else (-bb.max.Y - 1, -bb.min.Y + 1))
-        return spans
-
-    def place(lo, hi, blocked):   # VENTS_PER_WALL centres spread over lo..hi, in free wall
-        free, at = [], lo
-        for a, c in sorted(blocked) + [(hi, math.inf)]:
-            if a - at >= VENT_W + 1:
-                free.append((at + VENT_W / 2 + 0.5, a - VENT_W / 2 - 0.5))
-            at = max(at, c)
-        picks = []
-        for k in range(1, VENTS_PER_WALL + 1):
-            t = lo + (hi - lo) * k / (VENTS_PER_WALL + 1)
-            near = [min(max(t, a), c) for a, c in free]
-            best = min(near, key=lambda q: abs(q - t), default=None)
-            if best is not None and all(abs(best - q) >= VENT_W + 2 for q in picks):
-                picks.append(best)
-        return picks
-
-    s_in = H + GAP - POCKET_CHAMFER - 0.5        # the south vents' inner end (board y), through the pocket's chamfer
-    s_blocked = taken("S") + [(hx - BOSS_R - 0.5, hx + BOSS_R + 0.5) for hx, hy in screw_holes if hy + BOSS_R > s_in]
-    if joy_box and joy_box[3] > s_in:
-        s_blocked.append((joy_box[0] - 0.5, joy_box[2] + 0.5))
-    vz1 = z_lip - VENT_UNDER_LIP
-    vents = [("S", x, depth, s_in) for x in place(in_o[0] + in_o[4], in_o[2] - in_o[4], s_blocked)]
-    vents += [("N", x, vz1, glass[1] + 0.5) for x in place(glass[0] + 1, glass[2] - 1, taken("N"))]
-    vents += [("W", y, vz1, glass[0] + 0.5) for y in place(glass[1] + 1, glass[3] - 1, taken("W"))]
-    vents += [("E", y, vz1, glass[2] - 0.5) for y in place(glass[1] + 1, glass[3] - 1, taken("E"))]
-    for side in "NSEW":
-        if not any(v[0] == side for v in vents):
-            raise SystemExit(f"vent: no {VENT_W} mm of free {side} wall")
-    for side, at, z1, inner in vents:
-        if z1 - vz0 < VENT_MIN_H - 1e-9:
-            raise SystemExit(f"vent ({side}): {z1 - vz0:.2f} mm between the tongue's slot and the pocket's ceiling")
-        sk = RectangleRounded(VENT_W, z1 - vz0, VENT_R)   # square-ish top: open full width from its first layer
-        outer = {"S": H + GAP + WALL + 1, "N": -(GAP + WALL) - 1, "E": W + GAP + WALL + 1, "W": -(GAP + WALL) - 1}[side]
-        a, c = sorted((inner, outer))
-        if side in "NS":
-            bezel -= Pos(at, -(a + c) / 2, (vz0 + z1) / 2) * Rot(90, 0, 0) * extrude(sk, amount=(c - a) / 2, both=True)
-        else:
-            bezel -= Pos((a + c) / 2, -at, (vz0 + z1) / 2) * Rot(0, 90, 0) * Rot(0, 0, 90) * extrude(sk, amount=(c - a) / 2, both=True)
-    report.append(f"vents: {len(vents)} slots {VENT_W} mm wide through the bezel's walls ("
-                  + ", ".join(f"{sd} {at:.1f}" for sd, at, _, _ in vents)
-                  + f"), Z {vz0:.2f} to {depth:.2f} (south, into the chin) / {vz1:.2f} (into the screen's pocket); "
-                  f"skirt root filleted {SKIRT_ROOT} mm, the tongue chamfered to clear it; "
+    report.append(f"skirt root filleted {SKIRT_ROOT} mm, the tongue chamfered to clear it; "
                   f"the chin pocket's ceiling chamfered {POCKET_CHAMFER} mm along its walls, clear of the parts")
 
     # ── checks that the geometry, not prose, has to satisfy ──
