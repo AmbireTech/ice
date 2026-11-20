@@ -34,7 +34,7 @@ the back ([pack.md](pack.md)).
 | Radio | Ebyte E73-2G4M08S1C (nRF52840 module, BLE only), behind the airgap gate | C356849 (1176) |
 | Airgap | MSK12C02 slide switch → TS3USB221A (USB data) + 74LVC1G02 / TPS22917 (radio power) + TXU0202 (radio UART isolation) | all JLC |
 | Display | NHD-2.4-240320AF-CSXP-CTP on Molex 54132-4062 + HC-FPC-1.0-6P-FH20 (6-pin 1.0 mm, bottom contact, 2.0 mm tall, C49166832) | connectors JLC, panel hand-fitted |
-| Camera | GC2145 24-pin DVP module in the ESP32-CAM pinout (Camemake CM_DVP_GC2145_UNIVERSAL; an OV2640 module fits too), 115° lens read through the sensor's centre crop, no refocus, on a Jushuo AFC07 FPC connector; AVDD and DOVDD 2.8 V (one LDO; XCLK and RESET through an SN74LVC2G34 on that rail, SCCB pull-ups to it) / DVDD set by firmware per sensor (TLV75801P adjustable LDO trimmed by a filtered PWM, up to 1.84 V nominal, 1.88 V worst case) | connector JLC, module hand-fitted (DigiKey, JLC Global Sourcing) |
+| Camera | GC2145 24-pin DVP module in the ESP32-CAM pinout (Camemake CM_DVP_GC2145_UNIVERSAL; an OV2640 module fits too), 115° lens read through the sensor's centre crop, no refocus, on a Jushuo AFC01 flip-lock FPC connector (bottom contact); AVDD and DOVDD 2.8 V (one LDO; XCLK and RESET through an SN74LVC2G34 on that rail, SCCB pull-ups to it) / DVDD set by firmware per sensor (TLV75801P adjustable LDO trimmed by a filtered PWM, up to 1.84 V nominal, 1.88 V worst case) | connector JLC, module hand-fitted (DigiKey, JLC Global Sourcing) |
 | Power | Two AAA cells in series (NiMH, lithium or alkaline) in a pack on the back; the pack's Xinyangze magnetic male lands its four spring pins and two magnets on four plain ENIG pads and two Würth WA-SMSI 1.0 mm steel spacers on the device board ([pack.md](pack.md)) → AO3416 reverse-cell blocker → LTC3539-2 boost to 3.3 V; USB-C → TLV62569P buck → TPS2116 picks USB first; BQ25172 NiMH charger set for two cells, fed from VBUS, MCU-gated; soft latch on the joystick's centre press | all JLC (LTC3539-2: 2,400) |
 | Sound | Huaneng MLT-5020 magnetic transducer (5 × 5.5 × 2 mm, 75 dB at 10 cm), AO3416 low-side, LPTIM3 PWM | JLC |
 | Joystick | ALPS SKRHAAE010: four directions + centre push, 7.5 mm, on the front, centred in the chin | JLC C202423 (521) |
@@ -541,7 +541,7 @@ purple (all transparent tints) and clear.
    only; the signal order along the flex is the same. This board follows
    Ai-Thinker's numbering, which matches the modules checked so far once the
    lens faces away from the board. What to check on a sample is which face of
-   the flex carries the contacts (the AFC07 is bottom-contact).
+   the flex carries the contacts (the AFC01 is bottom-contact).
 3. **Camera choice**: the GC2145 module (Camemake CM_DVP_GC2145_UNIVERSAL), the
    commodity successor to the end-of-life OV2640, which no big distributor stocks.
    Camemake's open CM_ESP_P4_C5 board feeds it 2.8 / 1.2 / 3.3 V on the same pins
