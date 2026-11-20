@@ -11,12 +11,6 @@ fn main() -> Result<()> {
         if cfg!(feature = "ambire_power") {
             lib.add_source("ambire_power.c");
             lib.add_define("USE_AMBIRE_POWER", None);
-            // The cell monitor reads the pack on ADC1 through ST's HAL
-            lib.add_define("HAL_ADC_MODULE_ENABLED", None);
-            lib.add_sources_in_dir(
-                "../../../vendor/stm32u5xx_hal_driver/Src/",
-                ["stm32u5xx_hal_adc.c", "stm32u5xx_hal_adc_ex.c"],
-            );
         }
 
         if cfg!(feature = "ambire_radio") {
