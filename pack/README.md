@@ -82,9 +82,12 @@ $KICAD_PY production/boardOrder.py pack/pack.kicad_pcb production/pack-order pac
   On 2026-11-19 two do: the male (14 public at JLC: the owner's own stock is what is used)
   and the + clip MY-AAA-20-J (12 at JLC, 10 at LCSC: 6 packs), which needs a source
   before a run.
-- **Rotations:** check every part in JLC's placement preview before paying. The clips
-  carry the same rotation as the device board's (the south cell's exactly so, the
-  north cell's turned 180°); check the male's tab points north. The CPL's rotations are KiCad's, not confirmed by JLC.
+- **Rotations:** check every part in JLC's placement preview before paying. On all four
+  clips the upright contact (the − clips' spring, the + clips' wall) stands at the board
+  edge. The + clip is turned 180° in the CPL to match JLC's library (`JLC_TURN` in
+  `boardOrder.py`): with KiCad's own angle JLC's preview showed its wall on the cell side on
+  both orders so far (JLC corrected the first, asked by mail on the second). Check the
+  male's tab points north. The other rotations are KiCad's, not confirmed by JLC.
 - The board is 0.8 mm thick and ENIG: pick both in the order form.
 
 What the checks cover: DRC at every severity (none found, with and without a zone

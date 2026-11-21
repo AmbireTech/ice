@@ -16,9 +16,10 @@ Refuses (writes nothing) when a polarized part's silk shows no readable pin-1 ma
 (scripts/checkPin1Silk.py): JLC holds the order and asks by mail for those.
 
 The origin of the plots and the positions is the outline's bottom-left corner (as the
-device board's export_fab.py does). Rotation: KiCad's angle, bottom parts as 180 - angle;
-JLC's own reference for the clips and the connector differs part by part, so check every
-part in JLC's placement preview before paying (README: order-time checks).
+device board's export_fab.py does). Rotation: KiCad's angle, bottom parts as 180 - angle,
+plus JLC_TURN for parts JLC's library holds turned against our footprint (the + AAA clip).
+JLC's own reference differs part by part, so check every part in JLC's placement preview
+before paying (README: order-time checks).
 """
 import csv
 import json
@@ -99,6 +100,10 @@ def main():
         for f in files:
             z.write(os.path.join(gerb, f), f)
 
+    # JLC's library holds these parts turned against our footprint. Each entry is read off an
+    # order's placement preview: the + AAA clip came up 180 deg out on both pack orders
+    # (SMT026110264254: JLC corrected it; SMT026112061272: JLC asked), the - clip came up right.
+    JLC_TURN = {"C6937107": 180.0}
     bom, cpl = {}, []
     for fp in sorted(board.GetFootprints(), key=lambda f: f.GetReference()):
         ref = fp.GetReference()
@@ -108,7 +113,7 @@ def main():
         if not lcsc:
             raise SystemExit(f"{ref} has no LCSC part number")
         bottom = fp.GetLayer() == pcbnew.B_Cu
-        rot = fp.GetOrientationDegrees()
+        rot = fp.GetOrientationDegrees() + JLC_TURN.get(lcsc, 0)
         x, y = fp.GetPosition().x / 1e6, fp.GetPosition().y / 1e6
         cpl.append({"Designator": ref, "Mid X": f"{x - ox:.4f}", "Mid Y": f"{oy - y:.4f}",
                     "Layer": "Bottom" if bottom else "Top", "Rotation": f"{((180.0 - rot) if bottom else rot) % 360:.1f}"})
