@@ -200,24 +200,25 @@ def read_library(page):
 
 
 def read_cart(page):
-    """{lcsc: row} of the JLC parts cart (private-library tab). Exits if it cannot be read:
-    adding against a failed read is how quantities once stacked."""
+    """{lcsc: row} of the whole JLC parts cart: in-stock, pre-order and Global Sourcing lines (the
+    "private_library" list leaves pre-orders out). Exits if it cannot be read: adding against a
+    failed read is how quantities once stacked."""
     page.goto(CART_PAGE, wait_until="domcontentloaded", timeout=60000)
     time.sleep(2)
     rows, n = {}, 1
     while True:
-        r = page_json(page, "POST", CART_LIST, {"cartType": "private_library", "pageSize": 100, "currentPage": n})
+        r = page_json(page, "POST", CART_LIST, {"cartType": "", "pageSize": 100, "currentPage": n, "keywords": ""})
         data = ok_data(r)
         if data is None:
             raise SystemExit(f"could not read the parts cart ({fail_msg(r)}); changing nothing")
         groups = data.get("list") or []
         for g in groups:
-            for item in g.get("goodsResultVOList") or ([g] if g.get("componentCode") else []):
+            for item in g.get("goodsResultVOList") or []:
                 code = (item.get("componentCode") or "").strip()
                 if code:
                     rows[code] = {"qty": int(item.get("presaleNumber") or 0),
-                                  "cartAccessId": g.get("cartAccessId") or item.get("cartAccessId"),
-                                  "componentAccessId": item.get("componentAccessId") or item.get("componentGoodsAccessId"),
+                                  "cartAccessId": g.get("shoppingCartAccessId"),
+                                  "componentAccessId": item.get("componentGoodsAccessId"),
                                   "lcscComponentId": item.get("lcscComponentId"),
                                   "presaleType": item.get("presaleType") or "stock"}
         if len(groups) < 100:
