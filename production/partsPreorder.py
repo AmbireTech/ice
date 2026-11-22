@@ -36,6 +36,8 @@ BOMS = [("device", HERE / "order" / "wallet_bom-jlc.csv"), ("pack", HERE / "pack
 OUT_DIR = HERE / "preorder"
 PROFILE = Path(os.environ.get("JLC_CHROME_PROFILE", Path.home() / ".gridcore" / "jlc-chrome"))
 PACE = 1.2
+# On the JLC BOM but bought by the owner outside JLC: never a shortfall here.
+OWNER_SUPPLIED = {"C25254888": "the display, bought from Newhaven direct"}
 
 SEARCH_URL = "https://jlcpcb.com/api/overseas-pcb-order/v1/shoppingCart/smtGood/selectSmtComponentList"
 USER_URL = "/api/overseas-pcb-order/v1/getUserInfo"
@@ -242,7 +244,9 @@ def plan(boards, spare, every_basic, library, out_csv):
             can = int((rec or {}).get("canPresaleNumber") or 0)
             basic = (rec or {}).get("componentLibraryType") == "base"
             price = unit_price(rec, short or need) if rec else 0.0
-            if not short:
+            if code in OWNER_SUPPLIED:
+                short, action = 0, f"owner-supplied: {OWNER_SUPPLIED[code]}"
+            elif not short:
                 action = "covered by the library"
             elif basic and not every_basic and stock >= short:
                 action = "basic part: JLC stock at assembly"
