@@ -34,3 +34,6 @@ enclosure/out/halves_supported.*
 
 # trezorctl (firmware/README.md)
 firmware/.venv/
+
+# production/preorder/: live parts-library plans from production/partsPreorder.py
+production/preorder/
