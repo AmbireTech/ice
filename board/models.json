@@ -27,19 +27,6 @@
    0
   ]
  },
- "Button_Switch_SMD:SW_SPDT_Shouhan_MSK12C02": {
-  "path": "${KIPRJMOD}/../3d/Slide_MSK12C02.step",
-  "offset": [
-   0,
-   0,
-   0
-  ],
-  "rotate": [
-   0,
-   0,
-   180
-  ]
- },
  "wallet:Molex_54132-4062": {
   "path": "${KIPRJMOD}/../3d/Molex_54132-4062.step",
   "offset": [
@@ -165,5 +152,18 @@
    0
   ],
   "note": "EasyEDA/LCSC C262669. Its lead ends at the land's rear pad edge (model y 3.425 = land y -1.98 before the land's 0.27 mm shift)"
+ },
+ "wallet:SW_SPDT_HanElectricity_MSK12C02G25": {
+  "path": "${KIPRJMOD}/../3d/Slide_MSK12C02G25.step",
+  "offset": [
+   0,
+   0,
+   0
+  ],
+  "rotate": [
+   0,
+   0,
+   0
+  ]
  }
 }

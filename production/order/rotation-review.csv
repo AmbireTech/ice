@@ -132,7 +132,7 @@ R_TMR,36k,Resistor_SMD:R_0402_1005Metric,C43676,bottom,0.0,,0.0,180.0,0.000,n/a 
 R_VB1,47k,Resistor_SMD:R_0402_1005Metric,C25792,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 R_VB2,100k,Resistor_SMD:R_0402_1005Metric,C25741,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 R_VSET,36k,Resistor_SMD:R_0402_1005Metric,C43676,bottom,180.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
-SW_AIR,MSK12C02,Button_Switch_SMD:SW_SPDT_Shouhan_MSK12C02,C431540,bottom,90.0,,0.0,90.0,0.575,NO KNOWN CORRECTION -> eye check in JLC preview
+SW_AIR,MSK12C02G25-B,wallet:SW_SPDT_HanElectricity_MSK12C02G25,C22435663,bottom,90.0,,0.0,90.0,0.500,NO KNOWN CORRECTION -> eye check in JLC preview
 SW_JOY,SKRHAAE010,wallet:SW_ALPS_SKRHAAE010,C202423,top,0.0,,0.0,0.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
 U1,BQ25172DSGR,Package_SON:WSON-8-1EP_2x2mm_P0.5mm_EP0.9x1.6mm,C5189434,bottom,-90.0,,0.0,270.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
 U10,TPS2116DRLR,Package_TO_SOT_SMD:SOT-583-8,C3235557,top,0.0,,0.0,0.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview

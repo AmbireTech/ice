@@ -30,12 +30,14 @@ const S = "Radio"
  */
 export const RadioBlock = () => (
   <group>
-    {/* ---------------- Airgap slide switch (the Nano's MSK-12C02) ---------------- */}
+    {/* ---------------- Airgap slide switch (the Nano's MSK-12C02 body, 2.5 mm handle) ---------------- */}
+    {/* HanElectricity MSK12C02G25-B: the MSK12C02's land and body with a 2.5 mm handle
+        (1.5 on the plain part), so the lever reaches the case wall's outer face. */}
     <chip name="SW_AIR" footprint="pinrow4"
-      manufacturerPartNumber="MSK12C02" supplierPartNumbers={{ jlcpcb: ["C431540"] }}
+      manufacturerPartNumber="MSK12C02G25-B" supplierPartNumbers={{ jlcpcb: ["C22435663"] }}
       pinLabels={{ pin1: "AIR", pin2: "COM", pin3: "ONLINE", pin4: "TAB" }}
       schX={0} schY={-20} schSectionName={S} />
-    {/* 1k in the AIR throw: the MSK12C02's data sheet does not say it breaks
+    {/* 1k in the AIR throw: the switch's data sheet does not say it breaks
         before it makes, and its other throw is GND. */}
     <trace from=".SW_AIR > .AIR" to="net.AIR_THROW" />
     <resistor name="R_AIRSER" resistance="1k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C11702"] }}

@@ -245,7 +245,7 @@
   "R_VB2": "Resistor_SMD:R_0402_1005Metric",
   "R_VSET": "Resistor_SMD:R_0402_1005Metric",
   "SW_AIR": {
-    "fp": "Button_Switch_SMD:SW_SPDT_Shouhan_MSK12C02",
+    "fp": "wallet:SW_SPDT_HanElectricity_MSK12C02G25",
     "pads": {
       "1": [
         "1"

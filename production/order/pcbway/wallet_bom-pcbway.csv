@@ -48,7 +48,7 @@ Line#,Quantity Per Board,Reference Designator,Value,Manufacturers Name,Manufactu
 47,1,R_JB,27k,UNI-ROYAL(Uniroyal Elec),0402WGF2702TCE,-55℃~+155℃ 27kΩ 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS,0402,Surface mount,LCSC C25771
 48,2,"R_JC,R_VB1",47k,UNI-ROYAL(Uniroyal Elec),0402WGF4702TCE,-55℃~+155℃ 47kΩ 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS,0402,Surface mount,LCSC C25792
 49,2,"R_TMR,R_VSET",36k,UNI-ROYAL(Uniroyal Elec),0402WGF3602TCE,-55℃~+155℃ 36kΩ 50V 62.5mW Thick Film Resistor ±1% ±100ppm/℃ 0402 Chip Resistor - Surface Mount ROHS,0402,Surface mount,LCSC C43676
-50,1,SW_AIR,MSK12C02,SHOU HAN,MSK12C02,"-20℃~+70℃ 1.4mm 10000 times 12V 2.8mm 50mA 8mm SMD(SMT) Tab SPDT Surface Mount, Right Angle SMD,8x2.8mm Slide Switches ROHS","SMD,8x2.8mm",Surface mount,LCSC C431540
+50,1,SW_AIR,MSK12C02G25-B,HanElectricity,MSK12C02G25-B,"-25℃~+70℃ 100mA 12V 6.6mm Black Rectangular Columnar SMD(SMT) Tab SPDT Surface Mount, Right Angle SMD-7P,6.7x2.8mm Slide Switches ROHS","SMD-7P,6.7x2.8mm",Surface mount,LCSC C22435663
 51,1,SW_JOY,SKRHAAE010,ALPSALPINE,SKRHAAE010,"SMD-8P,7.5x7.5mm Multi-Directional Switches ROHS","SMD-8P,7.5x7.5mm",Surface mount,LCSC C202423
 52,1,U1,BQ25172DSGR,Texas Instruments,BQ25172DSGR,-40℃~+125℃ 1~6 350nA 3V~18V 800mA Charging IC Nickel-Metal Hydride Battery Support WSON-8(2x2) Battery Management ROHS,WSON-8(2x2),Surface mount,LCSC C5189434
 53,1,U10,TPS2116DRLR,Texas Instruments,TPS2116DRLR,Operating status indication SOT-583 Power Management - Specialized ROHS,SOT-583,Surface mount,LCSC C3235557

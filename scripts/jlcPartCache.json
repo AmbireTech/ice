@@ -918,6 +918,62 @@
   "package": "-",
   "stock": 582
  },
+ "C22435663": {
+  "describe": "-25\u2103~+70\u2103 100mA 12V 6.6mm Black Rectangular Columnar SMD(SMT) Tab SPDT Surface Mount, Right Angle SMD-7P,6.7x2.8mm Slide Switches ROHS",
+  "land": {
+   "holes": [
+    0.8,
+    0.8
+   ],
+   "pads": 9,
+   "pitch": 1.5,
+   "sizes": [
+    [
+     0.6,
+     1.0
+    ],
+    [
+     0.6,
+     1.0
+    ],
+    [
+     0.6,
+     1.0
+    ],
+    [
+     0.7,
+     1.0
+    ],
+    [
+     0.7,
+     1.0
+    ],
+    [
+     0.7,
+     1.0
+    ],
+    [
+     0.7,
+     1.0
+    ],
+    [
+     0.8,
+     0.8
+    ],
+    [
+     0.8,
+     0.8
+    ]
+   ],
+   "span": [
+    3.16,
+    7.3
+   ]
+  },
+  "model": "MSK12C02G25-B",
+  "package": "SMD-7P,6.7x2.8mm",
+  "stock": 6702
+ },
  "C227183": {
   "describe": "-55\u2103~+155\u2103 50V 62.5mW 665k\u03a9 Thick Film Resistor \u00b11% \u00b1100ppm/\u2103 0402 Chip Resistor - Surface Mount ROHS",
   "land": null,

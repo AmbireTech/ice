@@ -32,7 +32,7 @@ the back ([pack.md](pack.md)).
 | Secure element | NXP SE050E2HQ1 (secp256k1 + P-256 + Ed25519 keys generated inside, PIN objects with retry counters), own I2C bus. Fallback on the same land: SE051C2 | C5190917 (585; DigiKey ~14k) |
 | Second secure element | Infineon OPTIGA Trust M V3 SLS32AIA010MK (CC EAL6+ hardware, P-256 key generated inside), on the same I2C bus. Fallback on the same land: Trust M V1 SLS32AIA010MH | C23363348 (the TMA3 reel; the owner's stock in the JLC parts library; the TMA2, C1518668, is listed as no longer manufactured); V1 C539250 |
 | Radio | Ebyte E73-2G4M08S1C (nRF52840 module, BLE only), behind the airgap gate | C356849 (1176) |
-| Airgap | MSK12C02 slide switch → TS3USB221A (USB data) + 74LVC1G02 / TPS22917 (radio power) + TXU0202 (radio UART isolation) | all JLC |
+| Airgap | MSK12C02G25-B slide switch (2.5 mm handle) → TS3USB221A (USB data) + 74LVC1G02 / TPS22917 (radio power) + TXU0202 (radio UART isolation) | all JLC |
 | Display | NHD-2.4-240320AF-CSXP-CTP on Molex 54132-4062 + HC-FPC-1.0-6P-FH20 (6-pin 1.0 mm, bottom contact, 2.0 mm tall, C49166832) | connectors JLC, panel hand-fitted |
 | Camera | GC2145 24-pin DVP module in the ESP32-CAM pinout (Camemake CM_DVP_GC2145_UNIVERSAL; an OV2640 module fits too), 115° lens read through the sensor's centre crop, no refocus, on a Jushuo AFC01 flip-lock FPC connector (bottom contact); AVDD and DOVDD 2.8 V (one LDO; XCLK and RESET through an SN74LVC2G34 on that rail, SCCB pull-ups to it) / DVDD set by firmware per sensor (TLV75801P adjustable LDO trimmed by a filtered PWM, up to 1.84 V nominal, 1.88 V worst case) | connector JLC, module hand-fitted (DigiKey, JLC Global Sourcing) |
 | Power | Two AAA cells in series (NiMH, lithium or alkaline) in a pack on the back; the pack's Xinyangze magnetic male lands its four spring pins and two magnets on four plain ENIG pads and two Würth WA-SMSI 1.0 mm steel spacers on the device board ([pack.md](pack.md)) → AO3416 reverse-cell blocker → LTC3539-2 boost to 3.3 V; USB-C → TLV62569P buck → TPS2116 picks USB first; BQ25172 NiMH charger set for two cells, fed from VBUS, MCU-gated; soft latch on the joystick's centre press | all JLC (LTC3539-2: 2,400) |
@@ -517,8 +517,8 @@ purple (all transparent tints) and clear.
 - **Draft:** both halves are 1 mm narrower at the back and front faces than at
   the parting line (about 3°): softer, mouldable, still printable without
   supports (the shell on its back, the bezel face down).
-- **Airgap switch:** its lever stops about 1.3 mm inside the wall's outer face.
-  An opening in the left wall, 5.8 x 2.7 mm (the lever's whole travel plus 1.5 mm
+- **Airgap switch:** its 2.5 mm handle stops about 0.25 mm inside the wall's outer face.
+  An opening in the left wall, 5.9 x 2.5 mm (the lever's whole travel plus 1.5 mm
   each way), lets a fingernail or a pen tip push it either way.
 - **Openings' edges:** the camera window, USB-C and the airgap opening have their
   outer edges rounded 0.5 mm; the camera window's corners are rounded 0.8 mm.

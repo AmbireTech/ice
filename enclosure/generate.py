@@ -212,7 +212,7 @@ MIN_SHANK_CLR = 0.3  # screw shank to the nearest part; a standoff notched for a
 SCREEN_CLR = 0.25    # bezel fills to the screen's glass edge (0.15 was hard to snap the screen into, 2026-11-17)
 RIBBON_CLR = 0.3     # around the display ribbons' slots
 USB_PLUG = (12.6, 6.8, 2.2)  # opening for a USB-C plug overmold (w, h, corner r); common overmolds are <= 12.35 x 6.5
-LEVER_TRAVEL = 1.5   # MSK12C02 slide travel; its lever stops ~1.3 mm inside the wall's outer face
+LEVER_TRAVEL = 1.6   # MSK12C02G25-B slide travel (the maker's drawing: 1.6 +-0.1 between the handle's ends)
 # The airgap switch is worked through an opening in the west wall, with a fingernail or a pen
 # tip: the lever's whole travel plus AIR_NAIL each way along the wall, AIR_H tall round the
 # lever (cut off by the floor and by PRINT_MIN_WALL under the parting line).
