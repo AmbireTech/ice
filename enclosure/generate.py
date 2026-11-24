@@ -31,7 +31,8 @@ Parts (Z = 0 is the board's front face, +Z toward the screen; X east, Y north):
           through, a hole over the buzzer, a groove along the north tongue; a window in
           the back the pack's connector drops through onto the pads, a shallow bay over
           the pack's board
-  bezel   front plate with the display window and walls down to the parting line;
+  bezel   front plate with the display window (open south of the viewing area, over the
+          glass's bottom border) and walls down to the parting line;
           its skirt laps over a tongue on the shell, with a ridge along the north side
           that hooks into the tongue's groove. Inside: solid fills that locate the
           screen, a chin with windows for the display ribbons, one pocket over all the
@@ -1175,13 +1176,18 @@ def main():
     bezel += (rr_prism(*skirt_o[:4], skirt_o[4], z_ceil - SKIRT_ROOT, z_ceil + 0.01)
               - rr_prism_drafted(*skirt_o[:4], skirt_o[4], z_ceil - SKIRT_ROOT, z_ceil + 0.01, 45) - hook_span)
     bezel -= rr_prism(*win, 0.8, z_lip - 1, z_top + 1)
+    # South of the viewing area the front is open (owner, 2026-11-23: the 0.8 mm lip over the
+    # glass's bottom border broke off): the window runs on to the glass's south edge. The
+    # ribbons' windows stay closed at the front (owner, 2026-11-24): the chin's skin covers
+    # their folds; the glass's south corners still stop it.
+    bezel -= box(win[0], win[1] + 1, win[2], glass[3], z_lip - 1, z_top + 1)
     # The north hook's ridge on the skirt's inner face (the bezel prints face down: the
     # ridge's underside is a 0.3 mm step, no support).
     s_in = t_out + TONGUE_CLR
     bezel += box(W / 2 - hl / 2, -s_in, W / 2 + hl / 2, -s_in + hd, hz - hh / 2, hz + hh / 2)
     # Solid where the screen is not: fills along the screen's edges locate it, the chin
-    # is solid down to the board, with windows where the display ribbons drop through
-    # the board's slots and a pocket over each front part.
+    # is solid down to the board, with windows where the display ribbons
+    # drop through the board's slots and a pocket over each front part.
     open_ = box(*glass, z_split - 1, z_lip + 0.01)
     for sx0, sy0, sx1, sy1 in b["slots"]:
         open_ += box(sx0 - RIBBON_CLR, glass[3] - 0.01, sx1 + RIBBON_CLR, sy1 + RIBBON_CLR, z_split - 1, z_lip + 0.01)
