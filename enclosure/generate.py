@@ -218,6 +218,8 @@ LEVER_TRAVEL = 1.6   # MSK12C02G25-B slide travel (the maker's drawing: 1.6 +-0.
 # centred on the lever's travel, from AIR_WIN_FLOOR over the floor's inside up across the
 # parting line to AIR_WIN_TOP into the bezel (as the USB-C opening crosses it), corners AIR_R.
 AIR_WIN_L, AIR_WIN_FLOOR, AIR_WIN_TOP, AIR_R = 11.0, 0.2, 2.5, 2.0
+# Its mouth flares at 45 deg, AIR_FLARE each way on the outer face, so a fingertip gets in.
+AIR_FLARE = 1.0
 # Openings' rims (camera window, USB-C, the airgap switch's) rounded on the outside, and the
 # camera window's corners rounded: CAM_R leaves the head's square corners CAM_CORNER_MIN clear.
 RIM_R, CAM_R, CAM_CORNER_MIN = 0.5, 0.8, 0.2
@@ -886,12 +888,18 @@ def main():
                 if not (oz0 < zlo and zhi < oz1 and sy1 - sy0 > LEVER_TRAVEL + ly1 - ly0):
                     raise SystemExit(f"{ref}: the window (Z {oz0:.2f}-{oz1:.2f}) does not clear the lever ({zlo:.2f}-{zhi:.2f})")
                 cut = wall_cut(side, b, yc, (oz0 + oz1) / 2, sy1 - sy0, oz1 - oz0, AIR_R)
-                cut &= box(-GAP - WALL - 2, sy0 - 1, -GAP + 0.2, sy1 + 1, oz0 - 1, oz1 + 1)   # through the wall only
+                # the flared mouth: a 45 deg frustum from outside the face (draft included) in to
+                # AIR_FLARE inside the widest face, where it meets the window
+                grow = AIR_FLARE + 0.5
+                mouth = RectangleRounded(sy1 - sy0 + 2 * grow, oz1 - oz0 + 2 * grow, AIR_R + grow)
+                cut += (Pos(-(GAP + WALL) - 0.5, -yc, (oz0 + oz1) / 2) * Rot(0, 90, 0) * Rot(0, 0, 90)
+                        * extrude(mouth, amount=grow, taper=45))
+                cut &= box(-GAP - WALL - 2, sy0 - grow - 1, -GAP + 0.2, sy1 + grow + 1, oz0 - grow - 1, oz1 + grow + 1)   # through the wall only
                 x_face = -(GAP + WALL) + DRAFT_MM / 2 * (z_split - (zlo + zhi) / 2) / (z_split - z_floor_out)
                 openings.append((ref, side, cut))
                 report.append(f"airgap switch: a {sy1 - sy0:.1f} x {oz1 - oz0:.1f} mm window through the west wall "
                               f"(Z {oz0:.2f} to {oz1:.2f}, across the parting line), the lever's "
-                              f"{LEVER_TRAVEL} mm travel centred in it; the lever "
+                              f"{LEVER_TRAVEL} mm travel centred in it, its mouth flared {AIR_FLARE} mm at 45 deg; the lever "
                               f"{pts[:, 0].min() - x_face:.2f} mm inside the wall's outer face")
                 air_found = True
             else:
