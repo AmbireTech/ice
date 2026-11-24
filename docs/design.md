@@ -517,7 +517,7 @@ purple (all transparent tints) and clear.
 - **Draft:** both halves are 1 mm narrower at the back and front faces than at
   the parting line (about 3°): softer, mouldable, still printable without
   supports (the shell on its back, the bezel face down).
-- **Airgap switch:** an 11 x 6 mm window in the left wall, centred on the lever's
+- **Airgap switch:** an 11 x 6.7 mm window in the left wall, centred on the lever's
   travel and running across the parting line (like the USB-C opening), its mouth flared
   1 mm at 45°, so a fingertip reaches the lever, whose tip sits 0.25 mm inside the wall's
   outer face.

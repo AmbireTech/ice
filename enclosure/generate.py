@@ -217,7 +217,7 @@ LEVER_TRAVEL = 1.6   # MSK12C02G25-B slide travel (the maker's drawing: 1.6 +-0.
 # shallow scoop were "ridiculously small"): a window through the west wall AIR_WIN_L long,
 # centred on the lever's travel, from AIR_WIN_FLOOR over the floor's inside up across the
 # parting line to AIR_WIN_TOP into the bezel (as the USB-C opening crosses it), corners AIR_R.
-AIR_WIN_L, AIR_WIN_FLOOR, AIR_WIN_TOP, AIR_R = 11.0, 0.2, 2.5, 2.0
+AIR_WIN_L, AIR_WIN_FLOOR, AIR_WIN_TOP, AIR_R = 11.0, 0.2, 3.2, 2.0
 # Its mouth flares at 45 deg, AIR_FLARE each way on the outer face, so a fingertip gets in.
 AIR_FLARE = 1.0
 # Openings' rims (camera window, USB-C, the airgap switch's) rounded on the outside, and the
