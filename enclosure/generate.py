@@ -90,7 +90,6 @@ from build123d import (
     Pos,
     RectangleRounded,
     Rot,
-    Sphere,
     export_gltf,
     export_step,
     export_stl,
@@ -101,7 +100,6 @@ from build123d import (
     Vector,
     fillet,
     offset,
-    scale,
 )
 
 HERE = Path(__file__).resolve().parent.parent
@@ -215,16 +213,11 @@ SCREEN_CLR = 0.25    # bezel fills to the screen's glass edge (0.15 was hard to 
 RIBBON_CLR = 0.3     # around the display ribbons' slots
 USB_PLUG = (12.6, 6.8, 2.2)  # opening for a USB-C plug overmold (w, h, corner r); common overmolds are <= 12.35 x 6.5
 LEVER_TRAVEL = 1.6   # MSK12C02G25-B slide travel (the maker's drawing: 1.6 +-0.1 between the handle's ends)
-# The airgap switch is worked through an opening in the west wall, with a fingernail or a pen
-# tip: the lever's whole travel plus AIR_NAIL each way along the wall, AIR_H tall round the
-# lever (cut off by the floor and by PRINT_MIN_WALL under the parting line).
-AIR_NAIL, AIR_H, AIR_R = 1.5, 2.8, 1.0
-# Round the opening, a finger scoop (owner, 2026-11-24: easy to work with a fingertip): a
-# shallow elliptical dish in the wall's outer face, AIR_SCOOP_L long along the wall, as tall
-# as the shell allows less AIR_SCOOP_EDGE of face kept at the parting line and the back, and
-# AIR_SCOOP_D deep at its centre, so the lever stands proud of the dish's floor. Its rim
-# meets the face at 30 deg (the dish is cut by an ellipsoid twice that deep).
-AIR_SCOOP_L, AIR_SCOOP_EDGE, AIR_SCOOP_D = 12.0, 0.6, 1.2
+# The airgap switch is worked with a fingertip (owner, 2026-11-24: a slot round the lever and a
+# shallow scoop were "ridiculously small"): a window through the west wall AIR_WIN_L long,
+# centred on the lever's travel, from AIR_WIN_FLOOR over the floor's inside up across the
+# parting line to AIR_WIN_TOP into the bezel (as the USB-C opening crosses it), corners AIR_R.
+AIR_WIN_L, AIR_WIN_FLOOR, AIR_WIN_TOP, AIR_R = 11.0, 0.2, 2.5, 2.0
 # Openings' rims (camera window, USB-C, the airgap switch's) rounded on the outside, and the
 # camera window's corners rounded: CAM_R leaves the head's square corners CAM_CORNER_MIN clear.
 RIM_R, CAM_R, CAM_CORNER_MIN = 0.5, 0.8, 0.2
@@ -887,37 +880,19 @@ def main():
                 toward = 1.0 if b["fps"][ref]["y"] > (ly0 + ly1) / 2 else -1.0
                 if abs(abs(b["fps"][ref]["y"] - (ly0 + ly1) / 2) - LEVER_TRAVEL / 2) > 0.3:
                     raise SystemExit(f"{ref}: the modelled lever is not at an end of its {LEVER_TRAVEL} mm travel")
-                sy0 = min(ly0, ly0 + toward * LEVER_TRAVEL) - AIR_NAIL
-                sy1 = max(ly1, ly1 + toward * LEVER_TRAVEL) + AIR_NAIL
-                oz0 = max((zlo + zhi) / 2 - AIR_H / 2, z_floor_in + 0.2)
-                oz1 = min((zlo + zhi) / 2 + AIR_H / 2, z_split - PRINT_MIN_WALL)
-                if not (oz0 < zlo and zhi < oz1):
-                    raise SystemExit(f"{ref}: the opening (Z {oz0:.2f}-{oz1:.2f}) does not clear the lever ({zlo:.2f}-{zhi:.2f})")
-                cut = wall_cut(side, b, (sy0 + sy1) / 2, (oz0 + oz1) / 2, sy1 - sy0, oz1 - oz0, AIR_R)
+                yc = (min(ly0, ly0 + toward * LEVER_TRAVEL) + max(ly1, ly1 + toward * LEVER_TRAVEL)) / 2
+                sy0, sy1 = yc - AIR_WIN_L / 2, yc + AIR_WIN_L / 2
+                oz0, oz1 = z_floor_in + AIR_WIN_FLOOR, z_split + AIR_WIN_TOP
+                if not (oz0 < zlo and zhi < oz1 and sy1 - sy0 > LEVER_TRAVEL + ly1 - ly0):
+                    raise SystemExit(f"{ref}: the window (Z {oz0:.2f}-{oz1:.2f}) does not clear the lever ({zlo:.2f}-{zhi:.2f})")
+                cut = wall_cut(side, b, yc, (oz0 + oz1) / 2, sy1 - sy0, oz1 - oz0, AIR_R)
                 cut &= box(-GAP - WALL - 2, sy0 - 1, -GAP + 0.2, sy1 + 1, oz0 - 1, oz1 + 1)   # through the wall only
-                face_x = lambda z: -(GAP + WALL) + DRAFT_MM / 2 * (z_split - z) / (z_split - z_floor_out)
-                x_face = face_x((zlo + zhi) / 2)
-                # the finger scoop round the slot (ellipsoid twice the dish's depth: 30 deg rim)
-                yc = (sy0 + sy1) / 2
-                dz0, dz1 = z_floor_out + AIR_SCOOP_EDGE, z_split - AIR_SCOOP_EDGE
-                zc, k = (dz0 + dz1) / 2, math.sqrt(3) / 2
-                ax, ay, az = 2 * AIR_SCOOP_D, AIR_SCOOP_L / 2 / k, (dz1 - dz0) / 2 / k
-                xc = face_x(zc) - AIR_SCOOP_D
-                if not (dz0 < zlo and zhi < dz1 and sy1 - sy0 < AIR_SCOOP_L):
-                    raise SystemExit(f"{ref}: the finger scoop does not take in the slot")
-                left = -GAP - (xc + ax)
-                if left < PRINT_MIN_WALL:
-                    raise SystemExit(f"{ref}: the finger scoop leaves {left:.2f} mm of wall (< {PRINT_MIN_WALL})")
-                cut += Pos(xc, -yc, zc) * scale(Sphere(1), by=(ax, ay, az))
-                # how far the lever's tip stands proud of the dish's floor, on its axis
-                lz = (zlo + zhi) / 2
-                floor_x = xc + ax * math.sqrt(max(0.0, 1 - ((lz - zc) / az) ** 2))
+                x_face = -(GAP + WALL) + DRAFT_MM / 2 * (z_split - (zlo + zhi) / 2) / (z_split - z_floor_out)
                 openings.append((ref, side, cut))
-                report.append(f"airgap switch: a {sy1 - sy0:.1f} x {oz1 - oz0:.1f} mm slot through the west wall "
-                              f"(the lever's {LEVER_TRAVEL} mm travel + {AIR_NAIL} mm each way) in a "
-                              f"{AIR_SCOOP_L:.0f} x {dz1 - dz0:.1f} mm finger scoop {AIR_SCOOP_D} mm deep "
-                              f"({left:.2f} mm of wall behind it); the lever stands {floor_x - pts[:, 0].min():.2f} mm "
-                              f"proud of the scoop's floor ({pts[:, 0].min() - x_face:.2f} mm inside the wall's outer face)")
+                report.append(f"airgap switch: a {sy1 - sy0:.1f} x {oz1 - oz0:.1f} mm window through the west wall "
+                              f"(Z {oz0:.2f} to {oz1:.2f}, across the parting line), the lever's "
+                              f"{LEVER_TRAVEL} mm travel centred in it; the lever "
+                              f"{pts[:, 0].min() - x_face:.2f} mm inside the wall's outer face")
                 air_found = True
             else:
                 raise SystemExit(f"{ref} crosses the {side} board edge and has no opening rule")
