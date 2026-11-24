@@ -517,9 +517,9 @@ purple (all transparent tints) and clear.
 - **Draft:** both halves are 1 mm narrower at the back and front faces than at
   the parting line (about 3°): softer, mouldable, still printable without
   supports (the shell on its back, the bezel face down).
-- **Airgap switch:** its 2.5 mm handle stops about 0.25 mm inside the wall's outer face.
-  An opening in the left wall, 5.9 x 2.5 mm (the lever's whole travel plus 1.5 mm
-  each way), lets a fingernail or a pen tip push it either way.
+- **Airgap switch:** a 5.9 x 2.5 mm slot in the left wall (the lever's whole travel
+  plus 1.5 mm each way) sits in a 12 x 3.7 mm finger scoop 1.2 mm deep, so the lever
+  stands about 0.9 mm proud of the scoop's floor: a fingertip slides it either way.
 - **Openings' edges:** the camera window, USB-C and the airgap opening have their
   outer edges rounded 0.5 mm; the camera window's corners are rounded 0.8 mm.
 - **Joystick:** a pocket over its housing in the solid chin and a 6 mm hole its
