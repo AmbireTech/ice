@@ -57,6 +57,7 @@ D_OR,"BAT54C,215",Package_TO_SOT_SMD:SOT-23,C37704,bottom,90.0,^SOT-23,180.0,270
 D_PKMID,"PESD5V0S1BL,315",Diode_SMD:D_SOD-882,C84374,bottom,90.0,,0.0,90.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
 D_PKNEG,"PESD5V0S1BL,315",Diode_SMD:D_SOD-882,C84374,bottom,0.0,,0.0,180.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
 D_PKNTC,"PESD5V0S1BL,315",Diode_SMD:D_SOD-882,C84374,bottom,90.0,,0.0,90.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
+D_PWRJ,"BAT54C,215",Package_TO_SOT_SMD:SOT-23,C37704,top,180.0,^SOT-23,180.0,0.0,0.000,db-rule
 D_RADIO,KT-0603G,LED_SMD:LED_0603_1608Metric,C12624,bottom,90.0,,0.0,90.0,0.000,NO KNOWN CORRECTION -> eye check in JLC preview
 D_REVG,"BAS116,215",Package_TO_SOT_SMD:SOT-23,C48502,bottom,0.0,^SOT-23,180.0,0.0,0.000,db-rule
 J1,TYPE-C-31-M-12,wallet:USB_C_Receptacle_HRO_TYPE-C-31-M-12_BoardEdge,C165948,bottom,180.0,,0.0,0.0,1.460,NO KNOWN CORRECTION -> eye check in JLC preview
@@ -103,7 +104,7 @@ R_EN,1M,Resistor_SMD:R_0402_1005Metric,C26083,bottom,-90.0,,0.0,270.0,0.000,n/a 
 R_FB1,1M,Resistor_SMD:R_0402_1005Metric,C26083,top,0.0,,0.0,0.0,0.000,n/a (non-polar 2-terminal)
 R_FB2,562k,Resistor_SMD:R_0402_1005Metric,C48838,top,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 R_FBU1,150k,Resistor_SMD:R_0402_1005Metric,C25755,top,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
-R_FBU2,33k,Resistor_SMD:R_0402_1005Metric,C25779,top,180.0,,0.0,180.0,0.000,n/a (non-polar 2-terminal)
+R_FBU2,33k,Resistor_SMD:R_0402_1005Metric,C25779,top,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 R_HOLD,1M,Resistor_SMD:R_0402_1005Metric,C26083,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)
 R_ISET,3.6k,Resistor_SMD:R_0402_1005Metric,C25891,bottom,90.0,,0.0,90.0,0.000,n/a (non-polar 2-terminal)
 R_ISETH,1.8k,Resistor_SMD:R_0402_1005Metric,C25871,bottom,-90.0,,0.0,270.0,0.000,n/a (non-polar 2-terminal)

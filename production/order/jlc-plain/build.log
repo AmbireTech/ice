@@ -1,4 +1,4 @@
-BOM refs 152 in 68 lines; CPL rows 152; excluded 14
+BOM refs 153 in 68 lines; CPL rows 153; excluded 14
   CPL not BOM: []
   BOM not CPL: []
   no LCSC part: []
@@ -6,74 +6,74 @@ BOM refs 152 in 68 lines; CPL rows 152; excluded 14
 excluded: H1(exclude-from-BOM,board-only,exclude-from-pos), H2(exclude-from-BOM,board-only,exclude-from-pos), H4(exclude-from-BOM,board-only,exclude-from-pos), J_PK1(exclude-from-BOM,DNP), J_PK2(exclude-from-BOM,DNP), J_PK3(exclude-from-BOM,DNP), J_PK4(exclude-from-BOM,DNP), TP_3V3(exclude-from-BOM,DNP,exclude-from-pos), TP_GND(exclude-from-BOM,DNP,exclude-from-pos), TP_NRST(exclude-from-BOM,DNP,exclude-from-pos), TP_RSWCLK(exclude-from-BOM,DNP,exclude-from-pos), TP_RSWDIO(exclude-from-BOM,DNP,exclude-from-pos), TP_SWCLK(exclude-from-BOM,DNP,exclude-from-pos), TP_SWDIO(exclude-from-BOM,DNP,exclude-from-pos)
 
 stock (boards=10):
-  ok           C106255       305185 need   20 Extended             $0.0054  CC0402KRX5R6BB474          C_BLF1,C_BLF2
-  ok           C107369       643764 need   20 Extended             $0.0114  CL05A225KP5NSNC            C_VDD11A,C_VDD11B
-  ok           C11702      28632824 need   30 Basic                $0.0011  0402WGF1001TCE             R_AIRSER,R_BLEN,R_RLED
-  ok           C12624        184360 need   10 Extended             $0.0119  KT-0603G                   D_RADIO
-  ok           C128396        95599 need   10 Extended             $0.2334  TS3USB221ARSER             U6
-  ok           C14442        435785 need   10 Extended             $0.0031  CL05B102KB5NNNC            C_RCT
-  ok           C14461         22780 need   10 Extended             $0.1708  SN74LVC2G34DCKR            U17
-  ok           C1525       32222900 need  250 Basic                $0.0029  CL05B104KO5NNNC            C_CAMBUF,C_CNS,C_CS,C_DOVDD,C_IMU1,C_IMU2,C_MS,C_NOR,C_NRST,
-  ok           C1562        1676173 need   10 Basic                $0.0019  0402CG330J500NT            C_FFB
-  ok           C15849      11741994 need   20 Basic                $0.0141  CL10A105KB8NNNC            C_BLIN,C_BLOUT
-  ok           C15850       9239693 need   10 Basic                $0.0312  CL21A106KAYNNNE            C_BAT
-  ok           C165948       448904 need   10 Extended             $0.1871  TYPE-C-31-M-12             J1
-  ok           C16780       1064778 need   20 Basic                $0.0744  CL21A476MQYNNNE            C_BOOST,C_BOOST2
-  ok           C1848364        2214 need   10 Extended             $0.4406  TPS60230RGTR               U13
-  ok           C19666       3022260 need   10 Basic                $0.0169  CL10A475KO8NNNC            C_VBUS
-  ok           C19702       9176298 need   30 Basic                $0.0168  CL10A106KP8NNNC            C_BUZ,C_RADIO1,C_VDDB
-  ok           C202423         1430 need   10 Extended             $0.7682  SKRHAAE010                 SW_JOY
-  ok           C20526       4132702 need   10 Basic                $0.0104  MMBT3904(RANGE:100-300)    Q_BTN
-  ok           C2128        3004301 need   10 Basic                $0.0098  1N4148WS                   D_BUZ
-  ok           C2143         302477 need   10 Extended             $0.0115  MMBT3906 2A(RANGE:100-300) Q_PWRJ
-  ok           C22435663       6702 need   10 Extended             $0.0395  MSK12C02G25-B              SW_AIR
-  OUT/SHORT    C23363348          0 need   10 Extended             $3.0529  SLS32AIA010MKUSON10XTMA3   U16
-  ok           C25076       9686452 need   10 Basic                $0.0011  0402WGF1000TCE             R_BUZG
-  OUT/SHORT    C25254888          0 need   10 Extended             $84.1678  NHD-2.4-240320AF-CSXP-CTP  LCD1
-  ok           C25741      12322839 need  160 Basic                $0.0009  0402WGF1003TCE             R_AIRPU,R_BLPD,R_BTN,R_BTNB,R_BUZPD,R_CAMEN,R_CHGHI,R_CHGOFF
-  ok           C25744      33860580 need   20 Basic                $0.001  0402WGF1002TCE             R_DVPWM,R_STAT
-  ok           C25755        942527 need   20 Extended (preferred) $0.0011  0402WGF1503TCE             R_FBU1,R_PG
-  ok           C25756       1921275 need   20 Basic                $0.0011  0402WGF1502TCE             R_JA,R_JPU
-  ok           C25766        141730 need   10 Extended             $0.0012  0402WGF2102TCE             R_DVB
-  ok           C25771        439282 need   10 Extended (preferred) $0.001  0402WGF2702TCE             R_JB
-  ok           C25779       1999512 need   30 Basic                $0.0019  0402WGF3302TCE             R_DVSET,R_DVT,R_FBU2
-  ok           C25792       5198814 need   20 Basic                $0.0019  0402WGF4702TCE             R_JC,R_VB1
-  ok           C25871        353134 need   10 Extended             $0.001  0402WGF1801TCE             R_ISETH
-  ok           C25891        441460 need   10 Extended             $0.0012  0402WGF3601TCE             R_ISET
-  ok           C25900      12596550 need   70 Basic                $0.0016  0402WGF4701TCE             R_AVBLEED,R_CSCL,R_CSDA,R_SCL,R_SDA,R_SESCL,R_SESDA
-  ok           C25905       5450144 need   20 Basic                $0.0014  0402WGF5101TCE             R_CC1,R_CC2
-  ok           C25917        960336 need   10 Extended (preferred) $0.0012  0402WGF6801TCE             R_BLSET
-  ok           C26083       3386638 need  100 Basic                $0.001  0402WGF1004TCE             R_AIRS,R_CS1,R_CS2,R_EN,R_FB1,R_HOLD,R_MS1,R_MS2,R_PWRJBE,R_
-  ok           C262669        64670 need   10 Extended             $0.1209  AFC01-S24FCA-00            J_CAM
-  ok           C2681320        9165 need   10 Extended             $0.3682  TPS22917DBVR               U8
-  ok           C2836813       17786 need   10 Extended             $2.1701  BMI270                     U15
-  ok           C2877852       54168 need   10 Extended             $0.1152  TLV75801PDBVR              U14
-  ok           C3235557       57298 need   10 Extended             $0.2883  TPS2116DRLR                U10
-  OUT/SHORT    C356849            0 need   10 Extended             $7.5323  E73-2G4M08S1C              U11
-  ok           C37704        418214 need   10 Extended (preferred) $0.0142  BAT54C,215                 D_OR
-  ok           C398365         9612 need   10 Extended             $0.1917  TLV62569PDDCR              U3
-  ok           C43307         21475 need   20 Extended             $0.1083  AO3416                     Q_BUZ,Q_REV
-  ok           C43676        228084 need   20 Extended             $0.0013  0402WGF3602TCE             R_TMR,R_VSET
-  ok           C45783       4633398 need   30 Basic                $0.1085  CL21A226MAQNNNE            C_3V3,C_IN_BOOST,C_USB3V3
-  ok           C462652         1184 need   10 Extended             $3.8128  LTC3539EDCB-2#TRPBF        U2
-  ok           C48502        113978 need   10 Extended             $0.0213  BAS116,215                 D_REVG
-  ok           C48838         18308 need   10 Extended             $0.0012  0402WGF5623TCE             R_FB2
+  ok           C106255       302193 need   20 Extended             $0.0054  CC0402KRX5R6BB474          C_BLF1,C_BLF2
+  ok           C107369       622704 need   20 Extended             $0.0114  CL05A225KP5NSNC            C_VDD11A,C_VDD11B
+  ok           C11702      28191517 need   30 Basic                $0.0011  0402WGF1001TCE             R_AIRSER,R_BLEN,R_RLED
+  ok           C12624        160321 need   10 Extended             $0.0119  KT-0603G                   D_RADIO
+  ok           C128396        95200 need   10 Extended             $0.2335  TS3USB221ARSER             U6
+  ok           C14442       1271389 need   10 Extended             $0.0027  CL05B102KB5NNNC            C_RCT
+  ok           C14461         16787 need   10 Extended             $0.1708  SN74LVC2G34DCKR            U17
+  ok           C1525       31210458 need  250 Basic                $0.0029  CL05B104KO5NNNC            C_CAMBUF,C_CNS,C_CS,C_DOVDD,C_IMU1,C_IMU2,C_MS,C_NOR,C_NRST,
+  ok           C1562        1636687 need   10 Basic                $0.0019  0402CG330J500NT            C_FFB
+  ok           C15849      11584544 need   20 Basic                $0.0086  CL10A105KB8NNNC            C_BLIN,C_BLOUT
+  ok           C15850       9380599 need   10 Basic                $0.031  CL21A106KAYNNNE            C_BAT
+  ok           C165948       437156 need   10 Extended             $0.1871  TYPE-C-31-M-12             J1
+  ok           C16780        981096 need   20 Basic                $0.0744  CL21A476MQYNNNE            C_BOOST,C_BOOST2
+  ok           C1848364        1754 need   10 Extended             $0.4407  TPS60230RGTR               U13
+  ok           C19666       2978666 need   10 Basic                $0.0169  CL10A475KO8NNNC            C_VBUS
+  ok           C19702       8983303 need   30 Basic                $0.0139  CL10A106KP8NNNC            C_BUZ,C_RADIO1,C_VDDB
+  ok           C202423         1420 need   10 Extended             $0.7683  SKRHAAE010                 SW_JOY
+  ok           C20526       4028994 need   10 Basic                $0.0104  MMBT3904(RANGE:100-300)    Q_BTN
+  ok           C2128        2945281 need   10 Basic                $0.0098  1N4148WS                   D_BUZ
+  ok           C2143         301460 need   10 Extended             $0.0115  MMBT3906 2A(RANGE:100-300) Q_PWRJ
+  ok           C22435663       6462 need   10 Extended             $0.0395  MSK12C02G25-B              SW_AIR
+  OUT/SHORT    C23363348          0 need   10 Extended             $3.0536  SLS32AIA010MKUSON10XTMA3   U16
+  ok           C25076       9509623 need   10 Basic                $0.0011  0402WGF1000TCE             R_BUZG
+  OUT/SHORT    C25254888          0 need   10 Extended             $84.1868  NHD-2.4-240320AF-CSXP-CTP  LCD1
+  ok           C25741      12016914 need  160 Basic                $0.0009  0402WGF1003TCE             R_AIRPU,R_BLPD,R_BTN,R_BTNB,R_BUZPD,R_CAMEN,R_CHGHI,R_CHGOFF
+  ok           C25744      33146397 need   20 Basic                $0.0009  0402WGF1002TCE             R_DVPWM,R_STAT
+  ok           C25755        900968 need   20 Extended (preferred) $0.0011  0402WGF1503TCE             R_FBU1,R_PG
+  ok           C25756       1901403 need   20 Basic                $0.0011  0402WGF1502TCE             R_JA,R_JPU
+  ok           C25766        141328 need   10 Extended             $0.0012  0402WGF2102TCE             R_DVB
+  ok           C25771        414999 need   10 Extended (preferred) $0.001  0402WGF2702TCE             R_JB
+  ok           C25779       1987438 need   30 Basic                $0.0019  0402WGF3302TCE             R_DVSET,R_DVT,R_FBU2
+  ok           C25792       5044956 need   20 Basic                $0.0019  0402WGF4702TCE             R_JC,R_VB1
+  ok           C25871        340937 need   10 Extended             $0.001  0402WGF1801TCE             R_ISETH
+  ok           C25891        439991 need   10 Extended             $0.0012  0402WGF3601TCE             R_ISET
+  ok           C25900      12369405 need   70 Basic                $0.0016  0402WGF4701TCE             R_AVBLEED,R_CSCL,R_CSDA,R_SCL,R_SDA,R_SESCL,R_SESDA
+  ok           C25905       5362888 need   20 Basic                $0.0014  0402WGF5101TCE             R_CC1,R_CC2
+  ok           C25917        942167 need   10 Extended (preferred) $0.0012  0402WGF6801TCE             R_BLSET
+  ok           C26083       3312259 need  100 Basic                $0.001  0402WGF1004TCE             R_AIRS,R_CS1,R_CS2,R_EN,R_FB1,R_HOLD,R_MS1,R_MS2,R_PWRJBE,R_
+  ok           C262669        63899 need   10 Extended             $0.1209  AFC01-S24FCA-00            J_CAM
+  ok           C2681320        8530 need   10 Extended             $0.3719  TPS22917DBVR               U8
+  ok           C2836813       17684 need   10 Extended             $2.1706  BMI270                     U15
+  ok           C2877852       52486 need   10 Extended             $0.1152  TLV75801PDBVR              U14
+  ok           C3235557       55660 need   10 Extended             $0.2884  TPS2116DRLR                U10
+  OUT/SHORT    C356849            0 need   10 Extended             $7.534  E73-2G4M08S1C              U11
+  ok           C37704        409905 need   20 Extended (preferred) $0.0141  BAT54C,215                 D_OR,D_PWRJ
+  ok           C398365         9303 need   10 Extended             $0.1917  TLV62569PDDCR              U3
+  ok           C43307         20927 need   20 Extended             $0.1083  AO3416                     Q_BUZ,Q_REV
+  ok           C43676        216361 need   20 Extended             $0.0013  0402WGF3602TCE             R_TMR,R_VSET
+  ok           C45783       4551500 need   30 Basic                $0.0915  CL21A226MAQNNNE            C_3V3,C_IN_BOOST,C_USB3V3
+  ok           C462652         1184 need   10 Extended             $3.8137  LTC3539EDCB-2#TRPBF        U2
+  ok           C48502        113296 need   10 Extended             $0.0213  BAS116,215                 D_REVG
+  ok           C48838         17328 need   10 Extended             $0.0012  0402WGF5623TCE             R_FB2
   ok           C49166832       9453 need   10 Extended             $0.0954  HC-FPC-1.0-6P-FH20         J_CTP
-  ok           C505102         1655 need   10 Extended             $1.1449  541324062                  J_TFT
-  ok           C5186957       10876 need   10 Extended             $0.6257  TXU0202DCUR                U9
-  ok           C5189434        4145 need   10 Extended             $1.1776  BQ25172DSGR                U1
-  ok           C5190917          49 need   10 Extended             $5.6062  SE050E2HQ1/Z01Z3Z          U5
-  OUT/SHORT    C5270986           4 need   10 Extended             $12.8059  STM32U585VIT6Q             U4
-  ok           C5291913         928 need   10 Extended             $0.0376  CKCSA201610-2.2uH/M        L_BUCK
-  ok           C52923      12675773 need   90 Basic                $0.0055  CL05A105KA5NQNC            C_AVIN,C_AVOUT,C_CHGIN,C_DVOUT,C_DVSET,C_EN,C_RIN,C_TFT1,C_V
-  ok           C53099         26409 need   10 Extended             $0.0654  ME6211C28M5G-N             U12
-  ok           C5360192         321 need   20 Extended             $0.5733  9774010243R                MH_PK1,MH_PK2
+  ok           C505102         1630 need   10 Extended             $1.1451  541324062                  J_TFT
+  ok           C5186957       10810 need   10 Extended             $0.6258  TXU0202DCUR                U9
+  ok           C5189434        4145 need   10 Extended             $1.1779  BQ25172DSGR                U1
+  ok           C5190917          39 need   10 Extended             $5.6075  SE050E2HQ1/Z01Z3Z          U5
+  OUT/SHORT    C5270986           4 need   10 Extended             $12.8088  STM32U585VIT6Q             U4
+  ok           C5291913         888 need   10 Extended             $0.0376  CKCSA201610-2.2uH/M        L_BUCK
+  ok           C52923      12405804 need   90 Basic                $0.0046  CL05A105KA5NQNC            C_AVIN,C_AVOUT,C_CHGIN,C_DVOUT,C_DVSET,C_EN,C_RIN,C_TFT1,C_V
+  ok           C53099         26139 need   10 Extended             $0.0654  ME6211C28M5G-N             U12
+  ok           C5360192         320 need   20 Extended             $0.5734  9774010243R                MH_PK1,MH_PK2
   ok           C7394016       45417 need   10 Extended             $0.049  SN74LVC1G02DBVR(UMW)       U7
-  ok           C7519          34791 need   10 Extended             $0.1538  USBLC6-2SC6                D_ESD
-  ok           C83571         95833 need   10 Extended             $0.1018  2N7002DW-7-F               Q_CHG
-  ok           C84374         74264 need   30 Extended             $0.0333  PESD5V0S1BL,315            D_PKMID,D_PKNEG,D_PKNTC
-  ok           C94598        103643 need   10 Extended             $0.3943  MLT-5020                   LS1
-  ok           C98361         28599 need   10 Extended             $0.0829  WPN4020H2R2MT              L_BOOST
+  ok           C7519          38872 need   10 Extended             $0.1531  USBLC6-2SC6                D_ESD
+  ok           C83571         95687 need   10 Extended             $0.1018  2N7002DW-7-F               Q_CHG
+  ok           C84374         73750 need   30 Extended             $0.0333  PESD5V0S1BL,315            D_PKMID,D_PKNEG,D_PKNTC
+  ok           C94598        102284 need   10 Extended             $0.3944  MLT-5020                   LS1
+  ok           C98361         28021 need   10 Extended             $0.0816  WPN4020H2R2MT              L_BOOST
 
 rotation review:
   D_BUZ     Diode_SMD:D_SOD-323                                        board   90.0 db   0.0 -> CPL  90.0  anchor-padctr 0.000  NO KNOWN CORRECTION -> eye check in JLC preview
@@ -82,6 +82,7 @@ rotation review:
   D_PKMID   Diode_SMD:D_SOD-882                                        board   90.0 db   0.0 -> CPL  90.0  anchor-padctr 0.000  NO KNOWN CORRECTION -> eye check in JLC preview
   D_PKNEG   Diode_SMD:D_SOD-882                                        board    0.0 db   0.0 -> CPL 180.0  anchor-padctr 0.000  NO KNOWN CORRECTION -> eye check in JLC preview
   D_PKNTC   Diode_SMD:D_SOD-882                                        board   90.0 db   0.0 -> CPL  90.0  anchor-padctr 0.000  NO KNOWN CORRECTION -> eye check in JLC preview
+  D_PWRJ    Package_TO_SOT_SMD:SOT-23                                  board  180.0 db 180.0 -> CPL   0.0  anchor-padctr 0.000  db-rule
   D_RADIO   LED_SMD:LED_0603_1608Metric                                board   90.0 db   0.0 -> CPL  90.0  anchor-padctr 0.000  NO KNOWN CORRECTION -> eye check in JLC preview
   D_REVG    Package_TO_SOT_SMD:SOT-23                                  board    0.0 db 180.0 -> CPL   0.0  anchor-padctr 0.000  db-rule
   J1        wallet:USB_C_Receptacle_HRO_TYPE-C-31-M-12_BoardEdge       board  180.0 db   0.0 -> CPL   0.0  anchor-padctr 1.460  NO KNOWN CORRECTION -> eye check in JLC preview

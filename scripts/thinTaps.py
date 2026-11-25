@@ -13,7 +13,7 @@ met the rail only by overlapping wide copper comes apart when narrowed; join it 
 import sys, collections, math, pcbnew
 b = pcbnew.LoadBoard(sys.argv[1]); APPLY = "--apply" in sys.argv
 TAPS = {
-    "BAT": {("Q_PWRJ", "2"): 0.2, ("R_PWRJBE", "1"): 0.2, ("R_CS1", "1"): 0.2, ("R_REVG", "1"): 0.2},
+    "BAT": {("D_PWRJ", "1"): 0.2, ("R_CS1", "1"): 0.2, ("R_REVG", "1"): 0.2},
     "BAT_N": {("R_CNS", "1"): 0.2, ("D_PKNEG", "1"): 0.3},
     "VBUS": {("U3", "1"): 0.2, ("R_PG", "2"): 0.2, ("R_VB1", "1"): 0.2, ("D_ESD", "5"): 0.3},
     "V3V3_USB": {("U10", "5"): 0.2, ("R_FBU1", "1"): 0.2, ("R_CHGOFF", "2"): 0.2},

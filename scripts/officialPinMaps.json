@@ -566,6 +566,24 @@
    ]
   }
  },
+ "D_PWRJ": {
+  "part": "BAT54C,215",
+  "source": "Nexperia BAT54 series: SOT23 BAT54C 1 anode a1, 2 anode a2, 3 common cathode",
+  "pins": {
+   "1": [
+    "A1",
+    "BAT"
+   ],
+   "2": [
+    "A2",
+    "V3V3"
+   ],
+   "3": [
+    "K",
+    "PWRJ_E"
+   ]
+  }
+ },
  "Q_BTN": {
   "part": "MMBT3904",
   "source": "SOT-23 NPN: 1 B, 2 E, 3 C (onsemi MMBT3904 data sheet)",
@@ -928,7 +946,7 @@
    ],
    "2": [
     "E",
-    "BAT"
+    "PWRJ_E"
    ],
    "3": [
     "C",
