@@ -38,13 +38,8 @@ static const struct {
     {391, JOYSTICK_A | JOYSTICK_B},
 };
 
-typedef enum {
-  JOYSTICK_ADC_OFF,
-  JOYSTICK_ADC_READY,
-  JOYSTICK_ADC_FAILED,
-} joystick_adc_state_t;
-
 static joystick_adc_state_t g_joystick_adc;
+static uint32_t g_joystick_code;
 
 static bool wait_flag(volatile uint32_t *reg, uint32_t mask, bool set) {
   for (uint32_t i = 0; i < JOYSTICK_ADC_WAIT_POLLS; i++) {
@@ -55,7 +50,7 @@ static bool wait_flag(volatile uint32_t *reg, uint32_t mask, bool set) {
   return false;
 }
 
-static bool joystick_adc_init(void) {
+static joystick_adc_state_t joystick_adc_init(void) {
   GPIO_InitTypeDef gpio = {0};
   JOYSTICK_ADC_CLK_EN();
   gpio.Pin = JOYSTICK_ADC_PIN;
@@ -70,12 +65,12 @@ static bool joystick_adc_init(void) {
   LL_ADC_DisableDeepPowerDown(ADC1);
   LL_ADC_EnableInternalRegulator(ADC1);
   if (!wait_flag(&ADC1->ISR, ADC_ISR_LDORDY, true)) {
-    return false;
+    return JOYSTICK_ADC_FAILED_REGULATOR;
   }
 
   LL_ADC_StartCalibration(ADC1, LL_ADC_CALIB_OFFSET);
   if (!wait_flag(&ADC1->CR, ADC_CR_ADCAL, false)) {
-    return false;
+    return JOYSTICK_ADC_FAILED_CALIBRATION;
   }
 
   LL_ADC_SetResolution(ADC1, LL_ADC_RESOLUTION_14B);
@@ -89,13 +84,13 @@ static bool joystick_adc_init(void) {
 
   LL_ADC_ClearFlag_ADRDY(ADC1);
   LL_ADC_Enable(ADC1);
-  return wait_flag(&ADC1->ISR, ADC_ISR_ADRDY, true);
+  return wait_flag(&ADC1->ISR, ADC_ISR_ADRDY, true) ? JOYSTICK_ADC_READY
+                                                     : JOYSTICK_ADC_FAILED_ENABLE;
 }
 
 static uint32_t joystick_read_contacts(void) {
   if (g_joystick_adc == JOYSTICK_ADC_OFF) {
-    g_joystick_adc =
-        joystick_adc_init() ? JOYSTICK_ADC_READY : JOYSTICK_ADC_FAILED;
+    g_joystick_adc = joystick_adc_init();
   }
   if (g_joystick_adc != JOYSTICK_ADC_READY) {
     // No ADC: the directions read as released, the centre press still works
@@ -105,10 +100,11 @@ static uint32_t joystick_read_contacts(void) {
   LL_ADC_ClearFlag_EOC(ADC1);
   LL_ADC_REG_StartConversion(ADC1);
   if (!wait_flag(&ADC1->ISR, ADC_ISR_EOC, true)) {
+    g_joystick_adc = JOYSTICK_ADC_FAILED_CONVERSION;
     return 0;
   }
-  uint32_t level =
-      LL_ADC_REG_ReadConversionData32(ADC1) * 1000U / JOYSTICK_ADC_FULL_SCALE;
+  g_joystick_code = LL_ADC_REG_ReadConversionData32(ADC1);
+  uint32_t level = g_joystick_code * 1000U / JOYSTICK_ADC_FULL_SCALE;
 
   uint32_t best = 0;
   uint32_t best_distance = UINT32_MAX;
@@ -129,7 +125,8 @@ uint32_t joystick_read(void) {
   if (HAL_GPIO_ReadPin(POWER_KEY_PORT, POWER_KEY_PIN) == GPIO_PIN_RESET) {
     contacts |= JOYSTICK_CENTER;
   }
-  return contacts;
+  return contacts | ((uint32_t)g_joystick_adc << 8) |
+         ((g_joystick_code & 0x3FFFU) << 16);
 }
 
 #endif  // KERNEL_MODE

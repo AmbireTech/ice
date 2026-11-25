@@ -275,6 +275,13 @@ void SystemInit(void) {
   // enable power supply for GPIOG 2 to 15
   PWR->SVMCR |= PWR_SVMCR_IO2SV;
 
+#ifdef AMBIRE_VDDA_VALID
+  // Ambire boards: VDDA is wired to the 3.3 V rail; the ADC (the joystick's
+  // ladder) stays isolated until the supply is marked valid. PWR is secure,
+  // so only this secure start-up can set it.
+  PWR->SVMCR |= PWR_SVMCR_ASV;
+#endif
+
 #ifdef USE_LSE
   lse_init();
 #endif

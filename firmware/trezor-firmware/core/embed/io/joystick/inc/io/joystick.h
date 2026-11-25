@@ -19,5 +19,20 @@
 #define JOYSTICK_D (1U << 3)
 #define JOYSTICK_CENTER (1U << 4)
 
-// The contacts pressed now, JOYSTICK_* bits; 0 when nothing is pressed
+#define JOYSTICK_CONTACTS 0x1FU
+
+// For bring-up: bits 8-11 the ADC's state, bits 16-29 its last conversion
+#define JOYSTICK_ADC_STATE(r) (((r) >> 8) & 0xFU)
+#define JOYSTICK_ADC_CODE(r) (((r) >> 16) & 0x3FFFU)
+typedef enum {
+  JOYSTICK_ADC_OFF = 0,
+  JOYSTICK_ADC_READY,
+  JOYSTICK_ADC_FAILED_REGULATOR,
+  JOYSTICK_ADC_FAILED_CALIBRATION,
+  JOYSTICK_ADC_FAILED_ENABLE,
+  JOYSTICK_ADC_FAILED_CONVERSION,
+} joystick_adc_state_t;
+
+// The contacts pressed now (JOYSTICK_* bits, JOYSTICK_CONTACTS masks them),
+// with the ADC's state and last conversion above them
 uint32_t joystick_read(void);

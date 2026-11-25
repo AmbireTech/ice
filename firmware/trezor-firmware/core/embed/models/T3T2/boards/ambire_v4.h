@@ -19,6 +19,9 @@
 #define JOYSTICK_ADC_PIN GPIO_PIN_2
 #define JOYSTICK_ADC_CLK_EN __HAL_RCC_GPIOA_CLK_ENABLE
 #define JOYSTICK_ADC_CHANNEL LL_ADC_CHANNEL_7
+// The ADC needs VDDA marked valid, which only the secure start-up can do
+// (sys/startup/stm32u5/startup_init.c)
+#define AMBIRE_VDDA_VALID 1
 
 // The camera's core supply (DVDD) set per sensor (io/camera/stm32u5/camera.c):
 // a TLV75801P (VFB 0.55 V) with RT 33k from OUT to FB, RB 21k from FB to GND,

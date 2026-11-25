@@ -364,6 +364,52 @@ const ICON_SETTINGS: Icon = [
     b"......#......",
 ];
 
+const ICON_MAZE: Icon = [
+    b"#############",
+    b"#ccc#ccccccc#",
+    b"#c#c#c#####c#",
+    b"#c#ccc#ccc#c#",
+    b"#c#####c#c#c#",
+    b"#ccccc#c#ccc#",
+    b"#####c#c#####",
+    b"#ccc#c#ccccc#",
+    b"#c#c#c#####c#",
+    b"#c#ccc#ccc#c#",
+    b"#c#####c#c#c#",
+    b"#ccccccc#cdd#",
+    b"#############",
+];
+const ICON_SNAKE: Icon = [
+    b".............",
+    b".aaaaaaaaa...",
+    b".aaaaaaaaa...",
+    b".aa..........",
+    b".aa..........",
+    b".aaaaaaaaaa..",
+    b".aaaaaaaaaa..",
+    b".........aa..",
+    b"..d......aa..",
+    b".........aa..",
+    b".bbaaaaaaaa..",
+    b".bbaaaaaaaa..",
+    b".............",
+];
+const ICON_BACK: Icon = [
+    b".............",
+    b"......#......",
+    b".....##......",
+    b"....###......",
+    b"...#########.",
+    b"..##########.",
+    b".###########.",
+    b"..##########.",
+    b"...#########.",
+    b"....###......",
+    b".....##......",
+    b"......#......",
+    b".............",
+];
+
 /// 7 x 7 status icons and a 5 x 5 padlock
 const MINI_BT: [&[u8; 7]; 7] = [
     b"...#...", b"...##..", b".#.#.#.", b"..###..", b".#.#.#.", b"...##..", b"...#...",
@@ -381,6 +427,8 @@ const PAL_BT: Palette = Palette([0xffffff, 0, 0, 0, 0x2f6bff]);
 const PAL_AIR: Palette = Palette([0x062833, 0, 0, 0, 0xa8f2ff]);
 const PAL_GAMES: Palette = Palette([0x1d1f2e, 0xcfd3e0, 0x1d1f2e, 0xff3b3b, 0]);
 const PAL_SETTINGS: Palette = Palette([0xcdd5e6, 0, 0, 0, 0]);
+const PAL_MAZE: Palette = Palette([0xaf50ff, 0, 0, 0xd7ff00, 0x1a0d40]);
+const PAL_SNAKE: Palette = Palette([0, 0xd7ff00, 0xffb52e, 0xff3b3b, 0]);
 
 fn draw_icon<'s>(t: &mut impl Renderer<'s>, icon: &Icon, pal: &Palette, x: i16, y: i16, grey: bool) {
     // backdrop first, ink last
@@ -481,6 +529,8 @@ struct ListItem {
     sub: &'static str,
 }
 
+/// The games grid: one row of tiles
+const GAMES_ROW_Y: i16 = 37;
 const GAMES_LIST: [ListItem; 3] = [
     ListItem { name: "MAZE", sub: "3D. FIND THE EXIT" },
     ListItem { name: "SNAKE", sub: "EAT AND GROW" },
@@ -640,6 +690,174 @@ impl Snake {
     }
 }
 
+// ---------------------------------------------------------------- screen parts
+
+fn tile_pos(i: usize) -> (i16, i16) {
+    (3 + (i % 3) as i16 * 39, 15 + (i / 3) as i16 * 44)
+}
+
+/// What the status bar says beside the live link's icon
+enum StatusText<'a> {
+    Title(&'a str),
+    /// The device's name, or the notification when there is one
+    Home(TString<'static>, Option<&'a Notification>),
+}
+
+fn draw_status<'s>(t: &mut impl Renderer<'s>, airgapped: bool, text: StatusText) {
+    if airgapped {
+        draw_mini(t, &MINI_AIR, 2, 2, WHITE);
+    } else {
+        draw_mini(t, &MINI_BT, 2, 2, WHITE);
+        for i in 0..4 {
+            px(t, 11 + i * 2, 7 - i, 1, i + 1, WHITE);
+        }
+    }
+    match text {
+        StatusText::Title(s) => text_centered(t, s, 60, 3, WHITE, 1),
+        StatusText::Home(_, Some(n)) => {
+            let c = match n.level {
+                NotificationLevel::Alert => OFF_RED,
+                NotificationLevel::Warning => ORANGE_HI,
+                _ => VOLT,
+            };
+            n.text.map(|s| text_centered(t, s, 64, 3, c, 1));
+        }
+        StatusText::Home(label, None) => label.map(|s| text_centered(t, s, 60, 3, WHITE, 1)),
+    }
+}
+
+fn draw_soft_key<'s>(t: &mut impl Renderer<'s>, s: &str) {
+    text_centered(t, s, 60, 151, WHITE, 1);
+}
+
+/// The label band: a name at 2x with a shadow, a coloured line under it
+fn draw_name<'s>(t: &mut impl Renderer<'s>, name: &str, sub: &str, sub_c: Color) {
+    text_centered(t, name, 61, 109, SHADOW, 2);
+    text_centered(t, name, 60, 108, WHITE, 2);
+    text_centered(t, sub, 60, 126, sub_c, 1);
+}
+
+/// The orange cursor
+fn draw_cursor<'s>(t: &mut impl Renderer<'s>, x: i16, y: i16, w: i16, h: i16) {
+    round_rect(t, x, y, w, h, rgb(0xfff1c2), 255);
+    px(t, x + 1, y + 1, w - 2, (h - 2) / 2, ORANGE_HI);
+    px(t, x + 1, y + 1 + (h - 2) / 2, w - 2, h - 2 - (h - 2) / 2, ORANGE);
+    px(t, x + 2, y + 1, w - 4, 1, rgb(0xffe08a));
+}
+
+/// The home screen's six tiles; `locked` greys every link and app and
+/// padlocks it (the switch still shows where it is)
+fn draw_tiles<'s>(t: &mut impl Renderer<'s>, airgapped: bool, sel: Option<usize>, locked: bool) {
+    for (i, &tile) in TILES.iter().enumerate() {
+        let (tx, ty) = tile_pos(i);
+        let on = sel == Some(i);
+        if on {
+            draw_cursor(t, tx, ty, 36, 40);
+        } else {
+            round_rect(t, tx, ty, 36, 40, WHITE, 18);
+        }
+        if tile == Tile::Switch {
+            // the side switch: off AIR on the left, AIR on the right
+            round_rect(t, tx + 5, ty + 10, 26, 10, rgb(0x8a90b0), 255);
+            round_rect(t, tx + 6, ty + 11, 24, 8, rgb(0x141626), 255);
+            let pos = airgapped as i16;
+            round_rect(t, tx + 7 + pos * 11, ty + 12, 11, 6, VOLT, 255);
+            let mini_c = |live: bool| match (live, on) {
+                (true, true) => rgb(0x1b0d00),
+                (true, false) => VOLT,
+                (false, true) => rgb(0xa85a10),
+                (false, false) => rgb(0x6a7090),
+            };
+            draw_mini(t, &MINI_BT, tx + 9, ty + 24, mini_c(!airgapped));
+            draw_mini(t, &MINI_AIR, tx + 20, ty + 24, mini_c(airgapped));
+            continue;
+        }
+        let (icon, pal) = match tile {
+            Tile::Wallet => (&ICON_WALLET, &PAL_WALLET),
+            Tile::Bluetooth => (&ICON_BT, &PAL_BT),
+            Tile::Air => (&ICON_AIR, &PAL_AIR),
+            Tile::Games => (&ICON_GAMES, &PAL_GAMES),
+            _ => (&ICON_SETTINGS, &PAL_SETTINGS),
+        };
+        let link = tile.link(airgapped);
+        let off = locked || link == Some(false);
+        draw_icon(t, icon, pal, tx + 5, ty + 6, off);
+        if off {
+            let c = if on { rgb(0x3b1a06) } else { rgb(0xb9bfd4) };
+            draw_mini(t, &MINI_LOCK, tx + 28, ty + 32, c);
+        }
+        if link == Some(true) && !locked {
+            px(t, tx + 15, ty + 35, 6, 2, VOLT);
+        }
+    }
+}
+
+// ---------------------------------------------------------------- locked
+
+/// The lock screen: the home screen with every tile padlocked. A centre
+/// press or a tap unlocks (the PIN follows).
+pub struct LockedHome {
+    label: TString<'static>,
+    /// Shown at boot before the host connects: "not connected"
+    bootscreen: bool,
+    airgapped: bool,
+    poll: Timer,
+    center_down: bool,
+    center_armed: bool,
+}
+
+impl LockedHome {
+    pub fn new(label: TString<'static>, bootscreen: bool) -> Self {
+        Self {
+            label,
+            bootscreen,
+            airgapped: Home::read_airgap(),
+            poll: Timer::new(),
+            center_down: false,
+            center_armed: false,
+        }
+    }
+
+    /// True when the user asked to unlock
+    pub fn event(&mut self, ctx: &mut EventCtx, event: Event) -> bool {
+        match event {
+            Event::Attach(_) => {
+                self.poll.start(ctx, Duration::from_millis(POLL_MS));
+                ctx.request_paint();
+                false
+            }
+            Event::Timer(_) if self.poll.expire(event) => {
+                self.poll.start(ctx, Duration::from_millis(POLL_MS));
+                let airgapped = Home::read_airgap();
+                if airgapped != self.airgapped {
+                    self.airgapped = airgapped;
+                    ctx.request_paint();
+                }
+                // the centre press unlocks on its release; the press that
+                // woke the device must end first
+                let pressed = joystick::read() & joystick::CENTER != 0;
+                let unlock = !pressed && self.center_down;
+                self.center_down = pressed && self.center_armed;
+                if !pressed {
+                    self.center_armed = true;
+                }
+                unlock
+            }
+            Event::Touch(TouchEvent::TouchEnd(_)) => true,
+            _ => false,
+        }
+    }
+
+    pub fn render<'s>(&'s self, t: &mut impl Renderer<'s>) {
+        draw_status(t, self.airgapped, StatusText::Home(self.label, None));
+        draw_tiles(t, self.airgapped, None, true);
+        let sub = if self.bootscreen { "NOT CONNECTED" } else { "PRESS OR TAP TO UNLOCK" };
+        draw_name(t, "LOCKED", sub, SUB_BLUE);
+        draw_soft_key(t, "UNLOCK");
+        dot_matrix(t);
+    }
+}
+
 // ---------------------------------------------------------------- home
 
 pub struct Home {
@@ -766,10 +984,11 @@ impl Home {
         }
 
         let raw = joystick::read();
+        let contacts = raw & joystick::CONTACTS;
         let mut action = None;
 
         // the centre press selects on its release, if it was short
-        if raw & joystick::CENTER != 0 {
+        if contacts & joystick::CENTER != 0 {
             if self.center_down.is_none() && self.center_armed {
                 self.center_down = Some(now);
             }
@@ -787,7 +1006,7 @@ impl Home {
         }
         self.last_raw = raw;
 
-        let dirs = raw & DIRS;
+        let dirs = contacts & DIRS;
         let pressed = dirs & !self.held;
         let repeats = dirs != 0
             && pressed == 0
@@ -843,7 +1062,17 @@ impl Home {
                 ctx.request_paint();
                 None
             }
-            Screen::Games | Screen::Settings => {
+            Screen::Games => {
+                match key {
+                    Key::Left => self.list_sel = (self.list_sel + 2) % 3,
+                    Key::Right => self.list_sel = (self.list_sel + 1) % 3,
+                    Key::Up | Key::Down => {}
+                    Key::Select => return self.select_item(ctx),
+                }
+                ctx.request_paint();
+                None
+            }
+            Screen::Settings => {
                 match key {
                     Key::Up => self.list_sel = (self.list_sel + 2) % 3,
                     Key::Down => self.list_sel = (self.list_sel + 1) % 3,
@@ -946,7 +1175,7 @@ impl Home {
         match self.screen {
             Screen::Grid => {
                 for i in 0..6 {
-                    let (tx, ty) = Self::tile_pos(i);
+                    let (tx, ty) = tile_pos(i);
                     if p.x >= tx && p.x < tx + 36 && p.y >= ty && p.y < ty + 40 {
                         self.sel = i;
                         ctx.request_paint();
@@ -955,7 +1184,18 @@ impl Home {
                 }
                 None
             }
-            Screen::Games | Screen::Settings => {
+            Screen::Games => {
+                for i in 0..3 {
+                    let (tx, _) = tile_pos(i);
+                    if p.x >= tx && p.x < tx + 36 && p.y >= GAMES_ROW_Y && p.y < GAMES_ROW_Y + 40 {
+                        self.list_sel = i;
+                        ctx.request_paint();
+                        return self.select_item(ctx);
+                    }
+                }
+                None
+            }
+            Screen::Settings => {
                 for i in 0..3 {
                     let y = Self::row_y(i);
                     if p.y >= y && p.y < y + 26 {
@@ -980,10 +1220,6 @@ impl Home {
         }
     }
 
-    fn tile_pos(i: usize) -> (i16, i16) {
-        (3 + (i % 3) as i16 * 39, 15 + (i / 3) as i16 * 44)
-    }
-
     fn row_y(i: usize) -> i16 {
         16 + i as i16 * 30
     }
@@ -1001,7 +1237,7 @@ impl Home {
                 return;
             }
             Screen::Grid => self.render_grid(t),
-            Screen::Games => self.render_list(t, "GAMES", &GAMES_LIST),
+            Screen::Games => self.render_games(t),
             Screen::Settings => self.render_list(t, "SETTINGS", &SETTINGS_LIST),
             Screen::JoystickTest => self.render_joystick(t),
             Screen::Snake => self.render_snake(t, now),
@@ -1015,95 +1251,29 @@ impl Home {
         dot_matrix(t);
     }
 
-    /// The status bar: the live link's icon on the left, then the
-    /// notification (or the device's name)
     fn render_status<'s>(&self, t: &mut impl Renderer<'s>, title: Option<&str>) {
-        if self.airgapped {
-            draw_mini(t, &MINI_AIR, 2, 2, WHITE);
-        } else {
-            draw_mini(t, &MINI_BT, 2, 2, WHITE);
-            for i in 0..4 {
-                px(t, 11 + i * 2, 7 - i, 1, i + 1, WHITE);
-            }
-        }
-        if let Some(title) = title {
-            text_centered(t, title, 60, 3, WHITE, 1);
-            return;
-        }
-        match &self.notification {
-            Some(n) => {
-                let c = match n.level {
-                    NotificationLevel::Alert => OFF_RED,
-                    NotificationLevel::Warning => ORANGE_HI,
-                    _ => VOLT,
-                };
-                n.text.map(|s| text_centered(t, s, 64, 3, c, 1));
-            }
-            None => self.label.map(|s| text_centered(t, s, 60, 3, WHITE, 1)),
-        }
+        let title = match title {
+            Some(title) => StatusText::Title(title),
+            None => StatusText::Home(self.label, self.notification.as_ref()),
+        };
+        draw_status(t, self.airgapped, title);
     }
 
     fn render_soft_key<'s>(&self, t: &mut impl Renderer<'s>, s: &str) {
-        text_centered(t, s, 60, 151, WHITE, 1);
+        draw_soft_key(t, s);
     }
 
     fn render_name<'s>(&self, t: &mut impl Renderer<'s>, name: &str, sub: &str, sub_c: Color) {
-        text_centered(t, name, 61, 109, SHADOW, 2);
-        text_centered(t, name, 60, 108, WHITE, 2);
-        text_centered(t, sub, 60, 126, sub_c, 1);
+        draw_name(t, name, sub, sub_c);
     }
 
     fn render_cursor<'s>(&self, t: &mut impl Renderer<'s>, x: i16, y: i16, w: i16, h: i16) {
-        round_rect(t, x, y, w, h, rgb(0xfff1c2), 255);
-        px(t, x + 1, y + 1, w - 2, (h - 2) / 2, ORANGE_HI);
-        px(t, x + 1, y + 1 + (h - 2) / 2, w - 2, h - 2 - (h - 2) / 2, ORANGE);
-        px(t, x + 2, y + 1, w - 4, 1, rgb(0xffe08a));
+        draw_cursor(t, x, y, w, h);
     }
 
     fn render_grid<'s>(&self, t: &mut impl Renderer<'s>) {
         self.render_status(t, None);
-        for (i, &tile) in TILES.iter().enumerate() {
-            let (tx, ty) = Self::tile_pos(i);
-            let on = i == self.sel;
-            if on {
-                self.render_cursor(t, tx, ty, 36, 40);
-            } else {
-                round_rect(t, tx, ty, 36, 40, WHITE, 18);
-            }
-            if tile == Tile::Switch {
-                // the side switch: off AIR on the left, AIR on the right
-                round_rect(t, tx + 5, ty + 10, 26, 10, rgb(0x8a90b0), 255);
-                round_rect(t, tx + 6, ty + 11, 24, 8, rgb(0x141626), 255);
-                let pos = self.airgapped as i16;
-                round_rect(t, tx + 7 + pos * 11, ty + 12, 11, 6, VOLT, 255);
-                let mini_c = |live: bool| match (live, on) {
-                    (true, true) => rgb(0x1b0d00),
-                    (true, false) => VOLT,
-                    (false, true) => rgb(0xa85a10),
-                    (false, false) => rgb(0x6a7090),
-                };
-                draw_mini(t, &MINI_BT, tx + 9, ty + 24, mini_c(!self.airgapped));
-                draw_mini(t, &MINI_AIR, tx + 20, ty + 24, mini_c(self.airgapped));
-                continue;
-            }
-            let (icon, pal) = match tile {
-                Tile::Wallet => (&ICON_WALLET, &PAL_WALLET),
-                Tile::Bluetooth => (&ICON_BT, &PAL_BT),
-                Tile::Air => (&ICON_AIR, &PAL_AIR),
-                Tile::Games => (&ICON_GAMES, &PAL_GAMES),
-                _ => (&ICON_SETTINGS, &PAL_SETTINGS),
-            };
-            let link = tile.link(self.airgapped);
-            let off = link == Some(false);
-            draw_icon(t, icon, pal, tx + 5, ty + 6, off);
-            if off {
-                let c = if on { rgb(0x3b1a06) } else { rgb(0xb9bfd4) };
-                draw_mini(t, &MINI_LOCK, tx + 28, ty + 32, c);
-            }
-            if link == Some(true) {
-                px(t, tx + 15, ty + 35, 6, 2, VOLT);
-            }
-        }
+        draw_tiles(t, self.airgapped, Some(self.sel), false);
 
         let tile = TILES[self.sel];
         let link = tile.link(self.airgapped);
@@ -1138,6 +1308,24 @@ impl Home {
         self.render_soft_key(t, "SELECT");
     }
 
+    fn render_games<'s>(&self, t: &mut impl Renderer<'s>) {
+        self.render_status(t, Some("GAMES"));
+        let icons: [(&Icon, &Palette); 3] =
+            [(&ICON_MAZE, &PAL_MAZE), (&ICON_SNAKE, &PAL_SNAKE), (&ICON_BACK, &PAL_SETTINGS)];
+        for (i, (icon, pal)) in icons.iter().enumerate() {
+            let (tx, _) = tile_pos(i);
+            if i == self.list_sel {
+                self.render_cursor(t, tx, GAMES_ROW_Y, 36, 40);
+            } else {
+                round_rect(t, tx, GAMES_ROW_Y, 36, 40, WHITE, 18);
+            }
+            draw_icon(t, icon, pal, tx + 5, GAMES_ROW_Y + 7, false);
+        }
+        let item = &GAMES_LIST[self.list_sel];
+        self.render_name(t, item.name, item.sub, SUB_BLUE);
+        self.render_soft_key(t, "SELECT");
+    }
+
     fn render_joystick<'s>(&self, t: &mut impl Renderer<'s>) {
         self.render_status(t, Some("JOYSTICK"));
         // each way's box lights while its contact is pressed; the letter is
@@ -1155,7 +1343,18 @@ impl Home {
         }
         let centre = self.last_raw & joystick::CENTER != 0;
         round_rect(t, 50, 48, 20, 20, VOLT, if centre { 255 } else { 40 });
-        self.render_name(t, "PRESS EACH WAY", "CENTRE: BACK", SUB_BLUE);
+        // the ADC's state and last reading: 16383 is the 3.3 V rail, a
+        // released joystick reads near it
+        let mut buf = [0u8; 5];
+        let (sub, c) = match joystick::adc_state(self.last_raw) {
+            1 => (number(joystick::adc_code(self.last_raw), &mut buf), VOLT),
+            0 => ("ADC NOT STARTED", OFF_RED),
+            2 => ("ADC FAILED: REGULATOR", OFF_RED),
+            3 => ("ADC FAILED: CALIBRATION", OFF_RED),
+            4 => ("ADC FAILED: ENABLE", OFF_RED),
+            _ => ("ADC FAILED: CONVERSION", OFF_RED),
+        };
+        self.render_name(t, "PRESS EACH WAY", sub, c);
         self.render_soft_key(t, "BACK");
     }
 

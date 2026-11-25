@@ -22,6 +22,8 @@ use crate::ui::geometry::{Alignment, Alignment2D, Insets, Offset, Point, Rect};
 use crate::ui::layout::util::get_user_custom_image;
 use crate::ui::lerp::Lerp;
 use crate::ui::notification::{Notification, NotificationLevel};
+// Ambire boards with a joystick paint their own wallpaper (no render_on_canvas)
+#[cfg_attr(feature = "ambire_joystick", allow(unused_imports))]
 use crate::ui::shape::{self, render_on_canvas, ImageBuffer, Renderer, Rgb565Canvas};
 use crate::ui::util::animation_disabled;
 
@@ -948,6 +950,9 @@ pub struct Lockscreen {
     coinjoin_authorized: bool,
     bg_image: ImageBuffer<Rgb565Canvas<'static>>,
     label_anim: HideLabelAnimation,
+    /// Ambire boards with a joystick: the home screen, padlocked
+    #[cfg(feature = "ambire_joystick")]
+    locked: super::ambire_home::LockedHome,
 }
 
 impl Lockscreen {
@@ -959,6 +964,9 @@ impl Lockscreen {
         let image = get_homescreen_image();
         let mut buf = ImageBuffer::new(AREA.size())?;
 
+        #[cfg(feature = "ambire_joystick")]
+        super::ambire_home::paint_wallpaper(buf.canvas());
+        #[cfg(not(feature = "ambire_joystick"))]
         render_on_canvas(buf.canvas(), None, |target| {
             if let Some(image) = image {
                 shape::JpegImage::new_image(Point::zero(), image).render(target);
@@ -991,6 +999,8 @@ impl Lockscreen {
             coinjoin_authorized,
             bg_image: buf,
             label_anim: HideLabelAnimation::new(label_width),
+            #[cfg(feature = "ambire_joystick")]
+            locked: super::ambire_home::LockedHome::new(label, bootscreen),
         })
     }
 }
@@ -1005,6 +1015,11 @@ impl Component for Lockscreen {
     }
 
     fn event(&mut self, ctx: &mut EventCtx, event: Event) -> Option<Self::Msg> {
+        #[cfg(feature = "ambire_joystick")]
+        if true {
+            return self.locked.event(ctx, event).then_some(HomescreenMsg::Dismissed);
+        }
+
         // SAFETY: Single threaded access
         let resume_attach = unsafe { LOCKSCREEN_STATE.attach };
         self.attach_animation.lazy_start(ctx, event, resume_attach);
@@ -1044,11 +1059,20 @@ impl Component for Lockscreen {
     }
 
     fn render<'s>(&'s self, target: &mut impl Renderer<'s>) {
+        // Ambire boards (240x320): the borders round the rings each from their
+        // own side; one value from the height cropped the rings' sides
         const OVERLAY_BORDER: i16 = (AREA.height() / 2) - DEFAULT_HS_RADIUS;
+        const OVERLAY_BORDER_X: i16 = (AREA.width() / 2) - DEFAULT_HS_RADIUS;
 
         let center = AREA.center();
 
         shape::RawImage::new(AREA, self.bg_image.view()).render(target);
+
+        #[cfg(feature = "ambire_joystick")]
+        if true {
+            self.locked.render(target);
+            return;
+        }
 
         let overlay_rotation = self.anim.eval();
         cshape::UnlockOverlay::new(center, overlay_rotation).render(target);
@@ -1061,11 +1085,11 @@ impl Component for Lockscreen {
             .with_bg(Color::black())
             .render(target);
 
-        shape::Bar::new(AREA.split_left(OVERLAY_BORDER).0)
+        shape::Bar::new(AREA.split_left(OVERLAY_BORDER_X).0)
             .with_bg(Color::black())
             .render(target);
 
-        shape::Bar::new(AREA.split_right(OVERLAY_BORDER - 2).1)
+        shape::Bar::new(AREA.split_right(OVERLAY_BORDER_X - 2).1)
             .with_bg(Color::black())
             .render(target);
 
