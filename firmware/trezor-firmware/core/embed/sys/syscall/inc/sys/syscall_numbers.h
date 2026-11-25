@@ -233,6 +233,9 @@ typedef enum {
 
   // Ambire boards, [ambire_airgap]
   SYSCALL_AMBIRE_AIRGAP_ENGAGED,
+
+  // Ambire boards, [ambire_joystick]
+  SYSCALL_AMBIRE_JOYSTICK_READ,
   // ------------------------------------------------------
   // Following syscalls are executed in kernel thread mode
 

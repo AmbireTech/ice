@@ -81,6 +81,7 @@ layout_caesar = [
 
 ambire_branding = ["trezor_lib/ambire_branding"]
 ambire_airgap = ["io/ambire_airgap", "trezor_lib/ambire_airgap"]
+ambire_joystick = ["io/ambire_joystick", "trezor_lib/ambire_joystick"]
 ambire_camera = ["io/ambire_camera", "trezor_lib/ambire_camera", "upymod/ambire_camera"]
 ambire_game = ["trezor_lib/ambire_game"]
 

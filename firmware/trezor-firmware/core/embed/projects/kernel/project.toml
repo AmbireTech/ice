@@ -4,6 +4,7 @@
 uses = [
     "ambire_airgap",
     "ambire_camera",
+    "ambire_joystick",
     "ambire_power",
     "ambire_radio",
     "backlight",

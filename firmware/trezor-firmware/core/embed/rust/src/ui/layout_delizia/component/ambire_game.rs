@@ -160,7 +160,7 @@ impl Game {
         self.won_at = None;
     }
 
-    fn start(&mut self, ctx: &mut EventCtx) {
+    pub fn start(&mut self, ctx: &mut EventCtx) {
         self.active = true;
         self.taps = 0;
         self.reset_player();
@@ -169,7 +169,7 @@ impl Game {
         ctx.request_paint();
     }
 
-    fn stop(&mut self, ctx: &mut EventCtx) {
+    pub fn stop(&mut self, ctx: &mut EventCtx) {
         self.active = false;
         self.input = Input::None;
         ctx.request_paint();
@@ -214,6 +214,24 @@ impl Game {
             _ => {}
         }
         false
+    }
+
+    /// Ambire boards, [ambire_joystick]: the joystick's held directions walk
+    /// (up, down) and turn (left, right); the home screen calls it when they
+    /// change, so a touch's input lasts until then
+    #[cfg(feature = "ambire_joystick")]
+    pub fn steer(&mut self, forward: bool, back: bool, left: bool, right: bool) {
+        self.input = if forward {
+            Input::Forward
+        } else if back {
+            Input::Back
+        } else if left {
+            Input::Left
+        } else if right {
+            Input::Right
+        } else {
+            Input::None
+        };
     }
 
     fn input_at(p: Point) -> Input {

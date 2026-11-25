@@ -860,6 +860,19 @@ bool airgap_engaged(void) {
 
 #endif  // USE_AMBIRE_AIRGAP
 
+// ---------------------------------------------------------------------
+// joystick.h (Ambire boards)
+
+#ifdef USE_AMBIRE_JOYSTICK
+
+#include <io/joystick.h>
+
+uint32_t joystick_read(void) {
+  return (uint32_t)syscall_invoke0(SYSCALL_AMBIRE_JOYSTICK_READ);
+}
+
+#endif  // USE_AMBIRE_JOYSTICK
+
 // =============================================================================
 // camera.h (Ambire boards)
 // =============================================================================

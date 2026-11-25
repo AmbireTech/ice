@@ -45,6 +45,8 @@ mod trade_screen;
 mod welcome_screen;
 #[cfg(feature = "ambire_game")]
 mod ambire_game;
+#[cfg(feature = "ambire_joystick")]
+mod ambire_home;
 #[cfg(all(feature = "ambire_camera", feature = "micropython"))]
 pub mod ambire_airgap;
 #[cfg(feature = "ambire_camera")]

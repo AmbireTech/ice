@@ -10,6 +10,8 @@ mod backlight;
 mod ble;
 #[path = "button/build.rs"]
 mod button;
+#[path = "joystick/build.rs"]
+mod joystick;
 #[path = "camera/build.rs"]
 mod camera;
 #[path = "display/build.rs"]
@@ -56,6 +58,7 @@ fn main() -> Result<()> {
                 ble if cfg!(feature = "ble"),
                 button if cfg!(feature = "button"),
                 camera if cfg!(feature = "ambire_camera"),
+                joystick if cfg!(feature = "ambire_joystick"),
                 display,
                 gfx,
                 haptic if cfg!(feature = "haptic"),

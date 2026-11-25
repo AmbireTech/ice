@@ -506,6 +506,10 @@ pub struct Homescreen {
     /// Ambire boards: the game behind 7 quick taps
     #[cfg(feature = "ambire_game")]
     game: super::ambire_game::Game,
+    /// Ambire boards with a joystick: the home screen is the colour grid
+    /// (ambire_home.rs); everything above is kept but unused
+    #[cfg(feature = "ambire_joystick")]
+    home: super::ambire_home::Home,
     /// Ambire boards: where the touch began, for the swipe up to Bluetooth
     /// (or to the airgap menu, when the QR camera is built in)
     /// Ambire boards: airgapped / Bluetooth status in the top-right corner
@@ -554,6 +558,9 @@ impl Homescreen {
         let image = get_homescreen_image();
         let mut buf = ImageBuffer::new(AREA.size())?;
 
+        #[cfg(feature = "ambire_joystick")]
+        super::ambire_home::paint_wallpaper(buf.canvas());
+        #[cfg(not(feature = "ambire_joystick"))]
         render_on_canvas(buf.canvas(), None, |target| {
             if let Some(image) = image {
                 shape::JpegImage::new_image(Point::zero(), image).render(target);
@@ -563,6 +570,8 @@ impl Homescreen {
         });
 
         Ok(Self {
+            #[cfg(feature = "ambire_joystick")]
+            home: super::ambire_home::Home::new(label, notification.clone()),
             label_device: Label::new(label, Alignment::Start, theme::TEXT_DEMIBOLD)
                 .vertically_centered(),
             label_unlocked: Label::new(
@@ -713,6 +722,20 @@ impl Component for Homescreen {
     }
 
     fn event(&mut self, ctx: &mut EventCtx, event: Event) -> Option<Self::Msg> {
+        #[cfg(feature = "ambire_joystick")]
+        if true {
+            use super::ambire_home::HomeAction;
+            return match self.home.event(ctx, event)? {
+                #[cfg(feature = "ble")]
+                HomeAction::Bluetooth => Some(HomescreenMsg::Bluetooth),
+                #[cfg(feature = "ambire_camera")]
+                HomeAction::Airgap => Some(HomescreenMsg::Airgap),
+                HomeAction::Lock => Some(HomescreenMsg::Dismissed),
+                #[allow(unreachable_patterns)]
+                _ => None,
+            };
+        }
+
         #[cfg(feature = "ambire_game")]
         if self.game.event(ctx, event) {
             return None;
@@ -756,6 +779,15 @@ impl Component for Homescreen {
     }
 
     fn render<'s>(&'s self, target: &mut impl Renderer<'s>) {
+        #[cfg(feature = "ambire_joystick")]
+        if true {
+            if !self.home.draws_own_background() {
+                shape::RawImage::new(AREA, self.bg_image.view()).render(target);
+            }
+            self.home.render(target);
+            return;
+        }
+
         #[cfg(feature = "ambire_game")]
         if self.game.is_active() {
             self.game.render(target);

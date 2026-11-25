@@ -24,6 +24,10 @@
 #include <io/airgap.h>
 #endif
 
+#ifdef USE_AMBIRE_JOYSTICK
+#include <io/joystick.h>
+#endif
+
 #ifdef USE_AMBIRE_CAMERA
 #include <io/camera.h>
 #include <io/qr_scan.h>

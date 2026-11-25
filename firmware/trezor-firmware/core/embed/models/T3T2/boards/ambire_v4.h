@@ -13,6 +13,13 @@
 #define AIRGAP_SENSE_PIN GPIO_PIN_15
 #define AIRGAP_SENSE_CLK_EN __HAL_RCC_GPIOB_CLK_ENABLE
 
+// The joystick's four directions on one ADC input, JOY_DIR (a resistor ladder,
+// io/joystick.h); its centre press is the power key (POWER_KEY_*)
+#define JOYSTICK_ADC_PORT GPIOA
+#define JOYSTICK_ADC_PIN GPIO_PIN_2
+#define JOYSTICK_ADC_CLK_EN __HAL_RCC_GPIOA_CLK_ENABLE
+#define JOYSTICK_ADC_CHANNEL LL_ADC_CHANNEL_7
+
 // The camera's core supply (DVDD) set per sensor (io/camera/stm32u5/camera.c):
 // a TLV75801P (VFB 0.55 V) with RT 33k from OUT to FB, RB 21k from FB to GND,
 // and R_INJ 33k from FB to the RC node (1 uF), fed through R_PWM 10k by TIM4_CH1

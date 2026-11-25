@@ -25,6 +25,10 @@ panel = "io/display_panel_dem240320b1"
 # Hold the power key 3 s to switch off: the kernel drops PWR_HOLD
 [ambire_power]
 
+# The joystick (JOY_DIR's resistor ladder on PA2, the centre press on the power
+# key): moves the home screen's grid and plays the games
+[ambire_joystick]
+
 # Bluetooth: Trezor's BLE stack on the nRF52840, over a 2-wire UART link
 # (USART3, io/nrf/stm32u5/nrf_uart_link.c) instead of Trezor's SPI with
 # handshake lines. No nRF firmware update from the STM32 and no nRF pairing

@@ -2,6 +2,8 @@ pub mod bip39;
 pub mod bitblt;
 #[cfg(feature = "ambire_airgap")]
 pub mod airgap;
+#[cfg(feature = "ambire_joystick")]
+pub mod joystick;
 #[cfg(feature = "ambire_camera")]
 pub mod camera;
 #[cfg(feature = "ble")]

@@ -78,6 +78,10 @@
 #include <io/airgap.h>
 #endif
 
+#ifdef USE_AMBIRE_JOYSTICK
+#include <io/joystick.h>
+#endif
+
 #ifdef USE_AMBIRE_CAMERA
 #include <io/camera.h>
 #endif
@@ -1200,6 +1204,12 @@ __attribute((no_stack_protector)) void syscall_handler(uint32_t *args,
       args[0] = airgap_engaged();
     } break;
 #endif  // USE_AMBIRE_AIRGAP
+
+#ifdef USE_AMBIRE_JOYSTICK
+    case SYSCALL_AMBIRE_JOYSTICK_READ: {
+      args[0] = joystick_read();
+    } break;
+#endif  // USE_AMBIRE_JOYSTICK
 
     default:
       applet_exit_fatal(applet, "Invalid syscall", __FILE_NAME__, __LINE__);
