@@ -573,7 +573,7 @@ impl Homescreen {
 
         Ok(Self {
             #[cfg(feature = "ambire_joystick")]
-            home: super::ambire_home::Home::new(label, notification.clone()),
+            home: super::ambire_home::Home::new(label, notification.clone(), false, hold_to_lock),
             label_device: Label::new(label, Alignment::Start, theme::TEXT_DEMIBOLD)
                 .vertically_centered(),
             label_unlocked: Label::new(
@@ -950,9 +950,10 @@ pub struct Lockscreen {
     coinjoin_authorized: bool,
     bg_image: ImageBuffer<Rgb565Canvas<'static>>,
     label_anim: HideLabelAnimation,
-    /// Ambire boards with a joystick: the home screen, padlocked
+    /// Ambire boards with a joystick: the home screen, its links and settings
+    /// padlocked (the games play without the PIN)
     #[cfg(feature = "ambire_joystick")]
-    locked: super::ambire_home::LockedHome,
+    locked: super::ambire_home::Home,
 }
 
 impl Lockscreen {
@@ -1000,7 +1001,7 @@ impl Lockscreen {
             bg_image: buf,
             label_anim: HideLabelAnimation::new(label_width),
             #[cfg(feature = "ambire_joystick")]
-            locked: super::ambire_home::LockedHome::new(label, bootscreen),
+            locked: super::ambire_home::Home::new(label, None, true, true),
         })
     }
 }
@@ -1017,7 +1018,11 @@ impl Component for Lockscreen {
     fn event(&mut self, ctx: &mut EventCtx, event: Event) -> Option<Self::Msg> {
         #[cfg(feature = "ambire_joystick")]
         if true {
-            return self.locked.event(ctx, event).then_some(HomescreenMsg::Dismissed);
+            use super::ambire_home::HomeAction;
+            return match self.locked.event(ctx, event)? {
+                HomeAction::Unlock => Some(HomescreenMsg::Dismissed),
+                _ => None,
+            };
         }
 
         // SAFETY: Single threaded access
@@ -1066,13 +1071,16 @@ impl Component for Lockscreen {
 
         let center = AREA.center();
 
-        shape::RawImage::new(AREA, self.bg_image.view()).render(target);
-
         #[cfg(feature = "ambire_joystick")]
         if true {
+            if !self.locked.draws_own_background() {
+                shape::RawImage::new(AREA, self.bg_image.view()).render(target);
+            }
             self.locked.render(target);
             return;
         }
+
+        shape::RawImage::new(AREA, self.bg_image.view()).render(target);
 
         let overlay_rotation = self.anim.eval();
         cshape::UnlockOverlay::new(center, overlay_rotation).render(target);

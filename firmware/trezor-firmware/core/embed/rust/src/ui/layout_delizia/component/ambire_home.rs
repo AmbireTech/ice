@@ -30,17 +30,19 @@ pub enum HomeAction {
     Bluetooth,
     Airgap,
     Lock,
+    /// On the lock screen: a tile that needs the PIN was selected
+    Unlock,
 }
 
 // ---------------------------------------------------------------- joystick
 
 /// Which way each of the netlist's contacts points on the device (the ALPS
-/// drawing's A/B/C/D, docs/design.md bring-up item 18). The settings' joystick
-/// test shows the contact behind each way: fix the mapping here.
-const UP: u32 = joystick::A;
-const RIGHT: u32 = joystick::B;
+/// drawing's A/B/C/D, docs/design.md bring-up item 18), read on a v4 board
+/// (2026-11-25): left A, down C, right D, so up B.
+const UP: u32 = joystick::B;
+const RIGHT: u32 = joystick::D;
 const DOWN: u32 = joystick::C;
-const LEFT: u32 = joystick::D;
+const LEFT: u32 = joystick::A;
 const DIRS: u32 = UP | RIGHT | DOWN | LEFT;
 
 const POLL_MS: u32 = 25;
@@ -503,6 +505,12 @@ impl Tile {
         }
     }
 
+    /// Needs the device unlocked: the links and the settings (the games and
+    /// the switch hold nothing)
+    fn needs_pin(self) -> bool {
+        matches!(self, Tile::Wallet | Tile::Bluetooth | Tile::Air | Tile::Settings)
+    }
+
     /// A link the airgap switch turns on or off: Some(live)
     fn link(self, airgapped: bool) -> Option<bool> {
         match self {
@@ -518,7 +526,6 @@ enum Screen {
     Grid,
     Games,
     Settings,
-    JoystickTest,
     Snake,
     #[cfg(feature = "ambire_game")]
     Maze,
@@ -536,9 +543,8 @@ const GAMES_LIST: [ListItem; 3] = [
     ListItem { name: "SNAKE", sub: "EAT AND GROW" },
     ListItem { name: "BACK", sub: "TO THE HOME SCREEN" },
 ];
-const SETTINGS_LIST: [ListItem; 3] = [
+const SETTINGS_LIST: [ListItem; 2] = [
     ListItem { name: "LOCK", sub: "LOCK THE DEVICE" },
-    ListItem { name: "JOYSTICK", sub: "TEST ITS DIRECTIONS" },
     ListItem { name: "BACK", sub: "TO THE HOME SCREEN" },
 ];
 
@@ -745,8 +751,8 @@ fn draw_cursor<'s>(t: &mut impl Renderer<'s>, x: i16, y: i16, w: i16, h: i16) {
     px(t, x + 2, y + 1, w - 4, 1, rgb(0xffe08a));
 }
 
-/// The home screen's six tiles; `locked` greys every link and app and
-/// padlocks it (the switch still shows where it is)
+/// The home screen's six tiles; `locked` greys and padlocks the ones that
+/// need the PIN
 fn draw_tiles<'s>(t: &mut impl Renderer<'s>, airgapped: bool, sel: Option<usize>, locked: bool) {
     for (i, &tile) in TILES.iter().enumerate() {
         let (tx, ty) = tile_pos(i);
@@ -780,7 +786,7 @@ fn draw_tiles<'s>(t: &mut impl Renderer<'s>, airgapped: bool, sel: Option<usize>
             _ => (&ICON_SETTINGS, &PAL_SETTINGS),
         };
         let link = tile.link(airgapped);
-        let off = locked || link == Some(false);
+        let off = (locked && tile.needs_pin()) || link == Some(false);
         draw_icon(t, icon, pal, tx + 5, ty + 6, off);
         if off {
             let c = if on { rgb(0x3b1a06) } else { rgb(0xb9bfd4) };
@@ -792,75 +798,13 @@ fn draw_tiles<'s>(t: &mut impl Renderer<'s>, airgapped: bool, sel: Option<usize>
     }
 }
 
-// ---------------------------------------------------------------- locked
-
-/// The lock screen: the home screen with every tile padlocked. A centre
-/// press or a tap unlocks (the PIN follows).
-pub struct LockedHome {
-    label: TString<'static>,
-    /// Shown at boot before the host connects: "not connected"
-    bootscreen: bool,
-    airgapped: bool,
-    poll: Timer,
-    center_down: bool,
-    center_armed: bool,
-}
-
-impl LockedHome {
-    pub fn new(label: TString<'static>, bootscreen: bool) -> Self {
-        Self {
-            label,
-            bootscreen,
-            airgapped: Home::read_airgap(),
-            poll: Timer::new(),
-            center_down: false,
-            center_armed: false,
-        }
-    }
-
-    /// True when the user asked to unlock
-    pub fn event(&mut self, ctx: &mut EventCtx, event: Event) -> bool {
-        match event {
-            Event::Attach(_) => {
-                self.poll.start(ctx, Duration::from_millis(POLL_MS));
-                ctx.request_paint();
-                false
-            }
-            Event::Timer(_) if self.poll.expire(event) => {
-                self.poll.start(ctx, Duration::from_millis(POLL_MS));
-                let airgapped = Home::read_airgap();
-                if airgapped != self.airgapped {
-                    self.airgapped = airgapped;
-                    ctx.request_paint();
-                }
-                // the centre press unlocks on its release; the press that
-                // woke the device must end first
-                let pressed = joystick::read() & joystick::CENTER != 0;
-                let unlock = !pressed && self.center_down;
-                self.center_down = pressed && self.center_armed;
-                if !pressed {
-                    self.center_armed = true;
-                }
-                unlock
-            }
-            Event::Touch(TouchEvent::TouchEnd(_)) => true,
-            _ => false,
-        }
-    }
-
-    pub fn render<'s>(&'s self, t: &mut impl Renderer<'s>) {
-        draw_status(t, self.airgapped, StatusText::Home(self.label, None));
-        draw_tiles(t, self.airgapped, None, true);
-        let sub = if self.bootscreen { "NOT CONNECTED" } else { "PRESS OR TAP TO UNLOCK" };
-        draw_name(t, "LOCKED", sub, SUB_BLUE);
-        draw_soft_key(t, "UNLOCK");
-        dot_matrix(t);
-    }
-}
-
 // ---------------------------------------------------------------- home
 
 pub struct Home {
+    /// The lock screen: the tiles that need the PIN ask for it
+    locked: bool,
+    /// A PIN is set, so Lock can lock
+    lockable: bool,
     screen: Screen,
     sel: usize,
     list_sel: usize,
@@ -870,8 +814,6 @@ pub struct Home {
     notification: Option<Notification>,
     poll: Timer,
     held: u32,
-    /// The joystick's contacts at the last poll, for the joystick test
-    last_raw: u32,
     /// A held direction repeats: since when, and after how long
     repeat: Option<(Instant, u32)>,
     center_down: Option<Instant>,
@@ -885,8 +827,15 @@ pub struct Home {
 }
 
 impl Home {
-    pub fn new(label: TString<'static>, notification: Option<Notification>) -> Self {
+    pub fn new(
+        label: TString<'static>,
+        notification: Option<Notification>,
+        locked: bool,
+        lockable: bool,
+    ) -> Self {
         Self {
+            locked,
+            lockable,
             screen: Screen::Grid,
             sel: 1,
             list_sel: 0,
@@ -896,7 +845,6 @@ impl Home {
             notification,
             poll: Timer::new(),
             held: 0,
-            last_raw: 0,
             repeat: None,
             center_down: None,
             center_armed: false,
@@ -983,8 +931,7 @@ impl Home {
             }
         }
 
-        let raw = joystick::read();
-        let contacts = raw & joystick::CONTACTS;
+        let contacts = joystick::read() & joystick::CONTACTS;
         let mut action = None;
 
         // the centre press selects on its release, if it was short
@@ -1000,11 +947,6 @@ impl Home {
             }
             self.center_armed = true;
         }
-
-        if self.screen == Screen::JoystickTest && raw != self.last_raw {
-            ctx.request_paint();
-        }
-        self.last_raw = raw;
 
         let dirs = contacts & DIRS;
         let pressed = dirs & !self.held;
@@ -1073,21 +1015,15 @@ impl Home {
                 None
             }
             Screen::Settings => {
+                let n = SETTINGS_LIST.len();
                 match key {
-                    Key::Up => self.list_sel = (self.list_sel + 2) % 3,
-                    Key::Down => self.list_sel = (self.list_sel + 1) % 3,
+                    Key::Up => self.list_sel = (self.list_sel + n - 1) % n,
+                    Key::Down => self.list_sel = (self.list_sel + 1) % n,
                     Key::Left => self.go(ctx, Screen::Grid),
                     Key::Right => {}
                     Key::Select => return self.select_item(ctx),
                 }
                 ctx.request_paint();
-                None
-            }
-            Screen::JoystickTest => {
-                if key == Key::Select {
-                    self.go(ctx, Screen::Settings);
-                    self.list_sel = 1;
-                }
                 None
             }
             Screen::Snake => {
@@ -1126,6 +1062,9 @@ impl Home {
 
     fn select_tile(&mut self, ctx: &mut EventCtx) -> Option<HomeAction> {
         let tile = TILES[self.sel];
+        if self.locked && tile.needs_pin() {
+            return Some(HomeAction::Unlock);
+        }
         match (tile, tile.link(self.airgapped)) {
             (_, Some(false)) if self.airgapped => {
                 self.show(ctx, "AIR-GAPPED", "SLIDE THE SWITCH OFF AIR")
@@ -1154,8 +1093,9 @@ impl Home {
                 self.go(ctx, Screen::Snake);
                 self.snake.start();
             }
+            // without a PIN the firmware cannot lock, and would just come back
+            (Screen::Settings, 0) if !self.lockable => self.show(ctx, "NO PIN SET", "SET A PIN TO LOCK"),
             (Screen::Settings, 0) => return Some(HomeAction::Lock),
-            (Screen::Settings, 1) => self.go(ctx, Screen::JoystickTest),
             (Screen::Games, _) => {
                 self.go(ctx, Screen::Grid);
                 self.sel = 3;
@@ -1196,7 +1136,7 @@ impl Home {
                 None
             }
             Screen::Settings => {
-                for i in 0..3 {
+                for i in 0..SETTINGS_LIST.len() {
                     let y = Self::row_y(i);
                     if p.y >= y && p.y < y + 26 {
                         self.list_sel = i;
@@ -1205,7 +1145,6 @@ impl Home {
                 }
                 None
             }
-            Screen::JoystickTest => self.key(ctx, Key::Select),
             Screen::Snake => {
                 // the top-left corner leaves, anything else pauses
                 if p.x < 24 && p.y < 12 {
@@ -1239,7 +1178,6 @@ impl Home {
             Screen::Grid => self.render_grid(t),
             Screen::Games => self.render_games(t),
             Screen::Settings => self.render_list(t, "SETTINGS", &SETTINGS_LIST),
-            Screen::JoystickTest => self.render_joystick(t),
             Screen::Snake => self.render_snake(t, now),
         }
         if let Some((title, sub, _)) = self.overlay {
@@ -1273,10 +1211,15 @@ impl Home {
 
     fn render_grid<'s>(&self, t: &mut impl Renderer<'s>) {
         self.render_status(t, None);
-        draw_tiles(t, self.airgapped, Some(self.sel), false);
+        draw_tiles(t, self.airgapped, Some(self.sel), self.locked);
 
         let tile = TILES[self.sel];
         let link = tile.link(self.airgapped);
+        if self.locked && tile.needs_pin() {
+            self.render_name(t, tile.name(), "LOCKED: SELECT FOR THE PIN", OFF_RED);
+            self.render_soft_key(t, "UNLOCK");
+            return;
+        }
         let (sub, sub_c) = match (tile, link) {
             (_, Some(false)) if self.airgapped => ("OFF: AIR-GAPPED", OFF_RED),
             (_, Some(false)) => ("OFF: CONNECTED", OFF_RED),
@@ -1292,7 +1235,7 @@ impl Home {
         self.render_soft_key(t, soft);
     }
 
-    fn render_list<'s>(&self, t: &mut impl Renderer<'s>, title: &str, items: &[ListItem; 3]) {
+    fn render_list<'s>(&self, t: &mut impl Renderer<'s>, title: &str, items: &[ListItem]) {
         self.render_status(t, Some(title));
         for (i, item) in items.iter().enumerate() {
             let y = Self::row_y(i);
@@ -1324,47 +1267,6 @@ impl Home {
         let item = &GAMES_LIST[self.list_sel];
         self.render_name(t, item.name, item.sub, SUB_BLUE);
         self.render_soft_key(t, "SELECT");
-    }
-
-    fn render_joystick<'s>(&self, t: &mut impl Renderer<'s>) {
-        self.render_status(t, Some("JOYSTICK"));
-        // each way's box lights while its contact is pressed; the letter is
-        // the netlist's contact the firmware reads for that way
-        let ways: [(u32, i16, i16, &str); 4] = [
-            (UP, 48, 18, Self::contact_name(UP)),
-            (DOWN, 48, 74, Self::contact_name(DOWN)),
-            (LEFT, 20, 46, Self::contact_name(LEFT)),
-            (RIGHT, 76, 46, Self::contact_name(RIGHT)),
-        ];
-        for (bit, x, y, name) in ways {
-            let lit = self.held & bit != 0;
-            round_rect(t, x, y, 24, 24, if lit { ORANGE } else { WHITE }, if lit { 255 } else { 30 });
-            text_centered(t, name, x + 12, y + 7, WHITE, 2);
-        }
-        let centre = self.last_raw & joystick::CENTER != 0;
-        round_rect(t, 50, 48, 20, 20, VOLT, if centre { 255 } else { 40 });
-        // the ADC's state and last reading: 16383 is the 3.3 V rail, a
-        // released joystick reads near it
-        let mut buf = [0u8; 5];
-        let (sub, c) = match joystick::adc_state(self.last_raw) {
-            1 => (number(joystick::adc_code(self.last_raw), &mut buf), VOLT),
-            0 => ("ADC NOT STARTED", OFF_RED),
-            2 => ("ADC FAILED: REGULATOR", OFF_RED),
-            3 => ("ADC FAILED: CALIBRATION", OFF_RED),
-            4 => ("ADC FAILED: ENABLE", OFF_RED),
-            _ => ("ADC FAILED: CONVERSION", OFF_RED),
-        };
-        self.render_name(t, "PRESS EACH WAY", sub, c);
-        self.render_soft_key(t, "BACK");
-    }
-
-    fn contact_name(bit: u32) -> &'static str {
-        match bit {
-            joystick::A => "A",
-            joystick::B => "B",
-            joystick::C => "C",
-            _ => "D",
-        }
     }
 
     fn render_snake<'s>(&self, t: &mut impl Renderer<'s>, now: Instant) {
