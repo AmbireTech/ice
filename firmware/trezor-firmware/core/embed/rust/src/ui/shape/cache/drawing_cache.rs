@@ -30,8 +30,15 @@ const fn const_max(a: usize, b: usize) -> usize {
 const IMAGE_BUFF_SIZE: usize = {
     const DEFAULT: usize = 2048;
 
+    // A keyboard overlay (MONO8) can cover the whole content area: the word
+    // count selector's keypad does on a 240x320 display (T3T2), which a
+    // 240x240 buffer cannot hold ("Too small buffer" on recovery).
     #[cfg(feature = "ui_overlay")]
-    const OVERLAY: usize = 240 * 240;
+    const OVERLAY: usize = const_max(
+        240 * 240,
+        crate::trezorhal::display::DISPLAY_RESX as usize
+            * crate::trezorhal::display::DISPLAY_RESY as usize,
+    );
     #[cfg(not(feature = "ui_overlay"))]
     const OVERLAY: usize = 0;
 
