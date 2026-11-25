@@ -59,9 +59,11 @@ DIMPLE_R, DIMPLE_DEPTH = 0.8, 0.3   # a 45 deg centre dimple to find the push by
 MIN_WALL = 0.8          # two 0.4 mm perimeters
 
 # ── the bezel's well round it ───────────────────────────────────────────────
-HOLE_D = 6.0            # generate.py's JOY_HOLE_D: the straight hole through the bezel
-WELL_DEPTH = 0.8        # a 45 deg countersink into the front face: 6.0 -> 7.6 mm at the face
-GAP = 0.8               # between the cap's flare and the well, square to both
+# The hole and the well 0.2 mm wider each side than first printed (owner, 2026-11-25: the cap
+# rubbed), the cap as it was: the flare keeps its 6.0 mm hole's 0.8 mm gap plus the widening.
+HOLE_D = 6.4            # generate.py's JOY_HOLE_D: the straight hole through the bezel
+WELL_DEPTH = 0.8        # a 45 deg countersink into the front face: 6.4 -> 8.0 mm at the face
+GAP = 0.8 + (HOLE_D - 6.0) / 2 / math.sqrt(2)   # between the cap's flare and the well, square to both
 BEZEL_CLR = 0.1         # the least the tilt check allows
 STOP_MIN = 1.5          # the bezel may stop the tilt only past this many times the switching angle
 STOP_MAX = 3.0          # ...and must stop it before this many (it protects the stem)

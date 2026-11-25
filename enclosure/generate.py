@@ -120,7 +120,7 @@ FOAM_T = 0.3          # foam tape under the screen, on the board (newBoard.py bu
 # ALPS's drawing and 3d/SW_ALPS_SKRHAAE010.step agree; EasyEDA's model said 5.08) on the front, below the cell: a pocket over its housing in
 # the bezel's solid chin, and a hole wide enough for the stem to rock. The stem stops
 # just under the front face: a printed cap goes on it.
-JOY_REF, JOY_BODY, JOY_HOUSING_H, JOY_H, JOY_HOLE_D = "SW_JOY", 7.5, 2.23, 5.0, 6.0
+JOY_REF, JOY_BODY, JOY_HOUSING_H, JOY_H, JOY_HOLE_D = "SW_JOY", 7.5, 2.23, 5.0, 6.4
 JOY_CLR = 0.3        # around the housing, and over it
 # Other parts on the front (proto 1 put power parts there, in the chin): one pocket in
 # the bezel's chin covers them all, as deep as the tallest plus FRONT_CLR; FRONT_SKIN is
@@ -216,9 +216,12 @@ USB_PLUG = (12.6, 6.8, 2.2)  # opening for a USB-C plug overmold (w, h, corner r
 LEVER_TRAVEL = 1.6   # MSK12C02G25-B slide travel (the maker's drawing: 1.6 +-0.1 between the handle's ends)
 # The airgap switch is worked with a fingertip (owner, 2026-11-24: a slot round the lever and a
 # shallow scoop were "ridiculously small"): a window through the west wall AIR_WIN_L long,
-# centred on the lever's travel, from AIR_WIN_FLOOR over the floor's inside up across the
-# parting line to AIR_WIN_TOP into the bezel (as the USB-C opening crosses it), corners AIR_R.
-AIR_WIN_L, AIR_WIN_FLOOR, AIR_WIN_TOP, AIR_R = 11.0, 0.2, 3.2, 2.0
+# centred on the lever's travel, open through the back (owner, 2026-11-25: a notch in the
+# back's edge lets a finger reach the lever from behind) up across the parting line to
+# AIR_WIN_TOP into the bezel (as the USB-C opening crosses it), corners AIR_R. In the back it
+# is the wall's width only: the floor under the board stays whole.
+AIR_WIN_L, AIR_WIN_TOP, AIR_R = 11.0, 3.2, 2.0
+AIR_NOTCH_X = 0.3    # the notch's inner face in the back, east of the board's west edge
 # Its mouth flares at 45 deg, AIR_FLARE each way on the outer face, so a fingertip gets in.
 AIR_FLARE = 1.0
 # Openings' rims (camera window, USB-C, the airgap switch's) rounded on the outside, and the
@@ -339,8 +342,8 @@ The parts:
   joycap     the joystick's cap: print it upside down, its flat pad on the plate; press it straight
              onto the stem (a drop of glue if it comes loose)
 
-The airgap switch is worked through the opening in the left wall, with a fingernail or a
-pen tip.
+The airgap switch is worked through the opening in the left wall, open at the back edge,
+with a fingertip, a fingernail or a pen tip.
 
 Assembly: stick the screen to the board's front face with 0.3 mm foam tape, its
 ribbons through the board's slots into their connectors. Lay the board in the shell (its
@@ -731,11 +734,12 @@ def slivers(outer, holes, least):
     return region - kept if kept is not None else region
 
 
-def round_rim(part, cuts, skin, r, what):
+def round_rim(part, cuts, skin, r, what, avoid=None):
     """`part` with the rims its `cuts` left in the outer `skin` (faces of the part's outside
     before any cut) rounded to r, in one fillet. A rim edge lies on a cut's face and on the
     skin; seams along a cut's own rounded corners lie inside the wall, so they are not taken.
-    Returns the part and the number of edges rounded."""
+    Rim edges within 2r of `avoid` (a solid: an unrounded step the fillet would run out into,
+    which OCC cannot close) stay sharp. Returns the part and the number of edges rounded."""
     near = lambda faces, p: min(f.distance_to(p) for f in faces) < 1e-3
     rim = []
     for cut in cuts:
@@ -746,7 +750,8 @@ def round_rim(part, cuts, skin, r, what):
                     and eb.max.Y <= bb.max.Y + 0.01 and bb.min.Z - 0.01 <= eb.min.Z and eb.max.Z <= bb.max.Z + 0.01):
                 continue
             p = e.position_at(0.5)
-            if near(faces, p) and near(skin, p) and not any(e.is_same(k) for k in rim):
+            if (near(faces, p) and near(skin, p) and not any(e.is_same(k) for k in rim)
+                    and (avoid is None or e.distance_to(avoid) > 2 * r)):
                 rim.append(e)
     if not rim:
         raise SystemExit(f"{what}: no rim edge found to round")
@@ -885,7 +890,7 @@ def main():
                     raise SystemExit(f"{ref}: the modelled lever is not at an end of its {LEVER_TRAVEL} mm travel")
                 yc = (min(ly0, ly0 + toward * LEVER_TRAVEL) + max(ly1, ly1 + toward * LEVER_TRAVEL)) / 2
                 sy0, sy1 = yc - AIR_WIN_L / 2, yc + AIR_WIN_L / 2
-                oz0, oz1 = z_floor_in + AIR_WIN_FLOOR, z_split + AIR_WIN_TOP
+                oz0, oz1 = z_floor_out - AIR_R - 1, z_split + AIR_WIN_TOP
                 if not (oz0 < zlo and zhi < oz1 and sy1 - sy0 > LEVER_TRAVEL + ly1 - ly0):
                     raise SystemExit(f"{ref}: the window (Z {oz0:.2f}-{oz1:.2f}) does not clear the lever ({zlo:.2f}-{zhi:.2f})")
                 cut = wall_cut(side, b, yc, (oz0 + oz1) / 2, sy1 - sy0, oz1 - oz0, AIR_R)
@@ -896,10 +901,13 @@ def main():
                 cut += (Pos(-(GAP + WALL) - 0.5, -yc, (oz0 + oz1) / 2) * Rot(0, 90, 0) * Rot(0, 0, 90)
                         * extrude(mouth, amount=grow, taper=45))
                 cut &= box(-GAP - WALL - 2, sy0 - grow - 1, -GAP + 0.2, sy1 + grow + 1, oz0 - grow - 1, oz1 + grow + 1)   # through the wall only
+                # in the back, on past the pack bay's west edge (x -0.1), which the window's north end
+                # crosses: coincident faces there leave an edge no fillet takes
+                cut += box(-GAP - WALL - 2, sy0, AIR_NOTCH_X, sy1, oz0, z_floor_in + 0.01)
                 x_face = -(GAP + WALL) + DRAFT_MM / 2 * (z_split - (zlo + zhi) / 2) / (z_split - z_floor_out)
                 openings.append((ref, side, cut))
-                report.append(f"airgap switch: a {sy1 - sy0:.1f} x {oz1 - oz0:.1f} mm window through the west wall "
-                              f"(Z {oz0:.2f} to {oz1:.2f}, across the parting line), the lever's "
+                report.append(f"airgap switch: a {sy1 - sy0:.1f} x {oz1 - z_floor_out:.1f} mm window through the west wall "
+                              f"(open through the back, up to Z {oz1:.2f} across the parting line), the lever's "
                               f"{LEVER_TRAVEL} mm travel centred in it, its mouth flared {AIR_FLARE} mm at 45 deg; the lever "
                               f"{pts[:, 0].min() - x_face:.2f} mm inside the wall's outer face")
                 air_found = True
@@ -1129,12 +1137,14 @@ def main():
     male_win = (male[0] - CONN_CLR, male[1] - CONN_CLR, male[2] + CONN_CLR, male[3] + CONN_CLR)
     shell -= rr_prism(*male_win, (male_win[3] - male_win[1]) / 2 - 0.01, z_face - 1, z_floor_in + 1)
     shell -= box(tab[0] - CONN_CLR, tab[1] - CONN_CLR, tab[2] + CONN_CLR, male[1] + hm[1], z_face - 1, z_floor_in + 1)
+    bay_solid = None
     if bay:
         bay_box = (pcb[0] - PACK_PCB_CLR, pcb[1] - PACK_PCB_CLR, pcb[2] + PACK_PCB_CLR, pcb[3] + PACK_PCB_CLR)
         in_bay = [(hx, hy) for hx, hy in screw_holes if bay_box[0] - CB_R < hx < bay_box[2] + CB_R and bay_box[1] - CB_R < hy < bay_box[3] + CB_R]
         if in_bay:
             raise SystemExit(f"screw heads {in_bay} would stand in the pack board's bay")
-        shell -= box(*bay_box, z_face - 1, z_face + bay)
+        bay_solid = box(*bay_box, z_face - 1, z_face + bay)
+        shell -= bay_solid
 
     # ── the pack's tray (print part): a frame round the cells, open underneath; the pack
     # board sits on its north and south walls, `out` below its top
@@ -1160,7 +1170,7 @@ def main():
     for _, _, cut in openings:
         shell -= cut
         rim_cuts.append(cut)
-    shell, n_rim = round_rim(shell, rim_cuts, shell_skin, RIM_R, "shell")
+    shell, n_rim = round_rim(shell, rim_cuts, shell_skin, RIM_R, "shell", bay_solid)
     report.append(f"openings' rims rounded {RIM_R} mm on the outside ({n_rim} edges: the camera window, "
                   f"USB-C, the airgap switch); the camera window's corners {CAM_R} mm")
     if not air_found:
