@@ -348,14 +348,25 @@ export const PowerBlock = () => (
         also the centre press while running (short press = select, hold = power off).
         The cell (up to 4.2 V) never touches an MCU pin, and an unpowered MCU is never
         back-fed through a GPIO. Off, nothing here draws more than nanoamps.
-        With the pack off (USB only) Q_PWRJ has no emitter supply, so the centre press is
-        dead: no select, no power off; the device stays on while USB is in. Intended
-        (owner, 2026-10-31); firmware must not rely on the centre press on USB only. */}
+        Q_PWRJ's emitter is fed from the cell or the 3.3 V rail, whichever is higher, through
+        D_PWRJ (owner, 2026-11-25): with the pack off (USB only) the centre press still
+        selects. It also lifts SHDN then, which is harmless: the boost has no input and the
+        mux runs from USB; the device stays on while USB is in, so a hold does not power it
+        off. Off, D_PWRJ's 3.3 V diode is reverse-biased by the cells: its leakage (BAT54C:
+        2 uA max at 25 V, far less at ~3 V) adds to the off current. */}
+    {/* BAT54C: common cathode = Q_PWRJ's emitter supply; anode 1 = the cell, anode 2 = 3.3 V */}
+    <chip name="D_PWRJ" footprint="sot23"
+      manufacturerPartNumber="BAT54C,215" supplierPartNumbers={{ jlcpcb: ["C37704"] }}
+      pinLabels={{ pin1: "A1", pin2: "A2", pin3: "K" }}
+      schX={-4} schY={14} schSectionName={S} />
+    <trace from=".D_PWRJ > .A1" to="net.BAT" />
+    <trace from=".D_PWRJ > .A2" to="net.V3V3" />
+    <trace from=".D_PWRJ > .K" to="net.PWRJ_E" />
     <chip name="Q_PWRJ" footprint="sot23"
       manufacturerPartNumber="MMBT3906" supplierPartNumbers={{ jlcpcb: ["C2143"] }}
       pinLabels={{ pin1: "B", pin2: "E", pin3: "C" }}
       schX={-2} schY={14} schSectionName={S} />
-    <trace from=".Q_PWRJ > .E" to="net.BAT" width={W_PWR_LITE} />
+    <trace from=".Q_PWRJ > .E" to="net.PWRJ_E" width={W_PWR_LITE} />
     <trace from=".Q_PWRJ > .C" to="net.BTN" width={W_PWR_LITE} />
     <trace from=".Q_PWRJ > .B" to="net.PWRJ_B" />
     {/* 1M base-emitter: off unless pressed, and dirt across the contact (> ~5 Mohm)
@@ -363,7 +374,7 @@ export const PowerBlock = () => (
         enough for ~200 uA of collector current into BTN and the 1 uF on SHDN. */}
     <resistor name="R_PWRJBE" resistance="1M" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C26083"] }}
       schX={-3} schY={12} schRotation="90deg" schSectionName={S} />
-    <trace from=".R_PWRJBE > .pin1" to="net.BAT" />
+    <trace from=".R_PWRJBE > .pin1" to="net.PWRJ_E" />
     <trace from=".R_PWRJBE > .pin2" to="net.PWRJ_B" />
     <resistor name="R_PWRJB" resistance="100k" footprint="0402" supplierPartNumbers={{ jlcpcb: ["C25741"] }}
       schX={-1} schY={12} schRotation="90deg" schSectionName={S} />

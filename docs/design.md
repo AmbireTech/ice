@@ -433,10 +433,11 @@ powers off by releasing `PWR_HOLD` and waiting ~2 s. With USB plugged in the boa
 is powered whatever the latch says; firmware keeps the screen dark and charges a
 NiMH cell. There is no charge light.
 
-**On USB with the pack off, the centre press does nothing.** The device is on for as long as
-USB is plugged in and cannot be switched off; unplug it to turn it off. The press
-reaches the board only through the cells, so with no pack it neither selects nor powers off:
-the touch screen and the joystick's four directions still work. This is intended.
+**The centre press works on USB with the pack off too.** The PNP's emitter is fed from the
+cells or the 3.3 V rail, whichever is higher, through a BAT54C (`D_PWRJ`, 2026-11-25), so the press
+reaches the MCU either way and selects. On USB the device stays on whatever the latch says, so a
+hold does not switch it off there. Off, that diode's 3.3 V side is reverse-biased by the cells and
+its leakage adds to the off current.
 
 ## Buzzer and joystick
 

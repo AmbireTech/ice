@@ -51,6 +51,7 @@
   "D_PKNTC": "Diode_SMD:D_SOD-882",
   "D_ESD": "Package_TO_SOT_SMD:SOT-23-6",
   "D_OR": "Package_TO_SOT_SMD:SOT-23",
+  "D_PWRJ": "Package_TO_SOT_SMD:SOT-23",
   "D_RADIO": "LED_SMD:LED_0603_1608Metric",
   "D_REVG": "Package_TO_SOT_SMD:SOT-23",
   "J1": {
