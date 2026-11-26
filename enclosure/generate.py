@@ -264,6 +264,15 @@ PACK_RIM = 1.4        # the tray's walls round the pack board, where the tray se
 BAY_CLR = 0.2         # a pack board standing proud of the tray's rim gets a bay in the back this much deeper:
                       # the magnets on the steel hold the pack, never its board on the case
 MIN_FLOOR = 0.8       # the back left over the bay
+PACK_CORNER_R = 1.0   # the pack board's corners (pack/makePack.py's CORNER_R): the bay's follow them
+# The shell prints upright, north up. Supports in the male's window and on the bay's north step
+# broke the back there, which the bay left 0.9 mm thin (owner, 2026-11-26). So: the bay's walls
+# slope at 45 deg; the window is one convex outline, the body's stadium under a 45 deg roof
+# that takes in the tab, its peak rounded WIN_PEAK_R; and inside, the back over the bay is
+# thickened to PACK_BACK wherever the board's back leaves room (every part BACK_CLEAR clear,
+# the touch tail's lane left as it was).
+PACK_BACK = 1.4
+WIN_PEAK_R = 1.0
 PACK_R, PACK_FILLET = 4.0, 1.5
 # The camera must see past the pack: a cone of CAM_FOV from the lens's rim (~66 deg lens,
 # design.md; the stock candidate is 68.7 deg diagonal), taken as a full cone.
@@ -486,6 +495,15 @@ def panel_outline():
     if not m:
         raise SystemExit("PANEL not found in scripts/newBoard.py")
     return tuple(float(v) for v in m.group(1).split(","))
+
+
+def touch_tail():
+    """(x of its west edge, width) of the touch tail on the board's back: newBoard.py's CTP_TAIL."""
+    src = (HERE / "scripts/newBoard.py").read_text(encoding="utf-8")
+    m = re.search(r"^CTP_TAIL = (\([^\n#]*\))", src, re.M)
+    if not m:
+        raise SystemExit("CTP_TAIL not found in scripts/newBoard.py")
+    return eval(m.group(1), {"PANEL": panel_outline()})
 
 
 def fab_world(fp: dict) -> np.ndarray:
@@ -720,6 +738,13 @@ def box(x0, y0, x1, y1, z0, z1):
     return Pos((x0 + x1) / 2, -(y0 + y1) / 2, (z0 + z1) / 2) * Box(x1 - x0, y1 - y0, z1 - z0)
 
 
+def frustum(x0, y0, x1, y1, z0, z1, grow):
+    """A box (board coordinates) whose sides lean at 45 deg: the outline (x0, y0, x1, y1) at z0,
+    grown (grow 1) or shrunk (grow -1) by z1 - z0 each side at z1."""
+    sk = Rectangle(x1 - x0, y1 - y0)
+    return Pos((x0 + x1) / 2, -(y0 + y1) / 2, z0) * extrude(sk, amount=z1 - z0, taper=-45.0 * grow)
+
+
 def slivers(outer, holes, least):
     """The parts of a rounded rectangle less some boxes (board coordinates) narrower than
     `least`, as a 2D face in model XY: what an opening (shrink by least/2, grow back) drops."""
@@ -874,6 +899,7 @@ def main():
     openings = []
     usb_bridge = None
     air_found = False
+    air_notch = None     # (x0, y0, x1, y1): the airgap window's notch in the back
     for ref, v in parts.items():
         beyond = {
             "W": v[v[:, 0] < -0.05], "E": v[v[:, 0] > W + 0.05],
@@ -921,7 +947,8 @@ def main():
                 cut &= box(-GAP - WALL - 2, sy0 - grow - 1, -GAP + 0.2, sy1 + grow + 1, oz0 - grow - 1, oz1 + grow + 1)   # through the wall only
                 # in the back, on past the pack bay's west edge (x -0.1), which the window's north end
                 # crosses: coincident faces there leave an edge no fillet takes
-                cut += box(-GAP - WALL - 2, sy0, AIR_NOTCH_X, sy1, oz0, z_floor_in + 0.01)
+                air_notch = (-GAP - WALL - 2, sy0, AIR_NOTCH_X, sy1)
+                cut += box(*air_notch, oz0, z_floor_in + 0.01)
                 x_face = -(GAP + WALL) + DRAFT_MM / 2 * (z_split - (zlo + zhi) / 2) / (z_split - z_floor_out)
                 openings.append((ref, side, cut))
                 report.append(f"airgap switch: a {sy1 - sy0:.1f} x {oz1 - z_floor_out:.1f} mm window through the west wall "
@@ -1151,18 +1178,63 @@ def main():
         if r_[0] < pcb[0] + 0.5 or r_[2] > pcb[2] - 0.5 or r_[1] < pcb[1] + 0.5 or r_[3] > pcb[3] - 0.5:
             raise SystemExit(f"the male at {cx}, {cy:.2f} runs off the pack board")
 
-    # the device's back: the male's window (its body and tab) down into the cavity
-    male_win = (male[0] - CONN_CLR, male[1] - CONN_CLR, male[2] + CONN_CLR, male[3] + CONN_CLR)
-    shell -= rr_prism(*male_win, (male_win[3] - male_win[1]) / 2 - 0.01, z_face - 1, z_floor_in + 1)
-    shell -= box(tab[0] - CONN_CLR, tab[1] - CONN_CLR, tab[2] + CONN_CLR, male[1] + hm[1], z_face - 1, z_floor_in + 1)
     bay_solid = None
     if bay:
-        bay_box = (pcb[0] - PACK_PCB_CLR, pcb[1] - PACK_PCB_CLR, pcb[2] + PACK_PCB_CLR, pcb[3] + PACK_PCB_CLR)
+        # the bay: the board's outline PACK_PCB_CLR clear at its bottom, its walls at 45 deg
+        mouth = PACK_PCB_CLR + bay
+        bay_box = (pcb[0] - mouth, pcb[1] - mouth, pcb[2] + mouth, pcb[3] + mouth)
         in_bay = [(hx, hy) for hx, hy in screw_holes if bay_box[0] - CB_R < hx < bay_box[2] + CB_R and bay_box[1] - CB_R < hy < bay_box[3] + CB_R]
         if in_bay:
             raise SystemExit(f"screw heads {in_bay} would stand in the pack board's bay")
-        bay_solid = box(*bay_box, z_face - 1, z_face + bay)
+        bay_solid = (rr_prism_drafted(*bay_box, PACK_CORNER_R + mouth, z_face, z_face + bay, 45.0)
+                     + rr_prism(*bay_box, PACK_CORNER_R + mouth, z_face - 1, z_face))
         shell -= bay_solid
+        # inside, the back over the bay thickened to PACK_BACK where the board's back leaves room
+        z_pad = z_face + bay + PACK_BACK
+        room = z_back - z_pad
+        if z_pad > z_floor_in:
+            pad_xy = (-GAP - 1, bay_box[1], W + GAP + 1, bay_box[3])    # on the floor, into the walls
+            keep = [(e[1], e[2], e[3], e[4], e[0]) for e in near if e[5] + BACK_CLEAR > room]
+            tx0, tw_ = touch_tail()
+            keep.append((tx0, pad_xy[1] - 1, tx0 + tw_, pad_xy[3] + 1, "the touch tail"))
+            if air_notch is not None:
+                keep.append((air_notch[0] - 1, air_notch[1], air_notch[2] - BACK_CLEAR, air_notch[3], "the airgap notch"))
+            # its edges at 45 deg: no step faces the plate; the clearances hold at its top
+            pad = frustum(*pad_xy, z_floor_in - 0.01, z_pad, -1)
+            h_ = z_pad + 0.01 - (z_floor_in - 0.02)
+            for x0, y0, x1, y1, _ in keep:     # BACK_CLEAR round the part at the pad's top
+                pad -= frustum(x0 - BACK_CLEAR + h_, y0 - BACK_CLEAR + h_, x1 + BACK_CLEAR - h_, y1 + BACK_CLEAR - h_,
+                               z_floor_in - 0.02, z_pad + 0.01, 1)
+            shell += pad
+            under = sorted({k[4] for k in keep if k[0] - BACK_CLEAR < pad_xy[2] and k[2] + BACK_CLEAR > pad_xy[0]
+                            and k[1] - BACK_CLEAR < pad_xy[3] and k[3] + BACK_CLEAR > pad_xy[1]})
+            report.append(f"the back over the bay {PACK_BACK} mm from inside ({FLOOR - bay:.2f} where it is left as it was, "
+                          f"round {', '.join(under)})")
+
+    # the male's window, self-supporting: one convex outline, the body's stadium under a 45 deg
+    # roof that takes in the tab, the roof's peak rounded
+    male_win = (male[0] - CONN_CLR, male[1] - CONN_CLR, male[2] + CONN_CLR, male[3] + CONN_CLR)
+    tab_win = (tab[0] - CONN_CLR, tab[1] - CONN_CLR, tab[2] + CONN_CLR, male[1])
+    rw, ym = (male_win[3] - male_win[1]) / 2, (male_win[1] + male_win[3]) / 2
+    ends = (male_win[0] + rw, male_win[2] - rw)
+    peak = ((ends[0] + ends[1]) / 2, ym - (ends[1] - ends[0]) / 2 - (rw - WIN_PEAK_R) * math.sqrt(2))
+    ang = np.linspace(0, 2 * math.pi, 96, endpoint=False)
+    ring = lambda c, r: np.c_[c[0] + r * np.cos(ang), c[1] + r * np.sin(ang)]
+    win_pts = hull(np.vstack([ring((ends[0], ym), rw), ring((ends[1], ym), rw), ring(peak, WIN_PEAK_R)]))
+    edges_ = list(zip(win_pts, np.roll(win_pts, -1, axis=0)))
+    cross = lambda p: np.array([(q[0] - o[0]) * (p[1] - o[1]) - (q[1] - o[1]) * (p[0] - o[0]) for o, q in edges_])
+    side = np.sign(cross(((ends[0] + ends[1]) / 2, ym))[0])    # the window's centre is inside
+    if any((side * cross(p)).min() <= 0 for p in [(tab_win[0], tab_win[1]), (tab_win[2], tab_win[1])]):
+        raise SystemExit("the male's tab sticks out of its window's roof")
+    # the window's ceiling (material north of it) flatter than 45 deg: only the peak's top
+    flat = sum(abs(q[0] - o[0]) for o, q in edges_
+               if abs(q[1] - o[1]) < abs(q[0] - o[0]) * math.tan(math.radians(44.5)) and min(o[1], q[1]) < ym)
+    if flat > 2 * WIN_PEAK_R:
+        raise SystemExit(f"the male's window has {flat:.2f} mm of ceiling flatter than 45 deg")
+    shell -= Pos(0, 0, z_face - 1) * extrude(Polygon(*[(x, -y) for x, y in win_pts]), amount=z_floor_in + 1 - (z_face - 1),
+                                                dir=(0, 0, 1))   # the y flip turns the outline clockwise
+    report.append(f"the male's window: its stadium under a 45 deg roof up to y {peak[1] - WIN_PEAK_R:.2f} "
+                  f"(the tab's notch at {tab_win[1]:.2f}), {flat:.2f} mm of its ceiling flatter than 45 deg (the peak)")
 
     # ── the pack's tray (print part): a frame round the cells, open underneath; the pack
     # board sits on its north and south walls, `out` below its top
@@ -1175,7 +1247,7 @@ def main():
     report.append(f"the pack {pack_o[2] - pack_o[0]:.1f} x {pack_o[3] - pack_o[1]:.1f} x {z_face - z_pack:.2f} mm, open underneath, "
                   f"y {pack_o[1]:.1f}-{pack_o[3]:.1f} ({north_by} sets its north edge): "
                   f"{z_top - z_pack:.2f} mm with the device")
-    where = f"in a {bay:.2f} mm bay in the back face ({FLOOR - bay:.2f} mm of back over it)" if bay else f"{out:.2f} mm off the back face"
+    where = f"in a {bay:.2f} mm bay in the back face, its walls at 45 deg" if bay else f"{out:.2f} mm off the back face"
     report.append(f"the pack's board {pcb[2] - pcb[0]:.1f} x {pcb[3] - pcb[1]:.1f} x {PACK_PCB_T} mm, {where} "
                   f"inside the tray's rim; cells at y {cell_ys[0]:.2f} and {cell_ys[1]:.2f} ({cell_pitch:.2f} apart, the arms {ARM_GAP:.1f} mm apart); "
                   f"the male's joints {joint_gap:.2f} mm under the south cell's can")
