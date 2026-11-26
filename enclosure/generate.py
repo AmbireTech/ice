@@ -172,8 +172,9 @@ GAP = 0.3             # board edge to wall
 # the case is printed on an Anycubic Photon Mono M7 Pro): the tongue in the bezel's skirt
 # and inside its fill, the north hook in its groove. An FDM print needs 0.2 (the first
 # print, 2026-10-26, 0.4 mm nozzle, would not go together at 0-0.1).
-FIT = 0.1
-TONGUE_T, TONGUE_H, TONGUE_CLR = 1.2, 1.8, FIT
+# 0.15 since 2026-11-26 (owner: the back a tad larger than the bezel, the fit tight at 0.1).
+FIT = 0.15
+TONGUE_T, TONGUE_H, TONGUE_CLR = 1.15, 1.8, FIT   # 1.15 (was 1.2) with FIT 0.15: the skirt outside it keeps PRINT_MIN_WALL
 # The bezel's skirt (its outer wall round the tongue) is 0.8-1.0 mm thick, and it holds the
 # pocket the bezel prints sealed against the film: the first resin print (2026-11-14) tore
 # it off at its root. A 45 deg fillet that deep where the skirt meets the slot's ceiling,
@@ -200,9 +201,12 @@ STANDOFF_R = 2.5     # shell standoff under each board hole (the board keeps par
 CLEAR_R = 1.2        # M2 clearance through the shell
 CB_R, CB_DEPTH = 2.05, 1.7   # counterbore for the 3.8 x 1.6 mm head, flush with the back face
 BOSS_R, PILOT_R = 2.2, 0.85  # bezel boss, 1.7 mm pilot for an M2 cutting its own thread (1.6 was too tight for one, owner 2026-11-25)
-PILOT_TOP_CLR = 0.8  # pilot stops this far under the bezel's front face
+# The pilot runs out through the bezel's front face (owner, 2026-11-26): a blind one held the
+# wash's resin, which cured in it. The screw's tip stays this far under the face.
+TIP_UNDER_FACE = 0.3
 PIN_R = 1.0          # locating pin in a 2.2 mm board hole
-HOOK = (30.0, 0.3, 0.8, FIT)   # north hook: length, ridge depth, ridge height, clearance
+HOOK = (30.0, 0.4, 0.8, 0.1)   # north hook: length, ridge depth (off the skirt), ridge height, clearance
+HOOK_HOLD = 0.1     # the ridge stays this far into the groove with the bezel shifted north by its play at the south (TONGUE_CLR)
 # (its groove runs up from the parting line, PRINT_MIN_WALL of tongue left over it)
 SOUND_R = 1.0        # hole in the back over the buzzer's top port (MLT-5020: 0.8 mm port)
 SCREW_LENGTHS = (6, 8, 10, 12)
@@ -842,7 +846,11 @@ def main():
         raise SystemExit(f"draft: the wall thins to {WALL - DRAFT_MM / 2:.2f} mm at the back/front, under {MIN_WALL}")
     # the joint's thin walls, for a resin print: the tongue behind the north hook's groove, the
     # bezel's skirt at its top (the drafted outer face leans in)
-    behind_groove = TONGUE_T - HOOK[1] - HOOK[3]
+    groove_d = HOOK[1] - TONGUE_CLR + HOOK[3]    # the ridge reaches HOOK[1] - TONGUE_CLR into the tongue, plus clearance
+    behind_groove = TONGUE_T - groove_d
+    if HOOK[1] - 2 * TONGUE_CLR < HOOK_HOLD:
+        raise SystemExit(f"the north hook's ridge reaches {HOOK[1] - TONGUE_CLR:.2f} mm into the tongue: the bezel's "
+                         f"{TONGUE_CLR} mm of play at the south lets it out (keep {HOOK_HOLD} in)")
     over_groove = TONGUE_H - (HOOK[2] + 2 * HOOK[3])     # the groove runs up from the parting line
     skirt_top = WALL - TONGUE_T - TONGUE_CLR - DRAFT_MM / 2 * (TONGUE_H + TONGUE_CLR) / (z_top - z_split)
     for what, t_ in (("the tongue behind the hook's groove", behind_groove), ("the tongue over the hook's groove", over_groove),
@@ -864,6 +872,7 @@ def main():
 
     # ── openings from whatever crosses the board edge ──
     openings = []
+    usb_bridge = None
     air_found = False
     for ref, v in parts.items():
         beyond = {
@@ -880,6 +889,15 @@ def main():
                 cz = z_back + (mouth[:, 2].min() + mouth[:, 2].max()) / 2
                 openings.append((ref, side, wall_cut(side, b, cx, cz, USB_PLUG[0], USB_PLUG[1], USB_PLUG[2])))
                 report.append(f"USB-C opening {USB_PLUG[0]} x {USB_PLUG[1]} at x {cx:.2f}, Z {cz:.2f}")
+                # The opening's top stops under the tongue's: what is left of the tongue over it
+                # is a bridge with the opening (through the back) under it, which broke off with
+                # the supports (owner, 2026-11-26). It goes, as wide as the opening at the parting line.
+                w_, h_, r_ = USB_PLUG
+                dz = z_split - (cz + h_ / 2 - r_)
+                if dz < r_:
+                    half = w_ / 2 - r_ + math.sqrt(r_ ** 2 - max(dz, 0) ** 2)
+                    usb_bridge = box(cx - half, H + GAP - 0.01, cx + half, H + GAP + WALL + 1, z_split, z_split + TONGUE_H + 1)
+                    report.append(f"the tongue over the USB-C opening cut away, {2 * half:.1f} mm")
             elif ref.startswith("SW_AIR"):
                 if side != "W":
                     raise SystemExit(f"{ref}: the airgap opening is drawn for the west wall, the lever leaves {side}")
@@ -1000,7 +1018,7 @@ def main():
     hl, hd, hh, hc = HOOK
     hz = z_split + hh / 2 + hc       # the groove from the parting line up: the tongue's whole top over it
     t_out = GAP + TONGUE_T
-    shell -= box(W / 2 - hl / 2 - hc, -t_out - 0.5, W / 2 + hl / 2 + hc, -t_out + hd + hc,
+    shell -= box(W / 2 - hl / 2 - hc, -t_out - 0.5, W / 2 + hl / 2 + hc, -t_out + groove_d,
                  hz - hh / 2 - hc, hz + hh / 2 + hc)
     # The tongue's outer top edge, chamfered clear of the skirt's root fillet: the fillet's
     # face is the plane offset + z = s_root; the chamfer's sits TONGUE_CLR square off it.
@@ -1171,6 +1189,8 @@ def main():
         shell -= cut
         rim_cuts.append(cut)
     shell, n_rim = round_rim(shell, rim_cuts, shell_skin, RIM_R, "shell", bay_solid)
+    if usb_bridge is not None:
+        shell -= usb_bridge     # above the parting line: the shell only (the bezel's skirt stays)
     report.append(f"openings' rims rounded {RIM_R} mm on the outside ({n_rim} edges: the camera window, "
                   f"USB-C, the airgap switch); the camera window's corners {CAM_R} mm")
     if not air_found:
@@ -1212,6 +1232,16 @@ def main():
     if thin_fill.area > 1e-6:
         bezel -= Pos(0, 0, z_split - 1) * extrude(thin_fill, amount=TONGUE_H + FIT + 1)
         report.append(f"the screen's fill: {thin_fill.area:.2f} mm2 of slivers under {PRINT_MIN_WALL} mm dropped beside the tongue's slot")
+    # The north hook goes in by the swing: the bezel's south end up, its north edge lowered
+    # with the bezel shifted north past the ridge, then slid south into the groove. The fill
+    # between the tongue's slot and the screen along the north edge and round the north
+    # corners stood FIT inside the tongue and blocked that shift, so the ridge could only be
+    # forced over the tongue and shaved (owner, 2026-11-26). Below the slot's ceiling it goes,
+    # down to where the corners' arcs end; above the ceiling the bezel still locates the
+    # screen's north edge. The checks at the end walk the path.
+    in_slot = outline(b, GAP - FIT)
+    bezel -= (box(in_slot[0] - 1, in_slot[1] - 1, in_slot[2] + 1, b["r"], z_split - 1, z_split + TONGUE_H + FIT)
+              & rr_prism(*in_slot[:4], in_slot[4], z_split - 2, z_split + TONGUE_H + FIT))
     joy = b["fps"].get(JOY_REF)
     joy_box = None
     if joy is not None:
@@ -1282,8 +1312,8 @@ def main():
                       f"a boss round the screw; it covers {', '.join(front)}")
 
     # Screw bosses: the chin is solid from the board up to the front skin there; the
-    # pilot runs up to PILOT_TOP_CLR under the front face.
-    pilot_top = z_top - PILOT_TOP_CLR
+    # pilot runs out through the front face.
+    pilot_top = z_top + 1
     for hx, hy in screw_holes:
         wall = min(math.hypot(max(o0 - hx, 0, hx - o1), max(p0 - hy, 0, hy - p1)) for o0, p0, o1, p1 in
                    [glass] + [(sx0 - RIBBON_CLR, glass[3], sx1 + RIBBON_CLR, sy1 + RIBBON_CLR)
@@ -1292,9 +1322,9 @@ def main():
             raise SystemExit(f"screw boss at {hx}, {hy}: only {wall:.2f} mm of plastic beside the pilot")
         bezel -= Pos(hx, -hy, (z_split - 0.01 + pilot_top) / 2) * Cylinder(PILOT_R, pilot_top - z_split + 0.01)
 
-    # The screw: the longest stock M2 whose tip stays in the pilot.
+    # The screw: the longest stock M2 whose tip stays TIP_UNDER_FACE under the front face.
     seat = z_floor_out + CB_DEPTH
-    fits = [L for L in SCREW_LENGTHS if seat + L <= pilot_top]
+    fits = [L for L in SCREW_LENGTHS if seat + L <= z_top - TIP_UNDER_FACE]
     if not fits:
         raise SystemExit("no stock M2 length fits between the counterbore and the pilot")
     screw = max(fits)
@@ -1302,7 +1332,8 @@ def main():
     if thread < MIN_ENGAGE:
         raise SystemExit(f"M2x{screw}: only {thread:.2f} mm of thread in the bezel's bosses")
     report.append(f"screws: {len(screw_holes)}x M2x{screw} pan head from the back, {thread:.1f} mm of thread "
-                  f"in the bezel; locating pins at {len(pin_holes)} holes under the screen; north hook {hl:.0f} mm")
+                  f"in the bezel (its tip {z_top - seat - screw:.2f} mm under the front face, in a {2 * PILOT_R} mm pilot open "
+                  f"through it); locating pins at {len(pin_holes)} holes under the screen; north hook {hl:.0f} mm")
     bezel_cuts = [cut_ for _, _, cut_ in openings if cut_.bounding_box().max.Z > z_split]
     for cut_ in bezel_cuts:
         bezel -= cut_
@@ -1319,6 +1350,21 @@ def main():
     clash = (shell & bezel).volume
     if clash > 0.01:
         raise SystemExit(f"the shell and the bezel overlap by {clash:.3f} mm3 assembled")
+    # The north hook by the swing: the bezel's north edge, shifted north just past the ridge,
+    # lowers onto the shell free of it at every height; seated and shifted north by its play
+    # at the south, it cannot lift (the ridge still holds).
+    north_bx = box(-GAP - WALL - 1, -GAP - WALL - 1, W + GAP + WALL + 1, 12.0, z_floor_out - 1, z_top + 3)
+    shell_n, bezel_n = shell & north_bx, bezel & north_bx
+    swing = hd - TONGUE_CLR + 0.05
+    for lift in (2.0, 1.4, 1.0, 0.6, 0.3, 0.0):
+        v = (shell_n & (Pos(0, swing, lift) * bezel_n)).volume
+        if v > 0.001:
+            raise SystemExit(f"the bezel's north edge, shifted {swing:.2f} mm north, meets the shell ({v:.3f} mm3) "
+                             f"{lift} mm above its seat: the north hook cannot swing in")
+    if (shell_n & (Pos(0, TONGUE_CLR, 0.3) * bezel_n)).volume < 0.1:
+        raise SystemExit("seated, the bezel's north edge lifts out of the hook once shifted north by its play")
+    report.append(f"north hook: swings in with the bezel shifted {swing:.2f} mm north (free at every height); "
+                  f"its {hd} mm ridge holds with the bezel's {TONGUE_CLR} mm play taken up")
 
     size = (out_o[2] - out_o[0], out_o[3] - out_o[1], z_top - z_floor_out)   # the device; the pack adds to it
     print_layout((("shell", shell), ("bezel", Rot(180, 0, 0) * bezel)), OUT / "halves")   # the case alone (resin plate)
