@@ -318,6 +318,8 @@ pub(super) struct Scanner {
     regions: Option<Regions>,
     capturing: Option<usize>,
     shown: Option<usize>,
+    /// Captures failed in a row
+    fail_run: u8,
     pub status: camera::Status,
 }
 
@@ -329,6 +331,7 @@ impl Scanner {
             regions: None,
             capturing: None,
             shown: None,
+            fail_run: 0,
             // SAFETY: a plain C struct of integers; all zero is valid
             status: unsafe { core::mem::zeroed() },
         })
@@ -380,6 +383,7 @@ impl Scanner {
     pub fn restart(&mut self) {
         self.capturing = None;
         self.shown = None;
+        self.fail_run = 0;
         camera::qr_reset();
         camera::set_meter(None);
     }
@@ -421,6 +425,7 @@ impl Scanner {
             camera::STATE_DONE => {
                 self.shown = Some(at);
                 self.capturing = None;
+                self.fail_run = 0;
                 if self.plan.buffers > 1 {
                     self.start_capture(&r);
                 }
@@ -432,9 +437,12 @@ impl Scanner {
                 Scanned::Frame(qr)
             }
             camera::STATE_FAILED => {
-                // Shown anyway: a sheared or partial frame tells a line
-                // length or sync fault apart
-                if self.status.last_bytes > 0 {
+                // Shown once captures keep failing: a sheared or partial
+                // frame tells a line length or sync fault apart. Not a lone
+                // failure (a sensor's first frame after a start or a mode
+                // change): its buffer is part frame, part stale memory
+                self.fail_run = self.fail_run.saturating_add(1);
+                if self.status.last_bytes > 0 && self.fail_run >= FAILS_SHOWN {
                     self.shown = Some(at);
                 }
                 self.capturing = None;
@@ -448,6 +456,9 @@ impl Scanner {
         }
     }
 }
+
+/// Failed captures in a row before their partial frames are shown
+const FAILS_SHOWN: u8 = 3;
 
 // --- Preview ----------------------------------------------------------------------
 
