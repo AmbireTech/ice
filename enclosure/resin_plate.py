@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Orient, support, slice and check the case's two halves for the Anycubic Photon Mono M7 Pro.
 
+NOT IN USE: its one print (enclosure/resin/prints.md #6, 2026-11-27) was rejected by the owner
+(layer lines, warping, supports very hard to remove). The case is sliced with CHITUBOX.
+
   enclosure/out/shell.stl, bezel.stl  ->  a .pwsz ready to print, a report and pictures beside it
 
 Orientation: each half stands on its south end, north up, leaning back LEAN deg so its
