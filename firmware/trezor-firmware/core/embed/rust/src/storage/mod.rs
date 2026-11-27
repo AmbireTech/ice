@@ -38,6 +38,9 @@ const EXPERIMENTAL_FEATURES: u16 = APP_DEVICE | 0x0015;
 const HIDE_PASSPHRASE_FROM_HOST: u16 = APP_DEVICE | 0x0016;
 const SLIP39_EXTENDABLE: u16 = APP_DEVICE | 0x0017;
 const BRIGHTNESS: u16 = FLAG_PUBLIC | APP_DEVICE | 0x0019;
+// Ambire: keys from 0x70 up, clear of upstream's. Public: the PIN pad reads it
+// while the device is locked; it can be written only when unlocked.
+const AMBIRE_PIN_PAD_IN_ORDER: u16 = FLAG_PUBLIC | APP_DEVICE | 0x0070;
 
 pub fn get_avatar_len() -> StorageResult<usize> {
     storage::get_length(HOMESCREEN)
@@ -62,4 +65,14 @@ pub fn get_brightness() -> StorageResult<u8> {
 pub fn set_brightness(value: u8) -> StorageResult<()> {
     let value = [value];
     storage::set(BRIGHTNESS, &value)
+}
+
+/// Ambire: whether the PIN pad's digits are shuffled (the default) or in order
+pub fn get_pin_scramble() -> bool {
+    let mut dest: [u8; 1] = [0; 1];
+    !matches!(storage::get(AMBIRE_PIN_PAD_IN_ORDER, &mut dest), Ok([1]))
+}
+
+pub fn set_pin_scramble(scramble: bool) -> StorageResult<()> {
+    storage::set(AMBIRE_PIN_PAD_IN_ORDER, &[!scramble as u8])
 }

@@ -16,6 +16,7 @@ use sys::time::{Duration, Instant};
 
 #[cfg(feature = "ambire_game")]
 use super::ambire_game::Game;
+use crate::storage;
 use crate::strutil::TString;
 use crate::trezorhal::joystick;
 use crate::ui::component::{Event, EventCtx, Timer};
@@ -543,8 +544,10 @@ const GAMES_LIST: [ListItem; 3] = [
     ListItem { name: "SNAKE", sub: "EAT AND GROW" },
     ListItem { name: "BACK", sub: "TO THE HOME SCREEN" },
 ];
-const SETTINGS_LIST: [ListItem; 2] = [
+const SETTINGS_LIST: [ListItem; 3] = [
     ListItem { name: "LOCK", sub: "LOCK THE DEVICE" },
+    // its second line is the setting's state: `Home::item_sub`
+    ListItem { name: "SCRAMBLE", sub: "" },
     ListItem { name: "BACK", sub: "TO THE HOME SCREEN" },
 ];
 
@@ -805,6 +808,8 @@ pub struct Home {
     locked: bool,
     /// A PIN is set, so Lock can lock
     lockable: bool,
+    /// The setting: the PIN pad's digits are shuffled
+    pin_scramble: bool,
     screen: Screen,
     sel: usize,
     list_sel: usize,
@@ -836,6 +841,7 @@ impl Home {
         Self {
             locked,
             lockable,
+            pin_scramble: storage::get_pin_scramble(),
             screen: Screen::Grid,
             sel: 1,
             list_sel: 0,
@@ -1096,6 +1102,13 @@ impl Home {
             // without a PIN the firmware cannot lock, and would just come back
             (Screen::Settings, 0) if !self.lockable => self.show(ctx, "NO PIN SET", "SET A PIN TO LOCK"),
             (Screen::Settings, 0) => return Some(HomeAction::Lock),
+            (Screen::Settings, 1) => match storage::set_pin_scramble(!self.pin_scramble) {
+                Ok(()) => {
+                    self.pin_scramble = !self.pin_scramble;
+                    ctx.request_paint();
+                }
+                Err(_) => self.show(ctx, "NOT SAVED", "THE SETTING IS UNCHANGED"),
+            },
             (Screen::Games, _) => {
                 self.go(ctx, Screen::Grid);
                 self.sel = 3;
@@ -1247,8 +1260,13 @@ impl Home {
             text(t, item.name, 14, y + 8, WHITE, 2);
         }
         let item = &items[self.list_sel];
-        self.render_name(t, item.name, item.sub, SUB_BLUE);
-        self.render_soft_key(t, "SELECT");
+        let (sub, soft) = match (self.screen, self.list_sel, self.pin_scramble) {
+            (Screen::Settings, 1, true) => ("PIN PAD SHUFFLED: ON", "TURN OFF"),
+            (Screen::Settings, 1, false) => ("PIN PAD SHUFFLED: OFF", "TURN ON"),
+            _ => (item.sub, "SELECT"),
+        };
+        self.render_name(t, item.name, sub, SUB_BLUE);
+        self.render_soft_key(t, soft);
     }
 
     fn render_games<'s>(&self, t: &mut impl Renderer<'s>) {

@@ -297,7 +297,12 @@ impl PinKeyboard {
     fn generate_digit_buttons() -> [(Button, usize); DIGIT_COUNT] {
         // Generate a random sequence of digits from 0 to 9.
         let mut digits = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
-        random::shuffle(&mut digits);
+        if crate::storage::get_pin_scramble() {
+            random::shuffle(&mut digits);
+        } else {
+            // Ambire, scramble switched off in Settings: a phone's pad
+            digits = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
+        }
         digits
             .map(|c| Button::with_text(c.into()))
             .map(|b| {
