@@ -228,8 +228,10 @@ their connectors. Only low parts sit under any of them (`checkFpc.py` checks all
   time across power-off (a Safe transaction carries no timestamp; the PIN retry
   counter lives in the SE050). USB runs on the internal 48 MHz oscillator trimmed
   from the USB frames, timeouts on the internal 32 kHz one.
-- Three M2 holes: two at the north corners (under the panel: locating pins in the
-  case) and one in the south-east corner, the screw. The fourth, west of the display cutout
+- Three M2 holes: two at the north corners (under the panel as the board was laid out; the
+  case now holds the screen 3.5 mm further south, so the north-east one takes a screw and
+  the north-west one, beside the camera, a locating pin) and one in the south-east corner,
+  a screw. The fourth, west of the display cutout
   between the panel and the cell, is out for now: the cell's west clip moved north
   over its boss to free the chin for the joystick. The south-west corner belongs to
   the antenna.
@@ -497,22 +499,30 @@ purple (all transparent tints) and clear.
   each carry a height bound, so a new unmodelled part also stops it. Parts not
   fitted are left out.
 - **Thickness, front to back:** bezel lip 0.8 and 0.1 over the panel, panel 4.13
-  (Newhaven drawing) on 0.3 foam, board 1.0, back cavity 2.7, back 1.2: **10.22 mm**
-  (case 53.2 × 92.2 mm; 21.68 mm with the pack on), against proto 0's 18.0. The display
+  (Newhaven drawing) on 0.3 foam, board 1.0, back cavity 2.7, back 1.5: **10.52 mm**
+  (case 53.8 × 92.8 mm, walls 2.6 mm; 21.68 mm with the pack on), against proto 0's 18.0. The display
   and camera connectors (2.09 mm, plus 0.6 clearance) set the back cavity; USB-C
   (3.40 mm) stands into the back through a pocket. The **camera head** (5.9 mm) stands
-  out on purpose, through an open window in the back, 2.0 mm proud.
-- **Fastening:** the screen sits straight on the board, so the two holes under its
-  corners have no room for a boss: the shell's standoffs carry **locating pins**
-  there. The **screw** (M2×8 pan head from the back, flush in a counterbore; one since
-  the west hole went) goes into the bezel's solid chin at the south-east hole, 3.5 mm of thread
-  (the generator refuses less than 2.5). The north edge is held by a **hook**: a
-  30 mm ridge inside the bezel's skirt that drops into a groove in the shell's
-  tongue.
+  out on purpose, through an open window in the back, 1.7 mm proud.
+- **The screen sits 3.5 mm south of where the board was laid out for it** (case only, since
+  2026-11-26), so that the top holes clear the glass: an M2 in a top hole then passes
+  0.3 mm from the glass's top edge (3.2 mm would put its thread on the glass). The board is
+  unchanged, so both display tails have 3.5 mm more slack on the back than `newBoard.py`
+  budgets (the TFT tail about 6 mm, the touch tail about 5), and the glass's south edge
+  stands 1.0 mm over the cutout, 3.6 mm short of its south edge, where the tails fold.
+- **Fastening:** two **screws** (M2×8 pan head from the back, flush in counterbores, 4.5 mm of
+  thread; the generator refuses less than 2.5): the north-east hole, into the fill north
+  of the screen, whose boss is open to the screen's pocket in a 1.1 mm slot (0.2 mm of wall
+  would have been left there), and the south-east hole, into the bezel's chin. The
+  north-west hole stays a **locating pin**: a screw head there would overlap the camera
+  head by 0.4 mm. The north edge is also held by a **hook**: a 30 mm ridge inside the
+  bezel's skirt that drops into a groove in the shell's tongue.
+- **Inside the back, round the pack connector's window,** the back steps up toward the board
+  as far as the part under each spot allows (0.3 mm clear): 1.2 to 2.4 mm thick instead of
+  the 0.9 mm the pack's bay leaves, from wall to wall except in the touch tail's lane.
 - **Assembly:** screen onto the board on foam tape, ribbons through the slots into
-  their connectors; board into the shell onto the pins and standoffs; bezel hooked
-  in at the north and swung down; the screw; the cell into its clips from the
-  front.
+  their connectors; board into the shell onto the pin and standoffs; bezel hooked
+  in at the north and swung down; the two screws.
 - **Standoff at the camera corner** is notched for the camera head; the pin there
   passes 0.53 mm from the head.
 - **Draft:** both halves are 1 mm narrower at the back and front faces than at

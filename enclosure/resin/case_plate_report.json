@@ -1,0 +1,90 @@
+{
+ "lean_deg": 22.0,
+ "debt_mm": 1.0,
+ "parts": {
+  "bezel": {
+   "contacts": 339,
+   "contacts_added_for_fine_islands": 0,
+   "trunks": 73,
+   "braces": 1523,
+   "contacts_on_south_end_wall": 103,
+   "unreached": [],
+   "unbraced_trunks_over_25mm": 0,
+   "height_mm": 94.5,
+   "tallest_trunk_mm": 89.8,
+   "debt_over_limit_px": 0,
+   "worst_debt_mm": 0.8
+  },
+  "shell": {
+   "contacts": 244,
+   "contacts_added_for_fine_islands": 1,
+   "trunks": 52,
+   "braces": 501,
+   "contacts_on_south_end_wall": 107,
+   "unreached": [],
+   "unbraced_trunks_over_25mm": 0,
+   "height_mm": 94.3,
+   "tallest_trunk_mm": 88.5,
+   "debt_over_limit_px": 0,
+   "worst_debt_mm": 0.9
+  }
+ },
+ "islands": [],
+ "compare": {
+  "pillars_at_3mm": 118,
+  "pillar_area_at_3mm_mm2": 395.9,
+  "pillar_dia_median_mm": 2.01,
+  "least_support_area_mm2": 395.9,
+  "largest_layer_mm2": 703.3,
+  "worst_layer_over_least_below": 1.78,
+  "print4": {
+   "pillars_at_3mm": 155,
+   "pillar_area_at_3mm_mm2": 368.5,
+   "pillar_dia_median_mm": 1.69,
+   "worst_layer_over_least_below": 1.5
+  },
+  "print5": {
+   "pillars_at_3mm": 166,
+   "pillar_area_at_3mm_mm2": 104.9,
+   "pillar_dia_median_mm": 0.81,
+   "worst_layer_over_least_below": 3.6
+  }
+ },
+ "file": "~/ResinPrints/case 2.6mm walls display south - 2mm supports 2026_11_26.pwsz",
+ "layers": 945,
+ "height_mm": 94.5,
+ "resin_ml": 43.1,
+ "print_time_min": 84,
+ "failed_checks": [],
+ "settings": {
+  "layer_mm": 0.1,
+  "bottom": "3 x 25.0 s",
+  "transition_layers": 15,
+  "exposure_s": 2.1,
+  "lift": "4.0 mm at 2.67 mm/s",
+  "shrink_compensation_xyz": [
+   1.005,
+   1.005,
+   1.003
+  ]
+ },
+ "supports": {
+  "contact_dia_mm": 0.7,
+  "branch_dia_mm": 0.8,
+  "trunk_dia_mm": 2.0,
+  "brace_dia_mm": 0.8,
+  "trunk_grid_mm": 4.0,
+  "raft_mm": 0.8,
+  "lift_mm": 6.0
+ },
+ "uvtools": {
+  "islands": 0,
+  "resin_traps": 186,
+  "suction_cups": 1,
+  "print4_same_check": {
+   "islands": 21,
+   "resin_traps": 384,
+   "suction_cups": 3
+  }
+ }
+}

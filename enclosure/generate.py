@@ -80,6 +80,7 @@ import zipfile
 from pathlib import Path
 
 import numpy as np
+import shapely.geometry as sg
 from build123d import (
     Align,
     Axis,
@@ -127,16 +128,31 @@ JOY_CLR = 0.3        # around the housing, and over it
 # the least bezel left over it. Each part's fab outline plus FRONT_CLR stays clear of
 # the screw boss.
 FRONT_CLR, FRONT_SKIN = 0.3, 0.8
-# Screws holding the front half (with the north hook and the pins). Two is the design;
-# one is allowed only while the west hole H3 is out (owner, 2026-10-22: the cell's west
-# clip moved north over its boss). Put back 2 with H3.
-MIN_SCREWS = 1
+# Screws holding the front half (with the north hook and the pins): every board hole that
+# clears the screen and whose screw head clears the parts on the back (the camera head
+# stops the north-west one). The west hole H3 is out (owner, 2026-10-22).
+MIN_SCREWS = 2
 # Newhaven NHD-2.4-240320AF-CSXP-CTP mechanical drawing (12/15/2023): outline
 # 42.80 x 59.91, overall 4.13 +/-0.30; viewing area 37.72 x 49.96, 2.54 in from
 # each side and 2.52 down from the top edge.
 PANEL_T = 4.13
 PANEL_VA = (2.54, 2.52, 37.72, 49.96)  # x, y offset from the outline's top-left, w, h
 PANEL_GAP = 0.1       # under the lip; the foam takes the panel's +/-0.3 tolerance
+# The screen sits PANEL_SOUTH south of where scripts/newBoard.py laid the board out for it
+# (owner, 2026-11-26: the display pushed down, as little as will do, so that the top holes
+# take screws; the boss need not be a whole circle). A top hole is 2.2 mm south of the
+# glass's top edge as the board has it: 3.2 mm puts an M2's thread on the glass, 3.5 leaves
+# SCREW_GLASS between them. The board is not changed: both display tails get PANEL_SOUTH more
+# slack on the back (the slot they fold through stays where it is), and the glass's south
+# edge comes TAIL_FOLD_MIN or more short of the slot's south edge, the room their folds need.
+PANEL_SOUTH = 3.5
+SCREW_GLASS = 0.3     # an M2's thread to the glass's edge, at least
+TAIL_FOLD_MIN = 3.0
+# Where a pilot comes closer than BOSS_MIN_WALL to the screen's pocket the wall between them
+# would be a sliver that breaks into the pocket: the boss is opened to the pocket there
+# instead, a slot BOSS_SLOT wide (under the screw's diameter, so the screw cannot leave it;
+# the thread keeps ~280 deg of plastic).
+BOSS_MIN_WALL, BOSS_SLOT = 0.5, 1.1
 
 # ── Back face ───────────────────────────────────────────────────────────────
 # Not modelled in KiCad: the OV2640 camera head ("5.4-5.9 mm tall on every
@@ -161,11 +177,14 @@ PROTRUDE_CLR, MIN_SKIN = 0.3, 0.6
 # Resin (SLA) printers want walls of 0.8 mm at least (1.5 ideal; the fab's review of the first
 # order, 2026-11-17, flagged the north hook's groove at 0.4): every thin
 # wall the joint makes is checked against PRINT_MIN_WALL below. The joint splits WALL into
-# the tongue, its clearance and the skirt: 1.2 + 0.1 + 1.0, the skirt 0.82 at its top under
-# the draft, the tongue 0.8 behind the hook's groove.
+# the tongue, its clearance and the skirt: 1.3 + 0.15 + 1.15, the skirt 0.97 at its top under
+# the draft, the tongue 0.95 behind the hook's groove.
+# Walls 2.6 and the back 1.5 since 2026-11-26 (owner: thicker walls all round; they were 2.3
+# and 1.2, the skirt 1.0 and the tongue 1.15. 3.0 was tried first: it put the airgap lever
+# 0.96 mm inside the wall, and the side walls had been strong enough; 2.6 is the middle).
 PRINT_MIN_WALL = 0.8
-WALL = 2.3
-FLOOR = 1.2
+WALL = 2.6
+FLOOR = 1.5
 LIP = 0.8             # bezel over the glass
 GAP = 0.3             # board edge to wall
 # Sliding and snapping fits, for a resin (MSLA) print at calibrated exposure (2026-11-13:
@@ -174,7 +193,7 @@ GAP = 0.3             # board edge to wall
 # print, 2026-10-26, 0.4 mm nozzle, would not go together at 0-0.1).
 # 0.15 since 2026-11-26 (owner: the back a tad larger than the bezel, the fit tight at 0.1).
 FIT = 0.15
-TONGUE_T, TONGUE_H, TONGUE_CLR = 1.15, 1.8, FIT   # 1.15 (was 1.2) with FIT 0.15: the skirt outside it keeps PRINT_MIN_WALL
+TONGUE_T, TONGUE_H, TONGUE_CLR = 1.3, 1.8, FIT
 # The bezel's skirt (its outer wall round the tongue) is 0.8-1.0 mm thick, and it holds the
 # pocket the bezel prints sealed against the film: the first resin print (2026-11-14) tore
 # it off at its root. A 45 deg fillet that deep where the skirt meets the slot's ceiling,
@@ -197,6 +216,7 @@ MAX_UNSUPPORTED = 45.0
 MIN_WALL = 1.2        # thinnest the drafted wall may get, at the back and front faces
 WINDOW_MARGIN = 0.3   # display window beyond the viewing area, each side
 # Screws: M2 pan head, self-tapping into the bezel's bosses, from the back.
+WEB_MAX = 2.0        # a standoff this close to a wall is joined to it
 STANDOFF_R = 2.5     # shell standoff under each board hole (the board keeps parts 2.6 mm off the hole centre)
 CLEAR_R = 1.2        # M2 clearance through the shell
 CB_R, CB_DEPTH = 2.05, 1.7   # counterbore for the 3.8 x 1.6 mm head, flush with the back face
@@ -206,6 +226,7 @@ BOSS_R, PILOT_R = 2.2, 0.85  # bezel boss, 1.7 mm pilot for an M2 cutting its ow
 TIP_UNDER_FACE = 0.3
 PIN_R = 1.0          # locating pin in a 2.2 mm board hole
 HOOK = (30.0, 0.4, 0.8, 0.1)   # north hook: length, ridge depth (off the skirt), ridge height, clearance
+SWING_ROOM = 0.25   # the fill clears the tongue by this, with the bezel shifted north past the ridge to swing in
 HOOK_HOLD = 0.1     # the ridge stays this far into the groove with the bezel shifted north by its play at the south (TONGUE_CLR)
 # (its groove runs up from the parting line, PRINT_MIN_WALL of tongue left over it)
 SOUND_R = 1.0        # hole in the back over the buzzer's top port (MLT-5020: 0.8 mm port)
@@ -227,7 +248,7 @@ LEVER_TRAVEL = 1.6   # MSK12C02G25-B slide travel (the maker's drawing: 1.6 +-0.
 AIR_WIN_L, AIR_WIN_TOP, AIR_R = 11.0, 3.2, 2.0
 AIR_NOTCH_X = 0.3    # the notch's inner face in the back, east of the board's west edge
 # Its mouth flares at 45 deg, AIR_FLARE each way on the outer face, so a fingertip gets in.
-AIR_FLARE = 1.0
+AIR_FLARE = 1.0     # (a wider flare does not round: OCC fails the rim's fillet from 1.2 up)
 # Openings' rims (camera window, USB-C, the airgap switch's) rounded on the outside, and the
 # camera window's corners rounded: CAM_R leaves the head's square corners CAM_CORNER_MIN clear.
 RIM_R, CAM_R, CAM_CORNER_MIN = 0.5, 0.8, 0.2
@@ -268,11 +289,18 @@ PACK_CORNER_R = 1.0   # the pack board's corners (pack/makePack.py's CORNER_R): 
 # The shell prints upright, north up. Supports in the male's window and on the bay's north step
 # broke the back there, which the bay left 0.9 mm thin (owner, 2026-11-26). So: the bay's walls
 # slope at 45 deg; the window is one convex outline, the body's stadium under a 45 deg roof
-# that takes in the tab, its peak rounded WIN_PEAK_R; and inside, the back over the bay is
-# thickened to PACK_BACK wherever the board's back leaves room (every part BACK_CLEAR clear,
-# the touch tail's lane left as it was).
-PACK_BACK = 1.4
+# that takes in the tab, its peak rounded WIN_PEAK_R; and inside, a frame (below).
 WIN_PEAK_R = 1.0
+# A frame round the male's window, on the inside, tied into both side walls (owner,
+# 2026-11-26: thicker, on the inside, joined to the side walls): across the bay's band
+# (FRAME_BAND past it north and south) the back steps up toward the board as far as the part
+# under each spot allows, FRAME_CLR clear of it. FRAME_LEVELS are the back's thicknesses
+# there, measured from the bay's floor (the back is FLOOR - bay thick under the bay as it
+# was); each step is under 0.5 mm with its south-facing side a 45 deg ramp, so none hangs
+# when the shell prints upright, and a tread FRAME_TREAD wide is left on each. Nothing under FRAME_MIN wide is kept. The touch tail's
+# lane and the airgap notch stay as they were.
+FRAME_LEVELS = (1.2, 1.6, 2.0, 2.4)
+FRAME_CLR, FRAME_BAND, FRAME_TREAD, FRAME_MIN = 0.3, 2.0, 0.4, 1.0
 PACK_R, PACK_FILLET = 4.0, 1.5
 # The camera must see past the pack: a cone of CAM_FOV from the lens's rim (~66 deg lens,
 # design.md; the stock candidate is 68.7 deg diagonal), taken as a full cone.
@@ -349,9 +377,9 @@ halves.stl   the shell and the bezel alone, laid out the same way (halves.pwsz: 
              Anycubic Photon Mono M7 Pro)
 
 The parts:
-  shell      back shell (standoffs, locating pins, the screw hole, the camera window, the
+  shell      back shell (standoffs, a locating pin, the screw holes, the camera window, the
              window the pack's connector drops through)
-  bezel      front bezel (the screen sits in it; the screw threads into its chin)
+  bezel      front bezel (the screen sits in it; the screws thread into it)
   joycap     the joystick's cap: print it upside down, its flat pad on the plate; press it straight
              onto the stem (a drop of glue if it comes loose)
 
@@ -359,9 +387,9 @@ The airgap switch is worked through the opening in the left wall, open at the ba
 with a fingertip, a fingernail or a pen tip.
 
 Assembly: stick the screen to the board's front face with 0.3 mm foam tape, its
-ribbons through the board's slots into their connectors. Lay the board in the shell (its
-two top holes onto the pins). Hook the bezel's top edge under the shell's top lip, swing
-it down over the screen, then the M2 pan-head screw from the back.
+ribbons through the board's slots into their connectors. Lay the board in the shell (the
+hole beside the camera onto its pin). Hook the bezel's top edge under the shell's top lip,
+swing it down over the screen, then the two M2 pan-head screws from the back.
 
 """ + PRINT_NOTE
 
@@ -884,7 +912,12 @@ def main():
             raise SystemExit(f"{what} is {t_:.2f} mm, under the {PRINT_MIN_WALL} mm a resin print needs")
 
     px0, py0, pw, ph = panel_outline()
+    py0 += PANEL_SOUTH
     panel = (px0, py0, px0 + pw, py0 + ph)
+    slot_s = max(sl[3] for sl in b["slots"])
+    if slot_s - panel[3] < TAIL_FOLD_MIN:
+        raise SystemExit(f"the screen {PANEL_SOUTH} mm south leaves its tails {slot_s - panel[3]:.2f} mm to fold in "
+                         f"(the slot ends at y {slot_s}); they need {TAIL_FOLD_MIN}")
     va = (px0 + PANEL_VA[0], py0 + PANEL_VA[1], px0 + PANEL_VA[0] + PANEL_VA[2], py0 + PANEL_VA[1] + PANEL_VA[3])
     win = (va[0] - WINDOW_MARGIN, va[1] - WINDOW_MARGIN, va[2] + WINDOW_MARGIN, va[3] + WINDOW_MARGIN)
 
@@ -971,25 +1004,41 @@ def main():
     shell -= rr_prism(*in_o[:4], in_o[4], z_floor_in, z_split + 1)
     shell += rr_prism(*tongue_o[:4], tongue_o[4], z_split, z_split + TONGUE_H) - rr_prism(*in_o[:4], in_o[4], z_split - 1, z_split + TONGUE_H + 1)
 
-    # A screw only where the front half is solid: under the screen there is no room
-    # for a boss (the screen sits on the board), so a hole there locates the board on
-    # a pin instead.
+    # A screw where its thread clears the screen (SCREW_GLASS) and its head, in the back,
+    # clears the parts there; any other hole locates the board on a pin instead.
     glass = (panel[0] - SCREEN_CLR, panel[1] - SCREEN_CLR, panel[2] + SCREEN_CLR, panel[3] + SCREEN_CLR)
-    m_ = PILOT_R + 0.8     # a pilot needs 0.8 mm of plastic round it
-    under_glass = lambda hx, hy: glass[0] - m_ < hx < glass[2] + m_ and glass[1] - m_ < hy < glass[3] + m_
-    screw_holes = [(hx, hy) for hx, hy, _ in b["holes"] if not under_glass(hx, hy)]
-    pin_holes = [(hx, hy) for hx, hy, _ in b["holes"] if under_glass(hx, hy)]
+    to_box = lambda hx, hy, e: math.hypot(max(e[0] - hx, 0, hx - e[2]), max(e[1] - hy, 0, hy - e[3]))
+    envs = [(r, (v[:, 0].min(), v[:, 1].min(), v[:, 0].max(), v[:, 1].max())) for r, v in back.items()]
+    envs.append(("camera head", tuple(cam)))
+    screw_holes, pin_holes = [], []
+    for hx, hy, _ in b["holes"]:
+        thread = to_box(hx, hy, panel) - M2_SHANK_R
+        heads = [ref for ref, e in envs if to_box(hx, hy, e) < CB_R + BOSS_PART_CLR]
+        if thread < SCREW_GLASS - 1e-6:
+            pin_holes.append((hx, hy))
+            report.append(f"hole {hx},{hy}: a pin (a screw's thread would pass {thread:.2f} mm from the glass)")
+        elif heads:
+            pin_holes.append((hx, hy))
+            report.append(f"hole {hx},{hy}: a pin (a screw's head would land on the {', '.join(heads)}, "
+                          f"{min(to_box(hx, hy, e) for r_, e in envs if r_ in heads):.2f} mm from the hole's centre)")
+        else:
+            screw_holes.append((hx, hy))
     if len(screw_holes) < MIN_SCREWS:
-        raise SystemExit(f"only {len(screw_holes)} board hole(s) clear of the screen: the front half needs {MIN_SCREWS} screw(s)")
-    if len(screw_holes) < 2:
-        report.append(f"ONE SCREW only (temporary, the west hole H3 is out): the front half rests on it, "
-                      f"the north hook and {len(pin_holes)} pins")
+        raise SystemExit(f"only {len(screw_holes)} board hole(s) take a screw: the front half needs {MIN_SCREWS}")
+    report.append(f"the screen {PANEL_SOUTH} mm south of the board's layout for it (glass y {panel[1]:.2f}-{panel[3]:.2f}): "
+                  f"both display tails get {PANEL_SOUTH} mm more slack on the back, and {slot_s - panel[3]:.2f} mm of the "
+                  f"slot is left south of the glass for their folds")
     for hx, hy, _ in b["holes"]:
         boss = Pos(hx, -hy, (z_floor_in + z_back) / 2) * Cylinder(STANDOFF_R, z_back - z_floor_in + 0.02)
+        # tied into every wall within WEB_MAX of it: the slot between a standoff and the wall was
+        # too narrow to print cleanly or to support, and the wall stiffens the standoff
+        web = [hx - STANDOFF_R, hy - STANDOFF_R, hx + STANDOFF_R, hy + STANDOFF_R]
+        for i_, edge in enumerate(in_o[:4]):
+            if abs(edge - web[i_]) < WEB_MAX:
+                web[i_] = edge + (-0.01 if i_ < 2 else 0.01)
+        boss += box(*web, z_floor_in - 0.01, z_back) & rr_prism(*outline(b, GAP + 0.01)[:4], outline(b, GAP + 0.01)[4], z_floor_in - 1, z_back + 1)
         nearest = math.inf
         cut_by = []
-        envs = [(r, (v[:, 0].min(), v[:, 1].min(), v[:, 0].max(), v[:, 1].max())) for r, v in back.items()]
-        envs.append(("camera head", tuple(cam)))
         for ref, (ex0, ey0, ex1, ey1) in envs:
             ex0, ey0, ex1, ey1 = ex0 - BOSS_PART_CLR, ey0 - BOSS_PART_CLR, ex1 + BOSS_PART_CLR, ey1 + BOSS_PART_CLR
             dx = max(ex0 - hx, 0, hx - ex1)
@@ -1178,39 +1227,6 @@ def main():
         if r_[0] < pcb[0] + 0.5 or r_[2] > pcb[2] - 0.5 or r_[1] < pcb[1] + 0.5 or r_[3] > pcb[3] - 0.5:
             raise SystemExit(f"the male at {cx}, {cy:.2f} runs off the pack board")
 
-    bay_solid = None
-    if bay:
-        # the bay: the board's outline PACK_PCB_CLR clear at its bottom, its walls at 45 deg
-        mouth = PACK_PCB_CLR + bay
-        bay_box = (pcb[0] - mouth, pcb[1] - mouth, pcb[2] + mouth, pcb[3] + mouth)
-        in_bay = [(hx, hy) for hx, hy in screw_holes if bay_box[0] - CB_R < hx < bay_box[2] + CB_R and bay_box[1] - CB_R < hy < bay_box[3] + CB_R]
-        if in_bay:
-            raise SystemExit(f"screw heads {in_bay} would stand in the pack board's bay")
-        bay_solid = (rr_prism_drafted(*bay_box, PACK_CORNER_R + mouth, z_face, z_face + bay, 45.0)
-                     + rr_prism(*bay_box, PACK_CORNER_R + mouth, z_face - 1, z_face))
-        shell -= bay_solid
-        # inside, the back over the bay thickened to PACK_BACK where the board's back leaves room
-        z_pad = z_face + bay + PACK_BACK
-        room = z_back - z_pad
-        if z_pad > z_floor_in:
-            pad_xy = (-GAP - 1, bay_box[1], W + GAP + 1, bay_box[3])    # on the floor, into the walls
-            keep = [(e[1], e[2], e[3], e[4], e[0]) for e in near if e[5] + BACK_CLEAR > room]
-            tx0, tw_ = touch_tail()
-            keep.append((tx0, pad_xy[1] - 1, tx0 + tw_, pad_xy[3] + 1, "the touch tail"))
-            if air_notch is not None:
-                keep.append((air_notch[0] - 1, air_notch[1], air_notch[2] - BACK_CLEAR, air_notch[3], "the airgap notch"))
-            # its edges at 45 deg: no step faces the plate; the clearances hold at its top
-            pad = frustum(*pad_xy, z_floor_in - 0.01, z_pad, -1)
-            h_ = z_pad + 0.01 - (z_floor_in - 0.02)
-            for x0, y0, x1, y1, _ in keep:     # BACK_CLEAR round the part at the pad's top
-                pad -= frustum(x0 - BACK_CLEAR + h_, y0 - BACK_CLEAR + h_, x1 + BACK_CLEAR - h_, y1 + BACK_CLEAR - h_,
-                               z_floor_in - 0.02, z_pad + 0.01, 1)
-            shell += pad
-            under = sorted({k[4] for k in keep if k[0] - BACK_CLEAR < pad_xy[2] and k[2] + BACK_CLEAR > pad_xy[0]
-                            and k[1] - BACK_CLEAR < pad_xy[3] and k[3] + BACK_CLEAR > pad_xy[1]})
-            report.append(f"the back over the bay {PACK_BACK} mm from inside ({FLOOR - bay:.2f} where it is left as it was, "
-                          f"round {', '.join(under)})")
-
     # the male's window, self-supporting: one convex outline, the body's stadium under a 45 deg
     # roof that takes in the tab, the roof's peak rounded
     male_win = (male[0] - CONN_CLR, male[1] - CONN_CLR, male[2] + CONN_CLR, male[3] + CONN_CLR)
@@ -1231,8 +1247,67 @@ def main():
                if abs(q[1] - o[1]) < abs(q[0] - o[0]) * math.tan(math.radians(44.5)) and min(o[1], q[1]) < ym)
     if flat > 2 * WIN_PEAK_R:
         raise SystemExit(f"the male's window has {flat:.2f} mm of ceiling flatter than 45 deg")
-    shell -= Pos(0, 0, z_face - 1) * extrude(Polygon(*[(x, -y) for x, y in win_pts]), amount=z_floor_in + 1 - (z_face - 1),
-                                                dir=(0, 0, 1))   # the y flip turns the outline clockwise
+
+    bay_solid = None
+    if bay:
+        # the bay: the board's outline PACK_PCB_CLR clear at its bottom, its walls at 45 deg
+        mouth = PACK_PCB_CLR + bay
+        bay_box = (pcb[0] - mouth, pcb[1] - mouth, pcb[2] + mouth, pcb[3] + mouth)
+        in_bay = [(hx, hy) for hx, hy in screw_holes if bay_box[0] - CB_R < hx < bay_box[2] + CB_R and bay_box[1] - CB_R < hy < bay_box[3] + CB_R]
+        if in_bay:
+            raise SystemExit(f"screw heads {in_bay} would stand in the pack board's bay")
+        bay_solid = (rr_prism_drafted(*bay_box, PACK_CORNER_R + mouth, z_face, z_face + bay, 45.0)
+                     + rr_prism(*bay_box, PACK_CORNER_R + mouth, z_face - 1, z_face))
+        shell -= bay_solid
+        # inside, the frame: the back stepped up toward the board across the bay's band, as far
+        # as the part under each spot allows
+        z_bay = z_face + bay                 # the back's outer face inside the bay
+        band = (-GAP - 1, bay_box[1] - FRAME_BAND, W + GAP + 1, bay_box[3] + FRAME_BAND)
+        tx0, tw_ = touch_tail()
+        never = [sg.box(tx0, band[1] - 1, tx0 + tw_, band[3] + 1),      # the touch tail's lane
+                 sg.Polygon(win_pts)]                                   # the window itself: the frame is its rim
+        if air_notch is not None:
+            never.append(sg.box(air_notch[0] - 1, air_notch[1] - BACK_CLEAR, air_notch[2], air_notch[3] + BACK_CLEAR))
+        prev, frame_note, under, z_below = None, [], set(), z_floor_in - 0.01
+        for t_ in FRAME_LEVELS:
+            z_t = z_bay + t_
+            if z_t < z_floor_in + 0.15:
+                continue
+            room = z_back - z_t
+            region = sg.box(*band)
+            for e in near:
+                if e[5] + FRAME_CLR > room + 1e-9:
+                    region = region.difference(sg.box(e[1] - FRAME_CLR, e[2] - FRAME_CLR, e[3] + FRAME_CLR, e[4] + FRAME_CLR))
+                elif sg.box(*e[1:5]).intersects(region):
+                    under.add(e[0])
+            for n_ in never:
+                region = region.difference(n_)
+            if prev is not None:
+                region = region.intersection(prev.buffer(-FRAME_TREAD, join_style=2))
+            region = region.buffer(-FRAME_MIN / 2, join_style=2).buffer(FRAME_MIN / 2, join_style=2)
+            if region.is_empty:
+                break
+            prev = region
+            for poly in getattr(region, "geoms", [region]):
+                face = Polygon(*[(x, -y) for x, y in poly.exterior.coords[:-1]], align=None)
+                for hole in poly.interiors:
+                    face -= Polygon(*[(x, -y) for x, y in hole.coords[:-1]], align=None)
+                # a slab on the level below; its south-facing sides cut back to 45 deg ramps (a square
+                # step's lower edge would hang free for a layer when the shell prints upright, leaning back)
+                h_ = z_t - z_below
+                shell += Pos(0, 0, z_below) * (extrude(face, amount=h_)
+                                               & extrude(face, amount=h_ * math.sqrt(2), dir=(0, 1, 1)))
+            z_below = z_t
+            frame_note.append(f"{t_} mm over {region.area:.0f} mm2")
+        if not frame_note:
+            raise SystemExit("the frame round the male's window found no room on the back's inside")
+        report.append(f"frame round the male's window, inside, wall to wall: the back {', '.join(frame_note)} "
+                      f"(measured from the bay's floor; {FLOOR - bay:.2f} where it is left as it was: the touch tail's lane, "
+                      f"the airgap notch, parts taller than {z_back - z_bay - FRAME_LEVELS[0] - FRAME_CLR:.2f} mm), "
+                      f"{FRAME_CLR} mm clear of the parts under it")
+
+    shell -= Pos(0, 0, z_face - 1) * extrude(Polygon(*[(x, -y) for x, y in win_pts]), amount=z_back - (z_face - 1),
+                                                dir=(0, 0, 1))   # the y flip turns the outline clockwise; up through the frame
     report.append(f"the male's window: its stadium under a 45 deg roof up to y {peak[1] - WIN_PEAK_R:.2f} "
                   f"(the tab's notch at {tab_win[1]:.2f}), {flat:.2f} mm of its ceiling flatter than 45 deg (the peak)")
 
@@ -1308,12 +1383,15 @@ def main():
     # with the bezel shifted north past the ridge, then slid south into the groove. The fill
     # between the tongue's slot and the screen along the north edge and round the north
     # corners stood FIT inside the tongue and blocked that shift, so the ridge could only be
-    # forced over the tongue and shaved (owner, 2026-11-26). Below the slot's ceiling it goes,
-    # down to where the corners' arcs end; above the ceiling the bezel still locates the
-    # screen's north edge. The checks at the end walk the path.
+    # forced over the tongue and shaved (owner, 2026-11-26). Below the slot's ceiling it goes;
+    # above the ceiling the bezel still locates the screen's north edge. The checks at the
+    # end walk the path.
+    # Only what the shift needs goes (the fill north of the screen is the top screws' boss
+    # since the screen moved south): a band SWING_ROOM wide along the north edge and round
+    # the corners, the fill less itself moved that far south.
     in_slot = outline(b, GAP - FIT)
-    bezel -= (box(in_slot[0] - 1, in_slot[1] - 1, in_slot[2] + 1, b["r"], z_split - 1, z_split + TONGUE_H + FIT)
-              & rr_prism(*in_slot[:4], in_slot[4], z_split - 2, z_split + TONGUE_H + FIT))
+    slot_fill = rr_prism(*in_slot[:4], in_slot[4], z_split - 2, z_split + TONGUE_H + FIT)
+    bezel -= slot_fill - Pos(0, -(hd - TONGUE_CLR + SWING_ROOM), 0) * slot_fill
     joy = b["fps"].get(JOY_REF)
     joy_box = None
     if joy is not None:
@@ -1357,22 +1435,46 @@ def main():
         depth = chin_h + FRONT_CLR
         if depth > z_top - FRONT_SKIN:
             raise SystemExit(f"the chin's tallest front part ({chin_h:.2f} mm) leaves under {FRONT_SKIN} mm of bezel over it")
-        north = min(k[1] for k in keepouts + ([joy_box] if joy_box else []))
-        if north < glass[3]:
-            raise SystemExit(f"a front part reaches {glass[3] - north:.2f} mm north of the screen's bottom edge: "
-                             "the chin's pocket would cut the screen's seat")
-        bezel -= rr_prism(*in_o[:4], in_o[4], z_split - 1, depth) & box(in_o[0] - 1, north, in_o[2] + 1, in_o[3] + 1,
-                                                                      z_split - 2, depth + 1)
+        # The pocket starts at the northmost part, in three columns: west of the ribbons'
+        # window, under it, east of it. With the screen PANEL_SOUTH further south the parts on
+        # the west bridge start beside the glass's corner, those east of the window 4 mm south
+        # of it: what the east column leaves between the screen's pocket and the chin's is the
+        # glass's south stop (the north fill is its other one).
+        kos = keepouts + ([joy_box] if joy_box else [])
+        clash = [ref for ref, k in zip(front, keepouts) if k[0] + FRONT_CLR < panel[2] and k[2] - FRONT_CLR > panel[0]
+                 and k[1] < panel[3]]
+        if clash:
+            raise SystemExit(f"the screen, {PANEL_SOUTH} mm south, comes within {FRONT_CLR} mm of {', '.join(clash)} on the front")
+        rx0 = min(sx0 for sx0, _, _, _ in b["slots"]) - RIBBON_CLR
+        rx1 = max(sx1 for _, _, sx1, _ in b["slots"]) + RIBBON_CLR
+        cols = []
+        for xa, xb in ((in_o[0] - 1, rx0), (rx0, rx1), (rx1, in_o[2] + 1)):
+            ys_ = [k[1] for k in kos if k[0] < xb and k[2] > xa]
+            if ys_:
+                cols.append([xa, xb, min(ys_)])
+        for c in cols:      # columns that start within 1 mm of each other start together: no step between them
+            near_ = [o[2] for o in cols if abs(o[2] - c[2]) < 1.0]
+            c[2] = min(near_)
+        north = min(c[2] for c in cols)
+        stops = [(c[2] - glass[3], "west" if c[1] <= rx0 else "east") for c in cols if c[1] <= rx0 or c[0] >= rx1]
+        stop = max(stops, default=(0.0, ""))
+        if stop[0] < 2.0:
+            raise SystemExit(f"the chin's pocket leaves the glass no south stop ({stop[0]:.2f} mm of fill at best)")
+        chin = lambda z0, z1: sum((box(xa, yn, xb, in_o[3] + 1, z0, z1) for xa, xb, yn in cols[1:]),
+                                  box(cols[0][0], cols[0][2], cols[0][1], in_o[3] + 1, z0, z1))
+        bezel -= rr_prism(*in_o[:4], in_o[4], z_split - 1, depth) & chin(z_split - 2, depth + 1)
         # its ceiling meets the walls in a 45 deg chamfer, cut back over every part's keep-out
         c_ = POCKET_CHAMFER
         ring = ((rr_prism(*in_o[:4], in_o[4], depth - c_, depth + 0.01)
                  - rr_prism_drafted(*in_o[:4], in_o[4], depth - c_, depth + 0.01, 45))
-                & box(in_o[0] - 1, north, in_o[2] + 1, in_o[3] + 1, depth - c_ - 1, depth + 1))
-        for x0, y0, x1, y1 in keepouts + ([joy_box] if joy_box else []):
+                & chin(depth - c_ - 1, depth + 1))
+        for x0, y0, x1, y1 in kos:
             ring -= box(x0, y0, x1, y1, depth - c_ - 1, depth + 1)
         bezel += ring
+        report.append(f"the glass's south stop: {stop[0]:.2f} mm of fill on the {stop[1]} side "
+                      f"(its corner on the other side ends {min(s_[0] for s_ in stops):.2f} mm from the chin's pocket)")
         for hx, hy in screw_holes:
-            if hy < north:
+            if not any(xa <= hx < xb and hy >= yn for xa, xb, yn in cols):
                 continue
             hit = [ref for ref, (x0, y0, x1, y1) in zip(front, keepouts)
                    if math.hypot(max(x0 - hx, 0, hx - x1), max(y0 - hy, 0, hy - y1)) < BOSS_R]
@@ -1390,9 +1492,23 @@ def main():
         wall = min(math.hypot(max(o0 - hx, 0, hx - o1), max(p0 - hy, 0, hy - p1)) for o0, p0, o1, p1 in
                    [glass] + [(sx0 - RIBBON_CLR, glass[3], sx1 + RIBBON_CLR, sy1 + RIBBON_CLR)
                                     for sx0, sy0, sx1, sy1 in b["slots"]]) - PILOT_R
-        if wall < 0.8:
-            raise SystemExit(f"screw boss at {hx}, {hy}: only {wall:.2f} mm of plastic beside the pilot")
         bezel -= Pos(hx, -hy, (z_split - 0.01 + pilot_top) / 2) * Cylinder(PILOT_R, pilot_top - z_split + 0.01)
+        if wall < BOSS_MIN_WALL:
+            # open to the screen's pocket: a slot from the pilot's axis to the pocket's nearest edge
+            nx_ = min(max(hx, glass[0]), glass[2]) - hx
+            ny_ = min(max(hy, glass[1]), glass[3]) - hy
+            reach_ = math.hypot(nx_, ny_)
+            if wall < -1e-6 or reach_ < 1e-6 or abs(reach_ - PILOT_R - wall) > 1e-6:
+                raise SystemExit(f"screw boss at {hx}, {hy}: the pilot runs into an opening ({wall:.2f} mm)")
+            slot = (Pos(hx, -hy, (z_split - 0.01 + z_lip) / 2) * Rot(0, 0, math.degrees(math.atan2(-ny_, nx_)))
+                    * Pos((reach_ + 0.02) / 2, 0, 0) * Box(reach_ + 0.02, BOSS_SLOT, z_lip - z_split + 0.01))
+            bezel -= slot
+            open_deg = math.degrees(2 * math.asin(BOSS_SLOT / 2 / PILOT_R))
+            edge = reach_ - math.sqrt(PILOT_R ** 2 - (BOSS_SLOT / 2) ** 2)
+            report.append(f"screw boss at {hx}, {hy}: {wall:.2f} mm between the pilot and the screen's pocket, so it is open "
+                          f"to the pocket in a {BOSS_SLOT} mm slot ({360 - open_deg:.0f} deg of thread left, "
+                          f"{edge:.2f} mm of wall at the slot's edges); the thread passes "
+                          f"{to_box(hx, hy, panel) - M2_SHANK_R:.2f} mm from the glass")
 
     # The screw: the longest stock M2 whose tip stays TIP_UNDER_FACE under the front face.
     seat = z_floor_out + CB_DEPTH
@@ -1405,7 +1521,7 @@ def main():
         raise SystemExit(f"M2x{screw}: only {thread:.2f} mm of thread in the bezel's bosses")
     report.append(f"screws: {len(screw_holes)}x M2x{screw} pan head from the back, {thread:.1f} mm of thread "
                   f"in the bezel (its tip {z_top - seat - screw:.2f} mm under the front face, in a {2 * PILOT_R} mm pilot open "
-                  f"through it); locating pins at {len(pin_holes)} holes under the screen; north hook {hl:.0f} mm")
+                  f"through it); a locating pin at {len(pin_holes)} hole(s); north hook {hl:.0f} mm")
     bezel_cuts = [cut_ for _, _, cut_ in openings if cut_.bounding_box().max.Z > z_split]
     for cut_ in bezel_cuts:
         bezel -= cut_

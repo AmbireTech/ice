@@ -377,10 +377,10 @@ footer svg { width: 18px; height: 27px; color: var(--violet); }
       <figure>
         <svg viewBox="0 0 200 300" role="img" aria-label="Signing screen">
   <defs><filter id="shSig" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="8" stdDeviation="9" flood-color="#0b1210" flood-opacity=".2"/></filter></defs>
-  <rect x="17" y="10" width="166" height="276" rx="17" fill="url(#fCase)" stroke="var(--case-edge)" stroke-width="1.2" filter="url(#shSig)"/>
-  <rect x="9" y="166" width="9" height="17" rx="3" fill="var(--copper)"/>
-  <rect x="182" y="130" width="7" height="20" rx="3" fill="var(--fg-soft)"/>
-  <rect x="26" y="15" width="148" height="196" rx="5" fill="#0f1714"/>
+  <rect x="20" y="10" width="160" height="276" rx="17" fill="url(#fCase)" stroke="var(--case-edge)" stroke-width="1.2" filter="url(#shSig)"/>
+  <rect x="12" y="162" width="9" height="17" rx="3" fill="var(--copper)"/>
+  <rect x="36.4" y="32" width="127.3" height="178.2" rx="4" fill="#0f1714"/>
+  <g transform="translate(36.4 32) scale(.86) translate(-26 -15)">
   <g font-family="IBM Plex Sans, Helvetica, sans-serif" fill="#e9efe9">
     <text x="36" y="33" font-size="7" opacity=".55" letter-spacing=".4">SAFE · ETHEREUM · NONCE 41</text>
     <text x="36" y="50" font-size="12" font-weight="600">Sign transaction</text>
@@ -397,18 +397,21 @@ footer svg { width: 18px; height: 27px; color: var(--violet); }
     <rect x="36" y="180" width="128" height="20" rx="10" fill="#e9efe9"/>
     <text x="100" y="193.5" font-size="8.5" font-weight="600" text-anchor="middle" fill="#0f1714">Hold to sign</text>
   </g>
-  <rect x="26" y="15" width="148" height="196" rx="5" fill="url(#fGlass)"/>
-  <rect x="92" y="282" width="30" height="7" rx="3" fill="var(--fg-soft)"/>
+  </g>
+  <rect x="36.4" y="32" width="127.3" height="178.2" rx="4" fill="url(#fGlass)"/>
+  <circle cx="100" cy="259" r="9.5" fill="#0f1714" opacity=".55"/>
+  <circle cx="100" cy="259" r="7.6" fill="var(--fg-soft)"/>
+  <rect x="114" y="282" width="30" height="7" rx="3" fill="var(--fg-soft)"/>
 </svg>
         <figcaption><b>Every action, decoded.</b> The device rebuilds the Safe transaction itself and spells out each step of a batch, so what you see is what you sign.</figcaption>
       </figure>
       <figure>
         <svg viewBox="0 0 200 300" role="img" aria-label="Refusal screen">
   <defs><filter id="shRef" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="8" stdDeviation="9" flood-color="#0b1210" flood-opacity=".2"/></filter></defs>
-  <rect x="17" y="10" width="166" height="276" rx="17" fill="url(#fCase)" stroke="var(--case-edge)" stroke-width="1.2" filter="url(#shRef)"/>
-  <rect x="9" y="166" width="9" height="17" rx="3" fill="var(--copper)"/>
-  <rect x="182" y="130" width="7" height="20" rx="3" fill="var(--fg-soft)"/>
-  <rect x="26" y="15" width="148" height="196" rx="5" fill="#0f1714"/>
+  <rect x="20" y="10" width="160" height="276" rx="17" fill="url(#fCase)" stroke="var(--case-edge)" stroke-width="1.2" filter="url(#shRef)"/>
+  <rect x="12" y="162" width="9" height="17" rx="3" fill="var(--copper)"/>
+  <rect x="36.4" y="32" width="127.3" height="178.2" rx="4" fill="#0f1714"/>
+  <g transform="translate(36.4 32) scale(.86) translate(-26 -15)">
   <rect x="26" y="15" width="148" height="44" rx="5" fill="#c4372c"/>
   <g font-family="IBM Plex Sans, Helvetica, sans-serif" fill="#e9efe9">
     <text x="36" y="32" font-size="7" font-weight="600" letter-spacing=".6" fill="#fff">BLOCKED</text>
@@ -423,8 +426,11 @@ footer svg { width: 18px; height: 27px; color: var(--violet); }
     <rect x="36" y="180" width="128" height="20" rx="10" fill="none" stroke="#e9efe9" stroke-opacity=".45"/>
     <text x="100" y="193.5" font-size="8.5" font-weight="600" text-anchor="middle">Reject</text>
   </g>
-  <rect x="26" y="15" width="148" height="196" rx="5" fill="url(#fGlass)"/>
-  <rect x="92" y="282" width="30" height="7" rx="3" fill="var(--fg-soft)"/>
+  </g>
+  <rect x="36.4" y="32" width="127.3" height="178.2" rx="4" fill="url(#fGlass)"/>
+  <circle cx="100" cy="259" r="9.5" fill="#0f1714" opacity=".55"/>
+  <circle cx="100" cy="259" r="7.6" fill="var(--fg-soft)"/>
+  <rect x="114" y="282" width="30" height="7" rx="3" fill="var(--fg-soft)"/>
 </svg>
         <figcaption><b>The Bybit attack, stopped.</b> Handing the Safe's control to unknown code (a DELEGATECALL) is blocked unless the target is on a short allowlist. Changes to owners, threshold and modules get their own warnings.</figcaption>
       </figure>

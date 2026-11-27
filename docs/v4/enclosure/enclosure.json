@@ -1,9 +1,9 @@
 {
  "generated_from": "board/wallet.kicad_pcb",
  "size_mm": [
-  53.2,
-  92.2,
-  10.2
+  53.8,
+  92.8,
+  10.5
  ],
  "board": {
   "w": 48.0,
@@ -37,7 +37,7 @@
   ]
  },
  "z": {
-  "floorOut": -4.894999938309193,
+  "floorOut": -5.194999938309193,
   "floorIn": -3.6949999383091936,
   "boardBack": -1.0,
   "split": 0.0,
@@ -51,21 +51,21 @@
  },
  "panel": [
   2.6,
-  1.0,
+  4.5,
   45.4,
-  60.91
+  64.41
  ],
  "viewingArea": [
   5.140000000000001,
-  3.52,
+  7.02,
   42.86,
-  53.480000000000004
+  56.980000000000004
  ],
  "pack": {
   "outline": [
-   -2.1,
+   -2.4,
    17.967,
-   50.1,
+   50.4,
    47.167
   ],
   "r": 4.0,
@@ -223,10 +223,10 @@
   ],
   "toMove": [],
   "z": {
-   "face": -4.894999938309193,
+   "face": -5.194999938309193,
    "boardTop": -4.8,
    "bottom": -16.35,
-   "bay": 0.295
+   "bay": 0.595
   }
  },
  "camera": [
@@ -251,8 +251,12 @@
    3.8,
    1.6
   ],
-  "seat": -3.194999938309193,
+  "seat": -3.494999938309193,
   "holes": [
+   [
+    44.8,
+    3.2
+   ],
    [
     44.8,
     83.8
@@ -396,14 +400,14 @@
    {
     "label": "Case: 3MF and STL (zip)",
     "filename": "ambire-ice-case.zip",
-    "bytes": 582343,
+    "bytes": 640223,
     "part": "enclosure/files/ambire-ice-case.zip.b64.txt",
     "b64": true
    },
    {
     "label": "Battery pack tray: 3MF and STL (zip)",
     "filename": "ambire-ice-battery-tray.zip",
-    "bytes": 79308,
+    "bytes": 79686,
     "part": "enclosure/files/ambire-ice-battery-tray.zip.b64.txt",
     "b64": true
    }
