@@ -16,5 +16,4 @@ reported go here; not every sliced file was printed.
 | 7 | 2026-11-27 (evening) | yellow | `6de6511` | sliced by the owner in CHITUBOX (most likely `case.3mf…2026_11_27_20_24_00.pwsz`: layer 0.1 mm, exposure 2.1 s, bottom 25 s x 3, 15 transition layers, lift 4 mm at 2.67 mm/s) | Printed whole; no feedback on it yet |
 | 8 | 2026-11-27/28 | blue | `6de6511` | Elegoo printer, from the STL, sliced with Elegoo's slicer; settings not reported | Printed whole; no feedback on it yet |
 
-The owner's photo of 2026-11-28 shows four prints, left to right: an earlier blue print that is
-already in this table with its feedback (which row was not said), then #6, #7 and #8.
+The owner's photo of 2026-11-28 shows four prints, left to right: #4, then #6, #7 and #8.
